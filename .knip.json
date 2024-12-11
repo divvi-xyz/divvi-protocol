@@ -6,5 +6,9 @@
     "test/**/*.ts"
   ],
   "project": ["src/**/*.ts"],
-  "ignoreDependencies": ["@types/jest", "@openzeppelin/contracts"]
+  "ignoreDependencies": [
+    "@types/jest",
+    "@openzeppelin/contracts",
+    "@nomicfoundation/hardhat-ignition"
+  ]
 }
