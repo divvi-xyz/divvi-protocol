@@ -14,13 +14,11 @@ async function getConfig() {
     Object.assign(process.env, await loadSecret(secretName))
   }
 
-  const argv = await yargs
-    .env('')
-    .option('deploy-salt', {
-      description: 'Salt to use for CREATE2 deployments',
-      type: 'string',
-      demandOption: true,
-    }).argv
+  const argv = await yargs.env('').option('deploy-salt', {
+    description: 'Salt to use for CREATE2 deployments',
+    type: 'string',
+    demandOption: true,
+  }).argv
 
   return {
     deploySalt: argv['deploy-salt'],
@@ -39,7 +37,7 @@ async function main() {
   if (hre.network.name === 'celo') {
     console.log(`Deploying ${CONTRACT_NAME} with OpenZeppelin Defender`)
     const result = await hre.defender.deployContract(
-        Contract,
+      Contract,
       constructorArgs,
       { salt: config.deploySalt },
     )
