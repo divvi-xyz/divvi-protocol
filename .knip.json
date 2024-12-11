@@ -1,5 +1,10 @@
 {
-  "entry": ["src/index.ts"],
+  "entry": [
+    "src/index.ts",
+    "hardhat.config.ts",
+    "scripts/**/*.ts",
+    "test/**/*.ts"
+  ],
   "project": ["src/**/*.ts"],
-  "ignoreDependencies": ["@types/jest", "@valora/prettier-config"]
+  "ignoreDependencies": ["@types/jest", "@openzeppelin/contracts"]
 }
