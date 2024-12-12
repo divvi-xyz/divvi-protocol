@@ -16,6 +16,6 @@
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src"],
+  "include": ["scripts"],
   "exclude": ["node_modules", "**/*.test.ts"]
 }
