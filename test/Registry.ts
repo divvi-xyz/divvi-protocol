@@ -13,11 +13,10 @@ describe(REGISTRY_CONTRACT_NAME, function () {
   let registry
   let owner
   let addr1
-  let _addr2
 
   beforeEach(async () => {
     // Get the signers
-    ;[owner, addr1, _addr2] = await hre.ethers.getSigners()
+    [owner, addr1] = await hre.ethers.getSigners()
 
     // Deploy the Registry contract
     Registry = await hre.ethers.getContractFactory(REGISTRY_CONTRACT_NAME)
