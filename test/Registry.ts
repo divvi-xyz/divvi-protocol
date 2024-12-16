@@ -1,27 +1,35 @@
 import { expect } from 'chai'
 import hre from 'hardhat'
+import { getAddress } from 'ethers'
 
 const REGISTRY_CONTRACT_NAME = 'Registry'
+const REWARD_TOKEN_CONTRACT_NAME = 'MockErc20'
+
+const mockRewardTokenAddress = getAddress(
+    '0x471EcE3750Da237f93B8E339c536989b8978a499'.toLowerCase(),
+  )
 
 describe(REGISTRY_CONTRACT_NAME, function () {
   let Registry
   let registry
   let owner
   let addr1
-  let addr2
+  let _addr2
   let token
 
   beforeEach(async () => {
     // Get the signers
-    ;[owner, addr1, addr2] = await hre.ethers.getSigners()
+    [owner, addr1, _addr2] = await hre.ethers.getSigners()
 
     // Deploy the Registry contract
     Registry = await hre.ethers.getContractFactory(REGISTRY_CONTRACT_NAME)
     registry = await Registry.deploy(owner.address, 0)
 
     // Create a mock ERC20 token to use as reward token
-    const ERC20 = await hre.ethers.getContractFactory('ERC20')
-    token = await ERC20.deploy('Mock Token', 'MTK', 1000000)
+    const RewardToken = await hre.ethers.getContractFactory(
+        REWARD_TOKEN_CONTRACT_NAME,
+      )
+      const token = await RewardToken.deploy('FOO', 'BAR')
   })
 
   describe('Referrer Registration', function () {
