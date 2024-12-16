@@ -10,7 +10,7 @@ contract Registry is AccessControlDefaultAdminRules {
 
   event ReferrerRegistered(
     string indexed referrerId,
-    string[] indexed protocolIds,
+    string[] protocolIds,
     uint256[] rewardRates,
     address rewardAddress
   );

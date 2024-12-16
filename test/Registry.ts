@@ -16,7 +16,7 @@ describe(REGISTRY_CONTRACT_NAME, function () {
 
   beforeEach(async () => {
     // Get the signers
-    ;[owner, addr1] = await hre.ethers.getSigners()
+    [owner, addr1] = await hre.ethers.getSigners()
 
     // Deploy the Registry contract
     Registry = await hre.ethers.getContractFactory(REGISTRY_CONTRACT_NAME)
