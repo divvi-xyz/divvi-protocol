@@ -52,6 +52,42 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       const referrers = await registry.getReferrers(mockProtocolId)
       expect(referrers).to.deep.equal([mockReferrerId])
     })
+    it('should register a referrer with multiple protocolIds', async function () {
+      const { registry } = await deployRegistryContract()
+      const protocolIds = ['protocol1', 'protocol2']
+      const rewardRates = [10, 20]
+
+      await expect(
+        registry.registerReferrer(
+          mockReferrerId,
+          protocolIds,
+          rewardRates,
+          mockRewardAddress,
+        ),
+      )
+        .to.emit(registry, 'ReferrerRegistered')
+        .withArgs(mockReferrerId, protocolIds, rewardRates, mockRewardAddress)
+
+      // Check that the referrer was registered correctly to protocol1
+      const rewardRate1 = await registry.getRewardRate(
+        'protocol1',
+        mockReferrerId,
+      )
+      expect(rewardRate1).to.equal(10)
+
+      const referrersProtocol1 = await registry.getReferrers('protocol1')
+      expect(referrersProtocol1).to.deep.equal([mockReferrerId])
+
+      // Check that the referrer was registered correctly to protocol2
+      const rewardRate2 = await registry.getRewardRate(
+        'protocol2',
+        mockReferrerId,
+      )
+      expect(rewardRate2).to.equal(20)
+
+      const referrersProtocol2 = await registry.getReferrers('protocol2')
+      expect(referrersProtocol2).to.deep.equal([mockReferrerId])
+    })
     it('should allow only the owner to register a referrer', async function () {
       const { registry, addr1 } = await deployRegistryContract()
       const protocolIds = [mockProtocolId]
