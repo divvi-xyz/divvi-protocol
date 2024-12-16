@@ -3,11 +3,10 @@ import hre from 'hardhat'
 import { getAddress } from 'ethers'
 
 const REGISTRY_CONTRACT_NAME = 'Registry'
-const REWARD_TOKEN_CONTRACT_NAME = 'MockErc20'
 
-const mockRewardTokenAddress = getAddress(
-    '0x471EcE3750Da237f93B8E339c536989b8978a499'.toLowerCase(),
-  )
+const mockRewardAddress = getAddress(
+  '0x471EcE3750Da237f93B8E339c536989b8978a499'.toLowerCase(),
+)
 
 describe(REGISTRY_CONTRACT_NAME, function () {
   let Registry
@@ -15,21 +14,14 @@ describe(REGISTRY_CONTRACT_NAME, function () {
   let owner
   let addr1
   let _addr2
-  let token
 
   beforeEach(async () => {
     // Get the signers
-    [owner, addr1, _addr2] = await hre.ethers.getSigners()
+    ;[owner, addr1, _addr2] = await hre.ethers.getSigners()
 
     // Deploy the Registry contract
     Registry = await hre.ethers.getContractFactory(REGISTRY_CONTRACT_NAME)
     registry = await Registry.deploy(owner.address, 0)
-
-    // Create a mock ERC20 token to use as reward token
-    const RewardToken = await hre.ethers.getContractFactory(
-        REWARD_TOKEN_CONTRACT_NAME,
-      )
-      const token = await RewardToken.deploy('FOO', 'BAR')
   })
 
   describe('Referrer Registration', function () {
@@ -37,14 +29,18 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       const referrerId = 'referrer1'
       const protocolIds = ['protocol1']
       const rewardRates = [10]
-      const rewardAddress = token.address
 
       await expect(
         await registry
-          .registerReferrer(referrerId, protocolIds, rewardRates, rewardAddress)
+          .registerReferrer(
+            referrerId,
+            protocolIds,
+            rewardRates,
+            mockRewardAddress,
+          )
 
           .to.emit(registry, 'ReferrerRegistered')
-          .withArgs(referrerId, protocolIds, rewardRates, rewardAddress),
+          .withArgs(referrerId, protocolIds, rewardRates, mockRewardAddress),
       )
 
       // Check that the referrer was registered correctly
@@ -58,13 +54,17 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       const referrerId = 'referrer1'
       const protocolIds = ['protocol1']
       const rewardRates = [10]
-      const rewardAddress = token.address
 
       // Non-owner (addr1) should not be able to register the referrer
       await expect(
         await registry
           .connect(addr1)
-          .registerReferrer(referrerId, protocolIds, rewardRates, rewardAddress)
+          .registerReferrer(
+            referrerId,
+            protocolIds,
+            rewardRates,
+            mockRewardAddress,
+          )
           .to.be.rejectedWith('AccessControlUnauthorizedAccount'),
       )
     })
@@ -74,14 +74,13 @@ describe(REGISTRY_CONTRACT_NAME, function () {
     it('should register a referral when referrer exists', async function () {
       const referrerId = 'referrer1'
       const protocolId = 'protocol1'
-      const rewardAddress = token.address
       const rewardRates = [10]
 
       await registry.registerReferrer(
         referrerId,
         [protocolId],
         rewardRates,
-        rewardAddress,
+        mockRewardAddress,
       )
 
       await expect(
@@ -116,14 +115,13 @@ describe(REGISTRY_CONTRACT_NAME, function () {
     it('should skip referral if the user is already registered', async function () {
       const referrerId = 'referrer1'
       const protocolId = 'protocol1'
-      const rewardAddress = token.address
       const rewardRates = [10]
 
       await registry.registerReferrer(
         referrerId,
         [protocolId],
         rewardRates,
-        rewardAddress,
+        mockRewardAddress,
       )
       await registry.connect(addr1).registerReferral(referrerId, protocolId)
 
@@ -143,13 +141,12 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       const referrerId = 'referrer1'
       const protocolIds = ['protocol1']
       const rewardRates = [10]
-      const rewardAddress = token.address
 
       await registry.registerReferrer(
         referrerId,
         protocolIds,
         rewardRates,
-        rewardAddress,
+        mockRewardAddress,
       )
 
       const referrers = await registry.getReferrers('protocol1')
@@ -159,14 +156,13 @@ describe(REGISTRY_CONTRACT_NAME, function () {
     it('should return users and their timestamps', async function () {
       const referrerId = 'referrer1'
       const protocolId = 'protocol1'
-      const rewardAddress = token.address
       const rewardRates = [10]
 
       await registry.registerReferrer(
         referrerId,
         [protocolId],
         rewardRates,
-        rewardAddress,
+        mockRewardAddress,
       )
 
       await registry.connect(addr1).registerReferral(referrerId, protocolId)
@@ -182,14 +178,13 @@ describe(REGISTRY_CONTRACT_NAME, function () {
     it('should return the correct reward rate', async function () {
       const referrerId = 'referrer1'
       const protocolId = 'protocol1'
-      const rewardAddress = token.address
       const rewardRates = [10]
 
       await registry.registerReferrer(
         referrerId,
         [protocolId],
         rewardRates,
-        rewardAddress,
+        mockRewardAddress,
       )
 
       const rewardRate = await registry.getRewardRate(protocolId, referrerId)
