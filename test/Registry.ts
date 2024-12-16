@@ -9,7 +9,7 @@ const mockRewardAddress = getAddress(
 )
 const mockReferrerId = 'referrer1'
 const mockProtocolId = 'protocol1'
-const mockRewardRates = [0.1]
+const mockRewardRates = [10]
 
 describe(REGISTRY_CONTRACT_NAME, function () {
   async function deployRegistryContract() {
