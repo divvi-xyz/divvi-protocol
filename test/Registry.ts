@@ -30,15 +30,15 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       const rewardRates = [10]
 
       await expect(
-        await registry
-          .registerReferrer(
+        (
+          await registry.registerReferrer(
             referrerId,
             protocolIds,
             rewardRates,
             mockRewardAddress,
           )
-
-          .to.emit(registry, 'ReferrerRegistered')
+        ).to
+          .emit(registry, 'ReferrerRegistered')
           .withArgs(referrerId, protocolIds, rewardRates, mockRewardAddress),
       )
 
@@ -56,15 +56,16 @@ describe(REGISTRY_CONTRACT_NAME, function () {
 
       // Non-owner (addr1) should not be able to register the referrer
       await expect(
-        await registry
-          .connect(addr1)
-          .registerReferrer(
-            referrerId,
-            protocolIds,
-            rewardRates,
-            mockRewardAddress,
-          )
-          .to.be.rejectedWith('AccessControlUnauthorizedAccount'),
+        (
+          await registry
+            .connect(addr1)
+            .registerReferrer(
+              referrerId,
+              protocolIds,
+              rewardRates,
+              mockRewardAddress,
+            )
+        ).to.be.rejectedWith('AccessControlUnauthorizedAccount'),
       )
     })
   })
@@ -83,10 +84,10 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       )
 
       await expect(
-        await registry
-          .connect(addr1)
-          .registerReferral(referrerId, protocolId)
-          .to.emit(registry, 'ReferralRegistered')
+        (
+          await registry.connect(addr1).registerReferral(referrerId, protocolId)
+        ).to
+          .emit(registry, 'ReferralRegistered')
           .withArgs(protocolId, referrerId, addr1.address),
       )
 
@@ -103,10 +104,10 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       const protocolId = 'protocol1'
 
       await expect(
-        await registry
-          .connect(addr1)
-          .registerReferral(referrerId, protocolId)
-          .to.emit(registry, 'ReferralSkipped')
+        (
+          await registry.connect(addr1).registerReferral(referrerId, protocolId)
+        ).to
+          .emit(registry, 'ReferralSkipped')
           .withArgs(protocolId, referrerId, addr1.address),
       )
     })
@@ -126,10 +127,10 @@ describe(REGISTRY_CONTRACT_NAME, function () {
 
       // Trying to register again should emit "ReferralSkipped"
       await expect(
-        await registry
-          .connect(addr1)
-          .registerReferral(referrerId, protocolId)
-          .to.emit(registry, 'ReferralSkipped')
+        (
+          await registry.connect(addr1).registerReferral(referrerId, protocolId)
+        ).to
+          .emit(registry, 'ReferralSkipped')
           .withArgs(protocolId, referrerId, addr1.address),
       )
     })
