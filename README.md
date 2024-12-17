@@ -12,6 +12,16 @@ yarn install
 yarn test
 ```
 
+## Scripts
+
+### Filter Referrals
+
+Filter out referalls that occurred *after* the users had already interacted with the given protocol. 
+
+```bash
+npx ts-node ./scripts/filter-referrals.ts --protocol beefy --input input.csv --output output.csv
+```
+
 ## Contracts
 
 This repository contains the contract(s) necessary to support the Mobilestack Funding Layer.
