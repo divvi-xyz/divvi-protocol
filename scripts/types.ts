@@ -1,4 +1,4 @@
 export interface ReferralEvent {
-    userAddress: string
-    timestamp: number;
+  userAddress: string
+  timestamp: number
 }
