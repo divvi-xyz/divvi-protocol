@@ -3,9 +3,8 @@ import { filterEvents as beefy } from './protocol-filters/beefy'
 import { readFileSync, writeFileSync } from 'fs'
 import { ReferralEvent } from './types'
 
-
 const protocols = ['beefy'] as const
-type Protocol = typeof protocols[number]
+type Protocol = (typeof protocols)[number]
 
 type FilterFunction = (events: ReferralEvent[]) => Promise<ReferralEvent[]>
 
