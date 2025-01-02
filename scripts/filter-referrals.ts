@@ -3,15 +3,14 @@ import { filterEvents as beefy } from './protocol-filters/beefy'
 import { readFileSync, writeFileSync } from 'fs'
 import { ReferralEvent } from './types'
 
-enum Protocol {
-  beefy = 'beefy',
-}
-const protocols = Object.keys(Protocol)
+
+const protocols = ['beefy'] as const
+type Protocol = typeof protocols[number]
 
 type FilterFunction = (events: ReferralEvent[]) => Promise<ReferralEvent[]>
 
 const protocolFilters: Record<Protocol, FilterFunction> = {
-  [Protocol.beefy]: beefy,
+  beefy,
 }
 async function getArgs() {
   const argv = await yargs
@@ -61,8 +60,6 @@ async function main() {
   writeFileSync(args.output, output)
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
 main().catch((error) => {
   console.error(error)
   process.exitCode = 1

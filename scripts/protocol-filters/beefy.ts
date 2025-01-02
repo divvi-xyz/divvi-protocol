@@ -15,7 +15,7 @@ export async function filterEvents(
 
 // The user has to have made at least one transaction on Beefy Finance
 // and all transactions have to be after the referral timestamp
-async function filter(event: ReferralEvent): Promise<boolean> {
+export async function filter(event: ReferralEvent): Promise<boolean> {
   const transactions = await fetchInvestorTimeline(event.userAddress)
   console.log('transactions', transactions.length)
   return (
@@ -26,7 +26,7 @@ async function filter(event: ReferralEvent): Promise<boolean> {
   )
 }
 
-interface BeefyInvestorTransaction {
+export interface BeefyInvestorTransaction {
   datetime: string
   product_key: string
   display_name: string
@@ -66,7 +66,7 @@ async function fetchWithBackoff(
   }
 }
 
-async function fetchInvestorTimeline(
+export async function fetchInvestorTimeline(
   address: string,
 ): Promise<BeefyInvestorTransaction[]> {
   const url = `https://databarn.beefy.com/api/v1/beefy/timeline?address=${address}`
