@@ -20,7 +20,7 @@
     "lint:fix": "yarn eslint:fix && yarn solhint:fix",
     "format": "prettier --log-level error --write .",
     "format:check": "prettier --check .",
-    "test": "hardhat test && jest --verbose",
+    "test": "hardhat test && jest --silent",
     "test:watch": "yarn test --watch",
     "test:ci": "yarn test --ci --coverage",
     "supercheck": "yarn format && yarn lint:fix && yarn typecheck && yarn knip && yarn test",
