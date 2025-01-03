@@ -45,8 +45,6 @@ contract Registry is AccessControlDefaultAdminRules {
 
   mapping(string => Protocol) private _protocols;
   mapping(string => mapping(string => Referrer)) private _referrers;
-  mapping(string => mapping(string => mapping(address => User)))
-    private _usersByReferrer;
   mapping(string => mapping(address => User)) private _usersByProtocol;
 
   constructor(
@@ -86,9 +84,6 @@ contract Registry is AccessControlDefaultAdminRules {
     } else if (_usersByProtocol[protocolId][msg.sender].timestamp != 0) {
       revert UserAlreadyRegistered(protocolId, referrerId, msg.sender);
     } else {
-      _usersByReferrer[protocolId][referrerId][msg.sender] = User(
-        block.timestamp
-      );
       _usersByProtocol[protocolId][msg.sender] = User(block.timestamp);
       _referrers[protocolId][referrerId].userAddresses.push(msg.sender);
       emit ReferralRegistered(protocolId, referrerId, msg.sender);
@@ -110,7 +105,7 @@ contract Registry is AccessControlDefaultAdminRules {
     uint256[] memory timestamps = new uint256[](userAddresses.length);
 
     for (uint256 i = 0; i < userAddresses.length; i++) {
-      timestamps[i] = _usersByReferrer[protocolId][referrerId][userAddresses[i]]
+      timestamps[i] = _usersByProtocol[protocolId][userAddresses[i]]
         .timestamp;
     }
 
