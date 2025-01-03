@@ -20,11 +20,13 @@ contract Registry is AccessControlDefaultAdminRules {
     string indexed referrerId,
     address indexed userAddress
   );
-  
-  event ReferralSkipped(
-    string indexed protocolId,
-    string indexed referrerId,
-    address indexed userAddress
+
+  error ReferrerNotRegistered(string protocolId, string referrerId);
+
+  error UserAlreadyRegistered(
+    string protocolId,
+    string referrerId,
+    address userAddress
   );
 
   struct User {
@@ -43,7 +45,8 @@ contract Registry is AccessControlDefaultAdminRules {
 
   mapping(string => Protocol) private _protocols;
   mapping(string => mapping(string => Referrer)) private _referrers;
-  mapping(string => mapping(string => mapping(address => User))) private _usersByReferrer;
+  mapping(string => mapping(string => mapping(address => User)))
+    private _usersByReferrer;
   mapping(string => mapping(address => User)) private _usersByProtocol;
 
   constructor(
@@ -65,24 +68,30 @@ contract Registry is AccessControlDefaultAdminRules {
       );
       _protocols[_protocolIds[i]].referrers.push(_referrerId);
     }
-    emit ReferrerRegistered(_referrerId, _protocolIds, _rewardRates, _rewardAddress);
+    emit ReferrerRegistered(
+      _referrerId,
+      _protocolIds,
+      _rewardRates,
+      _rewardAddress
+    );
   }
 
   function registerReferral(
     string calldata referrerId,
     string calldata protocolId
   ) external {
-    if (
-      // Check if the referrer has been initialized but the user has not been registered before to the given protocol
-      _referrers[protocolId][referrerId].rewardAddress != address(0) &&
-      _usersByProtocol[protocolId][msg.sender].timestamp == 0
-    ) {
-      _usersByReferrer[protocolId][referrerId][msg.sender] = User(block.timestamp);
+    // Check if the referrer has been initialized but the user has not been registered before to the given protocol
+    if (_referrers[protocolId][referrerId].rewardAddress != address(0)) {
+      revert ReferrerNotRegistered(protocolId, referrerId);
+    } else if (_usersByProtocol[protocolId][msg.sender].timestamp == 0) {
+      revert UserAlreadyRegistered(protocolId, referrerId, msg.sender);
+    } else {
+      _usersByReferrer[protocolId][referrerId][msg.sender] = User(
+        block.timestamp
+      );
       _usersByProtocol[protocolId][msg.sender] = User(block.timestamp);
       _referrers[protocolId][referrerId].userAddresses.push(msg.sender);
       emit ReferralRegistered(protocolId, referrerId, msg.sender);
-    } else {
-      emit ReferralSkipped(protocolId, referrerId, msg.sender);
     }
   }
 
@@ -101,7 +110,8 @@ contract Registry is AccessControlDefaultAdminRules {
     uint256[] memory timestamps = new uint256[](userAddresses.length);
 
     for (uint256 i = 0; i < userAddresses.length; i++) {
-      timestamps[i] = _usersByReferrer[protocolId][referrerId][userAddresses[i]].timestamp;
+      timestamps[i] = _usersByReferrer[protocolId][referrerId][userAddresses[i]]
+        .timestamp;
     }
 
     return (userAddresses, timestamps);

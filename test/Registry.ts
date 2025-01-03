@@ -141,8 +141,8 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       await expect(
         registry.connect(addr1).registerReferral(referrerId, mockProtocolId),
       )
-        .to.emit(registry, 'ReferralSkipped')
-        .withArgs(mockProtocolId, referrerId, addr1.address)
+        .to.be.revertedWithCustomError(registry, 'ReferrerNotRegistered')
+        .withArgs(mockProtocolId, referrerId)
     })
 
     it('should skip referral if the user is already registered', async function () {
@@ -164,7 +164,7 @@ describe(REGISTRY_CONTRACT_NAME, function () {
           .connect(addr1)
           .registerReferral(mockReferrerId2, mockProtocolId),
       )
-        .to.emit(registry, 'ReferralSkipped')
+        .to.be.revertedWithCustomError(registry, 'UserAlreadyRegistered')
         .withArgs(mockProtocolId, mockReferrerId2, addr1.address)
     })
   })
