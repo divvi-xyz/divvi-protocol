@@ -81,9 +81,9 @@ contract Registry is AccessControlDefaultAdminRules {
     string calldata protocolId
   ) external {
     // Check if the referrer has been initialized but the user has not been registered before to the given protocol
-    if (_referrers[protocolId][referrerId].rewardAddress != address(0)) {
+    if (_referrers[protocolId][referrerId].rewardAddress == address(0)) {
       revert ReferrerNotRegistered(protocolId, referrerId);
-    } else if (_usersByProtocol[protocolId][msg.sender].timestamp == 0) {
+    } else if (_usersByProtocol[protocolId][msg.sender].timestamp != 0) {
       revert UserAlreadyRegistered(protocolId, referrerId, msg.sender);
     } else {
       _usersByReferrer[protocolId][referrerId][msg.sender] = User(
