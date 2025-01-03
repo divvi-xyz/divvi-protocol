@@ -154,6 +154,12 @@ describe(REGISTRY_CONTRACT_NAME, function () {
         mockRewardRates,
         mockRewardAddress,
       )
+      await registry.registerReferrer(
+        mockReferrerId2,
+        [mockProtocolId],
+        mockRewardRates,
+        mockRewardAddress,
+      )
       await registry
         .connect(addr1)
         .registerReferral(mockReferrerId, mockProtocolId)
