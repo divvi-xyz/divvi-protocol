@@ -165,7 +165,7 @@ describe(REGISTRY_CONTRACT_NAME, function () {
           .registerReferral(mockReferrerId2, mockProtocolId),
       )
         .to.emit(registry, 'ReferralSkipped')
-        .withArgs(mockProtocolId, mockReferrerId, addr1.address)
+        .withArgs(mockProtocolId, mockReferrerId2, addr1.address)
     })
   })
 
