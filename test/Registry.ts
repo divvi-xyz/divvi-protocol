@@ -8,6 +8,7 @@ const mockRewardAddress = getAddress(
   '0x471EcE3750Da237f93B8E339c536989b8978a499'.toLowerCase(),
 )
 const mockReferrerId = 'referrer1'
+const mockReferrerId2 = 'referrer2'
 const mockProtocolId = 'protocol1'
 const mockRewardRates = [10]
 
@@ -161,7 +162,7 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       await expect(
         registry
           .connect(addr1)
-          .registerReferral(mockReferrerId, mockProtocolId),
+          .registerReferral(mockReferrerId2, mockProtocolId),
       )
         .to.emit(registry, 'ReferralSkipped')
         .withArgs(mockProtocolId, mockReferrerId, addr1.address)
