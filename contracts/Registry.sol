@@ -34,18 +34,18 @@ contract Registry is AccessControlDefaultAdminRules {
   }
 
   struct Referrer {
-    address rewardAddress;
     uint256 rewardRate;
     address[] userAddresses;
   }
 
-  struct Protocol {
-    string[] referrers;
-  }
+  mapping(string => string[]) private _protocolIdToReferrerIds;
+  mapping(string => string[]) private _referrerIdToProtocolIds;
+  mapping(string => address) private _referrerIdToRewardAddress;
+  mapping(string => mapping(string => Referrer))
+    private _referrerInfoByProtocol;
+  mapping(string => mapping(address => User)) private _userInfoByProtocol;
 
-  mapping(string => Protocol) private _protocols;
-  mapping(string => mapping(string => Referrer)) private _referrers;
-  mapping(string => mapping(address => User)) private _usersByProtocol;
+  bool private _referrerIsRegistered;
 
   constructor(
     address owner,
@@ -58,14 +58,14 @@ contract Registry is AccessControlDefaultAdminRules {
     uint256[] calldata _rewardRates,
     address _rewardAddress
   ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    for (uint256 i = 0; i < _protocolIds.length; i++) {
-      _referrers[_protocolIds[i]][_referrerId] = Referrer(
-        _rewardAddress,
-        _rewardRates[i],
-        new address[](0)
-      );
-      _protocols[_protocolIds[i]].referrers.push(_referrerId);
+    for (uint256 i = 0; i < _referrerIdToProtocolIds[_referrerId].length; i++) {
+      // Remove protocols that are no longer active (from previous registration)
     }
+    for (uint256 i = 0; i < _protocolIds.length; i++) {
+      _referrerInfoByProtocol[_protocolIds[i]][_referrerId].rewardRate = _rewardRates[i];
+      _protocolIdToReferrerIds[_protocolIds[i]].push(_referrerId);
+    }
+    _referrerIdToProtocolIds[_referrerId] = _protocolIds;
     emit ReferrerRegistered(
       _referrerId,
       _protocolIds,
@@ -78,14 +78,27 @@ contract Registry is AccessControlDefaultAdminRules {
     string calldata referrerId,
     string calldata protocolId
   ) external {
-    // Check if the referrer has been initialized but the user has not been registered before to the given protocol
-    if (_referrers[protocolId][referrerId].rewardAddress == address(0)) {
+    _referrerIsRegistered = false;
+    for (uint256 i = 0; i < _referrerIdToProtocolIds[referrerId].length; i++) {
+      if (
+        keccak256(abi.encodePacked(_referrerIdToProtocolIds[referrerId][i])) ==
+        keccak256(abi.encodePacked(protocolId))
+      ) {
+        _referrerIsRegistered = true;
+        break;
+      }
+    }
+    // Check if the referrer is active with the protocol
+    if (!_referrerIsRegistered) {
       revert ReferrerNotRegistered(protocolId, referrerId);
-    } else if (_usersByProtocol[protocolId][msg.sender].timestamp != 0) {
+      // And that the user has not been registered before to the given protocol
+    } else if (_userInfoByProtocol[protocolId][msg.sender].timestamp != 0) {
       revert UserAlreadyRegistered(protocolId, referrerId, msg.sender);
     } else {
-      _usersByProtocol[protocolId][msg.sender] = User(block.timestamp);
-      _referrers[protocolId][referrerId].userAddresses.push(msg.sender);
+      _userInfoByProtocol[protocolId][msg.sender] = User(block.timestamp);
+      _referrerInfoByProtocol[protocolId][referrerId].userAddresses.push(
+        msg.sender
+      );
       emit ReferralRegistered(protocolId, referrerId, msg.sender);
     }
   }
@@ -93,19 +106,20 @@ contract Registry is AccessControlDefaultAdminRules {
   function getReferrers(
     string calldata protocolId
   ) external view returns (string[] memory) {
-    return _protocols[protocolId].referrers;
+    return _protocolIdToReferrerIds[protocolId];
   }
 
   function getUsers(
     string calldata protocolId,
     string calldata referrerId
   ) external view returns (address[] memory, uint256[] memory) {
-    address[] memory userAddresses = _referrers[protocolId][referrerId]
-      .userAddresses;
+    address[] memory userAddresses = _referrerInfoByProtocol[protocolId][
+      referrerId
+    ].userAddresses;
     uint256[] memory timestamps = new uint256[](userAddresses.length);
 
     for (uint256 i = 0; i < userAddresses.length; i++) {
-      timestamps[i] = _usersByProtocol[protocolId][userAddresses[i]]
+      timestamps[i] = _userInfoByProtocol[protocolId][userAddresses[i]]
         .timestamp;
     }
 
@@ -116,6 +130,12 @@ contract Registry is AccessControlDefaultAdminRules {
     string calldata protocolId,
     string calldata referrerId
   ) external view returns (uint256) {
-    return _referrers[protocolId][referrerId].rewardRate;
+    return _referrerInfoByProtocol[protocolId][referrerId].rewardRate;
+  }
+
+  function getRewardAddress(
+    string calldata referrerId
+  ) external view returns (address) {
+    return _referrerIdToRewardAddress[referrerId];
   }
 }
