@@ -59,7 +59,7 @@ contract Registry is AccessControlDefaultAdminRules {
     uint256[] calldata rewardRates,
     address rewardAddress
   ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    // Remove referrer from protocols where the relationship is no longer active (from previous registration)
+    // Remove referrer from protocols from previous registrations
     for (uint256 i = 0; i < _referrerIdToProtocolIds[referrerId].length; i++) {
       string memory protocol = _referrerIdToProtocolIds[referrerId][i];
       string[] storage referrerIds = _protocolIdToReferrerIds[protocol];

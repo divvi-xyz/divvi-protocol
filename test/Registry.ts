@@ -104,12 +104,11 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       )
 
       // Re-register the referrer with the different protocolIds
-      await
-        registry.registerReferrer(
-          mockReferrerId,
-          [mockProtocolId2],
-          mockRewardRates,
-          mockRewardAddress2,
+      await registry.registerReferrer(
+        mockReferrerId,
+        [mockProtocolId2],
+        mockRewardRates,
+        mockRewardAddress2,
       )
       // Check that the referrer is no longer registered to protocol1
       const referrersProtocol1 = await registry.getReferrers(mockProtocolId)
