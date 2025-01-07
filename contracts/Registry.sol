@@ -81,7 +81,7 @@ contract Registry is AccessControlDefaultAdminRules {
       _referrerInfoByProtocol[protocolIds[i]][referrerId]
         .rewardRate = rewardRates[i];
       _protocolIdToReferrerIds[protocolIds[i]].push(referrerId);
-      // Update the list of protocols for the referrer (need to copy each element individually, cannot just assing the array)
+      // Update the list of protocols for the referrer (need to copy each element individually, cannot just assign the array)
       _referrerIdToProtocolIds[referrerId].push(protocolIds[i]);
     }
     // Update/add the reward address for the referrer
