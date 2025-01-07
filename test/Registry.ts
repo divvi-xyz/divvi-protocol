@@ -7,9 +7,13 @@ const REGISTRY_CONTRACT_NAME = 'Registry'
 const mockRewardAddress = getAddress(
   '0x471EcE3750Da237f93B8E339c536989b8978a499'.toLowerCase(),
 )
+const mockRewardAddress2 = getAddress(
+  '0x123EcE3750Da237f93B8E339c536989b8978a499'.toLowerCase(),
+)
 const mockReferrerId = 'referrer1'
 const mockReferrerId2 = 'referrer2'
 const mockProtocolId = 'protocol1'
+const mockProtocolId2 = 'protocol2'
 const mockRewardRates = [10]
 
 describe(REGISTRY_CONTRACT_NAME, function () {
@@ -89,6 +93,36 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       const referrersProtocol2 = await registry.getReferrers('protocol2')
       expect(referrersProtocol2).to.deep.equal([mockReferrerId])
     })
+
+    it('should correctly re-register a referrer', async function () {
+      const { registry } = await deployRegistryContract()
+      await registry.registerReferrer(
+        mockReferrerId,
+        [mockProtocolId],
+        mockRewardRates,
+        mockRewardAddress,
+      )
+
+      // Re-register the referrer with the different protocolIds
+      await expect(
+        registry.registerReferrer(
+          mockReferrerId,
+          [mockProtocolId2],
+          mockRewardRates,
+          mockRewardAddress2,
+        ),
+      )
+      // Check that the referrer is no longer registered to protocol1
+      const referrersProtocol1 = await registry.getReferrers(mockProtocolId)
+      expect(referrersProtocol1).to.deep.equal([])
+      // Check that the referrer is now registered to protocol2
+      const referrersProtocol2 = await registry.getReferrers(mockProtocolId2)
+      expect(referrersProtocol2).to.deep.equal([mockReferrerId])
+      // Check that the referrer's reward address has been updated
+      const rewardAddress = await registry.getRewardAddress(mockReferrerId)
+      expect(rewardAddress).to.equal(mockRewardAddress2)
+    })
+
     it('should allow only the owner to register a referrer', async function () {
       const { registry, addr1 } = await deployRegistryContract()
       const protocolIds = [mockProtocolId]
@@ -227,6 +261,20 @@ describe(REGISTRY_CONTRACT_NAME, function () {
         mockReferrerId,
       )
       expect(rewardRate).to.equal(mockRewardRates[0])
+    })
+
+    it('should return the correct reward address', async function () {
+      const { registry } = await deployRegistryContract()
+
+      await registry.registerReferrer(
+        mockReferrerId,
+        [mockProtocolId],
+        mockRewardRates,
+        mockRewardAddress,
+      )
+
+      const rewardRate = await registry.getRewardAddress(mockReferrerId)
+      expect(rewardRate).to.equal(mockRewardAddress)
     })
   })
 })

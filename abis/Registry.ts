@@ -1,28 +1,40 @@
 export const registryContractAbi = [
   {
-    anonymous: false,
     inputs: [
       {
-        indexed: true,
         internalType: 'string',
         name: 'protocolId',
         type: 'string',
       },
       {
-        indexed: true,
+        internalType: 'string',
+        name: 'referrerId',
+        type: 'string',
+      },
+    ],
+    name: 'ReferrerNotRegistered',
+    type: 'error',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'string',
+        name: 'protocolId',
+        type: 'string',
+      },
+      {
         internalType: 'string',
         name: 'referrerId',
         type: 'string',
       },
       {
-        indexed: true,
         internalType: 'address',
         name: 'userAddress',
         type: 'address',
       },
     ],
-    name: 'ReferralRegistered',
-    type: 'event',
+    name: 'UserAlreadyRegistered',
+    type: 'error',
   },
   {
     anonymous: false,
@@ -46,7 +58,7 @@ export const registryContractAbi = [
         type: 'address',
       },
     ],
-    name: 'ReferralSkipped',
+    name: 'ReferralRegistered',
     type: 'event',
   },
   {
@@ -94,6 +106,25 @@ export const registryContractAbi = [
         internalType: 'string[]',
         name: '',
         type: 'string[]',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'string',
+        name: 'referrerId',
+        type: 'string',
+      },
+    ],
+    name: 'getRewardAddress',
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
       },
     ],
     stateMutability: 'view',
