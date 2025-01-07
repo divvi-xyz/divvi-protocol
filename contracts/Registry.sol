@@ -39,6 +39,7 @@ contract Registry is AccessControlDefaultAdminRules {
   }
 
   mapping(string => string[]) private _protocolIdToReferrerIds;
+  // Reverse lookup needed when re-registering a referrer
   mapping(string => string[]) private _referrerIdToProtocolIds;
   mapping(string => address) private _referrerIdToRewardAddress;
   mapping(string => mapping(string => Referrer))
@@ -53,24 +54,43 @@ contract Registry is AccessControlDefaultAdminRules {
   ) AccessControlDefaultAdminRules(transferDelay, owner) {}
 
   function registerReferrer(
-    string calldata _referrerId,
-    string[] calldata _protocolIds,
-    uint256[] calldata _rewardRates,
-    address _rewardAddress
+    string calldata referrerId,
+    string[] calldata protocolIds,
+    uint256[] calldata rewardRates,
+    address rewardAddress
   ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    for (uint256 i = 0; i < _referrerIdToProtocolIds[_referrerId].length; i++) {
-      // Remove protocols that are no longer active (from previous registration)
+    // Remove referrer from protocols where the relationship is no longer active (from previous registration)
+    for (uint256 i = 0; i < _referrerIdToProtocolIds[referrerId].length; i++) {
+      string memory protocol = _referrerIdToProtocolIds[referrerId][i];
+      string[] storage referrerIds = _protocolIdToReferrerIds[protocol];
+
+      for (uint256 j = 0; j < referrerIds.length; j++) {
+        if (
+          keccak256(abi.encodePacked(referrerIds[j])) ==
+          keccak256(abi.encodePacked(referrerId))
+        ) {
+          // Replace the current element with the last element
+          referrerIds[j] = referrerIds[referrerIds.length - 1];
+          referrerIds.pop(); // Remove the last element
+          break; // Exit the inner loop after removal
+        }
+      }
     }
-    for (uint256 i = 0; i < _protocolIds.length; i++) {
-      _referrerInfoByProtocol[_protocolIds[i]][_referrerId].rewardRate = _rewardRates[i];
-      _protocolIdToReferrerIds[_protocolIds[i]].push(_referrerId);
+    // Add/update the reward rate for each provider, add the referrer to the list of referrers for each provider
+    for (uint256 i = 0; i < protocolIds.length; i++) {
+      _referrerInfoByProtocol[protocolIds[i]][referrerId]
+        .rewardRate = rewardRates[i];
+      _protocolIdToReferrerIds[protocolIds[i]].push(referrerId);
+      // Update the list of protocols for the referrer (need to copy each element individually, cannot just assing the array)
+      _referrerIdToProtocolIds[referrerId].push(protocolIds[i]);
     }
-    _referrerIdToProtocolIds[_referrerId] = _protocolIds;
+    // Update/add the reward address for the referrer
+    _referrerIdToRewardAddress[referrerId] = rewardAddress;
     emit ReferrerRegistered(
-      _referrerId,
-      _protocolIds,
-      _rewardRates,
-      _rewardAddress
+      referrerId,
+      protocolIds,
+      rewardRates,
+      rewardAddress
     );
   }
 
