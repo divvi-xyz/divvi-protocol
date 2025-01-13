@@ -196,7 +196,7 @@ describe(REGISTRY_CONTRACT_NAME, function () {
         .connect(addr1)
         .registerReferral(mockReferrerId, mockProtocolId)
 
-      // Trying to register again should emit "ReferralSkipped"
+      // Trying to register again should revert with custom error "UserAlreadyRegistered"
       await expect(
         registry
           .connect(addr1)
@@ -222,6 +222,21 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       const referrers = await registry.getReferrers(mockProtocolId)
       expect(referrers).to.deep.equal([mockReferrerId])
     })
+
+    it('should return protocols for a referrer', async function () {
+        const { registry } = await deployRegistryContract()
+        const protocolIds = [mockProtocolId]
+  
+        await registry.registerReferrer(
+          mockReferrerId,
+          protocolIds,
+          mockRewardRates,
+          mockRewardAddress,
+        )
+  
+        const protocols = await registry.getProtocols(mockReferrerId)
+        expect(protocols).to.deep.equal([mockProtocolId])
+      })
 
     it('should return users and their timestamps', async function () {
       const { registry, addr1 } = await deployRegistryContract()

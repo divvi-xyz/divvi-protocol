@@ -96,6 +96,25 @@ export const registryContractAbi = [
     inputs: [
       {
         internalType: 'string',
+        name: 'referrerId',
+        type: 'string',
+      },
+    ],
+    name: 'getProtocols',
+    outputs: [
+      {
+        internalType: 'string[]',
+        name: '',
+        type: 'string[]',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'string',
         name: 'protocolId',
         type: 'string',
       },

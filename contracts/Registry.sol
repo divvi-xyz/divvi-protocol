@@ -76,7 +76,7 @@ contract Registry is AccessControlDefaultAdminRules {
         }
       }
     }
-    // Add/update the reward rate for each provider, add the referrer to the list of referrers for each provider
+    // Add/update the reward rate for each protocol, add the referrer to the list of referrers for each protocol
     for (uint256 i = 0; i < protocolIds.length; i++) {
       _referrerInfoByProtocol[protocolIds[i]][referrerId]
         .rewardRate = rewardRates[i];
@@ -127,6 +127,12 @@ contract Registry is AccessControlDefaultAdminRules {
     string calldata protocolId
   ) external view returns (string[] memory) {
     return _protocolIdToReferrerIds[protocolId];
+  }
+
+  function getProtocols(
+    string calldata providerId
+  ) external view returns (string[] memory) {
+    return _referrerIdToProtocolIds[providerId];
   }
 
   function getUsers(
