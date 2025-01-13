@@ -116,6 +116,9 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       // Check that the referrer is now registered to protocol2
       const referrersProtocol2 = await registry.getReferrers(mockProtocolId2)
       expect(referrersProtocol2).to.deep.equal([mockReferrerId])
+      // Check that the protocol(s) for the referrer has been updated
+      const protocols = await registry.getProtocols(mockReferrerId)
+      expect(protocols).to.deep.equal([mockProtocolId2])
       // Check that the referrer's reward address has been updated
       const rewardAddress = await registry.getRewardAddress(mockReferrerId)
       expect(rewardAddress).to.equal(mockRewardAddress2)
@@ -224,19 +227,19 @@ describe(REGISTRY_CONTRACT_NAME, function () {
     })
 
     it('should return protocols for a referrer', async function () {
-        const { registry } = await deployRegistryContract()
-        const protocolIds = [mockProtocolId]
-  
-        await registry.registerReferrer(
-          mockReferrerId,
-          protocolIds,
-          mockRewardRates,
-          mockRewardAddress,
-        )
-  
-        const protocols = await registry.getProtocols(mockReferrerId)
-        expect(protocols).to.deep.equal([mockProtocolId])
-      })
+      const { registry } = await deployRegistryContract()
+      const protocolIds = [mockProtocolId]
+
+      await registry.registerReferrer(
+        mockReferrerId,
+        protocolIds,
+        mockRewardRates,
+        mockRewardAddress,
+      )
+
+      const protocols = await registry.getProtocols(mockReferrerId)
+      expect(protocols).to.deep.equal([mockProtocolId])
+    })
 
     it('should return users and their timestamps', async function () {
       const { registry, addr1 } = await deployRegistryContract()

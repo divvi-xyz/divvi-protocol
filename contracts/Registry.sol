@@ -76,6 +76,8 @@ contract Registry is AccessControlDefaultAdminRules {
         }
       }
     }
+    // Reset the list of protocols for the referrer
+    _referrerIdToProtocolIds[referrerId] = new string[](0);
     // Add/update the reward rate for each protocol, add the referrer to the list of referrers for each protocol
     for (uint256 i = 0; i < protocolIds.length; i++) {
       _referrerInfoByProtocol[protocolIds[i]][referrerId]
