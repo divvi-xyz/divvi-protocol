@@ -28,7 +28,6 @@ async function getArgs() {
   return {
     protocol: argv['protocol'] as Protocol,
     protocolFilter: protocolFilters[argv['protocol'] as Protocol],
-    input: argv['input'],
     output: argv['output'],
   }
 }
@@ -50,7 +49,7 @@ async function main() {
 
   const filteredEvents = await args.protocolFilter(uniqueEvents)
   const output = filteredEvents
-    .map((event) => `${event.userAddress},${event.timestamp}`)
+    .map((event) => `${args.protocol},${event.referrerId},${event.userAddress},${event.timestamp}`)
     .join('\n')
   writeFileSync(args.output, output)
 }

@@ -1,5 +1,5 @@
 import { fetchReferralEvents, removeDuplicates } from './referrals'
-import { NetworkId } from './types'
+import { NetworkId, ReferralEvent } from './types'
 import { getRegistryContract } from './utils'
 jest.mock('./utils')
 
@@ -72,12 +72,12 @@ describe('fetchReferralEvents', () => {
       'Beefy',
     )
     expect(events).toEqual([
-      { userAddress: 'user1', timestamp: 1 },
-      { userAddress: 'user2', timestamp: 2 },
-      { userAddress: 'user3', timestamp: 3 },
-      { userAddress: 'user4', timestamp: 4 },
-      { userAddress: 'user5', timestamp: 5 },
-      { userAddress: 'user6', timestamp: 6 },
+      { userAddress: 'user1', timestamp: 1, referrerId: 'referrer1', protocol: 'Beefy' },
+      { userAddress: 'user2', timestamp: 2, referrerId: 'referrer1', protocol: 'Beefy' },
+      { userAddress: 'user3', timestamp: 3, referrerId: 'referrer2', protocol: 'Beefy' },
+      { userAddress: 'user4', timestamp: 4, referrerId: 'referrer2', protocol: 'Beefy' },
+      { userAddress: 'user5', timestamp: 5, referrerId: 'referrer1', protocol: 'Beefy' },
+      { userAddress: 'user6', timestamp: 6, referrerId: 'referrer1', protocol: 'Beefy' },
     ])
     expect(mockGetRegistryContract).toHaveBeenCalledTimes(2)
     expect(mockGetRegistryContract).toHaveBeenCalledWith(
@@ -107,14 +107,14 @@ describe('fetchReferralEvents', () => {
 describe('removeDuplicates', () => {
   it('should remove duplicate events', () => {
     const events = [
-      { userAddress: 'user1', timestamp: 1 },
-      { userAddress: 'user2', timestamp: 2 },
-      { userAddress: 'user1', timestamp: 3 },
-    ]
+      { userAddress: 'user1', timestamp: 1, referrerId: 'referrer1', protocol: 'Beefy' },
+      { userAddress: 'user2', timestamp: 2, referrerId: 'referrer1', protocol: 'Beefy' },
+      { userAddress: 'user1', timestamp: 3, referrerId: 'referrer2', protocol: 'Beefy' },
+    ] as ReferralEvent[]
     const uniqueEvents = removeDuplicates(events)
     expect(uniqueEvents).toEqual([
-      { userAddress: 'user1', timestamp: 1 },
-      { userAddress: 'user2', timestamp: 2 },
+      { userAddress: 'user1', timestamp: 1, referrerId: 'referrer1', protocol: 'Beefy' },
+      { userAddress: 'user2', timestamp: 2, referrerId: 'referrer1', protocol: 'Beefy' },
     ])
   })
 })

@@ -56,7 +56,9 @@ export async function fetchReferralEvents(
             ]
           userAddresses.forEach((userAddress, index) => {
             referralEvents.push({
+              protocol,
               userAddress,
+              referrerId: referrer,
               timestamp: timestamps[index],
             })
           })
