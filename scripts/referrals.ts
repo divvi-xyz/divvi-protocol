@@ -1,5 +1,3 @@
-// Remove duplicate events, keeping only the earliest event for each user
-
 import { Address } from 'viem'
 import { NetworkId, Protocol, ReferralEvent } from './types'
 import { getRegistryContract } from './utils'
@@ -14,6 +12,7 @@ const NETWORK_ID_TO_REGISTRY_ADDRESS = {
   [NetworkId['base-mainnet']]: '0x0',
 } as Partial<Record<NetworkId, Address>>
 
+// Remove duplicate events, keeping only the earliest event for each user
 export function removeDuplicates(events: ReferralEvent[]): ReferralEvent[] {
   const uniqueEventsMap: Map<string, ReferralEvent> = new Map()
 
