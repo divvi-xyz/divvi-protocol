@@ -2,17 +2,17 @@ import {
   fetchVaultTvlHistory,
   getNearestBlock,
   fetchFeeEvents,
-  BeefyVaultTvlData,
-  BlockTimestampData,
-} from './beefy'
-import { getStrategyContract } from './utils/viem'
-import { getViemPublicClient } from '../../utils'
-import { NetworkId } from '../../types'
+} from './helpers'
+import { BeefyVaultTvlData, BlockTimestampData } from './types'
+import { getStrategyContract } from '../utils/viem'
+import { getViemPublicClient } from '../../../utils'
+import { NetworkId } from '../../../types'
 import nock from 'nock'
 
-jest.mock('./utils/viem')
-jest.mock('../../utils')
-describe('Beefy revenue calculation', () => {
+jest.mock('../utils/viem')
+jest.mock('../../../utils')
+
+describe('Beefy revenue calculation helpers', () => {
   describe('fetchVaultTvlHistory', () => {
     it('should return correct results for a <1 week span', async () => {
       const mockVaultTvlData = [
@@ -134,7 +134,6 @@ describe('Beefy revenue calculation', () => {
       const mockGetFeeEvent = jest
         .fn()
         .mockImplementation(({ fromBlock }: { fromBlock: bigint }) => {
-          console.log(fromBlock)
           return [
             {
               blockNumber: fromBlock,
@@ -181,12 +180,12 @@ describe('Beefy revenue calculation', () => {
       const networkId = NetworkId['arbitrum-one']
       const startTimestamp = new Date(0)
       const endTimestamp = new Date(1000)
-      const result = await fetchFeeEvents(
+      const result = await fetchFeeEvents({
         vaultAddress,
         networkId,
         startTimestamp,
         endTimestamp,
-      )
+      })
 
       const expected = [
         { beefyFee: 100n, timestamp: new Date('1970-01-01T00:00:00.000Z') },

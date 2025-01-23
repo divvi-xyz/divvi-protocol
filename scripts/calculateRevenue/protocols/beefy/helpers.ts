@@ -1,10 +1,9 @@
-import { RevenueResult, NetworkId } from '../../types'
-import { fetchWithTimeout } from '../../utils/fetchWithTimeout'
-import { getStrategyContract } from './utils/viem'
-import { getViemPublicClient } from '../../utils'
+import { NetworkId } from '../../../types'
+import { fetchWithTimeout } from '../../../utils/fetchWithTimeout'
+import { getStrategyContract } from '../utils/viem'
+import { getViemPublicClient } from '../../../utils'
 import { Address } from 'viem'
-
-export type BeefyVaultTvlData = [string, number]
+import { BlockTimestampData, FeeEvent, BeefyVaultTvlData } from './types'
 
 const BEEFY_API_URL = 'https://databarn.beefy.com/api/v1/beefy'
 const DEFI_LLAMA_API_URL = 'https://coins.llama.fi'
@@ -20,16 +19,6 @@ const NETWORK_ID_TO_DEFI_LLAMA_CHAIN: Partial<{
   [NetworkId['celo-mainnet']]: 'celo',
   [NetworkId['polygon-pos-mainnet']]: 'polygon',
   [NetworkId['base-mainnet']]: 'base',
-}
-
-export interface BlockTimestampData {
-  height: number
-  timestamp: number
-}
-
-interface FeeEvent {
-  beefyFee: number | bigint
-  timestamp: Date
 }
 
 // TODO: Memoize this function so it's not repeated for every user address
@@ -59,12 +48,17 @@ export async function getNearestBlock(
 /**
  * For a given vault, fetches the record of all ChargedFee events emitted in a given timeframe
  */
-export async function fetchFeeEvents(
-  vaultAddress: Address,
-  networkId: NetworkId,
-  startTimestamp: Date,
-  endTimestamp: Date,
-): Promise<FeeEvent[]> {
+export async function fetchFeeEvents({
+  vaultAddress,
+  networkId,
+  startTimestamp,
+  endTimestamp,
+}: {
+  vaultAddress: Address
+  networkId: NetworkId
+  startTimestamp: Date
+  endTimestamp: Date
+}): Promise<FeeEvent[]> {
   const client = getViemPublicClient(networkId)
   const strategyContract = await getStrategyContract(vaultAddress, networkId)
 
@@ -144,12 +138,4 @@ export async function fetchVaultTvlHistory({
     data.push(...vaultTvlData)
   }
   return data
-}
-
-export async function calculateRevenue(_params: {
-  address: string
-  startTimestamp: Date
-  endTimestamp: Date
-}): Promise<RevenueResult> {
-  return {}
 }
