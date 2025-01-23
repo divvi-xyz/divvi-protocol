@@ -1,14 +1,14 @@
 import { TokenPriceData } from '../../../types'
 import { fetchWithTimeout } from '../../../utils/fetchWithTimeout'
+import memoize from '@github/memoize'
 
 const GET_TOKENS_PRICE_HISTORY_API_URL =
   'https://api.mainnet.valora.xyz/getTokenPriceHistory'
 
-// TODO: Memoize this function so it's not repeated for every user address
 /**
  * Fetches historical token prices for a given tokenId within the provided date range
  */
-export async function fetchTokenPrices({
+async function _fetchTokenPrices({
   tokenId,
   startTimestamp,
   endTimestamp,
@@ -32,3 +32,8 @@ export async function fetchTokenPrices({
   const tokenPriceData = (await response.json()) as TokenPriceData[]
   return tokenPriceData
 }
+
+export const fetchTokenPrices = memoize(_fetchTokenPrices, {
+  hash: (...params: Parameters<typeof _fetchTokenPrices>) =>
+    Object.values(params[0]).join(','),
+})
