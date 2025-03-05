@@ -1,5 +1,6 @@
 import { NetworkId } from '../../../types'
 import beefyVaultV7Abi from '../../../abis/BeefyVaultV7'
+import aerodromeLiquidtyPoolAbi from '../../../abis/AerodromeLiquidityPool'
 import stratFeeManagerAbi from '../../../abis/StratFeeManagerInitializable'
 import { getViemPublicClient } from '../../../utils'
 import { getContract, Address } from 'viem'
@@ -24,4 +25,20 @@ export async function getStrategyContract(
     abi: stratFeeManagerAbi,
     client,
   })
+}
+
+/**
+ * For a given liquidity pool, returns a contract object.
+ */
+export async function getAerodromeLiquidityPoolContract(
+  liquidityPoolAddress: Address,
+  networkId: NetworkId,
+) {
+  const client = getViemPublicClient(networkId)
+  const vaultContract = getContract({
+    address: liquidityPoolAddress,
+    abi: aerodromeLiquidtyPoolAbi,
+    client,
+  })
+  return vaultContract
 }
