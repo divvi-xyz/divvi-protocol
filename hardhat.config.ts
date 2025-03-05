@@ -90,6 +90,14 @@ const config: HardhatUserConfig = {
           browserURL: 'https://celoscan.io/',
         },
       },
+      {
+        network: 'berachain',
+        chainId: 80094,
+        urls: {
+          apiURL: 'https://api.berascan.com/api',
+          browserURL: 'https://berascan.com/',
+        }
+      },
     ],
   },
   sourcify: {
