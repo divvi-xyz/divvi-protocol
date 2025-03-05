@@ -3,47 +3,13 @@ import { fetchWithTimeout } from '../../../utils/fetchWithTimeout'
 import { getStrategyContract } from '../utils/viem'
 import { getViemPublicClient } from '../../../utils'
 import { Address } from 'viem'
-import { BlockTimestampData, FeeEvent, BeefyVaultTvlData } from './types'
+import { FeeEvent, BeefyVaultTvlData } from './types'
 import memoize from '@github/memoize'
+import { fetchEvents } from '../utils/events'
 
 const BEEFY_API_URL = 'https://databarn.beefy.com/api/v1/beefy'
-const DEFI_LLAMA_API_URL = 'https://coins.llama.fi'
 
 const ONE_WEEK = 7 * 24 * 60 * 60 * 1000
-
-const NETWORK_ID_TO_DEFI_LLAMA_CHAIN: Partial<{
-  [networkId in NetworkId]: string // eslint-disable-line @typescript-eslint/no-unused-vars
-}> = {
-  [NetworkId['ethereum-mainnet']]: 'ethereum',
-  [NetworkId['arbitrum-one']]: 'arbitrum',
-  [NetworkId['op-mainnet']]: 'optimism',
-  [NetworkId['celo-mainnet']]: 'celo',
-  [NetworkId['polygon-pos-mainnet']]: 'polygon',
-  [NetworkId['base-mainnet']]: 'base',
-}
-
-export async function _getNearestBlock(
-  networkId: NetworkId,
-  timestamp: Date,
-): Promise<number> {
-  const unixTimestamp = Math.floor(timestamp.getTime() / 1000)
-  const defiLlamaChain = NETWORK_ID_TO_DEFI_LLAMA_CHAIN[networkId]
-
-  const response = await fetchWithTimeout(
-    `${DEFI_LLAMA_API_URL}/block/${defiLlamaChain}/${unixTimestamp}`,
-  )
-  if (!response.ok) {
-    throw new Error(
-      `Error while fetching block timestamp from DefiLlama: ${response}`,
-    )
-  }
-  const blockTimestampData = (await response.json()) as BlockTimestampData
-  return blockTimestampData.height
-}
-
-export const getNearestBlock = memoize(_getNearestBlock, {
-  hash: (...params: Parameters<typeof _getNearestBlock>) => params.join(','),
-})
 
 /**
  * For a given vault, fetches the record of all ChargedFee events emitted in a given timeframe
@@ -59,32 +25,27 @@ export async function _fetchFeeEvents({
   startTimestamp: Date
   endTimestamp: Date
 }): Promise<FeeEvent[]> {
-  const client = getViemPublicClient(networkId)
   const strategyContract = await getStrategyContract(vaultAddress, networkId)
 
-  const startBlock = await getNearestBlock(networkId, startTimestamp)
-  const endBlock = await getNearestBlock(networkId, endTimestamp)
-  const blocksPer = 10000
-  let currentBlock = startBlock
+  const feeLogEvents = await fetchEvents({
+    contract: strategyContract,
+    networkId,
+    eventName: 'ChargedFees',
+    startTimestamp,
+    endTimestamp,
+  })
 
   const feeEvents: FeeEvent[] = []
+  const client = getViemPublicClient(networkId)
 
-  while (currentBlock <= endBlock) {
-    const toBlock = Math.min(currentBlock + blocksPer, endBlock)
-    const feeLogEvents = await strategyContract.getEvents.ChargedFees({
-      fromBlock: BigInt(currentBlock),
-      toBlock: BigInt(toBlock),
+  for (const feeLog of feeLogEvents) {
+    const block = await client.getBlock({
+      blockNumber: feeLog.blockNumber,
     })
-    for (const feeLog of feeLogEvents) {
-      const block = await client.getBlock({
-        blockNumber: feeLog.blockNumber,
-      })
-      feeEvents.push({
-        beefyFee: feeLog.args.beefyFees ?? 0,
-        timestamp: new Date(Number(block.timestamp * 1000n)),
-      })
-    }
-    currentBlock = toBlock + 1
+    feeEvents.push({
+      beefyFee: (feeLog.args as { beefyFees: number }).beefyFees ?? 0,
+      timestamp: new Date(Number(block.timestamp * 1000n)),
+    })
   }
   return feeEvents
 }
