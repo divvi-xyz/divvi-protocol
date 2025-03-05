@@ -22,7 +22,7 @@ async function getSwapEvents(
   liquidityPoolAddress: Address,
   startTimestamp: Date,
   endTimestamp: Date,
-) {
+): Promise<SwapEvent[]> {
   const swapContract = await getAerodromeLiquidityPoolContract(
     liquidityPoolAddress,
     AERODROME_NETWORK_ID,
@@ -64,10 +64,10 @@ async function getSwapEvents(
       tokenId,
     })
   }
-  return {}
+  return swapEvents
 }
 
-async function calculateSwapRevenue(swapEvents: any) {
+async function calculateSwapRevenue(swapEvents: SwapEvent[]) {
   let totalUsdContribution = 0
 
   const startTimestamp = swapEvents[0].timestamp
@@ -98,19 +98,15 @@ export async function calculateRevenue({
   startTimestamp: Date
   endTimestamp: Date
 }): Promise<number> {
-  const swapEventsPerPool = SUPPORTED_LIQUIDITY_POOL_ADDRESSES.map(
-    async (liquidityPoolAddress) => {
-      return await getSwapEvents(
+
+  let totalRevenue = 0
+  for (const liquidityPoolAddress of SUPPORTED_LIQUIDITY_POOL_ADDRESSES) {
+    const swapEvents = await getSwapEvents(
         address,
         liquidityPoolAddress,
         startTimestamp,
         endTimestamp,
       )
-    },
-  )
-
-  let totalRevenue = 0
-  for (const swapEvents of swapEventsPerPool) {
     const swapRevenue = await calculateSwapRevenue(swapEvents)
     totalRevenue += swapRevenue
   }
