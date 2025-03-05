@@ -1,16 +1,15 @@
-import {
-  _fetchVaultTvlHistory,
-  _getNearestBlock,
-  _fetchFeeEvents,
-} from './helpers'
-import { BeefyVaultTvlData, BlockTimestampData } from './types'
+import { _fetchVaultTvlHistory, _fetchFeeEvents } from './helpers'
+import { BeefyVaultTvlData } from './types'
 import { getStrategyContract } from '../utils/viem'
 import { getViemPublicClient } from '../../../utils'
 import { NetworkId } from '../../../types'
 import nock from 'nock'
+import { fetchEvents } from '../utils/events'
+import { erc20Abi } from 'viem'
 
 jest.mock('../utils/viem')
 jest.mock('../../../utils')
+jest.mock('../utils/events')
 
 describe('Beefy revenue calculation helpers', () => {
   describe('fetchVaultTvlHistory', () => {
@@ -112,37 +111,12 @@ describe('Beefy revenue calculation helpers', () => {
       expect(result).toEqual(mockVaultTvlData)
     })
   })
-  describe('getNearestBlock', () => {
-    it('should correctly fetch the nearest block to a given timestamp', async () => {
-      const mockBlockTimestamp: BlockTimestampData = {
-        timestamp: 1234,
-        height: 345,
-      }
-      nock(`https://coins.llama.fi`)
-        .get(`/block/arbitrum/1736525692`)
-        .reply(200, mockBlockTimestamp)
-
-      const networkId = NetworkId['arbitrum-one']
-      const timestamp = new Date(1736525692000)
-      const result = await _getNearestBlock(networkId, timestamp)
-
-      expect(result).toEqual(345)
-    })
-  })
   describe('fetchFeeEvents', () => {
     it('should fetch all fee events over multiple requests', async () => {
-      const mockGetFeeEvent = jest
-        .fn()
-        .mockImplementation(({ fromBlock }: { fromBlock: bigint }) => {
-          return [
-            {
-              blockNumber: fromBlock,
-              args: {
-                beefyFees: 100n,
-              },
-            },
-          ]
-        })
+      jest.mocked(fetchEvents).mockResolvedValueOnce([
+        { blockNumber: 0n, args: { beefyFees: 100n } },
+        { blockNumber: 10001n, args: { beefyFees: 200n } },
+      ] as unknown as ReturnType<typeof fetchEvents>)
       const mockGetBlock = jest
         .fn()
         .mockImplementation(({ blockNumber }: { blockNumber: bigint }) => {
@@ -154,27 +128,10 @@ describe('Beefy revenue calculation helpers', () => {
       jest.mocked(getViemPublicClient).mockReturnValue({
         getBlock: mockGetBlock,
       } as unknown as ReturnType<typeof getViemPublicClient>)
-      jest.mocked(getStrategyContract).mockReturnValue({
-        getEvents: {
-          ChargedFees: mockGetFeeEvent,
-        },
+      jest.mocked(getStrategyContract).mockResolvedValueOnce({
+        abi: erc20Abi,
+        address: '0x123',
       } as unknown as ReturnType<typeof getStrategyContract>)
-
-      const mockStartBlockTimestamp: BlockTimestampData = {
-        timestamp: 0,
-        height: 0,
-      }
-      const mockEndBlockTimestamp: BlockTimestampData = {
-        timestamp: 1000,
-        height: 15000,
-      }
-
-      nock(`https://coins.llama.fi`)
-        .get(`/block/arbitrum/0`)
-        .reply(200, mockStartBlockTimestamp)
-      nock(`https://coins.llama.fi`)
-        .get(`/block/arbitrum/1`)
-        .reply(200, mockEndBlockTimestamp)
 
       const vaultAddress = '0x123'
       const networkId = NetworkId['arbitrum-one']
@@ -189,18 +146,12 @@ describe('Beefy revenue calculation helpers', () => {
 
       const expected = [
         { beefyFee: 100n, timestamp: new Date('1970-01-01T00:00:00.000Z') },
-        { beefyFee: 100n, timestamp: new Date('1970-01-12T13:48:20.000Z') },
+        { beefyFee: 200n, timestamp: new Date('1970-01-12T13:48:20.000Z') },
       ]
-      expect(result).toEqual(expected)
-      expect(mockGetFeeEvent).toHaveBeenCalledTimes(2)
-      expect(mockGetFeeEvent).toHaveBeenCalledWith({
-        fromBlock: 0n,
-        toBlock: 10000n,
-      })
-      expect(mockGetFeeEvent).toHaveBeenCalledWith({
-        fromBlock: 10001n,
-        toBlock: 15000n,
-      })
+      expect(result[0]).toHaveProperty('beefyFee', expected[0].beefyFee)
+      expect(result[0]).toHaveProperty('timestamp', expected[0].timestamp)
+      expect(result[1]).toHaveProperty('beefyFee', expected[1].beefyFee)
+      expect(result[1]).toHaveProperty('timestamp', expected[1].timestamp)
     })
   })
 })

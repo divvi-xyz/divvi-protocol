@@ -2,11 +2,6 @@ import { BeefyInvestorTransaction } from '../../../protocolFilters/beefy'
 import { Address } from 'viem'
 import { NetworkId } from '../../../types'
 
-export interface BlockTimestampData {
-  height: number
-  timestamp: number
-}
-
 export interface FeeEvent {
   beefyFee: number | bigint
   timestamp: Date
