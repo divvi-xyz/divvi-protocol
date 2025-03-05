@@ -52,6 +52,11 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 8453,
     },
+    {
+      url: 'https://berachain-rpc.publicnode.com',
+      accounts,
+      chainId: 80094,
+    },
     polygon: {
       url: 'https://rpc.ankr.com/polygon',
       accounts,
