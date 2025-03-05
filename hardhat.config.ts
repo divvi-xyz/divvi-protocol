@@ -52,6 +52,11 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 8453,
     },
+    berachain: {
+      url: 'https://berachain-rpc.publicnode.com',
+      accounts,
+      chainId: 80094,
+    },
     polygon: {
       url: 'https://rpc.ankr.com/polygon',
       accounts,
@@ -83,6 +88,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://api.celoscan.io/api',
           browserURL: 'https://celoscan.io/',
+        },
+      },
+      {
+        network: 'berachain',
+        chainId: 80094,
+        urls: {
+          apiURL: 'https://api.berascan.com/api',
+          browserURL: 'https://berascan.com/',
         },
       },
     ],
