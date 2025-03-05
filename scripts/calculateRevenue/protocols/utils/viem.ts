@@ -35,10 +35,9 @@ export async function getAerodromeLiquidityPoolContract(
   networkId: NetworkId,
 ) {
   const client = getViemPublicClient(networkId)
-  const vaultContract = getContract({
+  return getContract({
     address: liquidityPoolAddress,
     abi: aerodromeLiquidtyPoolAbi,
     client,
   })
-  return vaultContract
 }

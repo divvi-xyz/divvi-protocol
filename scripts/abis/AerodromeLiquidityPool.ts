@@ -794,6 +794,6 @@ const aerodromeLiquidtyPool = [
     stateMutability: 'nonpayable',
     type: 'function',
   },
-]
+] as const
 
 export default aerodromeLiquidtyPool
