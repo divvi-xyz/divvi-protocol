@@ -67,7 +67,7 @@ async function getSwapEvents(
   return swapEvents
 }
 
-async function calculateSwapRevenue(swapEvents: SwapEvent[]) {
+export async function calculateSwapRevenue(swapEvents: SwapEvent[]) {
   let totalUsdContribution = 0
 
   const startTimestamp = swapEvents[0].timestamp
@@ -98,15 +98,14 @@ export async function calculateRevenue({
   startTimestamp: Date
   endTimestamp: Date
 }): Promise<number> {
-
   let totalRevenue = 0
   for (const liquidityPoolAddress of SUPPORTED_LIQUIDITY_POOL_ADDRESSES) {
     const swapEvents = await getSwapEvents(
-        address,
-        liquidityPoolAddress,
-        startTimestamp,
-        endTimestamp,
-      )
+      address,
+      liquidityPoolAddress,
+      startTimestamp,
+      endTimestamp,
+    )
     const swapRevenue = await calculateSwapRevenue(swapEvents)
     totalRevenue += swapRevenue
   }
