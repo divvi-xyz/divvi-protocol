@@ -52,7 +52,7 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 8453,
     },
-    {
+    berachain: {
       url: 'https://berachain-rpc.publicnode.com',
       accounts,
       chainId: 80094,
@@ -96,7 +96,7 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://api.berascan.com/api',
           browserURL: 'https://berascan.com/',
-        }
+        },
       },
     ],
   },
