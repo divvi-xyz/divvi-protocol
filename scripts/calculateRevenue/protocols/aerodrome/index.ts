@@ -1,13 +1,7 @@
-import { Address } from 'viem'
 import { getTokenPrice } from '../beefy'
 import { fetchTokenPrices } from '../utils/tokenPrices'
-import { NetworkId } from '../../../types'
 import { getSwapEvents } from './getSwapEvents'
-
-export const SUPPORTED_LIQUIDITY_POOL_ADDRESSES: Address[] = [
-  '0xb2cc224c1c9feE385f8ad6a55b4d94E92359DC59',
-]
-export const AERODROME_NETWORK_ID = NetworkId['base-mainnet']
+import { SUPPORTED_LIQUIDITY_POOL_ADDRESSES } from './constants'
 
 export type SwapEvent = {
   timestamp: Date
