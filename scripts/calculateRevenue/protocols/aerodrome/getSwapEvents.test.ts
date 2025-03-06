@@ -11,7 +11,7 @@ jest.mock('../../../utils')
 const mockFetchEvents = [
   { blockNumber: 1n, args: { recipient: '0x1', amount0: 10000n } },
   { blockNumber: 2n, args: { recipient: '0x2', amount0: 25000n } },
-  { blockNumber: 3n, args: { recipient: '0x1', amount0: 600000n } },
+  { blockNumber: 3n, args: { recipient: '0x1', amount0: -600000n } },
 ]
 
 const mockTokenId = '0x123456789'

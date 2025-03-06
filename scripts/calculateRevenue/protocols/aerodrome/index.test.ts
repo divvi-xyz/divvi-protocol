@@ -30,15 +30,6 @@ const mockSwapEvents: SwapEvent[] = [
   },
 ]
 
-const mockMultipleLiquidityPoolAddresses = ['0x1', '0x2']
-const mockSwapEventsSecondPool: SwapEvent[] = [
-  {
-    timestamp: new Date('2025-01-01T21:29:55.868Z'),
-    amountInToken: 5,
-    tokenId: 'mockTokenId',
-  },
-]
-
 describe('Aerodrome revenue calculation', () => {
   beforeEach(() => {
     jest.resetAllMocks()
@@ -53,22 +44,18 @@ describe('Aerodrome revenue calculation', () => {
   })
 
   describe('calculateRevenue', () => {
+    // Same as above because only one liquidity pool supported, as more are
+    // supported this test can be extended.
     it('should return correct calculation', async () => {
       jest.mocked(fetchTokenPrices).mockResolvedValue(mockTokenPrices)
-      jest
-        .mocked(getSwapEvents)
-        .mockResolvedValueOnce(mockSwapEvents)
-        .mockResolvedValueOnce(mockSwapEventsSecondPool)
-      jest.mock('./constants', () => ({
-        ...jest.requireActual('./constants'),
-        SUPPORTED_LIQUIDITY_POOL_ADDRESSES: mockMultipleLiquidityPoolAddresses,
-      }))
+      jest.mocked(getSwapEvents).mockResolvedValue(mockSwapEvents)
       const result = await calculateRevenue({
         address: 'mockAddress',
         startTimestamp: new Date(),
         endTimestamp: new Date(),
       })
-      expect(result).toEqual(36)
+      expect(getSwapEvents).toHaveBeenCalledTimes(1)
+      expect(result).toEqual(21)
     })
   })
 })

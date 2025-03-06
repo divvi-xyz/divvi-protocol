@@ -3,7 +3,7 @@ import { getViemPublicClient, getErc20Contract } from '../../../utils'
 import { fetchEvents } from '../utils/events'
 import { getAerodromeLiquidityPoolContract } from '../utils/viem'
 import { SwapEvent } from '.'
-import { AERODROME_NETWORK_ID } from './constants'
+import { AERODROME_NETWORK_ID, TOKEN_AMOUNT_PRECISION } from './constants'
 
 export async function getSwapEvents(
   address: string,
@@ -43,12 +43,15 @@ export async function getSwapEvents(
     })
     swapEvents.push({
       timestamp: new Date(Number(block.timestamp * 1000n)),
-      amountInToken: Number(
-        (swapEvent.args as { amount0: bigint }).amount0 > 0n
-          ? (swapEvent.args as { amount0: bigint }).amount0
-          : -(swapEvent.args as { amount0: bigint }).amount0 /
-              10n ** tokenDecimals,
-      ),
+      amountInToken:
+        Number(
+          (((swapEvent.args as { amount0: bigint }).amount0 > 0n
+            ? (swapEvent.args as { amount0: bigint }).amount0
+            : -(swapEvent.args as { amount0: bigint }).amount0) *
+            10n ** BigInt(TOKEN_AMOUNT_PRECISION)) /
+            10n ** tokenDecimals,
+        ) /
+        10 ** TOKEN_AMOUNT_PRECISION,
       tokenId,
     })
   }
