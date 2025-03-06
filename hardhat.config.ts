@@ -108,7 +108,7 @@ const config: HardhatUserConfig = {
         network: 'vana',
         chainId: 1480,
         urls: {
-          apiURL: 'https://vanascan.io/api/v2',
+          apiURL: 'https://vanascan.io/api',
           browserURL: 'https://vanascan.io/',
         },
       },
