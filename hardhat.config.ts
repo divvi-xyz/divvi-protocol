@@ -57,6 +57,11 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 137,
     },
+    vana: {
+      url: 'https://rpc.vana.org',
+      accounts,
+      chainId: 1480,
+    }
   },
   etherscan: {
     apiKey: {
@@ -67,6 +72,7 @@ const config: HardhatUserConfig = {
       optimisticEthereum: process.env.OPSCAN_API_KEY!,
       base: process.env.BASESCAN_API_KEY!,
       polygon: process.env.POLYGONSCAN_API_KEY!,
+      vana: process.env.VANASCAN_API_KEY!,
     },
     customChains: [
       {
@@ -85,6 +91,14 @@ const config: HardhatUserConfig = {
           browserURL: 'https://celoscan.io/',
         },
       },
+      {
+        network: 'vana',
+        chainId: 1480,
+        urls: {
+          apiURL: 'https://vanascan.io/api/v2',
+          browserURL: 'https://vanascan.io/',
+        }
+      }
     ],
   },
   sourcify: {
