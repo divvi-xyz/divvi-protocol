@@ -71,6 +71,7 @@ const config: HardhatUserConfig = {
       mainnet: process.env.ETHERSCAN_API_KEY!,
       optimisticEthereum: process.env.OPSCAN_API_KEY!,
       base: process.env.BASESCAN_API_KEY!,
+      berachain: process.env.BERASCAN_API_KEY!,
       polygon: process.env.POLYGONSCAN_API_KEY!,
     },
     customChains: [
