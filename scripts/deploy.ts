@@ -28,7 +28,6 @@ async function getConfig() {
     .option('shell', {
       description: 'Print shell commands for deployed conracts to stdout',
       type: 'boolean',
-      conflicts: ['use-defender'],
     })
     .option('owner-address', {
       description: 'Address of the address to use as owner',
@@ -60,7 +59,8 @@ const SUPPORTED_NETWORKS = [
   'polygon',
   'op',
   'base',
-  'vana',
+  'berachain',
+  'vana'
 ]
 
 const ONE_DAY = 60 * 60 * 24
