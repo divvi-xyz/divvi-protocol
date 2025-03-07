@@ -1,5 +1,5 @@
-import { Address } from "viem"
-import { NetworkId } from "../../../types"
+import { Address } from 'viem'
+import { NetworkId } from '../../../types'
 
 export interface VaultInfo {
   networkId: NetworkId
@@ -7,12 +7,12 @@ export interface VaultInfo {
 }
 
 export interface TVLEvent {
-    amount: number
-    timestamp: Date
+  amount: number
+  timestamp: Date
 }
 
 export interface TvlBlock {
-    tvl: number
-    startTime: Date
-    endTime: Date
+  tvl: number
+  startTime: Date
+  endTime: Date
 }
