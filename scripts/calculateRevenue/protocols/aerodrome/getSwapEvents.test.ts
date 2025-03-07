@@ -61,6 +61,8 @@ describe('getSwapEvents', () => {
       new Date(0),
       new Date(1000000),
     )
+    expect(getAerodromeLiquidityPoolContract).toHaveBeenCalledTimes(1)
+    expect(fetchEvents).toHaveBeenCalledTimes(1)
     expect(result).toEqual(expectedSwapEventsUser1)
   })
   it('should return expected swap events for user address 0x2', async () => {
@@ -96,6 +98,8 @@ describe('getSwapEvents', () => {
       new Date(0),
       new Date(1000000),
     )
+    expect(getAerodromeLiquidityPoolContract).toHaveBeenCalledTimes(1)
+    expect(fetchEvents).toHaveBeenCalledTimes(1)
     expect(result).toEqual(expectedSwapEventsUser2)
   })
 })

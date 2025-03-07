@@ -2,12 +2,7 @@ import { getTokenPrice } from '../beefy'
 import { fetchTokenPrices } from '../utils/tokenPrices'
 import { getSwapEvents } from './getSwapEvents'
 import { SUPPORTED_LIQUIDITY_POOL_ADDRESSES } from './constants'
-
-export type SwapEvent = {
-  timestamp: Date
-  amountInToken: number
-  tokenId: string
-}
+import { SwapEvent } from './types'
 
 export async function calculateSwapRevenue(swapEvents: SwapEvent[]) {
   let totalUsdContribution = 0

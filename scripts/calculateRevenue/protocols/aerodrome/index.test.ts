@@ -1,7 +1,8 @@
 import { TokenPriceData } from '../../../types'
 import { fetchTokenPrices } from '../utils/tokenPrices'
 import { getSwapEvents } from './getSwapEvents'
-import { calculateSwapRevenue, calculateRevenue, SwapEvent } from './index'
+import { calculateSwapRevenue, calculateRevenue } from './index'
+import { SwapEvent } from './types'
 
 jest.mock('../utils/tokenPrices')
 jest.mock('./getSwapEvents')

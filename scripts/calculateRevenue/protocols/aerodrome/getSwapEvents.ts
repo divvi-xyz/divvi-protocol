@@ -2,7 +2,7 @@ import { Address } from 'viem'
 import { getViemPublicClient, getErc20Contract } from '../../../utils'
 import { fetchEvents } from '../utils/events'
 import { getAerodromeLiquidityPoolContract } from '../utils/viem'
-import { SwapEvent } from '.'
+import { SwapEvent } from './types'
 import { AERODROME_NETWORK_ID, TOKEN_AMOUNT_PRECISION } from './constants'
 
 export async function getSwapEvents(
