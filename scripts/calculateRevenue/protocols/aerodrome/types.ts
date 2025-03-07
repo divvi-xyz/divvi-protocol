@@ -1,5 +1,5 @@
 export type SwapEvent = {
-    timestamp: Date
-    amountInToken: number
-    tokenId: string
-  }
+  timestamp: Date
+  amountInToken: number
+  tokenId: string
+}
