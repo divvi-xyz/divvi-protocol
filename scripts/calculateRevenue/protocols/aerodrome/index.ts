@@ -7,21 +7,23 @@ import { SwapEvent } from './types'
 export async function calculateSwapRevenue(swapEvents: SwapEvent[]) {
   let totalUsdContribution = 0
 
-  const startTimestamp = swapEvents[0].timestamp
-  const endTimestamp = swapEvents[swapEvents.length - 1].timestamp
-  const tokenId = swapEvents[0].tokenId
-  const tokenPrices = await fetchTokenPrices({
-    tokenId,
-    startTimestamp,
-    endTimestamp,
-  })
-  for (const swapEvent of swapEvents) {
-    const tokenPriceUsd = getTokenPrice(
-      tokenPrices,
-      new Date(swapEvent.timestamp),
-    )
-    const partialUsdContribution = swapEvent.amountInToken * tokenPriceUsd
-    totalUsdContribution += partialUsdContribution
+  if (swapEvents.length > 0) {
+    const startTimestamp = swapEvents[0].timestamp
+    const endTimestamp = swapEvents[swapEvents.length - 1].timestamp
+    const tokenId = swapEvents[0].tokenId
+    const tokenPrices = await fetchTokenPrices({
+      tokenId,
+      startTimestamp,
+      endTimestamp,
+    })
+    for (const swapEvent of swapEvents) {
+      const tokenPriceUsd = getTokenPrice(
+        tokenPrices,
+        new Date(swapEvent.timestamp),
+      )
+      const partialUsdContribution = swapEvent.amountInToken * tokenPriceUsd
+      totalUsdContribution += partialUsdContribution
+    }
   }
   return totalUsdContribution
 }
