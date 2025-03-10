@@ -1,5 +1,6 @@
 export type SwapEvent = {
   timestamp: Date
-  amountInToken: number
+  amountInToken: bigint
+  tokenDecimals: bigint
   tokenId: string
 }

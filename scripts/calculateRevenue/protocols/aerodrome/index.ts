@@ -1,7 +1,10 @@
 import { getTokenPrice } from '../beefy'
 import { fetchTokenPrices } from '../utils/tokenPrices'
 import { getSwapEvents } from './getSwapEvents'
-import { SUPPORTED_LIQUIDITY_POOL_ADDRESSES } from './constants'
+import {
+  SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
+  TRANSACTION_VOLUME_USD_PRECISION,
+} from './constants'
 import { SwapEvent } from './types'
 
 export async function calculateSwapRevenue(swapEvents: SwapEvent[]) {
@@ -21,7 +24,13 @@ export async function calculateSwapRevenue(swapEvents: SwapEvent[]) {
         tokenPrices,
         new Date(swapEvent.timestamp),
       )
-      const partialUsdContribution = swapEvent.amountInToken * tokenPriceUsd
+      const partialUsdContribution =
+        Number(
+          (swapEvent.amountInToken *
+            BigInt(tokenPriceUsd * 10 ** TRANSACTION_VOLUME_USD_PRECISION)) /
+            10n ** swapEvent.tokenDecimals,
+        ) /
+        10 ** TRANSACTION_VOLUME_USD_PRECISION
       totalUsdContribution += partialUsdContribution
     }
   }
