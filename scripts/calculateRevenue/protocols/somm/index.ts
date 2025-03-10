@@ -1,4 +1,4 @@
-import { Address, erc20Abi, formatUnits, getContract } from 'viem'
+import { Address, erc20Abi, formatUnits, getContract, isAddress } from 'viem'
 import { getViemPublicClient } from '../../../utils'
 import { getVaults } from './getVaults'
 import { VaultInfo } from './types'
@@ -87,10 +87,13 @@ export async function calculateRevenue({
   startTimestamp,
   endTimestamp,
 }: {
-  address: Address
+  address: string
   startTimestamp: Date
   endTimestamp: Date
 }): Promise<number> {
+  if (!isAddress(address)) {
+    throw new Error('Invalid address')
+  }
   const vaultsInfo = getVaults()
 
   let totalRevenue = 0
