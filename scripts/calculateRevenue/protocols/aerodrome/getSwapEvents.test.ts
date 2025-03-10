@@ -1,4 +1,4 @@
-import { erc20Abi } from 'viem'
+import { Address, erc20Abi } from 'viem'
 import { getErc20Contract, getViemPublicClient } from '../../../utils'
 import { fetchEvents } from '../utils/events'
 import { getAerodromeLiquidityPoolContract } from '../utils/viem'
@@ -8,20 +8,22 @@ jest.mock('../utils/events')
 jest.mock('../utils/viem')
 jest.mock('../../../utils')
 
+const address1: Address = '0x1111111111111111111111111111111111111111'
+const address2: Address = '0x2222222222222222222222222222222222222222'
 const mockFetchEvents = [
-  { blockNumber: 1n, args: { recipient: '0x1', amount0: 10000n } },
-  { blockNumber: 2n, args: { recipient: '0x2', amount0: 25000n } },
-  { blockNumber: 3n, args: { recipient: '0x1', amount0: -600000n } },
+  { blockNumber: 1n, args: { recipient: address1, amount0: 10000n } },
+  { blockNumber: 2n, args: { recipient: address2, amount0: 25000n } },
+  { blockNumber: 3n, args: { recipient: address1, amount0: -600000n } },
 ]
 
 const mockTokenId = '0x123456789'
 
 const expectedSwapEventsUser1 = [
-  { timestamp: new Date(100000), amountInToken: 1, tokenId: '0x123456789' },
-  { timestamp: new Date(300000), amountInToken: 60, tokenId: '0x123456789' },
+  { timestamp: new Date(100000), amountInToken: 10000n, tokenDecimals: 4n, tokenId: '0x123456789' },
+  { timestamp: new Date(300000), amountInToken: 600000n, tokenDecimals: 4n, tokenId: '0x123456789' },
 ]
 const expectedSwapEventsUser2 = [
-  { timestamp: new Date(200000), amountInToken: 2.5, tokenId: '0x123456789' },
+  { timestamp: new Date(200000), amountInToken: 25000n, tokenDecimals: 4n, tokenId: '0x123456789' },
 ]
 
 describe('getSwapEvents', () => {
@@ -51,12 +53,12 @@ describe('getSwapEvents', () => {
     } as unknown as ReturnType<typeof getViemPublicClient>)
     jest.mocked(getErc20Contract).mockResolvedValue({
       read: {
-        decimals: jest.fn().mockResolvedValue(4),
+        decimals: jest.fn().mockResolvedValue(4n),
       },
     } as unknown as ReturnType<typeof getErc20Contract>)
 
     const result = await getSwapEvents(
-      '0x1',
+      address1,
       '0x123',
       new Date(0),
       new Date(1000000),
@@ -88,12 +90,12 @@ describe('getSwapEvents', () => {
     } as unknown as ReturnType<typeof getViemPublicClient>)
     jest.mocked(getErc20Contract).mockResolvedValue({
       read: {
-        decimals: jest.fn().mockResolvedValue(4),
+        decimals: jest.fn().mockResolvedValue(4n),
       },
     } as unknown as ReturnType<typeof getErc20Contract>)
 
     const result = await getSwapEvents(
-      '0x2',
+      address2,
       '0x123',
       new Date(0),
       new Date(1000000),

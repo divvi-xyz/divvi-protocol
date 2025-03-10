@@ -21,12 +21,14 @@ const mockTokenPrices: TokenPriceData[] = [
 const mockSwapEvents: SwapEvent[] = [
   {
     timestamp: new Date('2025-01-01T22:29:55.868Z'),
-    amountInToken: 2,
+    amountInToken: BigInt(200000000),
+    tokenDecimals: BigInt(8),
     tokenId: 'mockTokenId',
   },
   {
     timestamp: new Date('2025-01-02T22:29:55.868Z'),
-    amountInToken: 3,
+    amountInToken: BigInt(300000000),
+    tokenDecimals: BigInt(8),
     tokenId: 'mockTokenId',
   },
 ]
