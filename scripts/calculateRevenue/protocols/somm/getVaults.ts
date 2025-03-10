@@ -1,6 +1,7 @@
 import { NetworkId } from '../../../types'
 import { VaultInfo } from './types'
 
+// TODO(ENG-202): Dynamically fetch vaults from the Somm API
 export function getVaults(): VaultInfo[] {
   return [
     // Real Yield ETH on Arbitrum
