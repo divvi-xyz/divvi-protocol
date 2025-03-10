@@ -1,4 +1,4 @@
-export const protocols = ['Beefy'] as const
+export const protocols = ['Beefy', 'Somm'] as const
 export type Protocol = (typeof protocols)[number]
 export type FilterFunction = (
   events: ReferralEvent[],
