@@ -17,13 +17,7 @@ const NETWORK_ID_TO_VIEM_CLIENT = {
   }),
   [NetworkId['arbitrum-one']]: createPublicClient({
     chain: arbitrum,
-    transport: http('https://arb-mainnet.g.alchemy.com/v2/', {
-      fetchOptions: {
-        headers: {
-          Authorization: `Bearer api_key`,
-        },
-      },
-    }),
+    transport: http(),
   }),
   [NetworkId['op-mainnet']]: createPublicClient({
     chain: optimism,
