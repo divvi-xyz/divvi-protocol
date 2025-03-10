@@ -6,13 +6,7 @@ export interface VaultInfo {
   vaultAddress: Address
 }
 
-export interface TVLEvent {
+export interface TvlEvent {
   amount: number
   timestamp: Date
-}
-
-export interface TvlBlock {
-  tvl: number
-  startTime: Date
-  endTime: Date
 }

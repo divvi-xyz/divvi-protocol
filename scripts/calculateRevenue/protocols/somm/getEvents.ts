@@ -8,8 +8,13 @@ import {
 } from 'viem'
 import { getViemPublicClient } from '../../../utils'
 import { fetchEvents } from '../utils/events'
-import { TVLEvent, VaultInfo } from './types'
+import { TvlEvent, VaultInfo } from './types'
 
+
+/**
+ * Fetches and returns a list of TVL (Total Value Locked) change events for a given address and vault within a specified time range.
+ * The events include both deposits and withdrawals, and are sorted in reverse chronological order.
+ */
 export async function getEvents({
   address,
   vaultInfo,
@@ -27,7 +32,7 @@ export async function getEvents({
     abi: [...erc4626Abi, ...erc20Abi],
     client,
   })
-  const tvlEvents: TVLEvent[] = []
+  const tvlEvents: TvlEvent[] = []
 
   const decimals = await vaultContract.read.decimals()
 

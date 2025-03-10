@@ -22,6 +22,10 @@ export async function getBalanceOfAddress({
   return vaultContract.read.balanceOf([address])
 }
 
+/**
+ * Calculates the daily mean Total Value Locked (TVL) for a given user address 
+ * and vault pair within a specified time range.
+ */
 export async function getDailyMeanTvl({
   vaultInfo,
   address,
@@ -58,28 +62,38 @@ export async function getDailyMeanTvl({
   let tvlDays = 0
   let currentTvl = Number(formatUnits(currentLPTokenBalance, tokenDecimals))
 
+  // Loop through the TVL events in reverse chronological order keeping track of the user's TVL as
+  // different TVL events occur (withdaws and deposits) and adding up the total TVL days within the start and end timestamps
   for (const tvlEvent of tvlEvents) {
+
+    // the default case is that the previous event and current event are outside of the time range
     let daysInRange = 0
+
+    // if the previous event is outside of the time range and the current event is inside the time range
     if (
       prevTimestamp.getTime() >= endTimestamp.getTime() &&
       tvlEvent.timestamp.getTime() < endTimestamp.getTime()
     ) {
-      daysInRange =
-        (endTimestamp.getTime() - tvlEvent.timestamp.getTime()) / ONE_DAY
-    } else if (tvlEvent.timestamp.getTime() < endTimestamp.getTime()) {
-      daysInRange =
-        (prevTimestamp.getTime() - tvlEvent.timestamp.getTime()) / ONE_DAY
+      daysInRange = getDaysInRange(tvlEvent.timestamp, endTimestamp)
+    
+    } 
+    // else the events are both inside the time range
+    else if (tvlEvent.timestamp.getTime() < endTimestamp.getTime()) {
+      daysInRange = getDaysInRange(tvlEvent.timestamp, prevTimestamp)
     }
     tvlDays += daysInRange * currentTvl
     currentTvl -= tvlEvent.amount
     prevTimestamp = tvlEvent.timestamp
   }
   tvlDays +=
-    ((prevTimestamp.getTime() - startTimestamp.getTime()) / ONE_DAY) *
-    currentTvl
+    getDaysInRange(startTimestamp, prevTimestamp) * currentTvl
   return (
-    tvlDays / ((endTimestamp.getTime() - startTimestamp.getTime()) / ONE_DAY)
+    tvlDays / getDaysInRange(startTimestamp, endTimestamp)
   )
+}
+
+function getDaysInRange(startTimestamp: Date, endTimestamp: Date) {
+  return (endTimestamp.getTime() - startTimestamp.getTime()) / ONE_DAY
 }
 
 export async function calculateRevenue({
