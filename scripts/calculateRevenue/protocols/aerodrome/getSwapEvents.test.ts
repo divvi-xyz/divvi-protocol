@@ -3,6 +3,7 @@ import { getErc20Contract, getViemPublicClient } from '../../../utils'
 import { fetchEvents } from '../utils/events'
 import { getAerodromeLiquidityPoolContract } from '../utils/viem'
 import { getSwapEvents } from './getSwapEvents'
+import { AERODROME_NETWORK_ID } from './constants'
 
 jest.mock('../utils/events')
 jest.mock('../utils/viem')
@@ -16,15 +17,7 @@ const mockFetchEvents = [
   { blockNumber: 3n, args: { recipient: address1, amount0: -600000n } },
 ]
 
-const mockTokenId = '0x123456789'
-
-const expectedSwapEventsUser1 = [
-  { timestamp: new Date(100000), amountInToken: 10000n, tokenDecimals: 4n, tokenId: '0x123456789' },
-  { timestamp: new Date(300000), amountInToken: 600000n, tokenDecimals: 4n, tokenId: '0x123456789' },
-]
-const expectedSwapEventsUser2 = [
-  { timestamp: new Date(200000), amountInToken: 25000n, tokenDecimals: 4n, tokenId: '0x123456789' },
-]
+const mockTokenAddress = '0x123456789'
 
 describe('getSwapEvents', () => {
   beforeEach(() => {
@@ -49,7 +42,7 @@ describe('getSwapEvents', () => {
       })
     jest.mocked(getViemPublicClient).mockReturnValue({
       getBlock: mockGetBlock,
-      readContract: jest.fn().mockResolvedValue(mockTokenId),
+      readContract: jest.fn().mockResolvedValue(mockTokenAddress),
     } as unknown as ReturnType<typeof getViemPublicClient>)
     jest.mocked(getErc20Contract).mockResolvedValue({
       read: {
@@ -65,7 +58,14 @@ describe('getSwapEvents', () => {
     )
     expect(getAerodromeLiquidityPoolContract).toHaveBeenCalledTimes(1)
     expect(fetchEvents).toHaveBeenCalledTimes(1)
-    expect(result).toEqual(expectedSwapEventsUser1)
+    expect(result.length).toEqual(2)
+    expect(result[0].amountInToken).toEqual(10000n)
+    expect(result[0].timestamp).toEqual(new Date(100000))
+    expect(result[0].tokenDecimals).toEqual(4n)
+    expect(result[0].tokenId).toEqual(
+      `${AERODROME_NETWORK_ID}:${mockTokenAddress}`,
+    )
+    expect(result[1].amountInToken).toEqual(600000n)
   })
   it('should return expected swap events for user address 0x2', async () => {
     jest.mocked(getAerodromeLiquidityPoolContract).mockResolvedValueOnce({
@@ -86,7 +86,7 @@ describe('getSwapEvents', () => {
       })
     jest.mocked(getViemPublicClient).mockReturnValue({
       getBlock: mockGetBlock,
-      readContract: jest.fn().mockResolvedValue(mockTokenId),
+      readContract: jest.fn().mockResolvedValue(mockTokenAddress),
     } as unknown as ReturnType<typeof getViemPublicClient>)
     jest.mocked(getErc20Contract).mockResolvedValue({
       read: {
@@ -102,6 +102,12 @@ describe('getSwapEvents', () => {
     )
     expect(getAerodromeLiquidityPoolContract).toHaveBeenCalledTimes(1)
     expect(fetchEvents).toHaveBeenCalledTimes(1)
-    expect(result).toEqual(expectedSwapEventsUser2)
+    expect(result.length).toEqual(1)
+    expect(result[0].amountInToken).toEqual(25000n)
+    expect(result[0].timestamp).toEqual(new Date(200000))
+    expect(result[0].tokenDecimals).toEqual(4n)
+    expect(result[0].tokenId).toEqual(
+      `${AERODROME_NETWORK_ID}:${mockTokenAddress}`,
+    )
   })
 })
