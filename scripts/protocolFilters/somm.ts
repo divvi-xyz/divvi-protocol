@@ -12,6 +12,7 @@ export async function filterEvents(
   return filteredEvents
 }
 
+// TODO(ENG-200): Implement the filter function
 export async function filter(event: ReferralEvent): Promise<boolean> {
   return !!event
 }

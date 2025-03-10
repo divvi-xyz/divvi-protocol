@@ -25,6 +25,8 @@ export async function getBalanceOfAddress({
 /**
  * Calculates the daily mean Total Value Locked (TVL) for a given user address 
  * and vault pair within a specified time range.
+ * 
+ * TODO(ENG-201): Return TVL in USD
  */
 export async function getDailyMeanTvl({
   vaultInfo,
