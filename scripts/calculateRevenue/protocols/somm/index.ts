@@ -23,9 +23,9 @@ export async function getBalanceOfAddress({
 }
 
 /**
- * Calculates the daily mean Total Value Locked (TVL) for a given user address 
+ * Calculates the daily mean Total Value Locked (TVL) for a given user address
  * and vault pair within a specified time range.
- * 
+ *
  * TODO(ENG-201): Return TVL in USD
  */
 export async function getDailyMeanTvl({
@@ -67,7 +67,6 @@ export async function getDailyMeanTvl({
   // Loop through the TVL events in reverse chronological order keeping track of the user's TVL as
   // different TVL events occur (withdaws and deposits) and adding up the total TVL days within the start and end timestamps
   for (const tvlEvent of tvlEvents) {
-
     // the default case is that the previous event and current event are outside of the time range
     let daysInRange = 0
 
@@ -77,8 +76,7 @@ export async function getDailyMeanTvl({
       tvlEvent.timestamp.getTime() < endTimestamp.getTime()
     ) {
       daysInRange = getDaysInRange(tvlEvent.timestamp, endTimestamp)
-    
-    } 
+    }
     // else the events are both inside the time range
     else if (tvlEvent.timestamp.getTime() < endTimestamp.getTime()) {
       daysInRange = getDaysInRange(tvlEvent.timestamp, prevTimestamp)
@@ -87,11 +85,8 @@ export async function getDailyMeanTvl({
     currentTvl -= tvlEvent.amount
     prevTimestamp = tvlEvent.timestamp
   }
-  tvlDays +=
-    getDaysInRange(startTimestamp, prevTimestamp) * currentTvl
-  return (
-    tvlDays / getDaysInRange(startTimestamp, endTimestamp)
-  )
+  tvlDays += getDaysInRange(startTimestamp, prevTimestamp) * currentTvl
+  return tvlDays / getDaysInRange(startTimestamp, endTimestamp)
 }
 
 function getDaysInRange(startTimestamp: Date, endTimestamp: Date) {

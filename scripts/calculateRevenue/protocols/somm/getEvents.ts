@@ -10,7 +10,6 @@ import { getViemPublicClient } from '../../../utils'
 import { fetchEvents } from '../utils/events'
 import { TvlEvent, VaultInfo } from './types'
 
-
 /**
  * Fetches and returns a list of TVL (Total Value Locked) change events for a given address and vault within a specified time range.
  * The events include both deposits and withdrawals, and are sorted in reverse chronological order.
