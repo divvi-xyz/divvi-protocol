@@ -45,6 +45,14 @@ Fetch referrals for a specific protocol, removes duplicate events across chains,
 yarn ts-node ./scripts/fetch-referrals.ts --protocol Beefy --output output.csv
 ```
 
+### Calculate Revenue
+
+Calculates revenue for a list of users on a specific protocol between startTimestamp and endTimestamp
+
+```bash
+yarn ts-node ./scripts.calculateRevenue.ts --protocolId Beefy --inputAddresses addresses.csv --outputFile output.csv --startTimestamp 1739311922 --endTimestamp 1741731122
+```
+
 ### Referrer User Count
 
 Fetch the count of users referred for a specific protocol. If no network IDs or referrer IDs are passed, get the user count for all referrers across all supported networks for that protocol.
