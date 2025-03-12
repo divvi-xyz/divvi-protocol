@@ -52,10 +52,20 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 8453,
     },
+    berachain: {
+      url: 'https://berachain-rpc.publicnode.com',
+      accounts,
+      chainId: 80094,
+    },
     polygon: {
       url: 'https://rpc.ankr.com/polygon',
       accounts,
       chainId: 137,
+    },
+    vana: {
+      url: 'https://rpc.vana.org',
+      accounts,
+      chainId: 1480,
     },
   },
   etherscan: {
@@ -66,6 +76,8 @@ const config: HardhatUserConfig = {
       mainnet: process.env.ETHERSCAN_API_KEY!,
       optimisticEthereum: process.env.OPSCAN_API_KEY!,
       base: process.env.BASESCAN_API_KEY!,
+      berachain: process.env.BERASCAN_API_KEY!,
+      vana: process.env.VANASCAN_API_KEY!,
       polygon: process.env.POLYGONSCAN_API_KEY!,
     },
     customChains: [
@@ -83,6 +95,22 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://api.celoscan.io/api',
           browserURL: 'https://celoscan.io/',
+        },
+      },
+      {
+        network: 'berachain',
+        chainId: 80094,
+        urls: {
+          apiURL: 'https://api.berascan.com/api',
+          browserURL: 'https://berascan.com/',
+        },
+      },
+      {
+        network: 'vana',
+        chainId: 1480,
+        urls: {
+          apiURL: 'https://vanascan.io/api',
+          browserURL: 'https://vanascan.io/',
         },
       },
     ],
