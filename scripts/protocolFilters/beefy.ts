@@ -1,18 +1,6 @@
 import fetch, { RequestInit, Response } from 'node-fetch'
 import { ReferralEvent } from '../types'
 
-export async function filterEvents(
-  events: ReferralEvent[],
-): Promise<ReferralEvent[]> {
-  const filteredEvents = []
-  for (const event of events) {
-    if (await filter(event)) {
-      filteredEvents.push(event)
-    }
-  }
-  return filteredEvents
-}
-
 // The user has to have made at least one transaction on Beefy Finance
 // and all transactions have to be after the referral timestamp
 export async function filter(event: ReferralEvent): Promise<boolean> {
