@@ -6,7 +6,7 @@ import {
   getContract,
   isAddressEqual,
 } from 'viem'
-import { getViemPublicClient } from '../../../utils'
+import { getBlock, getViemPublicClient } from '../../../utils'
 import { fetchEvents } from '../utils/events'
 import { TvlEvent, VaultInfo } from './types'
 
@@ -48,9 +48,7 @@ export async function getEvents({
   })
 
   for (const depositEvent of depositEvents) {
-    const block = await client.getBlock({
-      blockNumber: depositEvent.blockNumber,
-    })
+    const block = await getBlock(vaultInfo.networkId, depositEvent.blockNumber)
     tvlEvents.push({
       amount: Number(
         formatUnits((depositEvent.args as { shares: bigint }).shares, decimals),
@@ -72,9 +70,7 @@ export async function getEvents({
   })
 
   for (const withdrawEvent of withdrawEvents) {
-    const block = await client.getBlock({
-      blockNumber: withdrawEvent.blockNumber,
-    })
+    const block = await getBlock(vaultInfo.networkId, withdrawEvent.blockNumber)
     tvlEvents.push({
       amount:
         -1 *

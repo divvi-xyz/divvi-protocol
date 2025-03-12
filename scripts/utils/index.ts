@@ -9,6 +9,7 @@ import {
   Address,
   PublicClient,
 } from 'viem'
+import memoize from '@github/memoize'
 
 const NETWORK_ID_TO_VIEM_CLIENT = {
   [NetworkId['ethereum-mainnet']]: createPublicClient({
@@ -47,6 +48,16 @@ export function getViemPublicClient(networkId: NetworkId) {
   }
   return client
 }
+
+function _getBlock(networkId: NetworkId, blockNumber: bigint) {
+  return getViemPublicClient(networkId).getBlock({
+    blockNumber,
+  })
+}
+
+export const getBlock = memoize(_getBlock, {
+  hash: (...params: Parameters<typeof _getBlock>) => params.join(','),
+})
 
 /**
  * Returns a contract object representing the registry

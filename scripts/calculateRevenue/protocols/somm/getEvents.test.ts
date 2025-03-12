@@ -1,6 +1,6 @@
 import { fetchEvents } from '../utils/events'
 import { getEvents } from './getEvents'
-import { getViemPublicClient } from '../../../utils'
+import { getBlock } from '../../../utils'
 import { NetworkId } from '../../../types'
 
 jest.mock('../utils/events')
@@ -19,17 +19,13 @@ const mockAddress2 = '0x4567890123456789012345678901234567890123'
 
 describe('getEvents', () => {
   it('should return the correct deposit and withdraw events', async () => {
-    const mockGetBlock = jest
-      .fn()
-      .mockImplementation(({ blockNumber }: { blockNumber: bigint }) => {
-        return {
+    jest.mocked(getBlock).mockImplementation(
+      (_networkId: NetworkId, blockNumber: bigint) =>
+        Promise.resolve({
           timestamp: blockNumber * 100n,
-        }
-      })
+        }) as unknown as ReturnType<typeof getBlock>,
+    )
 
-    jest.mocked(getViemPublicClient).mockReturnValue({
-      getBlock: mockGetBlock,
-    } as unknown as ReturnType<typeof getViemPublicClient>)
     jest.mocked(fetchEvents).mockResolvedValueOnce([
       {
         args: { shares: 100n, sender: mockAddress1 },
@@ -78,6 +74,6 @@ describe('getEvents', () => {
       startTimestamp: new Date('2021-01-01'),
       endTimestamp: new Date('2021-01-10'),
     })
-    expect(mockGetBlock).toHaveBeenCalledTimes(2)
+    expect(getBlock).toHaveBeenCalledTimes(2)
   })
 })

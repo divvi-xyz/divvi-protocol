@@ -1,7 +1,7 @@
 import { NetworkId } from '../../../types'
 import { fetchWithTimeout } from '../../../utils/fetchWithTimeout'
 import { getStrategyContract } from '../utils/viem'
-import { getViemPublicClient } from '../../../utils'
+import { getBlock } from '../../../utils'
 import { Address } from 'viem'
 import { FeeEvent, BeefyVaultTvlData } from './types'
 import memoize from '@github/memoize'
@@ -36,12 +36,9 @@ export async function _fetchFeeEvents({
   })
 
   const feeEvents: FeeEvent[] = []
-  const client = getViemPublicClient(networkId)
 
   for (const feeLog of feeLogEvents) {
-    const block = await client.getBlock({
-      blockNumber: feeLog.blockNumber,
-    })
+    const block = await getBlock(networkId, feeLog.blockNumber)
     feeEvents.push({
       beefyFee: (feeLog.args as { beefyFees: number }).beefyFees ?? 0,
       timestamp: new Date(Number(block.timestamp * 1000n)),

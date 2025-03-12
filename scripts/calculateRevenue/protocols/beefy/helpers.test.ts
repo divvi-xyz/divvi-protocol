@@ -1,7 +1,7 @@
 import { _fetchVaultTvlHistory, _fetchFeeEvents } from './helpers'
 import { BeefyVaultTvlData } from './types'
 import { getStrategyContract } from '../utils/viem'
-import { getViemPublicClient } from '../../../utils'
+import { getBlock } from '../../../utils'
 import { NetworkId } from '../../../types'
 import nock from 'nock'
 import { fetchEvents } from '../utils/events'
@@ -117,17 +117,13 @@ describe('Beefy revenue calculation helpers', () => {
         { blockNumber: 0n, args: { beefyFees: 100n } },
         { blockNumber: 10001n, args: { beefyFees: 200n } },
       ] as unknown as ReturnType<typeof fetchEvents>)
-      const mockGetBlock = jest
-        .fn()
-        .mockImplementation(({ blockNumber }: { blockNumber: bigint }) => {
-          return {
+      jest.mocked(getBlock).mockImplementation(
+        (_networkId: NetworkId, blockNumber: bigint) =>
+          Promise.resolve({
             timestamp: blockNumber * 100n,
-          }
-        })
+          }) as unknown as ReturnType<typeof getBlock>,
+      )
 
-      jest.mocked(getViemPublicClient).mockReturnValue({
-        getBlock: mockGetBlock,
-      } as unknown as ReturnType<typeof getViemPublicClient>)
       jest.mocked(getStrategyContract).mockResolvedValueOnce({
         abi: erc20Abi,
         address: '0x123',
