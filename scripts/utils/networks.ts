@@ -24,4 +24,4 @@ export const NETWORK_ID_TO_HYPERSYNC_URL = {
   [NetworkId['celo-mainnet']]: 'https://celo.hypersync.xyz',
   [NetworkId['op-mainnet']]: 'https://optimism.hypersync.xyz',
   [NetworkId['polygon-pos-mainnet']]: 'https://polygon.hypersync.xyz',
-}
+} as Partial<Record<NetworkId, string>>

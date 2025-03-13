@@ -13,7 +13,7 @@ import {
 } from '@envio-dev/hypersync-client'
 
 async function main(args: ReturnType<typeof parseArgs>) {
-  const networkId = args.networkId as keyof typeof NETWORK_ID_TO_HYPERSYNC_URL
+  const networkId = args.networkId as NetworkId
   const protocolId = args['protocol-id'] as string
   const startBlock = (args['start-block'] as number) ?? 0
   const endBlock = (args['end-block'] as number) ?? null
