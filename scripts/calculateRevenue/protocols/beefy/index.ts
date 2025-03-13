@@ -113,7 +113,7 @@ export async function calculateVaultRevenue(
       BigInt(vaultTvl * 10 ** 18)
     const partialUsdContribution =
       Number(
-        (BigInt(tokenPriceUsd * 10 ** REVENUE_USD_PRECISION) *
+        (BigInt((tokenPriceUsd * 10 ** REVENUE_USD_PRECISION).toFixed(0)) *
           partialNativeContribution) /
           10n ** tokenDecimals,
       ) /
@@ -138,6 +138,9 @@ export async function calculateRevenue({
 
   let totalRevenue = 0
   for (const vaultInfo of Object.values(vaultsInfo)) {
+    if(vaultInfo.vaultTvlHistory.length === 0) {
+      continue
+    }
     const vaultRevenue = await calculateVaultRevenue(vaultInfo)
     totalRevenue += vaultRevenue
   }

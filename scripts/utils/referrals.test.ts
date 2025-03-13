@@ -24,7 +24,7 @@ describe('fetchReferralEvents', () => {
     const mockGetReferrersCelo = jest
       .fn()
       .mockImplementation(([protocol]: [string]) => {
-        if (protocol === 'Beefy') {
+        if (protocol === 'beefy') {
           return ['referrer1', 'referrer2']
         }
       })
@@ -41,7 +41,7 @@ describe('fetchReferralEvents', () => {
     const mockGetReferrersArbitrum = jest
       .fn()
       .mockImplementation(([protocol]: [string]) => {
-        if (protocol === 'Beefy') {
+        if (protocol === 'beefy') {
           return ['referrer1']
         }
       })
@@ -69,44 +69,44 @@ describe('fetchReferralEvents', () => {
 
     const events = await fetchReferralEvents(
       [NetworkId['celo-mainnet'], NetworkId['arbitrum-one']],
-      'Beefy',
+      'beefy',
     )
     expect(events).toEqual([
       {
         userAddress: 'user1',
         timestamp: 1,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user2',
         timestamp: 2,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user3',
         timestamp: 3,
         referrerId: 'referrer2',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user4',
         timestamp: 4,
         referrerId: 'referrer2',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user5',
         timestamp: 5,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user6',
         timestamp: 6,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
     ])
     expect(mockGetRegistryContract).toHaveBeenCalledTimes(2)
@@ -120,17 +120,17 @@ describe('fetchReferralEvents', () => {
     )
 
     expect(mockGetReferrersArbitrum).toHaveBeenCalledTimes(1)
-    expect(mockGetReferrersArbitrum).toHaveBeenCalledWith(['Beefy'])
+    expect(mockGetReferrersArbitrum).toHaveBeenCalledWith(['beefy'])
 
     expect(mockGetReferrersCelo).toHaveBeenCalledTimes(1)
-    expect(mockGetReferrersCelo).toHaveBeenCalledWith(['Beefy'])
+    expect(mockGetReferrersCelo).toHaveBeenCalledWith(['beefy'])
 
     expect(mockGetUsersArbitrum).toHaveBeenCalledTimes(1)
-    expect(mockGetUsersArbitrum).toHaveBeenCalledWith(['Beefy', 'referrer1'])
+    expect(mockGetUsersArbitrum).toHaveBeenCalledWith(['beefy', 'referrer1'])
 
     expect(mockGetUsersCelo).toHaveBeenCalledTimes(2)
-    expect(mockGetUsersCelo).toHaveBeenCalledWith(['Beefy', 'referrer1'])
-    expect(mockGetUsersCelo).toHaveBeenCalledWith(['Beefy', 'referrer2'])
+    expect(mockGetUsersCelo).toHaveBeenCalledWith(['beefy', 'referrer1'])
+    expect(mockGetUsersCelo).toHaveBeenCalledWith(['beefy', 'referrer2'])
   })
 })
 
@@ -141,19 +141,19 @@ describe('removeDuplicates', () => {
         userAddress: 'user1',
         timestamp: 1,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user2',
         timestamp: 2,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user1',
         timestamp: 3,
         referrerId: 'referrer2',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
     ] as ReferralEvent[]
     const uniqueEvents = removeDuplicates(events)
@@ -162,13 +162,13 @@ describe('removeDuplicates', () => {
         userAddress: 'user1',
         timestamp: 1,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user2',
         timestamp: 2,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
     ])
   })

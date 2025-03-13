@@ -5,7 +5,6 @@ import { ReferralEvent } from '../types'
 // and all transactions have to be after the referral timestamp
 export async function filter(event: ReferralEvent): Promise<boolean> {
   const transactions = await fetchInvestorTimeline(event.userAddress)
-  console.log('transactions', transactions.length)
   return (
     transactions.every(
       (transaction) =>

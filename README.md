@@ -37,20 +37,26 @@ yarn hardhat --network hardhat run scripts/setupTestnet.ts
 
 ## Scripts
 
+You may want to set the `ALCHEMY_KEY` in .env to avoid getting rate limited by RPC nodes.
+
 ### Fetch Referrals
 
-Fetch referrals for a specific protocol, removes duplicate events across chains, and filters out events where the user was previously exposed to the protocol
+Fetch referrals for a specific protocol, removes duplicate events across chains, and filters out events where the user was previously exposed to the protocol. By default the output file is `<protocol>-referrals.csv`
 
 ```bash
-yarn ts-node ./scripts/fetch-referrals.ts --protocol Beefy --output output.csv
+$ yarn ts-node ./scripts/fetchReferrals.ts --protocol beefy
+Fetching referral events for protocol: beefy
+Wrote results to beefy-referrals.csv
 ```
 
 ### Calculate Revenue
 
-Calculates revenue for a list of users on a specific protocol between startTimestamp and endTimestamp
+Calculates revenue for a list of referrals. By default it directly reads from the output script of fetchReferrals.ts. By default the output file is `<protocol>-revenue.csv`
 
 ```bash
-yarn ts-node ./scripts.calculateRevenue.ts --protocolId Beefy --inputAddresses addresses.csv --outputFile output.csv --startTimestamp 1739311922 --endTimestamp 1741731122
+$ yarn ts-node ./scripts/calculateRevenue.ts --protocol beefy --startTimestamp 1740013389000 --endTimestamp 1741899467000
+Calculating revenue for 0x15B5f5FE55704140ce5057d85c28f8b237c1Bc53 (1/1)
+Wrote results to beefy-revenue.csv
 ```
 
 ### Referrer User Count
