@@ -29,7 +29,7 @@ const NETWORK_ID_TO_ALCHEMY_RPC_URL = {
 const NETWORK_ID_TO_VIEM_CLIENT = {
   [NetworkId['ethereum-mainnet']]: createPublicClient({
     chain: mainnet,
-    transport: process.env.ALCHEMY_KEY
+    transport: ALCHEMY_KEY
       ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['ethereum-mainnet']], {
           fetchOptions: {
             headers: {
@@ -41,7 +41,7 @@ const NETWORK_ID_TO_VIEM_CLIENT = {
   }),
   [NetworkId['arbitrum-one']]: createPublicClient({
     chain: arbitrum,
-    transport: process.env.ALCHEMY_KEY
+    transport: ALCHEMY_KEY
       ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['arbitrum-one']], {
           fetchOptions: {
             headers: {
@@ -53,7 +53,7 @@ const NETWORK_ID_TO_VIEM_CLIENT = {
   }),
   [NetworkId['op-mainnet']]: createPublicClient({
     chain: optimism,
-    transport: process.env.ALCHEMY_KEY
+    transport: ALCHEMY_KEY
       ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['op-mainnet']], {
           fetchOptions: {
             headers: {
@@ -69,7 +69,7 @@ const NETWORK_ID_TO_VIEM_CLIENT = {
   }),
   [NetworkId['polygon-pos-mainnet']]: createPublicClient({
     chain: polygon,
-    transport: process.env.ALCHEMY_KEY
+    transport: ALCHEMY_KEY
       ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['polygon-pos-mainnet']], {
           fetchOptions: {
             headers: {
@@ -81,7 +81,7 @@ const NETWORK_ID_TO_VIEM_CLIENT = {
   }),
   [NetworkId['base-mainnet']]: createPublicClient({
     chain: base,
-    transport: process.env.ALCHEMY_KEY
+    transport: ALCHEMY_KEY
       ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['base-mainnet']], {
           fetchOptions: {
             headers: {
