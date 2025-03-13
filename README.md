@@ -53,6 +53,15 @@ Calculates revenue for a list of users on a specific protocol between startTimes
 yarn ts-node ./scripts.calculateRevenue.ts --protocolId Beefy --inputAddresses addresses.csv --outputFile output.csv --startTimestamp 1739311922 --endTimestamp 1741731122
 ```
 
+### Calculate Network Revenue
+
+Calculates the revenue for a network on a specific protocol
+
+```bash
+# startBlock & endBlock are optional
+yarn ts-node ./scripts/calculateNetworkRevenue.ts --protocolId Beefy --networkId arbitrum-one
+```
+
 ### Referrer User Count
 
 Fetch the count of users referred for a specific protocol. If no network IDs or referrer IDs are passed, get the user count for all referrers across all supported networks for that protocol.
