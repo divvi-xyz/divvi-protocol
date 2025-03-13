@@ -95,12 +95,17 @@ export async function _fetchVaultTvlHistory({
     )
     if (!response.ok) {
       const errorResponse = await response.json()
-      if(errorResponse.error === 'EOL (end of life) products are not supported by this endpoint yet') {
-        console.log(`Skipping Vault ${vaultAddress} on ${beefyChain} because it is an EOL product`)
+      if (
+        errorResponse.error ===
+        'EOL (end of life) products are not supported by this endpoint yet'
+      ) {
+        console.log(
+          `Skipping Vault ${vaultAddress} on ${beefyChain} because it is an EOL product`,
+        )
         continue
       }
       throw new Error(
-        `Error while fetching vault TVL data for ${JSON.stringify({ vaultAddress, beefyChain, queryParams: queryParams.toString()})}: ${JSON.stringify(errorResponse)}`,
+        `Error while fetching vault TVL data for ${JSON.stringify({ vaultAddress, beefyChain, queryParams: queryParams.toString() })}: ${JSON.stringify(errorResponse)}`,
       )
     }
     const vaultTvlData = (await response.json()) as BeefyVaultTvlData[]

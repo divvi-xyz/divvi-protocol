@@ -9,10 +9,10 @@ async function main(args: ReturnType<typeof parseArgs>) {
   const inputFile = args['input-file'] ?? `${args['protocol']}-referrals.csv`
   const outputFile = args['output-file'] ?? `${args['protocol']}-revenue.csv`
 
-  const eligibleUsers = parse(
-    readFileSync(inputFile, 'utf-8').toString(),
-    { skip_empty_lines: true, delimiter: ',' },
-  )
+  const eligibleUsers = parse(readFileSync(inputFile, 'utf-8').toString(), {
+    skip_empty_lines: true,
+    delimiter: ',',
+  })
   const handler = calculateRevenueHandlers[args['protocol'] as Protocol]
 
   const allResults: Array<{

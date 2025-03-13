@@ -36,11 +36,13 @@ export async function fetchReferralEvents(
         NETWORK_ID_TO_REGISTRY_ADDRESS[networkId],
         networkId,
       )
-      const hexProtocol = stringToHex(protocol, {size: 32})
+      const hexProtocol = stringToHex(protocol, { size: 32 })
 
       const referrers = referrerIds
         ? referrerIds
-        : ((await registryContract.read.getReferrers([hexProtocol])) as Address[])
+        : ((await registryContract.read.getReferrers([
+            hexProtocol,
+          ])) as Address[])
 
       await Promise.all(
         referrers.map(async (referrer) => {

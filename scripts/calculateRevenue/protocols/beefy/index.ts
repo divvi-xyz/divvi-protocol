@@ -138,7 +138,7 @@ export async function calculateRevenue({
 
   let totalRevenue = 0
   for (const vaultInfo of Object.values(vaultsInfo)) {
-    if(vaultInfo.vaultTvlHistory.length === 0) {
+    if (vaultInfo.vaultTvlHistory.length === 0) {
       continue
     }
     const vaultRevenue = await calculateVaultRevenue(vaultInfo)
