@@ -68,14 +68,14 @@ function parseArgs() {
     .option('start-timestamp', {
       alias: 's',
       description:
-        'timestamp at which to start checking for revenue (milliseconds since epoch)',
+        'timestamp at which to start checking for revenue (new Date() compatible)',
       type: 'number',
       demandOption: true,
     })
     .option('end-timestamp', {
       alias: 'e',
       description:
-        'timestamp at which to stop checking for revenue (milliseconds since epoch)',
+        'timestamp at which to stop checking for revenue (new Date() compatible)',
       type: 'number',
       demandOption: true,
     })
