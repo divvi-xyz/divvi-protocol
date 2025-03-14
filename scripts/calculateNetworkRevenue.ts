@@ -58,7 +58,9 @@ async function fetchTotalGasUsed({
 
   const query = {
     transactions: [{ from: userAddresses }],
-    fieldSelection: { transaction: [TransactionField.GasUsed] },
+    fieldSelection: {
+      transaction: [TransactionField.GasUsed, TransactionField.GasPrice],
+    },
     fromBlock: startBlock,
     ...(endBlock !== null && { toBlock: endBlock }),
   }
@@ -66,7 +68,8 @@ async function fetchTotalGasUsed({
   try {
     const response: QueryResponse = await client.get(query)
     return response.data.transactions.reduce(
-      (sum: bigint, tx) => sum + BigInt(tx.gasUsed ?? 0),
+      (sum: bigint, tx) =>
+        sum + BigInt(tx.gasUsed ?? 0) * BigInt(tx.gasPrice ?? 0),
       0n,
     )
   } catch (error) {
