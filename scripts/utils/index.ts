@@ -10,19 +10,58 @@ import {
   PublicClient,
 } from 'viem'
 import memoize from '@github/memoize'
+import * as dotenv from 'dotenv'
+
+dotenv.config()
+
+// Make sure the alchemy key has all our supported networks enabled
+const ALCHEMY_KEY = process.env.ALCHEMY_KEY
+
+const NETWORK_ID_TO_ALCHEMY_RPC_URL = {
+  [NetworkId['ethereum-mainnet']]: 'https://eth-mainnet.g.alchemy.com/v2/',
+  [NetworkId['arbitrum-one']]: 'https://arb-mainnet.g.alchemy.com/v2/',
+  [NetworkId['op-mainnet']]: 'https://opt-mainnet.g.alchemy.com/v2/',
+  [NetworkId['polygon-pos-mainnet']]:
+    'https://polygon-mainnet.g.alchemy.com/v2/',
+  [NetworkId['base-mainnet']]: 'https://base-mainnet.g.alchemy.com/v2/',
+}
 
 const NETWORK_ID_TO_VIEM_CLIENT = {
   [NetworkId['ethereum-mainnet']]: createPublicClient({
     chain: mainnet,
-    transport: http(),
+    transport: ALCHEMY_KEY
+      ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['ethereum-mainnet']], {
+          fetchOptions: {
+            headers: {
+              Authorization: `Bearer ${ALCHEMY_KEY}`,
+            },
+          },
+        })
+      : http(),
   }),
   [NetworkId['arbitrum-one']]: createPublicClient({
     chain: arbitrum,
-    transport: http(),
+    transport: ALCHEMY_KEY
+      ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['arbitrum-one']], {
+          fetchOptions: {
+            headers: {
+              Authorization: `Bearer ${ALCHEMY_KEY}`,
+            },
+          },
+        })
+      : http(),
   }),
   [NetworkId['op-mainnet']]: createPublicClient({
     chain: optimism,
-    transport: http(),
+    transport: ALCHEMY_KEY
+      ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['op-mainnet']], {
+          fetchOptions: {
+            headers: {
+              Authorization: `Bearer ${ALCHEMY_KEY}`,
+            },
+          },
+        })
+      : http(),
   }),
   [NetworkId['celo-mainnet']]: createPublicClient({
     chain: celo,
@@ -30,11 +69,27 @@ const NETWORK_ID_TO_VIEM_CLIENT = {
   }),
   [NetworkId['polygon-pos-mainnet']]: createPublicClient({
     chain: polygon,
-    transport: http(),
+    transport: ALCHEMY_KEY
+      ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['polygon-pos-mainnet']], {
+          fetchOptions: {
+            headers: {
+              Authorization: `Bearer ${ALCHEMY_KEY}`,
+            },
+          },
+        })
+      : http(),
   }),
   [NetworkId['base-mainnet']]: createPublicClient({
     chain: base,
-    transport: http(),
+    transport: ALCHEMY_KEY
+      ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['base-mainnet']], {
+          fetchOptions: {
+            headers: {
+              Authorization: `Bearer ${ALCHEMY_KEY}`,
+            },
+          },
+        })
+      : http(),
   }),
 } as unknown as Partial<Record<NetworkId, PublicClient>>
 
