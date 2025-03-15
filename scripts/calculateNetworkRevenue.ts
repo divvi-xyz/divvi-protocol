@@ -73,19 +73,25 @@ async function fetchTotalGasUsed({
     do {
       const response: QueryResponse = await client.get(query)
 
-      fromBlock = response.nextBlock
-      hasMoreBlocks = fromBlock !== (response.archiveHeight ?? 0) + 1
+      if (response.nextBlock <= fromBlock) {
+        hasMoreBlocks = false
+      }
 
       for (const tx of response.data.transactions) {
         totalGasUsed += BigInt(tx.gasUsed ?? 0) * BigInt(tx.gasPrice ?? 0)
       }
 
+      fromBlock = response.nextBlock
       query.fromBlock = fromBlock
+
+      if (endBlock !== null && fromBlock >= endBlock) {
+        hasMoreBlocks = false
+      }
     } while (hasMoreBlocks)
 
     return totalGasUsed
   } catch (error) {
-    console.error(`❌ Error fetching gas usage from block ${fromBlock}:`, error)
+    console.log('Error fetching transactions:', error)
     return 0n
   }
 }
