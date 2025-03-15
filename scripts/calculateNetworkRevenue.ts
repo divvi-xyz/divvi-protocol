@@ -56,24 +56,36 @@ async function fetchTotalGasUsed({
 }): Promise<bigint> {
   const userAddresses = users.map((user) => user.userAddress)
 
+  let fromBlock = startBlock
+  let totalGasUsed = 0n
+  let hasMoreBlocks = true
+
   const query = {
     transactions: [{ from: userAddresses }],
     fieldSelection: {
       transaction: [TransactionField.GasUsed, TransactionField.GasPrice],
     },
-    fromBlock: startBlock,
+    fromBlock,
     ...(endBlock !== null && { toBlock: endBlock }),
   }
 
   try {
-    const response: QueryResponse = await client.get(query)
-    return response.data.transactions.reduce(
-      (sum: bigint, tx) =>
-        sum + BigInt(tx.gasUsed ?? 0) * BigInt(tx.gasPrice ?? 0),
-      0n,
-    )
+    do {
+      const response: QueryResponse = await client.get(query)
+
+      fromBlock = response.nextBlock
+      hasMoreBlocks = fromBlock !== (response.archiveHeight ?? 0) + 1
+
+      for (const tx of response.data.transactions) {
+        totalGasUsed += BigInt(tx.gasUsed ?? 0) * BigInt(tx.gasPrice ?? 0)
+      }
+
+      query.fromBlock = fromBlock
+    } while (hasMoreBlocks)
+
+    return totalGasUsed
   } catch (error) {
-    console.log('Error fetching gas usage: ', error)
+    console.error(`❌ Error fetching gas usage from block ${fromBlock}:`, error)
     return 0n
   }
 }
