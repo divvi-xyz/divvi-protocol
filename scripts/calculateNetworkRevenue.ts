@@ -5,9 +5,7 @@ import {
 } from '@envio-dev/hypersync-client'
 import yargs from 'yargs'
 import { NetworkId, Protocol, protocols } from './types'
-import {
-  NETWORK_ID_TO_HYPERSYNC_URL
-} from './utils/networks'
+import { NETWORK_ID_TO_HYPERSYNC_URL } from './utils/networks'
 import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
 
 async function main(args: ReturnType<typeof parseArgs>) {
@@ -26,7 +24,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     bearerToken: process.env.HYPERSYNC_API_KEY,
   })
 
-  const users = await getUsersForProtocol({ networkId, protocolId })
+  const users = await getUsers({ networkId, protocolId })
   if (users.length === 0) {
     console.log(`No users found for protocol ${protocolId} on ${networkId}`)
     return
@@ -39,6 +37,30 @@ async function main(args: ReturnType<typeof parseArgs>) {
     endBlock,
   })
   console.log(`Total gas used (Wei): ${totalGasUsedWei}`)
+}
+
+async function getUsers({
+  networkId,
+  protocolId,
+}: {
+  networkId: NetworkId
+  protocolId: string
+}): Promise<{ userAddress: string; timestamp: number }[]> {
+  const referralEvents = await fetchReferralEvents(
+    [networkId as NetworkId],
+    protocolId as Protocol,
+  )
+  const uniqueEvents = removeDuplicates(referralEvents)
+
+  const users: { userAddress: string; timestamp: number }[] = []
+  for (const { userAddress, timestamp } of uniqueEvents) {
+    users.push({
+      userAddress,
+      timestamp,
+    })
+  }
+
+  return users
 }
 
 async function fetchTotalGasUsed({
@@ -92,30 +114,6 @@ async function fetchTotalGasUsed({
     console.log('Error fetching transactions:', error)
     return 0n
   }
-}
-
-async function getUsers({
-  networkId,
-  protocolId,
-}: {
-  networkId: NetworkId
-  protocolId: string
-}): Promise<{ userAddress: string; timestamp: number }[]> {
-  const referralEvents = await fetchReferralEvents(
-    [networkId as NetworkId],
-    protocolId as Protocol,
-  )
-  const uniqueEvents = removeDuplicates(referralEvents)
-
-  const users: { userAddress: string; timestamp: number }[] = []
-  for(const { userAddress, timestamp} of uniqueEvents) {
-    users.push({
-      userAddress,
-      timestamp
-    })
-  }
-
-  return users
 }
 
 function parseArgs() {
