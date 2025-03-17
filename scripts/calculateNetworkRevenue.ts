@@ -114,9 +114,9 @@ async function getUsersForProtocol({
     networkId,
   )
 
-  const referrers = await registryContract.read.getReferrers([
+  const referrers = (await registryContract.read.getReferrers([
     hexProtocolId,
-  ]) as Address[]
+  ])) as Address[]
 
   const users: { userAddress: string; timestamp: number }[] = []
   for (const referrer of referrers) {
