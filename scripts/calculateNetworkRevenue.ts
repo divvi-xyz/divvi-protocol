@@ -10,7 +10,7 @@ import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
 
 async function main(args: ReturnType<typeof parseArgs>) {
   const networkId = args.networkId as NetworkId
-  const protocolId = args['protocol-id'] as string
+  const protocolId = args['protocol-id'] as Protocol
   const startBlock = (args['start-block'] as number) ?? 0
   const endBlock = (args['end-block'] as number) ?? null
 
@@ -44,12 +44,9 @@ async function getUsers({
   protocolId,
 }: {
   networkId: NetworkId
-  protocolId: string
+  protocolId: Protocol
 }): Promise<{ userAddress: string; timestamp: number }[]> {
-  const referralEvents = await fetchReferralEvents(
-    [networkId as NetworkId],
-    protocolId as Protocol,
-  )
+  const referralEvents = await fetchReferralEvents([networkId], protocolId)
   const uniqueEvents = removeDuplicates(referralEvents)
 
   const users: { userAddress: string; timestamp: number }[] = []
