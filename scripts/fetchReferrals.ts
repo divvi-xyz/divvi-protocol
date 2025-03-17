@@ -13,17 +13,16 @@ async function getArgs() {
       demandOption: true,
       choices: protocols,
     })
-    .option('output', {
+    .option('output-file', {
       alias: 'o',
       description: 'output file',
       type: 'string',
-      default: 'filtered_referrals.csv',
     }).argv
 
   return {
     protocol: argv['protocol'] as Protocol,
     protocolFilter: protocolFilters[argv['protocol'] as Protocol],
-    output: argv['output'],
+    output: argv['output-file'] ?? `${argv['protocol']}-referrals.csv`,
   }
 }
 
@@ -39,11 +38,12 @@ async function main() {
   const filteredEvents = await args.protocolFilter(uniqueEvents)
   const output = filteredEvents
     .map(
-      (event) =>
-        `${args.protocol},${event.referrerId},${event.userAddress},${event.timestamp}`,
+      (event) => `${event.referrerId},${event.userAddress},${event.timestamp}`,
     )
     .join('\n')
+
   writeFileSync(args.output, output)
+  console.log(`Wrote results to ${args.output}`)
 }
 
 main().catch((error) => {

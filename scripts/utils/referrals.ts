@@ -1,6 +1,7 @@
 import { NETWORK_ID_TO_REGISTRY_ADDRESS } from './networks'
 import { NetworkId, Protocol, ReferralEvent } from '../types'
 import { getRegistryContract } from './index'
+import { Address, hexToString, stringToHex } from 'viem'
 
 // Remove duplicate events, keeping only the earliest event for each user
 export function removeDuplicates(events: ReferralEvent[]): ReferralEvent[] {
@@ -21,9 +22,10 @@ export function removeDuplicates(events: ReferralEvent[]): ReferralEvent[] {
 export async function fetchReferralEvents(
   networkIds: NetworkId[],
   protocol: Protocol,
-  referrerIds?: string[],
+  referrerIds?: Address[],
 ): Promise<ReferralEvent[]> {
   const referralEvents: ReferralEvent[] = []
+  console.log('Fetching referral events for protocol:', protocol)
 
   await Promise.all(
     networkIds.map(async (networkId) => {
@@ -34,15 +36,18 @@ export async function fetchReferralEvents(
         NETWORK_ID_TO_REGISTRY_ADDRESS[networkId],
         networkId,
       )
+      const hexProtocol = stringToHex(protocol, { size: 32 })
 
       const referrers = referrerIds
         ? referrerIds
-        : ((await registryContract.read.getReferrers([protocol])) as string[])
+        : ((await registryContract.read.getReferrers([
+            hexProtocol,
+          ])) as Address[])
 
       await Promise.all(
         referrers.map(async (referrer) => {
           const [userAddresses, timestamps] =
-            (await registryContract.read.getUsers([protocol, referrer])) as [
+            (await registryContract.read.getUsers([hexProtocol, referrer])) as [
               string[],
               number[],
             ]
@@ -50,7 +55,7 @@ export async function fetchReferralEvents(
             referralEvents.push({
               protocol,
               userAddress,
-              referrerId: referrer,
+              referrerId: hexToString(referrer, { size: 32 }),
               timestamp: timestamps[index],
             })
           })

@@ -5,6 +5,7 @@ import { protocolFilters } from './protocolFilters'
 import { NetworkId, Protocol, protocols } from './types'
 import { supportedNetworkIds } from './utils/networks'
 import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
+import { Address } from 'viem'
 
 async function getArgs() {
   const argv = await yargs
@@ -40,7 +41,7 @@ async function getArgs() {
     protocol: argv['protocol'] as Protocol,
     protocolFilter: protocolFilters[argv['protocol'] as Protocol],
     networkIds: argv['network-ids'] as NetworkId[],
-    referrers: argv['referrer-ids'] as string[],
+    referrers: argv['referrer-ids'] as Address[],
     output: argv['output-file'],
   }
 }

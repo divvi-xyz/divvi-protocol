@@ -1,20 +1,25 @@
 import { fetchReferralEvents, removeDuplicates } from './referrals'
 import { NetworkId, ReferralEvent } from '../types'
 import { getRegistryContract } from './index'
+import { stringToHex } from 'viem'
 jest.mock('./index')
+
+const referrer1Hex = stringToHex('referrer1', { size: 32 })
+const referrer2Hex = stringToHex('referrer2', { size: 32 })
+const beefyHex = stringToHex('beefy', { size: 32 })
 
 describe('fetchReferralEvents', () => {
   it('should fetch all referral events', async () => {
     const mockGetUsersCelo = jest
       .fn()
       .mockImplementation(([_, referrer]: [string, string]) => {
-        if (referrer === 'referrer1') {
+        if (referrer === referrer1Hex) {
           return [
             ['user1', 'user2'],
             [1, 2],
           ]
         }
-        if (referrer === 'referrer2') {
+        if (referrer === referrer2Hex) {
           return [
             ['user3', 'user4'],
             [3, 4],
@@ -24,14 +29,14 @@ describe('fetchReferralEvents', () => {
     const mockGetReferrersCelo = jest
       .fn()
       .mockImplementation(([protocol]: [string]) => {
-        if (protocol === 'Beefy') {
-          return ['referrer1', 'referrer2']
+        if (protocol === beefyHex) {
+          return [referrer1Hex, referrer2Hex]
         }
       })
     const mockGetUsersArbitrum = jest
       .fn()
       .mockImplementation(([_, referrer]: [string, string]) => {
-        if (referrer === 'referrer1') {
+        if (referrer === referrer1Hex) {
           return [
             ['user5', 'user6'],
             [5, 6],
@@ -41,8 +46,8 @@ describe('fetchReferralEvents', () => {
     const mockGetReferrersArbitrum = jest
       .fn()
       .mockImplementation(([protocol]: [string]) => {
-        if (protocol === 'Beefy') {
-          return ['referrer1']
+        if (protocol === beefyHex) {
+          return [referrer1Hex]
         }
       })
 
@@ -69,68 +74,68 @@ describe('fetchReferralEvents', () => {
 
     const events = await fetchReferralEvents(
       [NetworkId['celo-mainnet'], NetworkId['arbitrum-one']],
-      'Beefy',
+      'beefy',
     )
     expect(events).toEqual([
       {
         userAddress: 'user1',
         timestamp: 1,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user2',
         timestamp: 2,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user3',
         timestamp: 3,
         referrerId: 'referrer2',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user4',
         timestamp: 4,
         referrerId: 'referrer2',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user5',
         timestamp: 5,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user6',
         timestamp: 6,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
     ])
     expect(mockGetRegistryContract).toHaveBeenCalledTimes(2)
     expect(mockGetRegistryContract).toHaveBeenCalledWith(
-      '0x0',
+      '0xBa9655677f4E42DD289F5b7888170bC0c7dA8Cdc',
       NetworkId['celo-mainnet'],
     )
     expect(mockGetRegistryContract).toHaveBeenCalledWith(
-      '0x0',
+      '0xBa9655677f4E42DD289F5b7888170bC0c7dA8Cdc',
       NetworkId['arbitrum-one'],
     )
 
     expect(mockGetReferrersArbitrum).toHaveBeenCalledTimes(1)
-    expect(mockGetReferrersArbitrum).toHaveBeenCalledWith(['Beefy'])
+    expect(mockGetReferrersArbitrum).toHaveBeenCalledWith([beefyHex])
 
     expect(mockGetReferrersCelo).toHaveBeenCalledTimes(1)
-    expect(mockGetReferrersCelo).toHaveBeenCalledWith(['Beefy'])
+    expect(mockGetReferrersCelo).toHaveBeenCalledWith([beefyHex])
 
     expect(mockGetUsersArbitrum).toHaveBeenCalledTimes(1)
-    expect(mockGetUsersArbitrum).toHaveBeenCalledWith(['Beefy', 'referrer1'])
+    expect(mockGetUsersArbitrum).toHaveBeenCalledWith([beefyHex, referrer1Hex])
 
     expect(mockGetUsersCelo).toHaveBeenCalledTimes(2)
-    expect(mockGetUsersCelo).toHaveBeenCalledWith(['Beefy', 'referrer1'])
-    expect(mockGetUsersCelo).toHaveBeenCalledWith(['Beefy', 'referrer2'])
+    expect(mockGetUsersCelo).toHaveBeenCalledWith([beefyHex, referrer1Hex])
+    expect(mockGetUsersCelo).toHaveBeenCalledWith([beefyHex, referrer1Hex])
   })
 })
 
@@ -141,19 +146,19 @@ describe('removeDuplicates', () => {
         userAddress: 'user1',
         timestamp: 1,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user2',
         timestamp: 2,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user1',
         timestamp: 3,
         referrerId: 'referrer2',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
     ] as ReferralEvent[]
     const uniqueEvents = removeDuplicates(events)
@@ -162,13 +167,13 @@ describe('removeDuplicates', () => {
         userAddress: 'user1',
         timestamp: 1,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
       {
         userAddress: 'user2',
         timestamp: 2,
         referrerId: 'referrer1',
-        protocol: 'Beefy',
+        protocol: 'beefy',
       },
     ])
   })

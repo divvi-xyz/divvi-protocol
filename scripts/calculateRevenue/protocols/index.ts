@@ -4,9 +4,9 @@ import { calculateRevenue as calculateRevenueBeefy } from './beefy'
 import { calculateRevenue as calculateRevenueSomm } from './somm'
 
 const calculateRevenueHandlers: Record<Protocol, CalculateRevenueFn> = {
-  Beefy: calculateRevenueBeefy,
-  Aerodrome: calculateRevenueAerodrome,
-  Somm: calculateRevenueSomm,
+  beefy: calculateRevenueBeefy,
+  aerodrome: calculateRevenueAerodrome,
+  somm: calculateRevenueSomm,
 }
 
 export default calculateRevenueHandlers

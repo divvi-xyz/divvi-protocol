@@ -67,6 +67,7 @@ export async function _fetchVaultTvlHistory({
   startTimestamp: Date
   endTimestamp: Date
 }): Promise<BeefyVaultTvlData[]> {
+  console.log(`Fetching TVL data for Vault ${vaultAddress} on ${beefyChain}`)
   // This endpoint accepts a maximum of one-week long spans.
   // We need to break down the provided date range into week-long durations.
   const timestamps = []
@@ -93,8 +94,18 @@ export async function _fetchVaultTvlHistory({
       `${BEEFY_API_URL}/product/${beefyChain}/${vaultAddress}/tvl?${queryParams}`,
     )
     if (!response.ok) {
+      const errorResponse = await response.json()
+      if (
+        errorResponse.error ===
+        'EOL (end of life) products are not supported by this endpoint yet'
+      ) {
+        console.log(
+          `Skipping Vault ${vaultAddress} on ${beefyChain} because it is an EOL product`,
+        )
+        continue
+      }
       throw new Error(
-        `Error while fetching vault TVL data from Beefy: ${response}`,
+        `Error while fetching vault TVL data for ${JSON.stringify({ vaultAddress, beefyChain, queryParams: queryParams.toString() })}: ${JSON.stringify(errorResponse)}`,
       )
     }
     const vaultTvlData = (await response.json()) as BeefyVaultTvlData[]

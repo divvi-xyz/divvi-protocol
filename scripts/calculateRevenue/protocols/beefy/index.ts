@@ -8,6 +8,7 @@ import { TokenPriceData } from '../../../types'
 import { getVaults } from './getVaults'
 import { fetchTokenPrices } from '../utils/tokenPrices'
 import { getErc20Contract } from '../../../utils'
+import { parseUnits } from 'viem'
 
 // 8 was chosen arbitrarily, any large enough number will do,
 // since we expect revenue to often be small fractions of dollars.
@@ -113,7 +114,7 @@ export async function calculateVaultRevenue(
       BigInt(vaultTvl * 10 ** 18)
     const partialUsdContribution =
       Number(
-        (BigInt(tokenPriceUsd * 10 ** REVENUE_USD_PRECISION) *
+        (parseUnits(tokenPriceUsd.toString(), REVENUE_USD_PRECISION) *
           partialNativeContribution) /
           10n ** tokenDecimals,
       ) /
@@ -138,6 +139,9 @@ export async function calculateRevenue({
 
   let totalRevenue = 0
   for (const vaultInfo of Object.values(vaultsInfo)) {
+    if (vaultInfo.vaultTvlHistory.length === 0) {
+      continue
+    }
     const vaultRevenue = await calculateVaultRevenue(vaultInfo)
     totalRevenue += vaultRevenue
   }

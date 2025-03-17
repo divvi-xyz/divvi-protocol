@@ -120,3 +120,6 @@ gha-creds-*.json
 # solidity-coverage files
 /coverage
 /coverage.json
+
+# CSV Output files at the root
+*.csv

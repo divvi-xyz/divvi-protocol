@@ -4,9 +4,9 @@ import { filter as filterAerodrome } from './aerodrome'
 import { filter as filterSomm } from './somm'
 
 export const protocolFilters: Record<Protocol, FilterFunction> = {
-  Beefy: _createFilter(filterBeefy),
-  Somm: _createFilter(filterSomm),
-  Aerodrome: _createFilter(filterAerodrome),
+  beefy: _createFilter(filterBeefy),
+  somm: _createFilter(filterSomm),
+  aerodrome: _createFilter(filterAerodrome),
 }
 
 function _createFilter(filter: (event: ReferralEvent) => Promise<boolean>) {
