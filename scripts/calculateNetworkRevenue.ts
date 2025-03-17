@@ -96,40 +96,24 @@ async function fetchTotalGasUsed({
   }
 }
 
-async function getUsersForProtocol({
+async function getUsers({
   networkId,
   protocolId,
 }: {
   networkId: NetworkId
   protocolId: string
 }): Promise<{ userAddress: string; timestamp: number }[]> {
-  const hexProtocolId = stringToHex(protocolId, { size: 32 })
-
-  if (!NETWORK_ID_TO_REGISTRY_ADDRESS[networkId]) {
-    return []
-  }
-
-  const registryContract = await getRegistryContract(
-    NETWORK_ID_TO_REGISTRY_ADDRESS[networkId] as Address,
-    networkId,
+  const referralEvents = await fetchReferralEvents(
+    [networkId as NetworkId],
+    protocolId as Protocol,
   )
-
-  const referrers = (await registryContract.read.getReferrers([
-    hexProtocolId,
-  ])) as Address[]
+  const uniqueEvents = removeDuplicates(referralEvents)
 
   const users: { userAddress: string; timestamp: number }[] = []
-  for (const referrer of referrers) {
-    const [userAddresses, timestamps] = (await registryContract.read.getUsers([
-      hexProtocolId,
-      referrer,
-    ])) as [string[], number[]]
-
-    userAddresses.forEach((userAddress, index) => {
-      users.push({
-        userAddress,
-        timestamp: timestamps[index],
-      })
+  for(const { userAddress, timestamp} of uniqueEvents) {
+    users.push({
+      userAddress,
+      timestamp
     })
   }
 
