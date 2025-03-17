@@ -12,6 +12,9 @@ const NETWORK_ID_TO_CHAIN_ID: Partial<Record<NetworkId, string>> = {
   [NetworkId['base-mainnet']]: 'base',
 }
 
+/**
+ * https://api.sommelier.finance/info
+ */
 export async function getDailySnapshots({
   networkId,
   vaultAddress,
@@ -41,7 +44,7 @@ export async function getDailySnapshots({
 }
 
 /**
- * Calculates the average price_usd / share_price within a given time range,
+ * Calculates the average price_usd / share_price within a given time range.
  * Assumes that each daily snapshot is taken at midnight UTC
  * and that the price & shares are constant for 24 hours after the snapshot time.
  */

@@ -79,7 +79,7 @@ describe('calculateWeightedAveragePrice', () => {
     expect(avgPrice).toBe(150)
   })
 
-  it('correctly interpolates price with varying share price', () => {
+  it('correctly calculates price with varying share price', () => {
     const snapshots: DailySnapshot[] = [
       { price_usd: 100, share_price: 1, timestamp: '2024-03-01T00:00:00Z' },
       { price_usd: 110, share_price: 2, timestamp: '2024-03-02T00:00:00Z' },
@@ -91,7 +91,6 @@ describe('calculateWeightedAveragePrice', () => {
       new Date('2024-03-02T12:00:00Z'),
     )
 
-    // Interpolated weighted price should be between 100 and 165
     expect(avgPrice).toBeCloseTo((100 + 55) / 2)
   })
 
