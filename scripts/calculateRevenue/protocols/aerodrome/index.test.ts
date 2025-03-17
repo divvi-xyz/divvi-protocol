@@ -65,8 +65,14 @@ describe('Aerodrome revenue calculation', () => {
     // Same as above because only one liquidity pool supported, as more are
     // supported this test can be extended.
     it('should return correct calculation', async () => {
-      jest.mocked(fetchTokenPrices).mockResolvedValue(mockTokenPricesOther).mockResolvedValueOnce(mockTokenPrices)
-      jest.mocked(getSwapEvents).mockResolvedValue(mockSwapEventsOther).mockResolvedValueOnce(mockSwapEvents)
+      jest
+        .mocked(fetchTokenPrices)
+        .mockResolvedValue(mockTokenPricesOther)
+        .mockResolvedValueOnce(mockTokenPrices)
+      jest
+        .mocked(getSwapEvents)
+        .mockResolvedValue(mockSwapEventsOther)
+        .mockResolvedValueOnce(mockSwapEvents)
       const result = await calculateRevenue({
         address: 'mockAddress',
         startTimestamp: new Date(),
