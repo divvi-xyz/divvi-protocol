@@ -142,6 +142,7 @@ function parseArgs() {
       description: 'Network ID to of the chain to check',
       type: 'string',
       demandOption: true,
+      choices: Object.values(NetworkId),
     })
     .option('protocol-id', {
       alias: 'p',
