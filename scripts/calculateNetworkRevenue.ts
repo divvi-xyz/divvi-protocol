@@ -114,23 +114,14 @@ async function getUsersForProtocol({
     networkId,
   )
 
-  const protocolResponse = (await registryContract.read.getProtocols([
+  const referrers = await registryContract.read.getReferrers([
     hexProtocolId,
-  ])) as Address[]
-
-  if (!protocolResponse || protocolResponse.length === 0) {
-    throw new Error(`Protocol ${protocolId} not found on ${networkId}`)
-  }
-
-  const protocol = protocolResponse[0]
-  const referrers = (await registryContract.read.getReferrers([
-    protocol,
-  ])) as Address[]
+  ]) as Address[]
 
   const users: { userAddress: string; timestamp: number }[] = []
   for (const referrer of referrers) {
     const [userAddresses, timestamps] = (await registryContract.read.getUsers([
-      protocol,
+      hexProtocolId,
       referrer,
     ])) as [string[], number[]]
 
