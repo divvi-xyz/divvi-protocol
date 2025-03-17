@@ -1,16 +1,14 @@
-import { Address, stringToHex } from 'viem'
-import yargs from 'yargs'
-import { NetworkId, protocols } from './types'
-import { getRegistryContract } from './utils'
-import {
-  NETWORK_ID_TO_HYPERSYNC_URL,
-  NETWORK_ID_TO_REGISTRY_ADDRESS,
-} from './utils/networks'
 import {
   HypersyncClient,
   QueryResponse,
   TransactionField,
 } from '@envio-dev/hypersync-client'
+import yargs from 'yargs'
+import { NetworkId, Protocol, protocols } from './types'
+import {
+  NETWORK_ID_TO_HYPERSYNC_URL
+} from './utils/networks'
+import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
 
 async function main(args: ReturnType<typeof parseArgs>) {
   const networkId = args.networkId as NetworkId
