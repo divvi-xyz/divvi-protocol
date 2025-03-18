@@ -78,8 +78,8 @@ describe('Aerodrome revenue calculation', () => {
         startTimestamp: new Date(),
         endTimestamp: new Date(),
       })
-      expect(getSwapEvents).toHaveBeenCalledTimes(7)
-      expect(result).toEqual(69)
+      expect(getSwapEvents).toHaveBeenCalledTimes(8)
+      expect(result).toEqual(77)
     })
   })
 })
