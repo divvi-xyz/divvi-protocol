@@ -13,7 +13,6 @@ export async function fetchTotalGasUsed({
   startBlock?: number
   endBlock?: number
 }): Promise<number> {
-  let fromBlock = startBlock ?? 0
   let totalGasUsed = 0
   let hasMoreBlocks = true
 
@@ -25,31 +24,22 @@ export async function fetchTotalGasUsed({
       fieldSelection: {
         transaction: [TransactionField.GasUsed, TransactionField.GasPrice],
       },
-      fromBlock,
+      fromBlock: startBlock ?? 0,
       ...(endBlock && { toBlock: endBlock }),
     }
 
-    do {
+    while (hasMoreBlocks) {
       const response: QueryResponse = await client.get(query)
-
-      if (
-        response.nextBlock <= fromBlock ||
-        !response.data.transactions.length
-      ) {
+      if (response.nextBlock === query.fromBlock) {
         hasMoreBlocks = false
+      } else {
+        query.fromBlock = response.nextBlock
       }
 
       for (const tx of response.data.transactions) {
         totalGasUsed += Number(tx.gasUsed ?? 0) * Number(tx.gasPrice ?? 0)
       }
-
-      fromBlock = response.nextBlock
-      query.fromBlock = fromBlock
-
-      if (endBlock && fromBlock >= endBlock) {
-        hasMoreBlocks = false
-      }
-    } while (hasMoreBlocks)
+    }
   } catch (error) {
     console.error('Error fetching transactions:', error)
     return 0
