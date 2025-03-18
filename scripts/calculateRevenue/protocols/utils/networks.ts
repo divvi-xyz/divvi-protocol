@@ -39,6 +39,11 @@ export async function fetchTotalGasUsed({
       for (const tx of response.data.transactions) {
         totalGasUsed += Number(tx.gasUsed ?? 0) * Number(tx.gasPrice ?? 0)
       }
+
+      // Check if we've reached the desired end block to avoid an unnecessary request
+      if (endBlock && query.fromBlock >= endBlock) {
+        hasMoreBlocks = false
+      }
     }
   } catch (error) {
     console.error('Error fetching transactions:', error)
