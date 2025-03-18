@@ -32,7 +32,7 @@ export async function getDailySnapshots({
   )
   const endUnixTimestamp = Math.floor(endTimestamp.getTime() / 1000)
   const url = `https://api.sommelier.finance/dailyData/${NETWORK_ID_TO_CHAIN_ID[networkId]}/${vaultAddress}/${startUnixTimestamp}/${endUnixTimestamp}`
-  console.log('Fetching data from:', url)
+
   const response = await fetch(url)
 
   if (!response.ok) {
@@ -48,11 +48,15 @@ export async function getDailySnapshots({
  * Assumes that each daily snapshot is taken at midnight UTC
  * and that the price & shares are constant for 24 hours after the snapshot time.
  */
-export function calculateWeightedAveragePrice(
-  snapshots: DailySnapshot[],
-  startTimestamp: Date,
-  endTimestamp: Date,
-): number {
+export function calculateWeightedAveragePrice({
+  snapshots,
+  startTimestamp,
+  endTimestamp,
+}: {
+  snapshots: DailySnapshot[]
+  startTimestamp: Date
+  endTimestamp: Date
+}): number {
   const startTime = startTimestamp.getTime()
   const endTime = endTimestamp.getTime()
 
@@ -62,6 +66,27 @@ export function calculateWeightedAveragePrice(
 
   if (snapshots.length === 0) {
     throw new Error('No snapshots provided')
+  }
+
+  const sortedSnapshots = snapshots.sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+  )
+  const firstSnapshotTime = new Date(sortedSnapshots[0].timestamp).getTime()
+  const lastSnapshotTime = new Date(
+    sortedSnapshots[sortedSnapshots.length - 1].timestamp,
+  ).getTime()
+
+  if (startTime < firstSnapshotTime) {
+    throw new Error('Start time is before the first snapshot')
+  }
+  if (endTime > lastSnapshotTime + TWENTY_FOUR_HOURS) {
+    throw new Error('End time is after the last snapshot')
+  }
+  if (
+    sortedSnapshots.length !==
+    (lastSnapshotTime - firstSnapshotTime) / TWENTY_FOUR_HOURS + 1
+  ) {
+    throw new Error('Missing snapshots')
   }
 
   let totalWeightedPrice = 0

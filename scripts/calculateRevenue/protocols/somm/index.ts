@@ -84,20 +84,20 @@ export async function getDailyMeanTvlUsd({
       tvlEvent.timestamp.getTime() < endTimestamp.getTime()
     ) {
       timeInRange = getTimeInRange(tvlEvent.timestamp, endTimestamp)
-      priceInRange = calculateWeightedAveragePrice(
-        dailySnapshots,
-        prevTimestamp,
+      priceInRange = calculateWeightedAveragePrice({
+        snapshots: dailySnapshots,
+        startTimestamp: prevTimestamp,
         endTimestamp,
-      )
+      })
     }
     // else the events are both inside the time range
     else if (tvlEvent.timestamp.getTime() < endTimestamp.getTime()) {
       timeInRange = getTimeInRange(tvlEvent.timestamp, prevTimestamp)
-      priceInRange = calculateWeightedAveragePrice(
-        dailySnapshots,
-        tvlEvent.timestamp,
-        prevTimestamp,
-      )
+      priceInRange = calculateWeightedAveragePrice({
+        snapshots: dailySnapshots,
+        startTimestamp: tvlEvent.timestamp,
+        endTimestamp: prevTimestamp,
+      })
     }
     tvlMilliseconds += timeInRange * currentTvl * priceInRange
     currentTvl -= tvlEvent.amount
@@ -106,7 +106,11 @@ export async function getDailyMeanTvlUsd({
   tvlMilliseconds +=
     getTimeInRange(startTimestamp, prevTimestamp) *
     currentTvl *
-    calculateWeightedAveragePrice(dailySnapshots, startTimestamp, prevTimestamp)
+    calculateWeightedAveragePrice({
+      snapshots: dailySnapshots,
+      startTimestamp,
+      endTimestamp: prevTimestamp,
+    })
   return tvlMilliseconds / getTimeInRange(startTimestamp, endTimestamp)
 }
 

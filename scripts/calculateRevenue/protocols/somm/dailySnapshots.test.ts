@@ -9,11 +9,11 @@ describe('calculateWeightedAveragePrice', () => {
       { price_usd: 120, share_price: 1, timestamp: '2024-03-03T00:00:00Z' },
     ] as DailySnapshot[]
 
-    const avgPrice = calculateWeightedAveragePrice(
+    const avgPrice = calculateWeightedAveragePrice({
       snapshots,
-      new Date('2024-03-01T00:00:00Z'),
-      new Date('2024-03-03T00:00:00Z'),
-    )
+      startTimestamp: new Date('2024-03-01T00:00:00Z'),
+      endTimestamp: new Date('2024-03-03T00:00:00Z'),
+    })
 
     expect(avgPrice).toBeCloseTo(105)
   })
@@ -25,14 +25,15 @@ describe('calculateWeightedAveragePrice', () => {
       { price_usd: 120, share_price: 1, timestamp: '2024-03-03T00:00:00Z' },
     ] as DailySnapshot[]
 
-    const avgPrice = calculateWeightedAveragePrice(
+    const avgPrice = calculateWeightedAveragePrice({
       snapshots,
-      new Date('2024-03-01T12:00:00Z'),
-      new Date('2024-03-02T12:00:00Z'),
-    )
+      startTimestamp: new Date('2024-03-01T12:00:00Z'),
+      endTimestamp: new Date('2024-03-02T12:00:00Z'),
+    })
 
     expect(avgPrice).toBeCloseTo(105)
   })
+
   it('handles simple time ranges where the start and end times are at noon', () => {
     const snapshots: DailySnapshot[] = [
       { price_usd: 100, share_price: 1, timestamp: '2024-03-01T00:00:00Z' },
@@ -40,11 +41,11 @@ describe('calculateWeightedAveragePrice', () => {
       { price_usd: 120, share_price: 1, timestamp: '2024-03-03T00:00:00Z' },
     ] as DailySnapshot[]
 
-    const avgPrice = calculateWeightedAveragePrice(
+    const avgPrice = calculateWeightedAveragePrice({
       snapshots,
-      new Date('2024-03-01T12:00:00Z'),
-      new Date('2024-03-03T12:00:00Z'),
-    )
+      startTimestamp: new Date('2024-03-01T12:00:00Z'),
+      endTimestamp: new Date('2024-03-03T12:00:00Z'),
+    })
 
     expect(avgPrice).toBeCloseTo(110)
   })
@@ -56,11 +57,11 @@ describe('calculateWeightedAveragePrice', () => {
       { price_usd: 120, share_price: 1, timestamp: '2024-03-03T00:00:00Z' },
     ] as DailySnapshot[]
 
-    const avgPrice = calculateWeightedAveragePrice(
+    const avgPrice = calculateWeightedAveragePrice({
       snapshots,
-      new Date('2024-03-01T12:00:00Z'),
-      new Date('2024-03-03T18:00:00Z'),
-    )
+      startTimestamp: new Date('2024-03-01T12:00:00Z'),
+      endTimestamp: new Date('2024-03-03T18:00:00Z'),
+    })
 
     expect(avgPrice).toBeCloseTo(111.1111)
   })
@@ -70,11 +71,11 @@ describe('calculateWeightedAveragePrice', () => {
       { price_usd: 150, share_price: 1, timestamp: '2024-03-01T00:00:00Z' },
     ] as DailySnapshot[]
 
-    const avgPrice = calculateWeightedAveragePrice(
+    const avgPrice = calculateWeightedAveragePrice({
       snapshots,
-      new Date('2024-03-01T00:00:00Z'),
-      new Date('2024-03-01T23:59:59Z'),
-    )
+      startTimestamp: new Date('2024-03-01T00:00:00Z'),
+      endTimestamp: new Date('2024-03-01T23:59:59Z'),
+    })
 
     expect(avgPrice).toBe(150)
   })
@@ -85,22 +86,22 @@ describe('calculateWeightedAveragePrice', () => {
       { price_usd: 110, share_price: 2, timestamp: '2024-03-02T00:00:00Z' },
     ] as DailySnapshot[]
 
-    const avgPrice = calculateWeightedAveragePrice(
+    const avgPrice = calculateWeightedAveragePrice({
       snapshots,
-      new Date('2024-03-01T12:00:00Z'),
-      new Date('2024-03-02T12:00:00Z'),
-    )
+      startTimestamp: new Date('2024-03-01T12:00:00Z'),
+      endTimestamp: new Date('2024-03-02T12:00:00Z'),
+    })
 
     expect(avgPrice).toBeCloseTo((100 + 55) / 2)
   })
 
   it('throws an error if no snapshots are provided', () => {
     expect(() =>
-      calculateWeightedAveragePrice(
-        [],
-        new Date('2024-03-01T00:00:00Z'),
-        new Date('2024-03-02T00:00:00Z'),
-      ),
+      calculateWeightedAveragePrice({
+        snapshots: [],
+        startTimestamp: new Date('2024-03-01T00:00:00Z'),
+        endTimestamp: new Date('2024-03-02T00:00:00Z'),
+      }),
     ).toThrow('No snapshots provided')
   })
 
@@ -110,25 +111,53 @@ describe('calculateWeightedAveragePrice', () => {
     ] as DailySnapshot[]
 
     expect(() =>
-      calculateWeightedAveragePrice(
+      calculateWeightedAveragePrice({
         snapshots,
-        new Date('2024-03-02T00:00:00Z'),
-        new Date('2024-03-01T00:00:00Z'),
-      ),
+        startTimestamp: new Date('2024-03-02T00:00:00Z'),
+        endTimestamp: new Date('2024-03-01T00:00:00Z'),
+      }),
     ).toThrow('Invalid timestamps provided')
   })
+  it('throws an error if start time is before the first snapshot', () => {
+    const snapshots: DailySnapshot[] = [
+      { price_usd: 100, share_price: 1, timestamp: '2024-03-02T00:00:00Z' },
+    ] as DailySnapshot[]
 
-  it('throws an error if no snapshots are in the time range', () => {
+    expect(() =>
+      calculateWeightedAveragePrice({
+        snapshots,
+        startTimestamp: new Date('2024-03-01T00:00:00Z'),
+        endTimestamp: new Date('2024-03-02T00:00:00Z'),
+      }),
+    ).toThrow('Start time is before the first snapshot')
+  })
+
+  it('throws an error if end time is after the last snapshot plus 24 hours', () => {
     const snapshots: DailySnapshot[] = [
       { price_usd: 100, share_price: 1, timestamp: '2024-03-01T00:00:00Z' },
     ] as DailySnapshot[]
 
     expect(() =>
-      calculateWeightedAveragePrice(
+      calculateWeightedAveragePrice({
         snapshots,
-        new Date('2024-03-02T00:00:00Z'),
-        new Date('2024-03-03T00:00:00Z'),
-      ),
-    ).toThrow('No snapshots in range')
+        startTimestamp: new Date('2024-03-01T00:00:00Z'),
+        endTimestamp: new Date('2024-03-03T00:00:01Z'),
+      }),
+    ).toThrow('End time is after the last snapshot')
+  })
+
+  it('throws an error if there are missing snapshots', () => {
+    const snapshots: DailySnapshot[] = [
+      { price_usd: 100, share_price: 1, timestamp: '2024-03-01T00:00:00Z' },
+      { price_usd: 120, share_price: 1, timestamp: '2024-03-03T00:00:00Z' },
+    ] as DailySnapshot[]
+
+    expect(() =>
+      calculateWeightedAveragePrice({
+        snapshots,
+        startTimestamp: new Date('2024-03-01T00:00:00Z'),
+        endTimestamp: new Date('2024-03-03T00:00:00Z'),
+      }),
+    ).toThrow('Missing snapshots')
   })
 })
