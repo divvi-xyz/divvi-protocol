@@ -1349,10 +1349,15 @@
   dependencies:
     which "^4.0.0"
 
-"@openzeppelin/contracts@^5.1.0":
-  version "5.1.0"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-5.1.0.tgz#4e61162f2a2bf414c4e10c45eca98ce5f1aadbd4"
-  integrity sha512-p1ULhl7BXzjjbha5aqst+QMLY+4/LCWADXOCsmLHRM77AqiPjnd9vvUN9sosUfhL9JGKpZ0TjEGxgvnizmWGSA==
+"@openzeppelin/contracts-upgradeable@^5.2.0":
+  version "5.2.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts-upgradeable/-/contracts-upgradeable-5.2.0.tgz#caf9a6eaf4f16d7f90f9b45a6db4e7b125f4b13b"
+  integrity sha512-mZIu9oa4tQTlGiOJHk6D3LdJlqFqF6oNOSn6S6UVJtzfs9UsY9/dhMEbAVTwElxUtJnjpf6yA062+oBp+eOyPg==
+
+"@openzeppelin/contracts@5.2.0":
+  version "5.2.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-5.2.0.tgz#bd020694218202b811b0ea3eec07277814c658da"
+  integrity sha512-bxjNie5z89W1Ea0NZLZluFh8PrFNn9DH8DQlujEok2yjsOlraUPKID5p1Wk3qdNbf6XkQ1Os2RvfiHrrXLHWKA==
 
 "@openzeppelin/defender-sdk-base-client@^1.14.4", "@openzeppelin/defender-sdk-base-client@^1.15.2":
   version "1.15.2"
