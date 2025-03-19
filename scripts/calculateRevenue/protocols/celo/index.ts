@@ -1,6 +1,6 @@
 import { NetworkId } from '../../../types'
 import { getNearestBlock } from '../utils/events'
-import { fetchTotalGasUsed } from '../utils/networks'
+import { fetchTotalTransactionFees } from '../utils/networks'
 
 export async function calculateRevenue({
   address,
@@ -20,7 +20,7 @@ export async function calculateRevenue({
     endTimestamp,
   )
 
-  return await fetchTotalGasUsed({
+  return await fetchTotalTransactionFees({
     networkId: NetworkId['celo-mainnet'],
     users: [address],
     startBlock,

@@ -2,7 +2,7 @@ import { QueryResponse, TransactionField } from '@envio-dev/hypersync-client'
 import { getHyperSyncClient } from '../../../utils'
 import { NetworkId } from '../../../types'
 
-export async function fetchTotalGasUsed({
+export async function fetchTotalTransactionFees({
   networkId,
   users,
   startBlock,
@@ -13,7 +13,7 @@ export async function fetchTotalGasUsed({
   startBlock?: number
   endBlock?: number
 }): Promise<number> {
-  let totalGasUsed = 0
+  let totalTransactionFees = 0
   let hasMoreBlocks = true
 
   const client = getHyperSyncClient(networkId)
@@ -29,7 +29,6 @@ export async function fetchTotalGasUsed({
 
   while (hasMoreBlocks) {
     const response: QueryResponse = await client.get(query)
-    console.log('response: ', response)
     if (response.nextBlock === query.fromBlock) {
       hasMoreBlocks = false
     } else {
@@ -37,7 +36,7 @@ export async function fetchTotalGasUsed({
     }
 
     for (const tx of response.data.transactions) {
-      totalGasUsed += Number(tx.gasUsed ?? 0) * Number(tx.gasPrice ?? 0)
+      totalTransactionFees += Number(tx.gasUsed ?? 0) * Number(tx.gasPrice ?? 0)
     }
 
     // Check if we've reached the desired end block to avoid an unnecessary request
@@ -45,5 +44,5 @@ export async function fetchTotalGasUsed({
       hasMoreBlocks = false
     }
   }
-  return totalGasUsed
+  return totalTransactionFees
 }

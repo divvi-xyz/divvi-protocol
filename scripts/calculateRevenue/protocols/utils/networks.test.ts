@@ -1,4 +1,4 @@
-import { fetchTotalGasUsed } from './networks'
+import { fetchTotalTransactionFees } from './networks'
 import { getHyperSyncClient } from '../../../utils'
 import { QueryResponse } from '@envio-dev/hypersync-client'
 import { NetworkId } from '../../../types'
@@ -25,7 +25,7 @@ function calculateExpected(
   )
 }
 
-describe('fetchTotalGasUsed', () => {
+describe('fetchTotalTransactionFees', () => {
   const networkId: NetworkId = NetworkId['celo-mainnet']
   const users = ['0xUser1']
   let mockClient: { get: jest.Mock }
@@ -52,7 +52,7 @@ describe('fetchTotalGasUsed', () => {
       },
     } as QueryResponse)
 
-    const result = await fetchTotalGasUsed({
+    const result = await fetchTotalTransactionFees({
       networkId,
       users,
       startBlock: 0,
@@ -82,7 +82,11 @@ describe('fetchTotalGasUsed', () => {
       } as QueryResponse)
       .mockReturnValueOnce(mockResponse as QueryResponse)
 
-    const result = await fetchTotalGasUsed({ networkId, users, startBlock: 0 })
+    const result = await fetchTotalTransactionFees({
+      networkId,
+      users,
+      startBlock: 0,
+    })
 
     expect(result).toBe(
       calculateExpected([
@@ -97,7 +101,7 @@ describe('fetchTotalGasUsed', () => {
     mockClient.get.mockRejectedValue(new Error('API failure'))
 
     await expect(
-      fetchTotalGasUsed({ networkId, users, startBlock: 0 }),
+      fetchTotalTransactionFees({ networkId, users, startBlock: 0 }),
     ).rejects.toThrow('API failure')
     expect(mockClient.get).toHaveBeenCalledTimes(1)
   })
@@ -118,7 +122,11 @@ describe('fetchTotalGasUsed', () => {
       } as QueryResponse)
       .mockResolvedValueOnce(mockResponse as QueryResponse)
 
-    const result = await fetchTotalGasUsed({ networkId, users, startBlock: 0 })
+    const result = await fetchTotalTransactionFees({
+      networkId,
+      users,
+      startBlock: 0,
+    })
 
     expect(result).toBe(
       calculateExpected([
