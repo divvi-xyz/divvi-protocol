@@ -80,7 +80,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
 
     const rewardAddress = registrant[rewardAddressColumn]
     if (!isAddress(rewardAddress)) {
-      throw new Error(`Invalid address: ${ rewardAddress }`)
+      throw new Error(`Invalid address: ${rewardAddress}`)
     }
 
     return {
