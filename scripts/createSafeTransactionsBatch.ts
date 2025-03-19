@@ -9,7 +9,7 @@ const protocolStringsColumn =
   'What protocol(s) will you be integrating into your product?'
 const rewardAddressColumn = 'Enter a valid wallet address.'
 
-const rewardRate = 1e18.toString()
+const rewardRate = (1e18).toString()
 
 function parseArgs() {
   return yargs
@@ -108,7 +108,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     // fill in the correct values...
 
     // ..but the meta property required by the Safe UI, even if the value is an
-    // empty object. 
+    // empty object.
     meta: {},
     transactions,
   }
