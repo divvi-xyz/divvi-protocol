@@ -16,39 +16,34 @@ export async function fetchTotalGasUsed({
   let totalGasUsed = 0
   let hasMoreBlocks = true
 
-  try {
-    const client = getHyperSyncClient(networkId)
+  const client = getHyperSyncClient(networkId)
 
-    const query = {
-      transactions: [{ from: users }],
-      fieldSelection: {
-        transaction: [TransactionField.GasUsed, TransactionField.GasPrice],
-      },
-      fromBlock: startBlock ?? 0,
-      ...(endBlock && { toBlock: endBlock }),
-    }
-
-    while (hasMoreBlocks) {
-      const response: QueryResponse = await client.get(query)
-      if (response.nextBlock === query.fromBlock) {
-        hasMoreBlocks = false
-      } else {
-        query.fromBlock = response.nextBlock
-      }
-
-      for (const tx of response.data.transactions) {
-        totalGasUsed += Number(tx.gasUsed ?? 0) * Number(tx.gasPrice ?? 0)
-      }
-
-      // Check if we've reached the desired end block to avoid an unnecessary request
-      if (endBlock && query.fromBlock >= endBlock) {
-        hasMoreBlocks = false
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching transactions:', error)
-    return 0
+  const query = {
+    transactions: [{ from: users }],
+    fieldSelection: {
+      transaction: [TransactionField.GasUsed, TransactionField.GasPrice],
+    },
+    fromBlock: startBlock ?? 0,
+    ...(endBlock && { toBlock: endBlock }),
   }
 
+  while (hasMoreBlocks) {
+    const response: QueryResponse = await client.get(query)
+    console.log('response: ', response)
+    if (response.nextBlock === query.fromBlock) {
+      hasMoreBlocks = false
+    } else {
+      query.fromBlock = response.nextBlock
+    }
+
+    for (const tx of response.data.transactions) {
+      totalGasUsed += Number(tx.gasUsed ?? 0) * Number(tx.gasPrice ?? 0)
+    }
+
+    // Check if we've reached the desired end block to avoid an unnecessary request
+    if (endBlock && query.fromBlock >= endBlock) {
+      hasMoreBlocks = false
+    }
+  }
   return totalGasUsed
 }
