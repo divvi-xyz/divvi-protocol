@@ -1,5 +1,12 @@
-import { calculateWeightedAveragePrice } from './dailySnapshots' // Adjust import as needed
+import {
+  calculateWeightedAveragePrice,
+  getDailySnapshots,
+} from './dailySnapshots' // Adjust import as needed
 import { DailySnapshot } from './types'
+import { fetchWithTimeout } from '../../../utils/fetchWithTimeout'
+import { NetworkId } from '../../../types'
+
+jest.mock('../../../utils/fetchWithTimeout')
 
 describe('calculateWeightedAveragePrice', () => {
   it('calculates average price for a simple time range', () => {
@@ -118,32 +125,54 @@ describe('calculateWeightedAveragePrice', () => {
       }),
     ).toThrow('Invalid timestamps provided')
   })
+})
+
+describe('getDailySnapshots', () => {
+  const params = {
+    vaultAddress: '0x123',
+    networkId: NetworkId['arbitrum-one'],
+  }
   it('throws an error if start time is before the first snapshot', () => {
     const snapshots: DailySnapshot[] = [
       { price_usd: 100, share_price: 1, timestamp: '2024-03-02T00:00:00Z' },
     ] as DailySnapshot[]
 
+    jest.mocked(fetchWithTimeout).mockImplementation(
+      () =>
+        Promise.resolve({
+          ok: true,
+          json: jest.fn().mockResolvedValue(snapshots),
+        }) as unknown as ReturnType<typeof fetchWithTimeout>,
+    )
+
     expect(() =>
-      calculateWeightedAveragePrice({
-        snapshots,
+      getDailySnapshots({
         startTimestamp: new Date('2024-03-01T00:00:00Z'),
         endTimestamp: new Date('2024-03-02T00:00:00Z'),
+        ...params,
       }),
-    ).toThrow('Start time is before the first snapshot')
+    ).rejects.toThrow('Start time is before the first snapshot')
   })
 
   it('throws an error if end time is after the last snapshot plus 24 hours', () => {
     const snapshots: DailySnapshot[] = [
       { price_usd: 100, share_price: 1, timestamp: '2024-03-01T00:00:00Z' },
     ] as DailySnapshot[]
+    jest.mocked(fetchWithTimeout).mockImplementation(
+      () =>
+        Promise.resolve({
+          ok: true,
+          json: jest.fn().mockResolvedValue(snapshots),
+        }) as unknown as ReturnType<typeof fetchWithTimeout>,
+    )
 
     expect(() =>
-      calculateWeightedAveragePrice({
-        snapshots,
+      getDailySnapshots({
         startTimestamp: new Date('2024-03-01T00:00:00Z'),
         endTimestamp: new Date('2024-03-03T00:00:01Z'),
+        ...params,
       }),
-    ).toThrow('End time is after the last snapshot')
+    ).rejects.toThrow('End time is after the last snapshot')
   })
 
   it('throws an error if there are missing snapshots', () => {
@@ -151,13 +180,20 @@ describe('calculateWeightedAveragePrice', () => {
       { price_usd: 100, share_price: 1, timestamp: '2024-03-01T00:00:00Z' },
       { price_usd: 120, share_price: 1, timestamp: '2024-03-03T00:00:00Z' },
     ] as DailySnapshot[]
+    jest.mocked(fetchWithTimeout).mockImplementation(
+      () =>
+        Promise.resolve({
+          ok: true,
+          json: jest.fn().mockResolvedValue(snapshots),
+        }) as unknown as ReturnType<typeof fetchWithTimeout>,
+    )
 
     expect(() =>
-      calculateWeightedAveragePrice({
-        snapshots,
+      getDailySnapshots({
         startTimestamp: new Date('2024-03-01T00:00:00Z'),
         endTimestamp: new Date('2024-03-03T00:00:00Z'),
+        ...params,
       }),
-    ).toThrow('Missing snapshots')
+    ).rejects.toThrow('Missing snapshots')
   })
 })

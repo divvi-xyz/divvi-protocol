@@ -1,6 +1,6 @@
-import fetch from 'node-fetch'
 import { DailySnapshot } from './types'
 import { NetworkId } from '../../../types'
+import { fetchWithTimeout } from '../../../utils/fetchWithTimeout'
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000
 
@@ -33,13 +33,33 @@ export async function getDailySnapshots({
   const endUnixTimestamp = Math.floor(endTimestamp.getTime() / 1000)
   const url = `https://api.sommelier.finance/dailyData/${NETWORK_ID_TO_CHAIN_ID[networkId]}/${vaultAddress}/${startUnixTimestamp}/${endUnixTimestamp}`
 
-  const response = await fetch(url)
+  const response = await fetchWithTimeout(url)
 
   if (!response.ok) {
     throw new Error(`Failed to fetch data: ${response.statusText}`)
   }
 
   const data: DailySnapshot[] = await response.json()
+  const sortedSnapshots = data.sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+  )
+  const firstSnapshotTime = new Date(sortedSnapshots[0].timestamp).getTime()
+  const lastSnapshotTime = new Date(
+    sortedSnapshots[sortedSnapshots.length - 1].timestamp,
+  ).getTime()
+
+  if (startTimestamp.getTime() < firstSnapshotTime) {
+    throw new Error('Start time is before the first snapshot')
+  }
+  if (endTimestamp.getTime() > lastSnapshotTime + TWENTY_FOUR_HOURS) {
+    throw new Error('End time is after the last snapshot')
+  }
+  if (
+    sortedSnapshots.length !==
+    (lastSnapshotTime - firstSnapshotTime) / TWENTY_FOUR_HOURS + 1
+  ) {
+    throw new Error('Missing snapshots')
+  }
   return data
 }
 
@@ -66,27 +86,6 @@ export function calculateWeightedAveragePrice({
 
   if (snapshots.length === 0) {
     throw new Error('No snapshots provided')
-  }
-
-  const sortedSnapshots = snapshots.sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-  )
-  const firstSnapshotTime = new Date(sortedSnapshots[0].timestamp).getTime()
-  const lastSnapshotTime = new Date(
-    sortedSnapshots[sortedSnapshots.length - 1].timestamp,
-  ).getTime()
-
-  if (startTime < firstSnapshotTime) {
-    throw new Error('Start time is before the first snapshot')
-  }
-  if (endTime > lastSnapshotTime + TWENTY_FOUR_HOURS) {
-    throw new Error('End time is after the last snapshot')
-  }
-  if (
-    sortedSnapshots.length !==
-    (lastSnapshotTime - firstSnapshotTime) / TWENTY_FOUR_HOURS + 1
-  ) {
-    throw new Error('Missing snapshots')
   }
 
   let totalWeightedPrice = 0
