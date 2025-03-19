@@ -47,6 +47,8 @@ yarn ts-node scripts/createSafeTransactionsBatch.ts --input-csv=crm.csv --output
 yarn ts-node scripts/createSafeTransactionsBatch.ts --input-csv=crm.csv --output-json=berachain.json --contract-address=0x222...
 ```
 
+See [Contracts](#contracts) for Registry contract addresses.
+
 ## Scripts
 
 You may want to set the `ALCHEMY_KEY` in .env to avoid getting rate limited by RPC nodes.
