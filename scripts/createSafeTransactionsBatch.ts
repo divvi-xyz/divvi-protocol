@@ -9,7 +9,7 @@ const protocolStringsColumn =
   'What protocol(s) will you be integrating into your product?'
 const rewardAddressColumn = 'Enter a valid wallet address.'
 
-const rewardRate = '1000000000000000000'
+const rewardRate = 1e18.toString()
 
 function parseArgs() {
   return yargs
