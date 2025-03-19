@@ -101,13 +101,6 @@ async function main(args: ReturnType<typeof parseArgs>) {
         rewardAddress: registrant[rewardAddressColumn],
       },
     }
-
-    return {
-      referrerId,
-      protocolIds: `[${protocolIds.join(', ')}]`,
-      rewardRates: `[${rewardRates.join(', ')}]`,
-      rewardAddress: registrant[rewardAddressColumn],
-    }
   })
 
   const transactionsBatch = {
