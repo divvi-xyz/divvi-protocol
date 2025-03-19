@@ -9,12 +9,13 @@ import {
 import { getBlock, getViemPublicClient } from '../../../utils'
 import { fetchEvents } from '../utils/events'
 import { TvlEvent, VaultInfo } from './types'
+import memoize from '@github/memoize'
 
 /**
  * Fetches and returns a list of TVL (Total Value Locked) change events for a given address and vault within a specified time range.
  * The events include both deposits and withdrawals, and are sorted in reverse chronological order.
  */
-export async function getEvents({
+export async function _getEvents({
   address,
   vaultInfo,
   startTimestamp,
@@ -87,3 +88,8 @@ export async function getEvents({
   // Sort events in reverse chronological order
   return tvlEvents.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
 }
+
+export const getEvents = memoize(_getEvents, {
+  hash: (...params: Parameters<typeof _getEvents>) =>
+    Object.values(params[0]).join(','),
+})
