@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'fs'
 import { parse } from 'csv-parse/sync'
-import { stringToHex } from 'viem'
+import { stringToHex, isAddress } from 'viem'
 import yargs from 'yargs'
 
 const refferStringColumn =
@@ -10,6 +10,17 @@ const protocolStringsColumn =
 const rewardAddressColumn = 'Enter a valid wallet address.'
 
 const rewardRate = (1e18).toString()
+
+const validProtocolStrings = new Set([
+  'aerodrome',
+  'allbridge',
+  'beefy',
+  'celo',
+  'fonbnk',
+  'mento',
+  'somm',
+  'vana',
+])
 
 function parseArgs() {
   return yargs
@@ -54,6 +65,9 @@ async function main(args: ReturnType<typeof parseArgs>) {
     const protocolIds = []
     for (const protocolName of protocolNames) {
       try {
+        if (!validProtocolStrings.has(protocolName)) {
+          throw new Error(`Invalid protocol name: ${protocolName}`)
+        }
         const protocolId = stringToHex(protocolName, { size: 32 })
         protocolIds.push(protocolId)
       } catch (err) {
@@ -63,6 +77,11 @@ async function main(args: ReturnType<typeof parseArgs>) {
     }
 
     const rewardRates = new Array(protocolIds.length).fill(rewardRate)
+
+    const rewardAddress = registrant[rewardAddressColumn]
+    if (!isAddress(rewardAddress)) {
+      throw new Error(`Invalid address: ${ rewardAddress }`)
+    }
 
     return {
       to: args.contractAddress,
@@ -98,7 +117,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
         referrerId,
         protocolIds: `[${protocolIds.join(', ')}]`,
         rewardRates: `[${rewardRates.join(', ')}]`,
-        rewardAddress: registrant[rewardAddressColumn],
+        rewardAddress,
       },
     }
   })
