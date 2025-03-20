@@ -11,6 +11,8 @@ import {
 } from 'viem'
 import memoize from '@github/memoize'
 import * as dotenv from 'dotenv'
+import { NETWORK_ID_TO_HYPERSYNC_URL } from './networks'
+import { HypersyncClient } from '@envio-dev/hypersync-client'
 
 dotenv.config()
 
@@ -101,6 +103,33 @@ export function getViemPublicClient(networkId: NetworkId) {
   if (!client) {
     throw new Error(`No viem client found for networkId: ${networkId}`)
   }
+  return client
+}
+
+// Hypersync Client Factory (Lazy Singleton)
+const hypersyncClients = new Map<NetworkId, HypersyncClient>()
+
+/**
+ * Gets a HyperSync client for a given NetworkId
+ */
+export function getHyperSyncClient(networkId: NetworkId): HypersyncClient {
+  const url = NETWORK_ID_TO_HYPERSYNC_URL[networkId]
+
+  if (!url) {
+    throw new Error(`No HyperSync URL found for networkId: ${networkId}`)
+  }
+
+  let client = hypersyncClients.get(networkId)
+
+  if (!client) {
+    client = HypersyncClient.new({
+      url,
+      bearerToken: process.env.HYPERSYNC_API_KEY,
+    })
+
+    hypersyncClients.set(networkId, client)
+  }
+
   return client
 }
 

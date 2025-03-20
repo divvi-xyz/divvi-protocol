@@ -3,6 +3,10 @@ import { getViemPublicClient } from '../../../utils'
 import { getVaults } from './getVaults'
 import { VaultInfo } from './types'
 import { getEvents } from './getEvents'
+import {
+  calculateWeightedAveragePrice,
+  getDailySnapshots,
+} from './dailySnapshots'
 
 export async function getBalanceOfAddress({
   vaultInfo,
@@ -22,11 +26,9 @@ export async function getBalanceOfAddress({
 
 /**
  * Calculates the mean Total Value Locked (TVL) for a given user address
- * and vault pair within a specified time range.
- *
- * TODO(ENG-201): Return TVL in USD
+ * and vault pair within a specified time range using daily snapshots of the vault's price and shares.
  */
-export async function getMeanTVL({
+export async function getDailyMeanTvlUsd({
   vaultInfo,
   address,
   startTimestamp,
@@ -51,6 +53,13 @@ export async function getMeanTVL({
   const currentLPTokenBalance = await vaultContract.read.balanceOf([address])
   const tokenDecimals = await vaultContract.read.decimals()
 
+  const dailySnapshots = await getDailySnapshots({
+    networkId: vaultInfo.networkId,
+    vaultAddress: vaultInfo.vaultAddress,
+    startTimestamp,
+    endTimestamp,
+  })
+
   const tvlEvents = await getEvents({
     address,
     vaultInfo,
@@ -67,6 +76,7 @@ export async function getMeanTVL({
   for (const tvlEvent of tvlEvents) {
     // the default case is that the previous event and current event are outside of the time range
     let timeInRange = 0
+    let priceInRange = 0
 
     // if the previous event is outside of the time range and the current event is inside the time range
     if (
@@ -74,16 +84,33 @@ export async function getMeanTVL({
       tvlEvent.timestamp.getTime() < endTimestamp.getTime()
     ) {
       timeInRange = getTimeInRange(tvlEvent.timestamp, endTimestamp)
+      priceInRange = calculateWeightedAveragePrice({
+        snapshots: dailySnapshots,
+        startTimestamp: prevTimestamp,
+        endTimestamp,
+      })
     }
     // else the events are both inside the time range
     else if (tvlEvent.timestamp.getTime() < endTimestamp.getTime()) {
       timeInRange = getTimeInRange(tvlEvent.timestamp, prevTimestamp)
+      priceInRange = calculateWeightedAveragePrice({
+        snapshots: dailySnapshots,
+        startTimestamp: tvlEvent.timestamp,
+        endTimestamp: prevTimestamp,
+      })
     }
-    tvlMilliseconds += timeInRange * currentTvl
+    tvlMilliseconds += timeInRange * currentTvl * priceInRange
     currentTvl -= tvlEvent.amount
     prevTimestamp = tvlEvent.timestamp
   }
-  tvlMilliseconds += getTimeInRange(startTimestamp, prevTimestamp) * currentTvl
+  tvlMilliseconds +=
+    getTimeInRange(startTimestamp, prevTimestamp) *
+    currentTvl *
+    calculateWeightedAveragePrice({
+      snapshots: dailySnapshots,
+      startTimestamp,
+      endTimestamp: prevTimestamp,
+    })
   return tvlMilliseconds / getTimeInRange(startTimestamp, endTimestamp)
 }
 
@@ -108,7 +135,7 @@ export async function calculateRevenue({
   let totalRevenue = 0
   const nowTimestamp = new Date()
   for (const vaultInfo of vaultsInfo) {
-    const vaultRevenue = await getMeanTVL({
+    const vaultRevenue = await getDailyMeanTvlUsd({
       vaultInfo,
       address,
       startTimestamp,
