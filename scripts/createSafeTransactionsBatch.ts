@@ -12,6 +12,7 @@ const rewardAddressColumn = 'Enter a valid wallet address.'
 const rewardRate = (1e18).toString()
 
 const validProtocolStrings = new Set([
+  'aave',
   'aerodrome',
   'allbridge',
   'beefy',
