@@ -4,7 +4,7 @@ import { NetworkId } from '../../../types'
 
 describe('getVaults', () => {
   afterEach(() => {
-    nock.cleanAll() // Ensure nock is reset after each test
+    nock.cleanAll()
   })
 
   const mockApiResponse = {
