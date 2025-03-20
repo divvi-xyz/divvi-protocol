@@ -35,6 +35,20 @@ And create some dummy data:
 yarn hardhat --network hardhat run scripts/setupTestnet.ts
 ```
 
+## Creating Safe Transactions Batches
+
+You need to create one batch of transactions per registry contract
+address. For example, if Berachain and Vana have different contract
+addresses and all other chains share a contract address you would do:
+
+```
+yarn ts-node scripts/createSafeTransactionsBatch.ts --input-csv=crm.csv --output-json=others.json --contract-address=0x000...
+yarn ts-node scripts/createSafeTransactionsBatch.ts --input-csv=crm.csv --output-json=vana.json --contract-address=0x111...
+yarn ts-node scripts/createSafeTransactionsBatch.ts --input-csv=crm.csv --output-json=berachain.json --contract-address=0x222...
+```
+
+See [Contracts](#contracts) for Registry contract addresses.
+
 ## Scripts
 
 You may want to set the `ALCHEMY_KEY` in .env to avoid getting rate limited by RPC nodes.
