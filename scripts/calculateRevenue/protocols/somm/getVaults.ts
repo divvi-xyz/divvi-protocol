@@ -33,7 +33,10 @@ function extractValidVaultInfo(address: string): VaultInfo | null {
   const suffix = getSuffix(address)
 
   // Only allow base Ethereum addresses or supported suffixes / networks
-  if (!isAddress(baseAddress) || (suffix && !SUPPORTED_SUFFIXES.includes(suffix))) {
+  if (
+    !isAddress(baseAddress) ||
+    (suffix && !SUPPORTED_SUFFIXES.includes(suffix))
+  ) {
     return null
   }
 
