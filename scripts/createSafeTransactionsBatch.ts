@@ -20,6 +20,7 @@ const validProtocolStrings = new Set([
   'mento',
   'somm',
   'vana',
+  'velodrome',
 ])
 
 function parseArgs() {
