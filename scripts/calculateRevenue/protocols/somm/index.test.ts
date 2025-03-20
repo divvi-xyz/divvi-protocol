@@ -1,7 +1,8 @@
 import { Address } from 'viem'
 import { NetworkId } from '../../../types'
-import { getMeanTVL } from './index'
+import { getDailyMeanTvlUsd } from './index'
 import { getEvents } from './getEvents'
+import { calculateWeightedAveragePrice } from './dailySnapshots'
 
 jest.mock('viem', () => ({
   ...jest.requireActual('viem'),
@@ -14,6 +15,7 @@ jest.mock('viem', () => ({
 }))
 
 jest.mock('./getEvents')
+jest.mock('./dailySnapshots')
 
 const vaultInfo = {
   networkId: NetworkId['arbitrum-one'],
@@ -21,13 +23,13 @@ const vaultInfo = {
 }
 const address = '0x1234567890123456789012345678901234567890'
 
-describe('getMeanTVL', () => {
+describe('getDailyMeanTvlUsd', () => {
   it('should throw an error if endTimestamp is in the future', async () => {
     const startTimestamp = new Date('2021-01-0')
     const endTimestamp = new Date('2022-01-01')
     const nowTimestamp = new Date('2021-01-01')
     await expect(
-      getMeanTVL({
+      getDailyMeanTvlUsd({
         vaultInfo,
         address,
         startTimestamp,
@@ -40,12 +42,13 @@ describe('getMeanTVL', () => {
     const startTimestamp = new Date('2021-01-05')
     const endTimestamp = new Date('2021-01-20')
     const nowTimestamp = new Date('2021-01-30')
+    jest.mocked(calculateWeightedAveragePrice).mockReturnValue(2)
     jest.mocked(getEvents).mockResolvedValueOnce([
       { amount: 50, timestamp: new Date('2021-01-25') }, // a 50 LP token deposit
       { amount: -30, timestamp: new Date('2021-01-15') }, // a 30 LP token withdrawal
       { amount: 20, timestamp: new Date('2021-01-10') }, // a 20 LP token deposit
     ])
-    const result = await getMeanTVL({
+    const result = await getDailyMeanTvlUsd({
       vaultInfo,
       address,
       startTimestamp,
@@ -57,7 +60,9 @@ describe('getMeanTVL', () => {
     // third chunk of time is 5 days with 80 TVL, all 5 days are in the range so 80 * 5 = 400 TVL days
     // fourth chunk of time is 10 days with 60 TVL, only 5 days are in the range so 60 * 5 = 300 TVL days
     // mean TVL = (250 + 400 + 300) / 15 = 63.33333333333333
-    expect(result).toBeCloseTo(63.33333333333333)
+    // the weighted average price is 2
+    // the mean TVL in USD = 63.33333333333333 * 2 = 126.66666666666666
+    expect(result).toBeCloseTo(126.66666666666666)
   })
   it('should return the correct mean TVL when there are multiple events on the same day', async () => {
     const startTimestamp = new Date('2025-01-10T16:14:52+00:00')
@@ -72,7 +77,8 @@ describe('getMeanTVL', () => {
       { amount: 50, timestamp: new Date('2025-01-10T18:14:52+00:00') }, // a 50 LP token deposit
       { amount: -30, timestamp: new Date('2025-01-10T17:14:52+00:00') }, // a 30 LP token withdrawal
     ])
-    const result = await getMeanTVL({
+    jest.mocked(calculateWeightedAveragePrice).mockReturnValue(1)
+    const result = await getDailyMeanTvlUsd({
       vaultInfo,
       address,
       startTimestamp,
