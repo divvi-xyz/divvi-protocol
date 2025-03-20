@@ -167,10 +167,10 @@ describe(CONTRACT_NAME, function () {
     const depositAmount = hre.ethers.parseEther('1')
 
     describe('with ERC20 token', function () {
-      let rewardPool: any
-      let manager: any
-      let stranger: any
-      let pool: any
+      let rewardPool: Contract
+      let manager: HardhatEthersSigner
+      let stranger: HardhatEthersSigner
+      let pool: Contract
 
       beforeEach(async function () {
         const deployment = await loadFixture(deployERC20RewardPoolContract)
@@ -179,7 +179,7 @@ describe(CONTRACT_NAME, function () {
         stranger = deployment.stranger
 
         // Connect with manager
-        pool = rewardPool.connect(manager)
+        pool = rewardPool.connect(manager) as typeof rewardPool
       })
 
       it('allows manager to deposit ERC20 tokens', async function () {
@@ -191,7 +191,9 @@ describe(CONTRACT_NAME, function () {
       })
 
       it('reverts when non-manager tries to deposit', async function () {
-        const poolWithStranger = rewardPool.connect(stranger)
+        const poolWithStranger = rewardPool.connect(
+          stranger,
+        ) as typeof rewardPool
 
         await expect(
           poolWithStranger.deposit(depositAmount),
@@ -211,9 +213,9 @@ describe(CONTRACT_NAME, function () {
     })
 
     describe('with native token', function () {
-      let rewardPool: any
-      let manager: any
-      let pool: any
+      let rewardPool: Contract
+      let manager: HardhatEthersSigner
+      let pool: Contract
 
       beforeEach(async function () {
         const deployment = await loadFixture(deployNativeRewardPoolContract)
@@ -221,7 +223,7 @@ describe(CONTRACT_NAME, function () {
         manager = deployment.manager
 
         // Connect with manager
-        pool = rewardPool.connect(manager)
+        pool = rewardPool.connect(manager) as typeof rewardPool
       })
 
       it('allows manager to deposit native tokens', async function () {
