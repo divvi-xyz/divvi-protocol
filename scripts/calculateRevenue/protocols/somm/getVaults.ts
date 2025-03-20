@@ -3,6 +3,8 @@ import { NetworkId } from '../../../types'
 import { fetchWithTimeout } from '../../../utils/fetchWithTimeout'
 import { VaultInfo } from './types'
 
+const SUPPORTED_SUFFIXES = ['arbitrum', 'optimism']
+
 export async function getVaults(): Promise<VaultInfo[]> {
   try {
     const result = await fetchWithTimeout('https://api.sommelier.finance/tvl')
@@ -22,25 +24,39 @@ export async function getVaults(): Promise<VaultInfo[]> {
 
 function extractVaultInfo(response: Record<string, number>): VaultInfo[] {
   return Object.keys(response)
-    .filter((address) => isValidVaultAddress(address))
-    .map((address) => ({
-      networkId: getNetworkId(address),
-      vaultAddress: address.split('-')[0] as Address,
-    }))
+    .map(extractValidVaultInfo)
+    .filter((vault): vault is VaultInfo => vault !== null)
 }
 
-function isValidVaultAddress(address: string): boolean {
-  return (
-    address.endsWith('-arbitrum') ||
-    address.endsWith('-optimism') ||
-    isAddress(address)
-  )
+function extractValidVaultInfo(address: string): VaultInfo | null {
+  const baseAddress = address.split('-')[0]
+  const suffix = getSuffix(address)
+
+  // Only allow base Ethereum addresses or supported suffixes / networks
+  if (!isAddress(baseAddress) || (suffix && !SUPPORTED_SUFFIXES.includes(suffix))) {
+    return null
+  }
+
+  return {
+    networkId: getNetworkId(suffix),
+    vaultAddress: baseAddress as Address,
+  }
 }
 
-function getNetworkId(address: string): NetworkId {
-  if (address.endsWith('-arbitrum')) return NetworkId['arbitrum-one']
-  if (address.endsWith('-optimism')) return NetworkId['op-mainnet']
-  return NetworkId['ethereum-mainnet']
+function getSuffix(address: string): string | null {
+  const parts = address.split('-')
+  return parts.length > 1 ? parts[1] : null
+}
+
+function getNetworkId(suffix: string | null): NetworkId {
+  switch (suffix) {
+    case 'arbitrum':
+      return NetworkId['arbitrum-one']
+    case 'optimism':
+      return NetworkId['op-mainnet']
+    default:
+      return NetworkId['ethereum-mainnet']
+  }
 }
 
 function getFallbackVaults(): VaultInfo[] {
