@@ -151,7 +151,7 @@ describe(CONTRACT_NAME, function () {
     const depositAmount = hre.ethers.parseEther('1')
 
     tokenTypes.forEach(function ({ tokenType, deposit, deployFixture }) {
-      describe(`with ${tokenType}`, function () {
+      describe(`with ${tokenType} token`, function () {
         let rewardPool: Contract
         let manager: HardhatEthersSigner
         let stranger: HardhatEthersSigner
@@ -232,7 +232,7 @@ describe(CONTRACT_NAME, function () {
       getGasDeduction,
       deployFixture,
     }) {
-      describe(`with ${tokenType}`, function () {
+      describe(`with ${tokenType} token`, function () {
         const depositAmount = hre.ethers.parseEther('100')
         const withdrawAmount = hre.ethers.parseEther('50')
 
