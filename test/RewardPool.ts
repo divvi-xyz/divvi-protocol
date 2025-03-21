@@ -681,7 +681,7 @@ describe(CONTRACT_NAME, function () {
 
       await expect(poolWithManager.extendTimelock(newTimelock))
         .to.emit(rewardPool, 'TimelockExtended')
-        .withArgs(newTimelock)
+        .withArgs(newTimelock, currentTimelock)
       expect(await rewardPool.timelock()).to.equal(newTimelock)
     })
 
