@@ -455,160 +455,156 @@ describe(CONTRACT_NAME, function () {
     const rewardAmount = hre.ethers.parseEther('30')
     const claimAmount = hre.ethers.parseEther('20')
 
-    let rewardPool: Contract
-    let mockERC20: Contract
-    let manager: HardhatEthersSigner
-    let user1: HardhatEthersSigner
-    let poolWithManager: Contract
-    let poolWithUser: Contract
+    tokenTypes.forEach(function ({ tokenType, deposit, deployFixture }) {
+      describe(`with ${tokenType} token`, function () {
+        let rewardPool: Contract
+        let mockERC20: Contract
+        let manager: HardhatEthersSigner
+        let user1: HardhatEthersSigner
+        let poolWithManager: Contract
+        let poolWithUser: Contract
 
-    describe('with ERC20 token', function () {
-      beforeEach(async function () {
-        const deployment = await loadFixture(deployERC20RewardPoolContract)
-        rewardPool = deployment.rewardPool
-        mockERC20 = deployment.mockERC20
-        manager = deployment.manager
-        user1 = deployment.user1
+        beforeEach(async function () {
+          const deployment = await loadFixture(deployFixture)
+          rewardPool = deployment.rewardPool
+          mockERC20 = deployment.mockERC20
+          manager = deployment.manager
+          user1 = deployment.user1
 
-        // Connect with manager
-        poolWithManager = rewardPool.connect(manager) as typeof rewardPool
+          // Connect with manager
+          poolWithManager = rewardPool.connect(manager) as typeof rewardPool
 
-        // Deposit
-        await poolWithManager.deposit(depositAmount)
+          // Deposit
+          await deposit(poolWithManager, depositAmount)
 
-        // Add rewards
-        await poolWithManager.addRewards(
-          [user1.address],
-          [rewardAmount],
-          MOCK_REWARD_FUNCTION_ARGS,
-        )
+          // Add rewards
+          await poolWithManager.addRewards(
+            [user1.address],
+            [rewardAmount],
+            MOCK_REWARD_FUNCTION_ARGS,
+          )
 
-        // Connect with user
-        poolWithUser = rewardPool.connect(user1) as typeof rewardPool
-      })
-
-      it('allows users to claim partial rewards', async function () {
-        // Claim rewards
-        expect(await poolWithUser.claimReward(claimAmount))
-          .to.emit(rewardPool, 'ClaimReward')
-          .withArgs(user1.address, claimAmount)
-
-        // Check balances
-        expect(await mockERC20.balanceOf(user1.address)).to.equal(claimAmount)
-        expect(await rewardPool.pendingRewards(user1.address)).to.equal(
-          rewardAmount - claimAmount,
-        )
-        expect(await rewardPool.totalPendingRewards()).to.equal(
-          rewardAmount - claimAmount,
-        )
-        expect(await rewardPool.poolBalance()).to.equal(
-          depositAmount - claimAmount,
-        )
-      })
-
-      it('allows users to claim full reward amount', async function () {
-        await expect(poolWithUser.claimReward(rewardAmount))
-          .to.emit(rewardPool, 'ClaimReward')
-          .withArgs(user1.address, rewardAmount)
-
-        // Check balances
-        expect(await mockERC20.balanceOf(user1.address)).to.equal(rewardAmount)
-        expect(await rewardPool.pendingRewards(user1.address)).to.equal(0)
-        expect(await rewardPool.totalPendingRewards()).to.equal(0)
-      })
-
-      it('reverts when claiming more than pending rewards', async function () {
-        // Try to claim more than allocated
-        await expect(
-          poolWithUser.claimReward(hre.ethers.parseEther('40')),
-        ).to.be.revertedWithCustomError(rewardPool, 'InsufficientRewardBalance')
-      })
-
-      it('reverts when claiming zero amount', async function () {
-        await expect(poolWithUser.claimReward(0)).to.be.revertedWithCustomError(
-          rewardPool,
-          'AmountMustBeGreaterThanZero',
-        )
-      })
-
-      it('reverts when pool has insufficient balance', async function () {
-        // Mine blocks until timelock expires
-        await mine(10, { interval: TIMELOCK })
-
-        // Withdraw all funds
-        await poolWithManager.withdraw(await poolWithManager.poolBalance())
-
-        await expect(poolWithUser.claimReward(claimAmount))
-          .to.be.revertedWithCustomError(rewardPool, 'InsufficientPoolBalance')
-          .withArgs(claimAmount, 0)
-      })
-    })
-
-    describe('with native token', function () {
-      beforeEach(async function () {
-        const deployment = await loadFixture(deployNativeRewardPoolContract)
-        rewardPool = deployment.rewardPool
-        manager = deployment.manager
-        user1 = deployment.user1
-
-        // Connect with manager
-        poolWithManager = rewardPool.connect(manager) as typeof rewardPool
-
-        // Deposit
-        await poolWithManager.deposit(depositAmount, {
-          value: depositAmount,
+          // Connect with user
+          poolWithUser = rewardPool.connect(user1) as typeof rewardPool
         })
 
-        // Add rewards
-        await poolWithManager.addRewards(
-          [user1.address],
-          [rewardAmount],
-          MOCK_REWARD_FUNCTION_ARGS,
-        )
+        it('allows users to claim partial rewards', async function () {
+          const balanceHelpers = {
+            native: {
+              getBalance: async (address: string) =>
+                hre.ethers.provider.getBalance(address),
+              getDeduction: async (receipt: TransactionReceipt) =>
+                receipt.gasUsed * receipt.gasPrice,
+            },
+            ERC20: {
+              getBalance: async (address: string) =>
+                mockERC20.balanceOf(address),
+              getDeduction: async () => 0n,
+            },
+          }
 
-        // Connect with user
-        poolWithUser = rewardPool.connect(user1) as typeof rewardPool
-      })
+          const { getBalance, getDeduction } = balanceHelpers[tokenType]
 
-      it('allows users to claim native token rewards', async function () {
-        // Get balance before claim
-        const balanceBefore = await hre.ethers.provider.getBalance(
-          user1.address,
-        )
+          // Get balance before claim
+          const balanceBefore = await getBalance(user1.address)
 
-        // Claim rewards
-        const tx = await poolWithUser.claimReward(claimAmount)
-        const receipt: TransactionReceipt = await tx.wait()
+          // Claim rewards
+          const tx = await poolWithUser.claimReward(claimAmount)
+          const receipt = await tx.wait()
 
-        // Calculate gas used
-        const gasCost = receipt!.gasUsed * receipt!.gasPrice
+          // Calculate deduction (gas used for native token)
+          const deduction = await getDeduction(receipt)
 
-        // Get balance after claim
-        const balanceAfter = await hre.ethers.provider.getBalance(user1.address)
+          // Check event
+          await expect(tx)
+            .to.emit(rewardPool, 'ClaimReward')
+            .withArgs(user1.address, claimAmount)
 
-        // Check balances
-        expect(balanceAfter).to.equal(balanceBefore + claimAmount - gasCost)
-        expect(await rewardPool.pendingRewards(user1.address)).to.equal(
-          rewardAmount - claimAmount,
-        )
-        expect(await rewardPool.totalPendingRewards()).to.equal(
-          rewardAmount - claimAmount,
-        )
-        expect(await rewardPool.poolBalance()).to.equal(
-          depositAmount - claimAmount,
-        )
-      })
+          // Check balances
+          const balanceAfter = await getBalance(user1.address)
+          expect(balanceAfter).to.equal(balanceBefore + claimAmount - deduction)
+          expect(await rewardPool.pendingRewards(user1.address)).to.equal(
+            rewardAmount - claimAmount,
+          )
+          expect(await rewardPool.totalPendingRewards()).to.equal(
+            rewardAmount - claimAmount,
+          )
+          expect(await rewardPool.poolBalance()).to.equal(
+            depositAmount - claimAmount,
+          )
+        })
 
-      it('reverts when pool has insufficient balance', async function () {
-        // Mine blocks until timelock expires
-        await mine(10, { interval: TIMELOCK })
+        it('allows users to claim full reward amount', async function () {
+          const balanceHelpers = {
+            native: {
+              getBalance: async (address: string) =>
+                hre.ethers.provider.getBalance(address),
+              getDeduction: async (receipt: TransactionReceipt) =>
+                receipt.gasUsed * receipt.gasPrice,
+            },
+            ERC20: {
+              getBalance: async (address: string) =>
+                mockERC20.balanceOf(address),
+              getDeduction: async () => 0n,
+            },
+          }
 
-        // Withdraw all funds
-        await poolWithManager.withdraw(await poolWithManager.poolBalance())
+          const { getBalance, getDeduction } = balanceHelpers[tokenType]
 
-        await expect(poolWithUser.claimReward(claimAmount))
-          .to.be.revertedWithCustomError(rewardPool, 'InsufficientPoolBalance')
-          .withArgs(claimAmount, 0)
+          // Get balance before claim
+          const balanceBefore = await getBalance(user1.address)
+
+          // Claim rewards
+          const tx = await poolWithUser.claimReward(rewardAmount)
+          const receipt = await tx.wait()
+
+          // Calculate deduction (gas used for native token)
+          const gasCost = await getDeduction(receipt)
+
+          await expect(tx)
+            .to.emit(rewardPool, 'ClaimReward')
+            .withArgs(user1.address, rewardAmount)
+
+          // Check balances
+          const balanceAfter = await getBalance(user1.address)
+          expect(balanceAfter).to.equal(balanceBefore + rewardAmount - gasCost)
+          expect(await rewardPool.pendingRewards(user1.address)).to.equal(0)
+          expect(await rewardPool.totalPendingRewards()).to.equal(0)
+        })
+
+        it('reverts when claiming more than pending rewards', async function () {
+          // Try to claim more than allocated
+          await expect(
+            poolWithUser.claimReward(rewardAmount * 2n),
+          ).to.be.revertedWithCustomError(
+            rewardPool,
+            'InsufficientRewardBalance',
+          )
+        })
+
+        it('reverts when claiming zero amount', async function () {
+          await expect(
+            poolWithUser.claimReward(0),
+          ).to.be.revertedWithCustomError(
+            rewardPool,
+            'AmountMustBeGreaterThanZero',
+          )
+        })
+
+        it('reverts when pool has insufficient balance', async function () {
+          // Mine blocks until timelock expires
+          await mine(10, { interval: TIMELOCK })
+
+          // Withdraw all funds
+          await poolWithManager.withdraw(await poolWithManager.poolBalance())
+
+          await expect(poolWithUser.claimReward(claimAmount))
+            .to.be.revertedWithCustomError(
+              rewardPool,
+              'InsufficientPoolBalance',
+            )
+            .withArgs(claimAmount, 0)
+        })
       })
     })
   })
