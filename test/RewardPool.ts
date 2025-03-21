@@ -648,89 +648,98 @@ describe(CONTRACT_NAME, function () {
   })
 
   describe('Token rescue', function () {
-    it('allows manager to rescue other ERC20 tokens', async function () {
-      const { rewardPool, manager } = await loadFixture(
-        deployERC20RewardPoolContract,
-      )
+    tokenTypes.forEach(function ({ tokenType, deployFixture }) {
+      describe(`with ${tokenType} token`, function () {
+        const rescueAmount = hre.ethers.parseEther('10')
 
-      // Connect with manager
-      const pool = rewardPool.connect(manager) as typeof rewardPool
+        let rewardPool: Contract
+        let manager: HardhatEthersSigner
+        let stranger: HardhatEthersSigner
+        let poolWithManager: Contract
+        let tokenAddress: string
 
-      // Deploy additional token to rescue
-      const OtherToken = await hre.ethers.getContractFactory('MockERC20')
-      const otherToken = await OtherToken.deploy('Other Token', 'OTHER')
+        beforeEach(async function () {
+          const deployment = await loadFixture(deployFixture)
+          rewardPool = deployment.rewardPool
+          manager = deployment.manager
+          stranger = deployment.stranger
 
-      // Send tokens to pool
-      const rescueAmount = hre.ethers.parseEther('50')
-      await otherToken.mint(await rewardPool.getAddress(), rescueAmount)
+          // Connect with manager
+          poolWithManager = rewardPool.connect(manager) as typeof rewardPool
 
-      // Rescue tokens
-      await expect(pool.rescueToken(await otherToken.getAddress()))
-        .to.emit(rewardPool, 'RescueToken')
-        .withArgs(await otherToken.getAddress(), rescueAmount)
+          tokenAddress =
+            tokenType === 'native'
+              ? NATIVE_TOKEN_ADDRESS
+              : await deployment.mockERC20.getAddress()
+        })
 
-      expect(await otherToken.balanceOf(manager.address)).to.equal(rescueAmount)
-    })
+        it('allows manager to rescue non-pool ERC20 tokens', async function () {
+          // Deploy additional token to rescue
+          const OtherToken = await hre.ethers.getContractFactory('MockERC20')
+          const otherToken = await OtherToken.deploy('Other Token', 'OTHER')
+          await otherToken.waitForDeployment()
+          await otherToken.mint(await rewardPool.getAddress(), rescueAmount)
 
-    it('allows manager to rescue native tokens', async function () {
-      const { rewardPool, manager } = await loadFixture(
-        deployERC20RewardPoolContract,
-      )
+          // Rescue tokens
+          await expect(
+            poolWithManager.rescueToken(await otherToken.getAddress()),
+          )
+            .to.emit(rewardPool, 'RescueToken')
+            .withArgs(await otherToken.getAddress(), rescueAmount)
 
-      // Connect with manager
-      const pool = rewardPool.connect(manager) as typeof rewardPool
+          expect(await otherToken.balanceOf(manager.address)).to.equal(
+            rescueAmount,
+          )
+        })
 
-      const nativeAmount = hre.ethers.parseEther('10')
+        if (tokenType === 'ERC20') {
+          it('allows manager to rescue non-pool native tokens', async function () {
+            // Force send native tokens to contract
+            await setBalance(await rewardPool.getAddress(), rescueAmount)
 
-      // Force send native tokens to contract
-      await setBalance(await rewardPool.getAddress(), nativeAmount)
+            // Get balance before rescue
+            const balanceBefore = await hre.ethers.provider.getBalance(
+              manager.address,
+            )
 
-      // Get balance before rescue
-      const balanceBefore = await hre.ethers.provider.getBalance(
-        manager.address,
-      )
+            // Rescue tokens
+            const tx = await poolWithManager.rescueToken(NATIVE_TOKEN_ADDRESS)
+            const receipt: TransactionReceipt = await tx.wait()
 
-      // Rescue tokens
-      const tx = await pool.rescueToken(NATIVE_TOKEN_ADDRESS)
-      const receipt: TransactionReceipt = await tx.wait()
+            // Calculate gas used
+            const gasCost = receipt.gasUsed * receipt.gasPrice
 
-      // Calculate gas used
-      const gasCost = receipt!.gasUsed * receipt!.gasPrice
+            // Get balance after rescue
+            const balanceAfter = await hre.ethers.provider.getBalance(
+              manager.address,
+            )
 
-      // Get balance after rescue
-      const balanceAfter = await hre.ethers.provider.getBalance(manager.address)
+            // Check balance
+            expect(balanceAfter).to.equal(
+              balanceBefore + rescueAmount - gasCost,
+            )
+          })
+        }
 
-      // Check balance
-      expect(balanceAfter).to.equal(balanceBefore + nativeAmount - gasCost)
-    })
+        it('reverts when trying to rescue pool token', async function () {
+          await expect(
+            poolWithManager.rescueToken(tokenAddress),
+          ).to.be.revertedWithCustomError(rewardPool, 'CannotRescuePoolToken')
+        })
 
-    it('reverts when trying to rescue pool token', async function () {
-      const { rewardPool, mockERC20, manager } = await loadFixture(
-        deployERC20RewardPoolContract,
-      )
+        it('reverts when non-manager tries to rescue tokens', async function () {
+          const poolWithStranger = rewardPool.connect(
+            stranger,
+          ) as typeof rewardPool
 
-      // Connect with manager
-      const pool = rewardPool.connect(manager) as typeof rewardPool
-
-      await expect(
-        pool.rescueToken(await mockERC20.getAddress()),
-      ).to.be.revertedWithCustomError(rewardPool, 'CannotRescuePoolToken')
-    })
-
-    it('reverts when non-manager tries to rescue tokens', async function () {
-      const { rewardPool, mockERC20, stranger } = await loadFixture(
-        deployERC20RewardPoolContract,
-      )
-
-      // Connect with stranger
-      const pool = rewardPool.connect(stranger) as typeof rewardPool
-
-      await expect(
-        pool.rescueToken(await mockERC20.getAddress()),
-      ).to.be.revertedWithCustomError(
-        rewardPool,
-        'AccessControlUnauthorizedAccount',
-      )
+          await expect(
+            poolWithStranger.rescueToken(tokenAddress),
+          ).to.be.revertedWithCustomError(
+            rewardPool,
+            'AccessControlUnauthorizedAccount',
+          )
+        })
+      })
     })
   })
 
