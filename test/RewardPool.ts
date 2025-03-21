@@ -117,9 +117,9 @@ describe(CONTRACT_NAME, function () {
           await loadFixture(deployFixture)
 
         const expectedTokenAddress =
-          tokenType === 'ERC20'
-            ? await mockERC20.getAddress()
-            : NATIVE_TOKEN_ADDRESS
+          tokenType === 'native'
+            ? NATIVE_TOKEN_ADDRESS
+            : await mockERC20.getAddress()
 
         expect(await rewardPool.poolToken()).to.equal(expectedTokenAddress)
         expect(await rewardPool.isNativeToken()).to.equal(
@@ -656,7 +656,7 @@ describe(CONTRACT_NAME, function () {
         let manager: HardhatEthersSigner
         let stranger: HardhatEthersSigner
         let poolWithManager: Contract
-        let tokenAddress: string
+        let poolTokenAddress: string
 
         beforeEach(async function () {
           const deployment = await loadFixture(deployFixture)
@@ -667,7 +667,7 @@ describe(CONTRACT_NAME, function () {
           // Connect with manager
           poolWithManager = rewardPool.connect(manager) as typeof rewardPool
 
-          tokenAddress =
+          poolTokenAddress =
             tokenType === 'native'
               ? NATIVE_TOKEN_ADDRESS
               : await deployment.mockERC20.getAddress()
@@ -723,7 +723,7 @@ describe(CONTRACT_NAME, function () {
 
         it('reverts when trying to rescue pool token', async function () {
           await expect(
-            poolWithManager.rescueToken(tokenAddress),
+            poolWithManager.rescueToken(poolTokenAddress),
           ).to.be.revertedWithCustomError(rewardPool, 'CannotRescuePoolToken')
         })
 
@@ -733,7 +733,7 @@ describe(CONTRACT_NAME, function () {
           ) as typeof rewardPool
 
           await expect(
-            poolWithStranger.rescueToken(tokenAddress),
+            poolWithStranger.rescueToken(poolTokenAddress),
           ).to.be.revertedWithCustomError(
             rewardPool,
             'AccessControlUnauthorizedAccount',
