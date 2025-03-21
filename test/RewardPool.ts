@@ -88,6 +88,9 @@ describe(CONTRACT_NAME, function () {
       deposit: async function (contract: Contract, amount: bigint) {
         return contract.deposit(amount)
       },
+      getBalance: async function (address: string, contract: Contract) {
+        return contract.balanceOf(address)
+      },
       getGasDeduction: function () {
         return 0n
       },
@@ -97,6 +100,9 @@ describe(CONTRACT_NAME, function () {
       deployFixture: deployNativeRewardPoolContract,
       deposit: async function (contract: Contract, amount: bigint) {
         return contract.deposit(amount, { value: amount })
+      },
+      getBalance: async function (address: string) {
+        return hre.ethers.provider.getBalance(address)
       },
       getGasDeduction: function (receipt: TransactionReceipt) {
         return receipt.gasUsed * receipt.gasPrice
@@ -229,6 +235,7 @@ describe(CONTRACT_NAME, function () {
     tokenTypes.forEach(function ({
       tokenType,
       deposit,
+      getBalance,
       getGasDeduction,
       deployFixture,
     }) {
@@ -257,24 +264,11 @@ describe(CONTRACT_NAME, function () {
         })
 
         it('allows manager to withdraw after timelock', async function () {
-          const balanceHelpers = {
-            native: {
-              getBalance: async (address: string) =>
-                hre.ethers.provider.getBalance(address),
-            },
-            ERC20: {
-              getBalance: async (address: string) =>
-                mockERC20.balanceOf(address),
-            },
-          }
-
-          const { getBalance } = balanceHelpers[tokenType]
-
           // Mine blocks until timelock expires
           await mine(10, { interval: TIMELOCK })
 
           // Get balance before withdrawal
-          const balanceBefore = await getBalance(manager.address)
+          const balanceBefore = await getBalance(manager.address, mockERC20)
 
           // Withdraw
           const tx = await pool.withdraw(withdrawAmount)
@@ -289,7 +283,7 @@ describe(CONTRACT_NAME, function () {
             .withArgs(withdrawAmount)
 
           // Check balances
-          const balanceAfter = await getBalance(manager.address)
+          const balanceAfter = await getBalance(manager.address, mockERC20)
           expect(balanceAfter).to.equal(
             balanceBefore + withdrawAmount - deductionAmount,
           )
@@ -466,6 +460,7 @@ describe(CONTRACT_NAME, function () {
     tokenTypes.forEach(function ({
       tokenType,
       deposit,
+      getBalance,
       getGasDeduction,
       deployFixture,
     }) {
@@ -502,21 +497,8 @@ describe(CONTRACT_NAME, function () {
         })
 
         it('allows users to claim partial rewards', async function () {
-          const balanceHelpers = {
-            native: {
-              getBalance: async (address: string) =>
-                hre.ethers.provider.getBalance(address),
-            },
-            ERC20: {
-              getBalance: async (address: string) =>
-                mockERC20.balanceOf(address),
-            },
-          }
-
-          const { getBalance } = balanceHelpers[tokenType]
-
           // Get balance before claim
-          const balanceBefore = await getBalance(user1.address)
+          const balanceBefore = await getBalance(user1.address, mockERC20)
 
           // Claim rewards
           const tx = await poolWithUser.claimReward(claimAmount)
@@ -531,7 +513,7 @@ describe(CONTRACT_NAME, function () {
             .withArgs(user1.address, claimAmount)
 
           // Check balances
-          const balanceAfter = await getBalance(user1.address)
+          const balanceAfter = await getBalance(user1.address, mockERC20)
           expect(balanceAfter).to.equal(balanceBefore + claimAmount - deduction)
           expect(await rewardPool.pendingRewards(user1.address)).to.equal(
             rewardAmount - claimAmount,
@@ -545,21 +527,8 @@ describe(CONTRACT_NAME, function () {
         })
 
         it('allows users to claim full reward amount', async function () {
-          const balanceHelpers = {
-            native: {
-              getBalance: async (address: string) =>
-                hre.ethers.provider.getBalance(address),
-            },
-            ERC20: {
-              getBalance: async (address: string) =>
-                mockERC20.balanceOf(address),
-            },
-          }
-
-          const { getBalance } = balanceHelpers[tokenType]
-
           // Get balance before claim
-          const balanceBefore = await getBalance(user1.address)
+          const balanceBefore = await getBalance(user1.address, mockERC20)
 
           // Claim rewards
           const tx = await poolWithUser.claimReward(rewardAmount)
@@ -573,7 +542,7 @@ describe(CONTRACT_NAME, function () {
             .withArgs(user1.address, rewardAmount)
 
           // Check balances
-          const balanceAfter = await getBalance(user1.address)
+          const balanceAfter = await getBalance(user1.address, mockERC20)
           expect(balanceAfter).to.equal(
             balanceBefore + rewardAmount - deduction,
           )
