@@ -43,7 +43,7 @@ contract RewardPool is
   );
   event Deposit(uint256 amount);
   event Withdraw(uint256 amount);
-  event TimelockExtended(uint256 newTimelock);
+  event TimelockExtended(uint256 newTimelock, uint256 previousTimelock);
   event AddReward(
     address indexed user,
     uint256 amount,
@@ -131,8 +131,9 @@ contract RewardPool is
    * @notice Allowed only for address with MANAGER_ROLE
    */
   function extendTimelock(uint256 timestamp) external onlyRole(MANAGER_ROLE) {
+    uint256 previousTimelock = timelock;
     _setTimelock(timestamp);
-    emit TimelockExtended(timestamp);
+    emit TimelockExtended(timestamp, previousTimelock);
   }
 
   /**
