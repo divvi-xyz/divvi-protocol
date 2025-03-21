@@ -99,72 +99,45 @@ describe(CONTRACT_NAME, function () {
   ]
 
   describe('Initialization', function () {
-    it('initializes with correct ERC20 token parameters', async function () {
-      const { rewardPool, mockERC20, owner, manager } = await loadFixture(
-        deployERC20RewardPoolContract,
-      )
+    tokenTypes.forEach(function ({ tokenType, deployFixture }) {
+      it(`initializes correclty with ${tokenType} token`, async function () {
+        const { rewardPool, mockERC20, owner, manager } =
+          await loadFixture(deployFixture)
 
-      expect(await rewardPool.poolToken()).to.equal(
-        await mockERC20.getAddress(),
-      )
-      expect(await rewardPool.isNativeToken()).to.be.false
-      expect(await rewardPool.rewardFunctionId()).to.equal(
-        MOCK_REWARD_FUNCTION_ID,
-      )
-      expect(
-        await rewardPool.hasRole(
-          await rewardPool.DEFAULT_ADMIN_ROLE(),
-          owner.address,
-        ),
-      ).to.be.true
-      expect(
-        await rewardPool.hasRole(
-          await rewardPool.MANAGER_ROLE(),
-          manager.address,
-        ),
-      ).to.be.true
-      const currentTimelock = await rewardPool.timelock()
-      expect(currentTimelock).to.be.greaterThan(await time.latest())
-      await expect(rewardPool.deploymentTransaction())
-        .to.emit(rewardPool, 'PoolInitialized')
-        .withArgs(
-          await mockERC20.getAddress(),
-          MOCK_REWARD_FUNCTION_ID,
-          currentTimelock,
+        const expectedTokenAddress =
+          tokenType === 'ERC20'
+            ? await mockERC20.getAddress()
+            : NATIVE_TOKEN_ADDRESS
+
+        expect(await rewardPool.poolToken()).to.equal(expectedTokenAddress)
+        expect(await rewardPool.isNativeToken()).to.equal(
+          tokenType === 'native',
         )
-    })
-
-    it('initializes with correct native token parameters', async function () {
-      const { rewardPool, owner, manager } = await loadFixture(
-        deployNativeRewardPoolContract,
-      )
-
-      expect(await rewardPool.poolToken()).to.equal(NATIVE_TOKEN_ADDRESS)
-      expect(await rewardPool.isNativeToken()).to.be.true
-      expect(await rewardPool.rewardFunctionId()).to.equal(
-        MOCK_REWARD_FUNCTION_ID,
-      )
-      expect(
-        await rewardPool.hasRole(
-          await rewardPool.DEFAULT_ADMIN_ROLE(),
-          owner.address,
-        ),
-      ).to.be.true
-      expect(
-        await rewardPool.hasRole(
-          await rewardPool.MANAGER_ROLE(),
-          manager.address,
-        ),
-      ).to.be.true
-      const currentTimelock = await rewardPool.timelock()
-      expect(currentTimelock).to.be.greaterThan(await time.latest())
-      await expect(rewardPool.deploymentTransaction())
-        .to.emit(rewardPool, 'PoolInitialized')
-        .withArgs(
-          NATIVE_TOKEN_ADDRESS,
+        expect(await rewardPool.rewardFunctionId()).to.equal(
           MOCK_REWARD_FUNCTION_ID,
-          currentTimelock,
         )
+        expect(
+          await rewardPool.hasRole(
+            await rewardPool.DEFAULT_ADMIN_ROLE(),
+            owner.address,
+          ),
+        ).to.be.true
+        expect(
+          await rewardPool.hasRole(
+            await rewardPool.MANAGER_ROLE(),
+            manager.address,
+          ),
+        ).to.be.true
+        const currentTimelock = await rewardPool.timelock()
+        expect(currentTimelock).to.be.greaterThan(await time.latest())
+        await expect(rewardPool.deploymentTransaction())
+          .to.emit(rewardPool, 'PoolInitialized')
+          .withArgs(
+            expectedTokenAddress,
+            MOCK_REWARD_FUNCTION_ID,
+            currentTimelock,
+          )
+      })
     })
   })
 
