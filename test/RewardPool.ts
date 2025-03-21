@@ -88,12 +88,18 @@ describe(CONTRACT_NAME, function () {
       deposit: async function (contract: Contract, amount: bigint) {
         return contract.deposit(amount)
       },
+      getGasDeduction: function () {
+        return 0n
+      },
     },
     {
       tokenType: 'native',
       deployFixture: deployNativeRewardPoolContract,
       deposit: async function (contract: Contract, amount: bigint) {
         return contract.deposit(amount, { value: amount })
+      },
+      getGasDeduction: function (receipt: TransactionReceipt) {
+        return receipt.gasUsed * receipt.gasPrice
       },
     },
   ]
@@ -220,7 +226,12 @@ describe(CONTRACT_NAME, function () {
   })
 
   describe('Withdraw', function () {
-    tokenTypes.forEach(function ({ tokenType, deposit, deployFixture }) {
+    tokenTypes.forEach(function ({
+      tokenType,
+      deposit,
+      getGasDeduction,
+      deployFixture,
+    }) {
       describe(`with ${tokenType}`, function () {
         const depositAmount = hre.ethers.parseEther('100')
         const withdrawAmount = hre.ethers.parseEther('50')
@@ -250,17 +261,14 @@ describe(CONTRACT_NAME, function () {
             native: {
               getBalance: async (address: string) =>
                 hre.ethers.provider.getBalance(address),
-              getDeduction: async (receipt: TransactionReceipt) =>
-                receipt.gasUsed * receipt.gasPrice,
             },
             ERC20: {
               getBalance: async (address: string) =>
                 mockERC20.balanceOf(address),
-              getDeduction: async () => 0n,
             },
           }
 
-          const { getBalance, getDeduction } = balanceHelpers[tokenType]
+          const { getBalance } = balanceHelpers[tokenType]
 
           // Mine blocks until timelock expires
           await mine(10, { interval: TIMELOCK })
@@ -273,7 +281,7 @@ describe(CONTRACT_NAME, function () {
           const receipt = await tx.wait()
 
           // Calculate deduction (gas used for native token)
-          const deductionAmount = await getDeduction(receipt)
+          const deductionAmount = getGasDeduction(receipt)
 
           // Check event
           await expect(tx)
@@ -455,7 +463,12 @@ describe(CONTRACT_NAME, function () {
     const rewardAmount = hre.ethers.parseEther('30')
     const claimAmount = hre.ethers.parseEther('20')
 
-    tokenTypes.forEach(function ({ tokenType, deposit, deployFixture }) {
+    tokenTypes.forEach(function ({
+      tokenType,
+      deposit,
+      getGasDeduction,
+      deployFixture,
+    }) {
       describe(`with ${tokenType} token`, function () {
         let rewardPool: Contract
         let mockERC20: Contract
@@ -493,17 +506,14 @@ describe(CONTRACT_NAME, function () {
             native: {
               getBalance: async (address: string) =>
                 hre.ethers.provider.getBalance(address),
-              getDeduction: async (receipt: TransactionReceipt) =>
-                receipt.gasUsed * receipt.gasPrice,
             },
             ERC20: {
               getBalance: async (address: string) =>
                 mockERC20.balanceOf(address),
-              getDeduction: async () => 0n,
             },
           }
 
-          const { getBalance, getDeduction } = balanceHelpers[tokenType]
+          const { getBalance } = balanceHelpers[tokenType]
 
           // Get balance before claim
           const balanceBefore = await getBalance(user1.address)
@@ -513,7 +523,7 @@ describe(CONTRACT_NAME, function () {
           const receipt = await tx.wait()
 
           // Calculate deduction (gas used for native token)
-          const deduction = await getDeduction(receipt)
+          const deduction = getGasDeduction(receipt)
 
           // Check event
           await expect(tx)
@@ -539,17 +549,14 @@ describe(CONTRACT_NAME, function () {
             native: {
               getBalance: async (address: string) =>
                 hre.ethers.provider.getBalance(address),
-              getDeduction: async (receipt: TransactionReceipt) =>
-                receipt.gasUsed * receipt.gasPrice,
             },
             ERC20: {
               getBalance: async (address: string) =>
                 mockERC20.balanceOf(address),
-              getDeduction: async () => 0n,
             },
           }
 
-          const { getBalance, getDeduction } = balanceHelpers[tokenType]
+          const { getBalance } = balanceHelpers[tokenType]
 
           // Get balance before claim
           const balanceBefore = await getBalance(user1.address)
@@ -559,7 +566,7 @@ describe(CONTRACT_NAME, function () {
           const receipt = await tx.wait()
 
           // Calculate deduction (gas used for native token)
-          const gasCost = await getDeduction(receipt)
+          const deduction = getGasDeduction(receipt)
 
           await expect(tx)
             .to.emit(rewardPool, 'ClaimReward')
@@ -567,7 +574,9 @@ describe(CONTRACT_NAME, function () {
 
           // Check balances
           const balanceAfter = await getBalance(user1.address)
-          expect(balanceAfter).to.equal(balanceBefore + rewardAmount - gasCost)
+          expect(balanceAfter).to.equal(
+            balanceBefore + rewardAmount - deduction,
+          )
           expect(await rewardPool.pendingRewards(user1.address)).to.equal(0)
           expect(await rewardPool.totalPendingRewards()).to.equal(0)
         })
