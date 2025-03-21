@@ -140,14 +140,12 @@ describe(REGISTRY_CONTRACT_NAME, function () {
 
       // Non-owner (addr1) should not be able to register the referrer
       await expect(
-        registry
-          .connect(addr1)
-          .registerReferrer(
-            mockReferrerIdHex,
-            protocolIds,
-            mockRewardRates,
-            mockRewardAddress,
-          ),
+        (registry.connect(addr1) as typeof registry).registerReferrer(
+          mockReferrerIdHex,
+          protocolIds,
+          mockRewardRates,
+          mockRewardAddress,
+        ),
       ).to.be.rejectedWith('AccessControlUnauthorizedAccount')
     })
   })
@@ -164,9 +162,10 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       )
 
       await expect(
-        registry
-          .connect(addr1)
-          .registerReferrals(mockReferrerIdHex, [mockProtocolIdHex]),
+        (registry.connect(addr1) as typeof registry).registerReferrals(
+          mockReferrerIdHex,
+          [mockProtocolIdHex],
+        ),
       )
         .to.emit(registry, 'ReferralRegistered')
         .withArgs(mockProtocolIdHex, mockReferrerIdHex, addr1.address)
@@ -192,9 +191,10 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       )
 
       await expect(
-        registry
-          .connect(addr1)
-          .registerReferrals(mockReferrerIdHex, protocolIds),
+        (registry.connect(addr1) as typeof registry).registerReferrals(
+          mockReferrerIdHex,
+          protocolIds,
+        ),
       )
         .to.emit(registry, 'ReferralRegistered')
         .withArgs(mockProtocolIdHex, mockReferrerIdHex, addr1.address)
@@ -216,9 +216,10 @@ describe(REGISTRY_CONTRACT_NAME, function () {
       const { registry, addr1 } = await deployRegistryContract()
 
       await expect(
-        registry
-          .connect(addr1)
-          .registerReferrals(mockReferrerIdHex, [mockProtocolIdHex]),
+        (registry.connect(addr1) as typeof registry).registerReferrals(
+          mockReferrerIdHex,
+          [mockProtocolIdHex],
+        ),
       )
         .to.be.revertedWithCustomError(registry, 'ReferrerNotRegistered')
         .withArgs(mockProtocolIdHex, mockReferrerIdHex)
@@ -239,15 +240,17 @@ describe(REGISTRY_CONTRACT_NAME, function () {
         mockRewardRates,
         mockRewardAddress,
       )
-      await registry
-        .connect(addr1)
-        .registerReferrals(mockReferrerIdHex, [mockProtocolIdHex])
+      await (registry.connect(addr1) as typeof registry).registerReferrals(
+        mockReferrerIdHex,
+        [mockProtocolIdHex],
+      )
 
       // Trying to register again should revert with custom error "UserAlreadyRegistered"
       await expect(
-        registry
-          .connect(addr1)
-          .registerReferrals(mockReferrerId2Hex, [mockProtocolIdHex]),
+        (registry.connect(addr1) as typeof registry).registerReferrals(
+          mockReferrerId2Hex,
+          [mockProtocolIdHex],
+        ),
       )
         .to.be.revertedWithCustomError(registry, 'UserAlreadyRegistered')
         .withArgs(mockProtocolIdHex, mockReferrerId2Hex, addr1.address)
@@ -266,9 +269,10 @@ describe(REGISTRY_CONTRACT_NAME, function () {
         mockRewardAddress,
       )
 
-      await registry
-        .connect(addr1)
-        .registerReferrals(mockReferrerIdHex, [mockProtocolIdHex])
+      await (registry.connect(addr1) as typeof registry).registerReferrals(
+        mockReferrerIdHex,
+        [mockProtocolIdHex],
+      )
 
       const referred = await registry.isUserRegistered(addr1, [
         mockProtocolIdHex,
@@ -316,9 +320,10 @@ describe(REGISTRY_CONTRACT_NAME, function () {
         mockRewardAddress,
       )
 
-      await registry
-        .connect(addr1)
-        .registerReferrals(mockReferrerIdHex, [mockProtocolIdHex])
+      await (registry.connect(addr1) as typeof registry).registerReferrals(
+        mockReferrerIdHex,
+        [mockProtocolIdHex],
+      )
       const [userAddresses, timestamps] = await registry.getUsers(
         mockProtocolIdHex,
         mockReferrerIdHex,
