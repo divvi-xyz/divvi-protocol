@@ -6,20 +6,15 @@ import { VaultInfo } from './types'
 const SUPPORTED_SUFFIXES = ['arbitrum', 'optimism']
 
 export async function getVaults(): Promise<VaultInfo[]> {
-  try {
-    const result = await fetchWithTimeout('https://api.sommelier.finance/tvl')
-    if (!result.ok) {
-      throw new Error(
-        `Failed to fetch vaults from the Somm API: ${result.status} ${result.statusText}`,
-      )
-    }
-
-    const { Response: response } = await result.json()
-    return extractVaultInfo(response)
-  } catch (error) {
-    console.error('Error in getVaults:', error)
-    return getFallbackVaults()
+  const result = await fetchWithTimeout('https://api.sommelier.finance/tvl')
+  if (!result.ok) {
+    throw new Error(
+      `Failed to fetch vaults from the Somm API: ${result.status} ${result.statusText}`,
+    )
   }
+
+  const { Response: response } = await result.json()
+  return extractVaultInfo(response)
 }
 
 function extractVaultInfo(response: Record<string, number>): VaultInfo[] {
@@ -60,14 +55,4 @@ function getNetworkId(suffix: string | null): NetworkId {
     default:
       return NetworkId['ethereum-mainnet']
   }
-}
-
-function getFallbackVaults(): VaultInfo[] {
-  return [
-    // Real Yield ETH on Arbitrum
-    {
-      networkId: NetworkId['arbitrum-one'],
-      vaultAddress: '0xc47bb288178ea40bf520a91826a3dee9e0dbfa4c',
-    },
-  ]
 }

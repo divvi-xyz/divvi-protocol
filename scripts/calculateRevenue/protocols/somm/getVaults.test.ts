@@ -40,17 +40,11 @@ describe('getVaults', () => {
     ])
   })
 
-  it('should return fallback vaults when API fetch fails', async () => {
+  it('should throw an error when API fetch fails', async () => {
     nock('https://api.sommelier.finance')
       .get('/tvl')
       .replyWithError('API error')
 
-    const result = await getVaults()
-    expect(result).toEqual([
-      {
-        networkId: NetworkId['arbitrum-one'],
-        vaultAddress: '0xc47bb288178ea40bf520a91826a3dee9e0dbfa4c',
-      },
-    ])
+    await expect(getVaults()).rejects.toThrow('API error')
   })
 })
