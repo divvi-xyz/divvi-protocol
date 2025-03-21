@@ -25,7 +25,7 @@ yarn hardhat node
 Deploy Registry:
 
 ```
-yarn hardhat deploy-registry --network localhost --shell
+yarn hardhat deploy-registry --network localhost
 ```
 
 And create some dummy data:
@@ -39,16 +39,16 @@ yarn hardhat --network hardhat run scripts/setupTestnet.ts
 Deploy mock token:
 
 ```
-yarn hardhat deploy-mock-token --network localhost --shell
+yarn hardhat deploy-mock-token --network localhost
 ```
 
 Deploy RewardPool using the deployed mock token address:
 
 ```
-yarn hardhat deploy-reward-pool --network localhost --shell --pool-token 0x5FbDB2315678afecb367f032d93F642f64180aa3 --reward-function 0xa1b2c3d4e5f67890abcdef1234567890abcdef12 --timelock 1767222000
+yarn hardhat deploy-reward-pool --network localhost --pool-token 0x5FbDB2315678afecb367f032d93F642f64180aa3 --reward-function 0xa1b2c3d4e5f67890abcdef1234567890abcdef12 --timelock 1767222000
 ```
 
-> The address below should work if you deploy the mock token first thing on the fresh Harhat node.
+> The token address above will match if you deploy the mock token first thing on the fresh Harhat node.
 
 Run Harhdat console:
 
@@ -56,7 +56,7 @@ Run Harhdat console:
 yarn hardhat console --network localhost
 ```
 
-Use `ethers` in Hardhat console:
+Use `ethers` in Hardhat console to interact with the contract:
 
 ```
 const RewardPool = await ethers.getContractFactory("RewardPool")
@@ -124,13 +124,13 @@ We use [OpenZeppelin Defender](https://www.openzeppelin.com/defender) to manage 
 To deploy Registry, run:
 
 ```bash
-yarn hardhat deploy-registry --network celo --shell --use-defender --deploy-salt <SALT> --owner-address <OWNER_ADDRESS>
+yarn hardhat deploy-registry --network celo --use-defender --defender-deploy-salt <SALT> --owner-address <OWNER_ADDRESS>
 ```
 
 To deploy RewardPool, run:
 
 ```bash
-yarn hardhat deploy-registry --network celo --shell --use-defender --deploy-salt <SALT> --owner-address <OWNER_ADDRESS> --pool-token <TOKEN_ADDRESS> --manager-address <MANAGER_ADDRESS> --reward-function 0x<GIT_HASH> --timelock <TIMESTAMP>
+yarn hardhat deploy-registry --network celo --use-defender --defender-deploy-salt <SALT> --owner-address <OWNER_ADDRESS> --pool-token <TOKEN_ADDRESS> --manager-address <MANAGER_ADDRESS> --reward-function 0x<GIT_HASH> --timelock <TIMESTAMP>
 ```
 
 After this is done, you should see output in your terminal with a command to run to verify the contract on the block explorers.

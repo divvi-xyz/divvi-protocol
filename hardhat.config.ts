@@ -4,7 +4,7 @@ import '@nomicfoundation/hardhat-ethers'
 import '@nomicfoundation/hardhat-chai-matchers'
 import '@openzeppelin/hardhat-upgrades'
 import { HardhatUserConfig, task, types } from 'hardhat/config'
-import { HDAccountsUserConfig } from 'hardhat/types'
+import { HardhatRuntimeEnvironment, HDAccountsUserConfig } from 'hardhat/types'
 import * as dotenv from 'dotenv'
 import { ethers } from 'ethers'
 
@@ -32,8 +32,7 @@ const ONE_DAY = 60 * 60 * 24
 task('deploy-registry', 'Deploy Registry contract')
   .addOptionalParam('ownerAddress', 'Address to use as owner')
   .addFlag('useDefender', 'Deploy using OpenZeppelin Defender')
-  .addOptionalParam('deploySalt', 'Salt to use for CREATE2 deployments')
-  .addFlag('shell', 'Print shell commands for deployed contracts to stdout')
+  .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
   .setAction(async (taskArgs, hre) => {
     if (
       taskArgs.useDefender &&
@@ -49,9 +48,7 @@ task('deploy-registry', 'Deploy Registry contract')
 
     await deployContract(hre, 'Registry', [ownerAddress, ONE_DAY], {
       useDefender: taskArgs.useDefender,
-      deploySalt: taskArgs.deploySalt,
-      shell: taskArgs.shell,
-      ownerAddress,
+      defenderDeploySalt: taskArgs.defenderDeploySalt,
     })
   })
 
@@ -67,8 +64,7 @@ task('deploy-reward-pool', 'Deploy RewardPool contract')
   )
   .addOptionalParam('ownerAddress', 'Address to use as owner')
   .addFlag('useDefender', 'Deploy using OpenZeppelin Defender')
-  .addOptionalParam('deploySalt', 'Salt to use for CREATE2 deployments')
-  .addFlag('shell', 'Print shell commands for deployed contracts to stdout')
+  .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
   .setAction(async (taskArgs, hre) => {
     if (
       taskArgs.useDefender &&
@@ -101,69 +97,63 @@ task('deploy-reward-pool', 'Deploy RewardPool contract')
         taskArgs.timelock,
       ],
       {
-        useDefender: taskArgs.useDefender,
-        deploySalt: taskArgs.deploySalt,
-        shell: taskArgs.shell,
-        ownerAddress,
         isUpgradeable: true,
+        useDefender: taskArgs.useDefender,
+        defenderDeploySalt: taskArgs.defenderDeploySalt,
       },
     )
   })
 
-task('deploy-mock-token', 'Deploy mock ERC-20 token')
-  .addOptionalParam('ownerAddress', 'Address to use as owner')
-  .addFlag('shell', 'Print shell commands for deployed contracts to stdout')
+task('upgrade-reward-pool', 'Upgrade RewardPool contract')
+  .addParam('proxyAddress', 'Address of the token used for rewards')
+  .addFlag('useDefender', 'Deploy using OpenZeppelin Defender')
+  .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
   .setAction(async (taskArgs, hre) => {
-    const ownerAddress =
-      taskArgs.ownerAddress || (await hre.ethers.getSigners())[0].address
+    if (
+      taskArgs.useDefender &&
+      !SUPPORTED_NETWORKS.includes(hre.network.name)
+    ) {
+      throw Error(
+        `--use-defender only supports networks: ${SUPPORTED_NETWORKS}`,
+      )
+    }
 
-    await deployContract(hre, 'MockERC20', ['Mock ERC20', 'MOCK'], {
+    await upgradeContract(hre, 'RewardPool', taskArgs.proxyAddress, {
       useDefender: taskArgs.useDefender,
-      deploySalt: taskArgs.deploySalt,
-      shell: taskArgs.shell,
-      ownerAddress,
+      defenderDeploySalt: taskArgs.defenderDeploySalt,
     })
   })
 
+task('deploy-mock-token', 'Deploy mock ERC-20 token').setAction(
+  async (_, hre) => {
+    await deployContract(hre, 'MockERC20', ['Mock ERC20', 'MOCK'])
+  },
+)
+
+// Contract deployment helper
 async function deployContract(
-  hre: any,
+  hre: HardhatRuntimeEnvironment,
   contractName: string,
   constructorArgs: any[],
   config: {
-    useDefender: boolean
-    deploySalt?: string
-    shell?: boolean
-    ownerAddress?: string
     isUpgradeable?: boolean
-  },
+    useDefender?: boolean
+    defenderDeploySalt?: string
+  } = {},
 ) {
   const Contract = await hre.ethers.getContractFactory(contractName)
-
-  let address: string
-  let ownerAddress = config.ownerAddress
-  let deploymentInfo: any
 
   if (config.useDefender) {
     console.log(`Deploying ${contractName} with OpenZeppelin Defender`)
     if (config.isUpgradeable) {
-      const result = await hre.defender.deployUpgradeable(
-        Contract,
-        constructorArgs,
-        {
-          salt: config.deploySalt,
-          kind: 'uups',
-        },
-      )
-      address = await result.getAddress()
-      deploymentInfo = result
+      await hre.defender.deployProxy(Contract, constructorArgs, {
+        salt: config.defenderDeploySalt,
+        kind: 'uups',
+      })
     } else {
-      const result = await hre.defender.deployContract(
-        Contract,
-        constructorArgs,
-        { salt: config.deploySalt },
-      )
-      address = await result.getAddress()
-      deploymentInfo = result
+      await hre.defender.deployContract(Contract, constructorArgs, {
+        salt: config.defenderDeploySalt,
+      })
     }
   } else {
     console.log(`Deploying ${contractName} with local signer`)
@@ -172,28 +162,33 @@ async function deployContract(
         kind: 'uups',
       })
       await result.waitForDeployment()
-      address = await result.getAddress()
-      deploymentInfo = result
     } else {
-      const result = await Contract.deploy(...constructorArgs)
-      address = await result.getAddress()
-      deploymentInfo = result
+      await Contract.deploy(...constructorArgs)
     }
   }
+}
 
-  if (config.shell) {
-    console.log(`export ${contractName.toUpperCase()}_ADDRESS=${address}`)
-    console.log(`export OWNER_ADDRESS=${ownerAddress}`)
-    console.log('\nTo verify the contract, run:')
-    if (config.isUpgradeable) {
-      console.log(
-        `yarn hardhat verify:proxy ${address} --network ${hre.network.name}`,
-      )
-    } else {
-      console.log(
-        `yarn hardhat verify ${address} --network ${hre.network.name} ${constructorArgs.join(' ')}`,
-      )
-    }
+// Contract upgrade helper
+async function upgradeContract(
+  hre: HardhatRuntimeEnvironment,
+  contractName: string,
+  proxyAddress: string,
+  config: {
+    useDefender?: boolean
+    defenderDeploySalt?: string
+  } = {},
+) {
+  const Contract = await hre.ethers.getContractFactory(contractName)
+
+  if (config.useDefender) {
+    console.log(`Upgrading ${contractName} with OpenZeppelin Defender`)
+    await hre.defender.proposeUpgradeWithApproval(proxyAddress, Contract, {
+      salt: config.defenderDeploySalt,
+    })
+  } else {
+    console.log(`Upgrading ${contractName} with local signer`)
+    const result = await hre.upgrades.upgradeProxy(proxyAddress, Contract)
+    await result.waitForDeployment()
   }
 }
 
