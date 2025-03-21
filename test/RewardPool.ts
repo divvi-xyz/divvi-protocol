@@ -232,6 +232,9 @@ describe(CONTRACT_NAME, function () {
   })
 
   describe('Withdraw', function () {
+    const depositAmount = hre.ethers.parseEther('100')
+    const withdrawAmount = hre.ethers.parseEther('50')
+
     tokenTypes.forEach(function ({
       tokenType,
       deposit,
@@ -240,9 +243,6 @@ describe(CONTRACT_NAME, function () {
       deployFixture,
     }) {
       describe(`with ${tokenType} token`, function () {
-        const depositAmount = hre.ethers.parseEther('100')
-        const withdrawAmount = hre.ethers.parseEther('50')
-
         let rewardPool: Contract
         let mockERC20: Contract
         let manager: HardhatEthersSigner
