@@ -81,6 +81,17 @@ describe(CONTRACT_NAME, function () {
     return deployRewardPoolContract({ tokenType: 'native' })
   }
 
+  const tokenTypes = [
+    {
+      tokenType: 'ERC20',
+      deployFixture: deployERC20RewardPoolContract,
+    },
+    {
+      tokenType: 'native',
+      deployFixture: deployNativeRewardPoolContract,
+    },
+  ]
+
   describe('Initialization', function () {
     it('initializes with correct ERC20 token parameters', async function () {
       const { rewardPool, mockERC20, owner, manager } = await loadFixture(
@@ -242,123 +253,116 @@ describe(CONTRACT_NAME, function () {
   })
 
   describe('Withdraw', function () {
-    const depositAmount = hre.ethers.parseEther('100')
-    const withdrawAmount = hre.ethers.parseEther('50')
+    tokenTypes.forEach(function ({ tokenType, deployFixture }) {
+      describe(`with ${tokenType}`, function () {
+        const depositAmount = hre.ethers.parseEther('100')
+        const withdrawAmount = hre.ethers.parseEther('50')
 
-    let rewardPool: Contract
-    let mockERC20: Contract
-    let manager: HardhatEthersSigner
-    let stranger: HardhatEthersSigner
-    let pool: Contract
+        let rewardPool: Contract
+        let mockERC20: Contract
+        let manager: HardhatEthersSigner
+        let stranger: HardhatEthersSigner
+        let pool: Contract
 
-    describe('with ERC20 token', function () {
-      beforeEach(async function () {
-        const deployment = await loadFixture(deployERC20RewardPoolContract)
-        rewardPool = deployment.rewardPool
-        mockERC20 = deployment.mockERC20
-        manager = deployment.manager
-        stranger = deployment.stranger
+        beforeEach(async function () {
+          const deployment = await loadFixture(deployFixture)
+          rewardPool = deployment.rewardPool
+          mockERC20 = deployment.mockERC20
+          manager = deployment.manager
+          stranger = deployment.stranger
 
-        // Connect with manager
-        pool = rewardPool.connect(manager) as typeof rewardPool
+          const deposit = {
+            ERC20: (amount: bigint) => pool.deposit(amount),
+            native: (amount: bigint) => pool.deposit(amount, { value: amount }),
+          }
 
-        // Deposit
-        await pool.deposit(depositAmount)
-      })
+          // Connect with manager
+          pool = rewardPool.connect(manager) as typeof rewardPool
 
-      it('allows manager to withdraw after timelock', async function () {
-        // Mine blocks until timelock expires
-        await mine(10, { interval: TIMELOCK })
+          // Deposit
+          await deposit[tokenType](depositAmount)
+        })
 
-        // Withdraw
-        expect(await pool.withdraw(withdrawAmount))
-          .to.emit(rewardPool, 'Withdraw')
-          .withArgs(withdrawAmount)
+        it('allows manager to withdraw after timelock', async function () {
+          const balanceHelpers = {
+            native: {
+              getBalance: async (address: string) =>
+                hre.ethers.provider.getBalance(address),
+              getDeduction: async (receipt: TransactionReceipt) =>
+                receipt.gasUsed * receipt.gasPrice,
+            },
+            ERC20: {
+              getBalance: async (address: string) =>
+                mockERC20.balanceOf(address),
+              getDeduction: async () => 0n,
+            },
+          }
 
-        // Check balance
-        expect(await rewardPool.poolBalance()).to.equal(
-          depositAmount - withdrawAmount,
-        )
-        expect(await mockERC20.balanceOf(manager.address)).to.equal(
-          MANAGER_CAPITAL - depositAmount + withdrawAmount,
-        )
-      })
+          const { getBalance, getDeduction } = balanceHelpers[tokenType]
 
-      it('reverts withdrawals before timelock expires', async function () {
-        const blockTimestamp = (await time.latest()) + 1
-        await expect(pool.withdraw(withdrawAmount))
-          .to.be.revertedWithCustomError(rewardPool, 'TimelockNotExpired')
-          .withArgs(blockTimestamp, await rewardPool.timelock())
-      })
+          // Mine blocks until timelock expires
+          await mine(10, { interval: TIMELOCK })
 
-      it('reverts when withdrawing more than pool balance', async function () {
-        // Mine blocks until timelock expires
-        await mine(10, { interval: TIMELOCK })
+          // Get balance before withdrawal
+          const balanceBefore = await getBalance(manager.address)
 
-        // Try to withdraw more than balance
-        const largeWithdrawAmount = hre.ethers.parseEther('150')
-        await expect(pool.withdraw(largeWithdrawAmount))
-          .to.be.revertedWithCustomError(rewardPool, 'InsufficientPoolBalance')
-          .withArgs(largeWithdrawAmount, await rewardPool.poolBalance())
-      })
+          // Withdraw
+          const tx = await pool.withdraw(withdrawAmount)
+          const receipt = await tx.wait()
 
-      it('reverts when non-manager tries to withdraw', async function () {
-        // Connect with stranger
-        const poolWithStranger = rewardPool.connect(
-          stranger,
-        ) as typeof rewardPool
+          // Calculate deduction (gas used for native token)
+          const deductionAmount = await getDeduction(receipt)
 
-        await expect(
-          poolWithStranger.withdraw(withdrawAmount),
-        ).to.be.revertedWithCustomError(
-          rewardPool,
-          'AccessControlUnauthorizedAccount',
-        )
-      })
-    })
+          // Check event
+          await expect(tx)
+            .to.emit(rewardPool, 'Withdraw')
+            .withArgs(withdrawAmount)
 
-    describe('with native token', function () {
-      const nativeDepositAmount = hre.ethers.parseEther('5')
-      const nativeWithdrawAmount = hre.ethers.parseEther('2')
+          // Check balances
+          const balanceAfter = await getBalance(manager.address)
+          expect(balanceAfter).to.equal(
+            balanceBefore + withdrawAmount - deductionAmount,
+          )
 
-      beforeEach(async function () {
-        const deployment = await loadFixture(deployNativeRewardPoolContract)
-        rewardPool = deployment.rewardPool
-        manager = deployment.manager
+          expect(await rewardPool.poolBalance()).to.equal(
+            depositAmount - withdrawAmount,
+          )
+        })
 
-        // Connect with manager
-        pool = rewardPool.connect(manager) as typeof rewardPool
+        it('reverts withdrawals before timelock expires', async function () {
+          const blockTimestamp = (await time.latest()) + 1
+          await expect(pool.withdraw(withdrawAmount))
+            .to.be.revertedWithCustomError(rewardPool, 'TimelockNotExpired')
+            .withArgs(blockTimestamp, await rewardPool.timelock())
+        })
 
-        // Deposit
-        await pool.deposit(nativeDepositAmount, { value: nativeDepositAmount })
-      })
+        it('reverts when withdrawing more than pool balance', async function () {
+          // Mine blocks until timelock expires
+          await mine(10, { interval: TIMELOCK })
 
-      it('allows manager to withdraw after timelock', async function () {
-        // Mine blocks until timelock expires
-        await mine(10, { interval: TIMELOCK })
+          // Try to withdraw more than balance
+          const largeWithdrawAmount = depositAmount * 2n
+          await expect(pool.withdraw(largeWithdrawAmount))
+            .to.be.revertedWithCustomError(
+              rewardPool,
+              'InsufficientPoolBalance',
+            )
+            .withArgs(largeWithdrawAmount, await rewardPool.poolBalance())
+        })
 
-        // Get balance before withdrawal
-        const balanceBefore = await hre.ethers.provider.getBalance(
-          manager.address,
-        )
+        it('reverts when non-manager tries to withdraw', async function () {
+          // Connect with stranger
+          const poolWithStranger = rewardPool.connect(
+            stranger,
+          ) as typeof rewardPool
 
-        // Withdraw
-        const tx = await pool.withdraw(nativeWithdrawAmount)
-        const receipt: TransactionReceipt = await tx.wait()
-
-        // Calculate gas used
-        const gasUsed = receipt.gasUsed * receipt.gasPrice
-
-        // Check balance
-        const balanceAfter = await hre.ethers.provider.getBalance(
-          manager.address,
-        )
-        expect(await rewardPool.poolBalance()).to.equal(
-          nativeDepositAmount - nativeWithdrawAmount,
-        )
-        expect(balanceAfter).to.equal(
-          balanceBefore + nativeWithdrawAmount - gasUsed,
-        )
+          await expect(
+            poolWithStranger.withdraw(withdrawAmount),
+          ).to.be.revertedWithCustomError(
+            rewardPool,
+            'AccessControlUnauthorizedAccount',
+          )
+        })
       })
     })
   })
