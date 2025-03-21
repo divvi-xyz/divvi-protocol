@@ -85,10 +85,16 @@ describe(CONTRACT_NAME, function () {
     {
       tokenType: 'ERC20',
       deployFixture: deployERC20RewardPoolContract,
+      deposit: async function (contract: Contract, amount: bigint) {
+        return contract.deposit(amount)
+      },
     },
     {
       tokenType: 'native',
       deployFixture: deployNativeRewardPoolContract,
+      deposit: async function (contract: Contract, amount: bigint) {
+        return contract.deposit(amount, { value: amount })
+      },
     },
   ]
 
@@ -165,95 +171,83 @@ describe(CONTRACT_NAME, function () {
   describe('Deposit', function () {
     const depositAmount = hre.ethers.parseEther('1')
 
-    describe('with ERC20 token', function () {
-      let rewardPool: Contract
-      let manager: HardhatEthersSigner
-      let stranger: HardhatEthersSigner
-      let pool: Contract
+    tokenTypes.forEach(function ({ tokenType, deposit, deployFixture }) {
+      describe(`with ${tokenType}`, function () {
+        let rewardPool: Contract
+        let manager: HardhatEthersSigner
+        let stranger: HardhatEthersSigner
+        let poolWithManager: Contract
 
-      beforeEach(async function () {
-        const deployment = await loadFixture(deployERC20RewardPoolContract)
-        rewardPool = deployment.rewardPool
-        manager = deployment.manager
-        stranger = deployment.stranger
+        beforeEach(async function () {
+          const deployment = await loadFixture(deployFixture)
+          rewardPool = deployment.rewardPool
+          manager = deployment.manager
+          stranger = deployment.stranger
 
-        // Connect with manager
-        pool = rewardPool.connect(manager) as typeof rewardPool
-      })
+          // Connect with manager
+          poolWithManager = rewardPool.connect(manager) as typeof rewardPool
+        })
 
-      it('allows manager to deposit ERC20 tokens', async function () {
-        await expect(pool.deposit(depositAmount))
-          .to.emit(rewardPool, 'Deposit')
-          .withArgs(depositAmount)
+        it('allows manager to deposit tokens', async function () {
+          await expect(deposit(poolWithManager, depositAmount))
+            .to.emit(rewardPool, 'Deposit')
+            .withArgs(depositAmount)
 
-        expect(await rewardPool.poolBalance()).to.equal(depositAmount)
-      })
+          expect(await rewardPool.poolBalance()).to.equal(depositAmount)
+        })
 
-      it('reverts when non-manager tries to deposit', async function () {
-        const poolWithStranger = rewardPool.connect(
-          stranger,
-        ) as typeof rewardPool
+        it('reverts when non-manager tries to deposit', async function () {
+          const poolWithStranger = rewardPool.connect(
+            stranger,
+          ) as typeof rewardPool
 
-        await expect(
-          poolWithStranger.deposit(depositAmount),
-        ).to.be.revertedWithCustomError(
-          rewardPool,
-          'AccessControlUnauthorizedAccount',
-        )
-      })
+          await expect(
+            deposit(poolWithStranger, depositAmount),
+          ).to.be.revertedWithCustomError(
+            rewardPool,
+            'AccessControlUnauthorizedAccount',
+          )
+        })
 
-      it('reverts when sending native tokens with ERC20 deposit', async function () {
-        await expect(
-          pool.deposit(depositAmount, {
-            value: depositAmount,
-          }),
-        ).to.be.revertedWithCustomError(rewardPool, 'NativeTokenNotAccepted')
-      })
-    })
+        if (tokenType === 'ERC20') {
+          it('reverts when sending native tokens with ERC20 deposit', async function () {
+            await expect(
+              poolWithManager.deposit(depositAmount, {
+                value: depositAmount,
+              }),
+            ).to.be.revertedWithCustomError(
+              rewardPool,
+              'NativeTokenNotAccepted',
+            )
+          })
+        }
 
-    describe('with native token', function () {
-      let rewardPool: Contract
-      let manager: HardhatEthersSigner
-      let pool: Contract
+        if (tokenType === 'native') {
+          it('reverts when amount mismatch in native token deposit', async function () {
+            const sentAmount = hre.ethers.parseEther('4')
 
-      beforeEach(async function () {
-        const deployment = await loadFixture(deployNativeRewardPoolContract)
-        rewardPool = deployment.rewardPool
-        manager = deployment.manager
+            await expect(
+              poolWithManager.deposit(depositAmount, { value: sentAmount }),
+            )
+              .to.be.revertedWithCustomError(rewardPool, 'AmountMismatch')
+              .withArgs(depositAmount, sentAmount)
+          })
 
-        // Connect with manager
-        pool = rewardPool.connect(manager) as typeof rewardPool
-      })
-
-      it('allows manager to deposit native tokens', async function () {
-        await expect(pool.deposit(depositAmount, { value: depositAmount }))
-          .to.emit(rewardPool, 'Deposit')
-          .withArgs(depositAmount)
-
-        expect(await rewardPool.poolBalance()).to.equal(depositAmount)
-      })
-
-      it('reverts when amount mismatch in native token deposit', async function () {
-        const sentAmount = hre.ethers.parseEther('4')
-
-        await expect(pool.deposit(depositAmount, { value: sentAmount }))
-          .to.be.revertedWithCustomError(rewardPool, 'AmountMismatch')
-          .withArgs(depositAmount, sentAmount)
-      })
-
-      it('reverts direct transfers to contract', async function () {
-        await expect(
-          manager.sendTransaction({
-            to: await rewardPool.getAddress(),
-            value: depositAmount,
-          }),
-        ).to.be.revertedWithCustomError(rewardPool, 'UseDepositFunction')
+          it('reverts direct transfers to contract', async function () {
+            await expect(
+              manager.sendTransaction({
+                to: await rewardPool.getAddress(),
+                value: depositAmount,
+              }),
+            ).to.be.revertedWithCustomError(rewardPool, 'UseDepositFunction')
+          })
+        }
       })
     })
   })
 
   describe('Withdraw', function () {
-    tokenTypes.forEach(function ({ tokenType, deployFixture }) {
+    tokenTypes.forEach(function ({ tokenType, deposit, deployFixture }) {
       describe(`with ${tokenType}`, function () {
         const depositAmount = hre.ethers.parseEther('100')
         const withdrawAmount = hre.ethers.parseEther('50')
@@ -271,16 +265,11 @@ describe(CONTRACT_NAME, function () {
           manager = deployment.manager
           stranger = deployment.stranger
 
-          const deposit = {
-            ERC20: (amount: bigint) => pool.deposit(amount),
-            native: (amount: bigint) => pool.deposit(amount, { value: amount }),
-          }
-
           // Connect with manager
           pool = rewardPool.connect(manager) as typeof rewardPool
 
           // Deposit
-          await deposit[tokenType](depositAmount)
+          await deposit(pool, depositAmount)
         })
 
         it('allows manager to withdraw after timelock', async function () {
