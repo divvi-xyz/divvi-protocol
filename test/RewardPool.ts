@@ -22,7 +22,11 @@ const ADMIN_CHANGE_DELAY = WEEK_IN_SECONDS
 const MANAGER_CAPITAL = hre.ethers.parseEther('1000')
 
 describe(CONTRACT_NAME, function () {
-  async function deployERC20RewardPoolContract() {
+  async function deployRewardPoolContract({
+    tokenType,
+  }: {
+    tokenType: 'native' | 'erc20'
+  }) {
     // Contracts are deployed using the first signer/account by default
     const [owner, manager, user1, user2, stranger] =
       await hre.ethers.getSigners()
@@ -32,10 +36,15 @@ describe(CONTRACT_NAME, function () {
 
     const RewardPool = await hre.ethers.getContractFactory(CONTRACT_NAME)
 
+    const tokenAddress =
+      tokenType === 'native'
+        ? NATIVE_TOKEN_ADDRESS
+        : await mockERC20.getAddress()
+
     const proxy = await hre.upgrades.deployProxy(
       RewardPool,
       [
-        await mockERC20.getAddress(),
+        tokenAddress,
         MOCK_REWARD_FUNCTION_ID,
         owner.address,
         ADMIN_CHANGE_DELAY,
@@ -64,33 +73,12 @@ describe(CONTRACT_NAME, function () {
     }
   }
 
+  async function deployERC20RewardPoolContract() {
+    return deployRewardPoolContract({ tokenType: 'erc20' })
+  }
+
   async function deployNativeRewardPoolContract() {
-    const [owner, manager, user1, user2, stranger] =
-      await hre.ethers.getSigners()
-
-    const RewardPool = await hre.ethers.getContractFactory(CONTRACT_NAME)
-
-    const proxy = await hre.upgrades.deployProxy(
-      RewardPool,
-      [
-        NATIVE_TOKEN_ADDRESS,
-        MOCK_REWARD_FUNCTION_ID,
-        owner.address,
-        ADMIN_CHANGE_DELAY,
-        manager.address,
-        (await time.latest()) + TIMELOCK,
-      ],
-      { kind: 'uups' },
-    )
-
-    return {
-      rewardPool: proxy,
-      owner,
-      manager,
-      user1,
-      user2,
-      stranger,
-    }
+    return deployRewardPoolContract({ tokenType: 'native' })
   }
 
   describe('Initialization', function () {
