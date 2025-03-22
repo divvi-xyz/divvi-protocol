@@ -6,8 +6,6 @@ import {
   SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
 } from '../calculateRevenue/protocols/aerodrome/constants'
 
-// TODO(ENG-194): Check that the user has made at least one transaction on Aerodrome,
-// and all transactions were made after the referral event.
 export async function filter(event: ReferralEvent): Promise<boolean> {
   const client = getHyperSyncClient(AERODROME_NETWORK_ID)
   const query = {
