@@ -23,6 +23,11 @@ export async function filter(event: ReferralEvent): Promise<boolean> {
 
   while (hasMoreBlocks) {
     const response: QueryResponse = await client.get(query)
+    if (response.nextBlock === query.fromBlock) {
+      hasMoreBlocks = false
+    } else {
+      query.fromBlock = response.nextBlock
+    }
 
     for (const block of response.data.blocks) {
       if (block.number) {
@@ -36,12 +41,6 @@ export async function filter(event: ReferralEvent): Promise<boolean> {
           foundValidTransaction = true
         }
       }
-    }
-
-    if (response.nextBlock === query.fromBlock) {
-      hasMoreBlocks = false
-    } else {
-      query.fromBlock = response.nextBlock
     }
   }
 
