@@ -6,16 +6,12 @@
     "resolveJsonModule": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "outDir": "dist",
-    "sourceMap": true,
     "strict": true,
-    "target": "es2021",
-    "lib": ["es2021"],
+    "target": "es2022",
+    "lib": ["es2022"],
     "skipLibCheck": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true
-  },
-  "include": ["scripts"],
-  "exclude": ["node_modules", "**/*.test.ts"]
+  }
 }
