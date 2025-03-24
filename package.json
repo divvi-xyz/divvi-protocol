@@ -67,7 +67,7 @@
     "solidity-coverage": "^0.8.14",
     "ts-jest": "^29.2.6",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.2",
+    "typescript": "^5.8.2",
     "viem": "^2.23.13",
     "yargs": "^17.7.2"
   },
