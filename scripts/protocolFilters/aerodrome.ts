@@ -1,7 +1,10 @@
 import { BlockField, QueryResponse } from '@envio-dev/hypersync-client'
 import { ReferralEvent } from '../types'
 import { getBlock, getHyperSyncClient } from '../utils'
-import { AERODROME_NETWORK_ID, AERODROME_UNIVERSAL_ROUTER_ADDRESS } from '../calculateRevenue/protocols/aerodrome/constants'
+import {
+  AERODROME_NETWORK_ID,
+  AERODROME_UNIVERSAL_ROUTER_ADDRESS,
+} from '../calculateRevenue/protocols/aerodrome/constants'
 
 export async function filter(event: ReferralEvent): Promise<boolean> {
   const client = getHyperSyncClient(AERODROME_NETWORK_ID)
