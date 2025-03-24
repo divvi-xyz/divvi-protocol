@@ -1,6 +1,6 @@
 import { Address } from 'viem'
 import { NetworkId } from '../../../types'
-import { getDailyMeanTvlUsd } from './index'
+import { getTvlProratedPerYear } from './index'
 import { getEvents } from './getEvents'
 import { calculateWeightedAveragePrice } from './dailySnapshots'
 
@@ -23,13 +23,13 @@ const vaultInfo = {
 }
 const address = '0x1234567890123456789012345678901234567890'
 
-describe('getDailyMeanTvlUsd', () => {
+describe('getTvlProratedPerYear', () => {
   it('should throw an error if endTimestamp is in the future', async () => {
     const startTimestamp = new Date('2021-01-0')
     const endTimestamp = new Date('2022-01-01')
     const nowTimestamp = new Date('2021-01-01')
     await expect(
-      getDailyMeanTvlUsd({
+      getTvlProratedPerYear({
         vaultInfo,
         address,
         startTimestamp,
@@ -48,7 +48,7 @@ describe('getDailyMeanTvlUsd', () => {
       { amount: -30, timestamp: new Date('2021-01-15') }, // a 30 LP token withdrawal
       { amount: 20, timestamp: new Date('2021-01-10') }, // a 20 LP token deposit
     ])
-    const result = await getDailyMeanTvlUsd({
+    const result = await getTvlProratedPerYear({
       vaultInfo,
       address,
       startTimestamp,
@@ -59,10 +59,10 @@ describe('getDailyMeanTvlUsd', () => {
     // second chunk of time is 10 days with 50 TVL, only 5 days are in the range so 50 * 5 = 250 TVL days
     // third chunk of time is 5 days with 80 TVL, all 5 days are in the range so 80 * 5 = 400 TVL days
     // fourth chunk of time is 10 days with 60 TVL, only 5 days are in the range so 60 * 5 = 300 TVL days
-    // mean TVL = (250 + 400 + 300) / 15 = 63.33333333333333
+    // TVL Days = (250 + 400 + 300) = 950 / 365 = 2.602
     // the weighted average price is 2
-    // the mean TVL in USD = 63.33333333333333 * 2 = 126.66666666666666
-    expect(result).toBeCloseTo(126.66666666666666)
+    // the mean TVL in USD = 2.602 * 2 = 5.204
+    expect(result).toBeCloseTo(5.204)
   })
   it('should return the correct mean TVL when there are multiple events on the same day', async () => {
     const startTimestamp = new Date('2025-01-10T16:14:52+00:00')
@@ -72,19 +72,20 @@ describe('getDailyMeanTvlUsd', () => {
     // first chunk of time is 2 hours with 100 TVL, all inside the range so 100 * 2 = 200 TVL hours
     // second chunk of time is 1 hour with 50 TVL, all inside the range so 50 * 1 = 50 TVL hours
     // third chuck of time is 1 hour with 80 TVL, all inside the range so 80 * 1 = 80 TVL hours
-    // mean TVL = (200 + 50 + 80) / 4 = 82.5
+    // TVL Hours = (200 + 50 + 80) = 330
+    // Anualized TVL = 330 / 365 / 24 = 0.03767
     jest.mocked(getEvents).mockResolvedValueOnce([
       { amount: 50, timestamp: new Date('2025-01-10T18:14:52+00:00') }, // a 50 LP token deposit
       { amount: -30, timestamp: new Date('2025-01-10T17:14:52+00:00') }, // a 30 LP token withdrawal
     ])
     jest.mocked(calculateWeightedAveragePrice).mockReturnValue(1)
-    const result = await getDailyMeanTvlUsd({
+    const result = await getTvlProratedPerYear({
       vaultInfo,
       address,
       startTimestamp,
       endTimestamp,
       nowTimestamp,
     })
-    expect(result).toEqual(82.5)
+    expect(result).toBeCloseTo(0.03767)
   })
 })
