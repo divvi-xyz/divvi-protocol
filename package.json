@@ -10,8 +10,7 @@
     "node": "^20"
   },
   "scripts": {
-    "build": "tsc",
-    "typecheck": "yarn build",
+    "typecheck": "tsc --noEmit",
     "eslint": "eslint --ext=.tsx,.ts,.json scripts/ test/",
     "eslint:fix": "yarn eslint --fix",
     "solhint": "solhint --max-warnings=0 contracts/**/*.sol",

@@ -1,7 +1,7 @@
 /* eslint no-console: 0 */
 import '@nomicfoundation/hardhat-viem'
 import hre from 'hardhat'
-import { Address } from 'viem'
+import { Address, stringToHex } from 'viem'
 import yargs from 'yargs'
 
 interface ReferrerConfig {
@@ -60,8 +60,8 @@ async function main(args: ReturnType<typeof parseArgs>) {
       )
     }
     const response = await contract.write.registerReferrer([
-      referrer,
-      protocolIds,
+      stringToHex(referrer, { size: 32 }),
+      protocolIds.map((id) => stringToHex(id, { size: 32 })),
       rewardRates,
       walletClient.account.address,
     ])
@@ -90,9 +90,9 @@ async function main(args: ReturnType<typeof parseArgs>) {
     const protocolId = protocolIds[protocolCount % protocolIds.length]
     protocolCount++
 
-    const response = await contract.write.registerReferral([
-      referrerId,
-      protocolId,
+    const response = await contract.write.registerReferrals([
+      stringToHex(referrerId, { size: 32 }),
+      [stringToHex(protocolId, { size: 32 })],
     ])
 
     console.log(
