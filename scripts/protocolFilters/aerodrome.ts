@@ -1,16 +1,16 @@
 import { BlockField, QueryResponse } from '@envio-dev/hypersync-client'
 import { ReferralEvent } from '../types'
 import { getBlock, getHyperSyncClient } from '../utils'
-import {
-  AERODROME_NETWORK_ID,
-  SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
-} from '../calculateRevenue/protocols/aerodrome/constants'
+import { AERODROME_NETWORK_ID } from '../calculateRevenue/protocols/aerodrome/constants'
+
+const AERODROME_UNIVERSAL_ROUTER_ADDRESS =
+  '0x6Cb442acF35158D5eDa88fe602221b67B400Be3E'
 
 export async function filter(event: ReferralEvent): Promise<boolean> {
   const client = getHyperSyncClient(AERODROME_NETWORK_ID)
   const query = {
     transactions: [
-      { to: SUPPORTED_LIQUIDITY_POOL_ADDRESSES, from: [event.userAddress] },
+      { to: [AERODROME_UNIVERSAL_ROUTER_ADDRESS], from: [event.userAddress] },
     ],
     fieldSelection: {
       block: [BlockField.Number],
