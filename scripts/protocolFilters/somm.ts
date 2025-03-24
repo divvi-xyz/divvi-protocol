@@ -9,7 +9,7 @@ import { getViemPublicClient } from '../utils'
 export async function filter(event: ReferralEvent): Promise<boolean> {
   let numTvlEvents = 0
 
-  const vaultsInfo = getVaults()
+  const vaultsInfo = await getVaults()
   const nowDate = new Date()
   const eventDate = new Date(event.timestamp)
   const address = event.userAddress

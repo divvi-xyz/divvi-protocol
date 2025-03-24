@@ -43,7 +43,7 @@ describe('Somm filter function', () => {
   })
 
   it('should return true if user TVL at time of referral is 0 and there is at least 1 TVL event after referral', async () => {
-    jest.mocked(getVaults).mockReturnValue(MOCK_VAULTS)
+    jest.mocked(getVaults).mockResolvedValue(MOCK_VAULTS)
     jest
       .mocked(getEvents)
       .mockResolvedValueOnce([
@@ -61,7 +61,7 @@ describe('Somm filter function', () => {
   })
 
   it('should return true if user TVL at time of referral is 0 and there is at least 1 TVL event after referral (multiple events)', async () => {
-    jest.mocked(getVaults).mockReturnValue(MOCK_VAULTS)
+    jest.mocked(getVaults).mockResolvedValue(MOCK_VAULTS)
     jest.mocked(getEvents).mockResolvedValueOnce([
       { amount: 75, timestamp: new Date('2023-10-25') },
       { amount: -25, timestamp: new Date('2024-03-19') },
@@ -79,7 +79,7 @@ describe('Somm filter function', () => {
   })
 
   it('should return true if user TVL at time of referral is 0 and there is at least 1 TVL event after referral (multiple vaults)', async () => {
-    jest.mocked(getVaults).mockReturnValue(MOCK_VAULTS_MULTIPLE)
+    jest.mocked(getVaults).mockResolvedValue(MOCK_VAULTS_MULTIPLE)
     jest
       .mocked(getEvents)
       .mockResolvedValueOnce([
@@ -101,7 +101,7 @@ describe('Somm filter function', () => {
   })
 
   it('should return false if user has a TVL at time of referral', async () => {
-    jest.mocked(getVaults).mockReturnValue(MOCK_VAULTS)
+    jest.mocked(getVaults).mockResolvedValue(MOCK_VAULTS)
     jest
       .mocked(getEvents)
       .mockResolvedValueOnce([
@@ -119,7 +119,7 @@ describe('Somm filter function', () => {
   })
 
   it('should return false if user has a TVL at time of referral (multiple vaults', async () => {
-    jest.mocked(getVaults).mockReturnValue(MOCK_VAULTS_MULTIPLE)
+    jest.mocked(getVaults).mockResolvedValue(MOCK_VAULTS_MULTIPLE)
     jest
       .mocked(getEvents)
       .mockResolvedValueOnce([
