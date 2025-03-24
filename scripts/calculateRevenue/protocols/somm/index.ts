@@ -130,7 +130,7 @@ export async function calculateRevenue({
   if (!isAddress(address)) {
     throw new Error('Invalid address')
   }
-  const vaultsInfo = getVaults()
+  const vaultsInfo = await getVaults()
 
   let totalRevenue = 0
   const nowTimestamp = new Date()

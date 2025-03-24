@@ -9,6 +9,7 @@
   "ignoreDependencies": [
     "@types/jest",
     "@openzeppelin/contracts",
+    "@openzeppelin/contracts-upgradeable",
     "@nomicfoundation/hardhat-ignition"
   ]
 }
