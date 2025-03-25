@@ -14,3 +14,5 @@ export const SUPPORTED_LIQUIDITY_POOL_ADDRESSES: Address[] = [
 export const AERODROME_NETWORK_ID = NetworkId['base-mainnet']
 
 export const TRANSACTION_VOLUME_USD_PRECISION = 8
+
+export const FEE_DECIMALS = 6

@@ -2,10 +2,14 @@ import { getTokenPrice } from '../beefy'
 import { fetchTokenPrices } from '../utils/tokenPrices'
 import { getSwapEvents } from './getSwapEvents'
 import {
+  AERODROME_NETWORK_ID,
+  FEE_DECIMALS,
   SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
   TRANSACTION_VOLUME_USD_PRECISION,
 } from './constants'
 import { SwapEvent } from './types'
+import { getViemPublicClient } from '../../../utils'
+import { getAerodromeLiquidityPoolContract } from '../utils/viem'
 
 export async function calculateSwapRevenue(swapEvents: SwapEvent[]) {
   let totalUsdContribution = 0
@@ -46,7 +50,8 @@ export async function calculateRevenue({
   startTimestamp: Date
   endTimestamp: Date
 }): Promise<number> {
-  let totalRevenue = 0
+  let totalTradingFees = 0
+  const client = getViemPublicClient(AERODROME_NETWORK_ID)
   for (const liquidityPoolAddress of SUPPORTED_LIQUIDITY_POOL_ADDRESSES) {
     const swapEvents = await getSwapEvents(
       address,
@@ -54,8 +59,17 @@ export async function calculateRevenue({
       startTimestamp,
       endTimestamp,
     )
-    const swapRevenue = await calculateSwapRevenue(swapEvents)
-    totalRevenue += swapRevenue
+    const swapAmount = await calculateSwapRevenue(swapEvents)
+    const liquidityPoolContract = await getAerodromeLiquidityPoolContract(
+      liquidityPoolAddress,
+      AERODROME_NETWORK_ID,
+    )
+    const fee = await client.readContract({
+      address: liquidityPoolAddress,
+      abi: liquidityPoolContract.abi,
+      functionName: 'fee',
+    })
+    totalTradingFees += swapAmount * (fee / 10 ** FEE_DECIMALS)
   }
-  return totalRevenue
+  return totalTradingFees
 }
