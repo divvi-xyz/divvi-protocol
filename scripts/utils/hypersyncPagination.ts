@@ -6,22 +6,23 @@ export async function paginateQuery(
   onPage: (response: QueryResponse) => Promise<boolean | void>,
 ): Promise<void> {
   let hasMoreBlocks = true
+  let fromBlock = query.fromBlock
 
   while (hasMoreBlocks) {
-    const response = await client.get(query)
+    const response = await client.get({ ...query, fromBlock })
 
     const shouldStop = await onPage(response)
     if (shouldStop === true) {
       break
     }
 
-    if (response.nextBlock === query.fromBlock) {
+    if (response.nextBlock === fromBlock) {
       hasMoreBlocks = false
     } else {
-      query.fromBlock = response.nextBlock
+      fromBlock = response.nextBlock
     }
 
-    if (query.toBlock && query.fromBlock >= query.toBlock) {
+    if (query.toBlock && fromBlock >= query.toBlock) {
       hasMoreBlocks = false
     }
   }
