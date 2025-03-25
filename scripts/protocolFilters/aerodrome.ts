@@ -1,10 +1,11 @@
-import { BlockField, QueryResponse } from '@envio-dev/hypersync-client'
-import { ReferralEvent } from '../types'
-import { getBlock, getHyperSyncClient } from '../utils'
+import { BlockField } from '@envio-dev/hypersync-client'
 import {
   AERODROME_NETWORK_ID,
   AERODROME_UNIVERSAL_ROUTER_ADDRESS,
 } from '../calculateRevenue/protocols/aerodrome/constants'
+import { ReferralEvent } from '../types'
+import { getBlock, getHyperSyncClient } from '../utils'
+import { paginateQuery } from '../utils/hypersyncPagination'
 
 export async function filter(event: ReferralEvent): Promise<boolean> {
   const client = getHyperSyncClient(AERODROME_NETWORK_ID)
@@ -12,37 +13,29 @@ export async function filter(event: ReferralEvent): Promise<boolean> {
     transactions: [
       { to: [AERODROME_UNIVERSAL_ROUTER_ADDRESS], from: [event.userAddress] },
     ],
-    fieldSelection: {
-      block: [BlockField.Number],
-    },
+    fieldSelection: { block: [BlockField.Number] },
     fromBlock: 0,
   }
 
-  let hasMoreBlocks = true
-  let foundValidTransaction = false
+  let foundPriorTransaction = false
 
-  while (hasMoreBlocks) {
-    const response: QueryResponse = await client.get(query)
-    if (response.nextBlock === query.fromBlock) {
-      hasMoreBlocks = false
-    } else {
-      query.fromBlock = response.nextBlock
-    }
-
+  await paginateQuery(client, query, async (response) => {
     for (const block of response.data.blocks) {
       if (block.number) {
         const blockData = await getBlock(
           AERODROME_NETWORK_ID,
           BigInt(block.number),
         )
+
         if (blockData.timestamp < BigInt(event.timestamp)) {
-          return false // disqualify immediately if any tx is too early
+          foundPriorTransaction = false
+          return true // stop pagination and return out of the callback function
         } else {
-          foundValidTransaction = true
+          foundPriorTransaction = true
         }
       }
     }
-  }
+  })
 
-  return foundValidTransaction
+  return foundPriorTransaction
 }
