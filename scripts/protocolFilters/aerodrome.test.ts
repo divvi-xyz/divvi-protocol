@@ -63,8 +63,7 @@ describe('filter', () => {
 
   it('returns true if a first found block is after the referral event timestamp', async () => {
     mockClient.get
-      .mockResolvedValueOnce(makeQueryResponse([{ number: 456 }])) // First Response
-      .mockResolvedValueOnce(makeQueryResponse([])) // Second Response - no more blocks
+      .mockResolvedValueOnce(makeQueryResponse([{ number: 456 }]))
 
     jest.mocked(getBlock).mockImplementation(
       (_networkId: NetworkId, _blockNumber: bigint) =>
@@ -78,7 +77,7 @@ describe('filter', () => {
     )
     const result = await filter(event)
     expect(result).toBe(true)
-    expect(mockClient.get).toHaveBeenCalledTimes(2)
+    expect(mockClient.get).toHaveBeenCalledTimes(1)
     expect(getBlock).toHaveBeenCalled()
   })
 
@@ -95,9 +94,9 @@ describe('filter', () => {
 
   it('handles paginated results and returns true if the first found block is after the referral event timestamp ', async () => {
     mockClient.get
-      .mockResolvedValueOnce(makeQueryResponse([{ number: 123 }], 50))
-      .mockResolvedValueOnce(makeQueryResponse([{ number: 456 }], 100))
+      .mockResolvedValueOnce(makeQueryResponse([], 50))
       .mockResolvedValueOnce(makeQueryResponse([], 100))
+      .mockResolvedValueOnce(makeQueryResponse([{ number: 456 }], 100))
 
     jest.mocked(getBlock).mockImplementation(
       (_networkId: NetworkId, _blockNumber: bigint) =>
@@ -119,7 +118,7 @@ describe('filter', () => {
     const result = await filter(event)
     expect(result).toBe(true)
     expect(mockClient.get).toHaveBeenCalledTimes(3)
-    expect(getBlock).toHaveBeenCalledTimes(2)
+    expect(getBlock).toHaveBeenCalledTimes(1)
   })
 
   it('throws if API fails', async () => {
