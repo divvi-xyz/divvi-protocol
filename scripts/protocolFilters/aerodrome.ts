@@ -27,12 +27,8 @@ export async function filter(event: ReferralEvent): Promise<boolean> {
           BigInt(block.number),
         )
 
-        if (blockData.timestamp < BigInt(event.timestamp)) {
-          foundPriorTransaction = false
-          return true // stop pagination and return out of the callback function
-        } else {
-          foundPriorTransaction = true
-        }
+        foundPriorTransaction = blockData.timestamp >= BigInt(event.timestamp)
+        return true // Return from callback and stop further pagination
       }
     }
   })
