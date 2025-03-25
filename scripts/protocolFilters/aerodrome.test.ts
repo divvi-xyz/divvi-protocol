@@ -62,8 +62,7 @@ describe('filter', () => {
   })
 
   it('returns true if a first found block is after the referral event timestamp', async () => {
-    mockClient.get
-      .mockResolvedValueOnce(makeQueryResponse([{ number: 456 }]))
+    mockClient.get.mockResolvedValueOnce(makeQueryResponse([{ number: 456 }]))
 
     jest.mocked(getBlock).mockImplementation(
       (_networkId: NetworkId, _blockNumber: bigint) =>
