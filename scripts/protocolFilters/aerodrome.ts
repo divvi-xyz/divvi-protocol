@@ -19,7 +19,6 @@ export async function filter(event: ReferralEvent): Promise<boolean> {
   }
 
   let hasMoreBlocks = true
-  let foundValidTransaction = false
 
   while (hasMoreBlocks) {
     const response: QueryResponse = await client.get(query)
@@ -38,11 +37,11 @@ export async function filter(event: ReferralEvent): Promise<boolean> {
         if (blockData.timestamp < BigInt(event.timestamp)) {
           return false // disqualify immediately if any tx is too early
         } else {
-          foundValidTransaction = true
+          return true // blocks are returned oldest first - qualify immediately if the block timestamp is after the event timestamp
         }
       }
     }
   }
 
-  return foundValidTransaction
+  return false
 }
