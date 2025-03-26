@@ -25,7 +25,10 @@ yarn hardhat node
 Deploy Registry:
 
 ```
-yarn hardhat deploy-registry --network localhost
+# Copy-paste environment definition
+SHELL=true yarn --silent hardhat --network hardhat run scripts/deploy.ts
+# or use eval
+eval `SHELL=true yarn --silent hardhat --network hardhat run scripts/deploy.ts`
 ```
 
 And create some dummy data:
@@ -124,7 +127,7 @@ We use [OpenZeppelin Defender](https://www.openzeppelin.com/defender) to manage 
 To deploy Registry, run:
 
 ```bash
-yarn hardhat deploy-registry --network celo --use-defender --defender-deploy-salt <SALT> --owner-address <OWNER_ADDRESS>
+yarn hardhat run scripts/deploy.ts --network celo
 ```
 
 To deploy RewardPool, run:
