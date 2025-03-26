@@ -8,6 +8,9 @@ import {
   getDailySnapshots,
 } from './dailySnapshots'
 
+const REWARDS_PERCENTAGE = 0.1 // 10%
+export const ONE_YEAR = 365 * 24 * 60 * 60 * 1000
+
 export async function getBalanceOfAddress({
   vaultInfo,
   address,
@@ -25,10 +28,11 @@ export async function getBalanceOfAddress({
 }
 
 /**
- * Calculates the mean Total Value Locked (TVL) for a given user address
- * and vault pair within a specified time range using daily snapshots of the vault's price and shares.
+ * Calculates the Total Value Locked (TVL) for a given user address prorated for a year.
+ * This function calculates the TVL for a user address in a given vault pair within a specified
+ * time range using daily snapshots of the vault's price and shares.
  */
-export async function getDailyMeanTvlUsd({
+export async function getTvlProratedPerYear({
   vaultInfo,
   address,
   startTimestamp,
@@ -111,7 +115,7 @@ export async function getDailyMeanTvlUsd({
       startTimestamp,
       endTimestamp: prevTimestamp,
     })
-  return tvlMilliseconds / getTimeInRange(startTimestamp, endTimestamp)
+  return tvlMilliseconds / ONE_YEAR
 }
 
 function getTimeInRange(startTimestamp: Date, endTimestamp: Date) {
@@ -135,7 +139,7 @@ export async function calculateRevenue({
   let totalRevenue = 0
   const nowTimestamp = new Date()
   for (const vaultInfo of vaultsInfo) {
-    const vaultRevenue = await getDailyMeanTvlUsd({
+    const vaultRevenue = await getTvlProratedPerYear({
       vaultInfo,
       address,
       startTimestamp,
@@ -144,5 +148,5 @@ export async function calculateRevenue({
     })
     totalRevenue += vaultRevenue
   }
-  return totalRevenue
+  return totalRevenue * REWARDS_PERCENTAGE
 }
