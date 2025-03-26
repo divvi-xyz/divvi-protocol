@@ -53,7 +53,7 @@ const mockSwapEventsOther: SwapEvent[] = [
   },
 ]
 
-const MOCK_FEE = 10000
+const MOCK_FEE = 10000 // 1% fee
 
 describe('Aerodrome revenue calculation', () => {
   beforeEach(() => {
