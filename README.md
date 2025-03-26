@@ -41,14 +41,18 @@ yarn hardhat --network hardhat run scripts/setupTestnet.ts
 
 Deploy mock token:
 
-```
-yarn hardhat deploy-mock-token --network localhost
+```bash
+yarn hardhat deploy:mock-token --network localhost
 ```
 
 Deploy RewardPool using the deployed mock token address:
 
-```
-yarn hardhat deploy-reward-pool --network localhost --pool-token 0x5FbDB2315678afecb367f032d93F642f64180aa3 --reward-function 0xa1b2c3d4e5f67890abcdef1234567890abcdef12 --timelock 1767222000
+```bash
+yarn hardhat deploy:reward-pool \
+    --network localhost \
+    --pool-token 0x5FbDB2315678afecb367f032d93F642f64180aa3 \
+    --reward-function 0xa1b2c3d4e5f67890abcdef1234567890abcdef12 \
+    --timelock 1767222000
 ```
 
 > The token address above will match if you deploy the mock token first thing on the fresh Harhat node.
@@ -133,7 +137,15 @@ yarn hardhat run scripts/deploy.ts --network celo
 To deploy RewardPool, run:
 
 ```bash
-yarn hardhat deploy-registry --network celo --use-defender --defender-deploy-salt <SALT> --owner-address <OWNER_ADDRESS> --pool-token <TOKEN_ADDRESS> --manager-address <MANAGER_ADDRESS> --reward-function 0x<GIT_HASH> --timelock <TIMESTAMP>
+yarn hardhat deploy:reward-pool \
+    --network celo \
+    --use-defender \
+    --defender-deploy-salt <SALT> \
+    --owner-address <OWNER_ADDRESS> \
+    --pool-token <TOKEN_ADDRESS> \
+    --manager-address <MANAGER_ADDRESS> \
+    --reward-function 0x<GIT_HASH> \
+    --timelock <TIMESTAMP> \
 ```
 
 After this is done, you should see output in your terminal with a command to run to verify the contract on the block explorers.
