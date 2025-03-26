@@ -78,11 +78,11 @@ describe('Aerodrome revenue calculation', () => {
         .mocked(getSwapEvents)
         .mockResolvedValue(mockSwapEventsOther)
         .mockResolvedValueOnce(mockSwapEvents)
-        jest.mocked(getAerodromeLiquidityPoolContract).mockResolvedValueOnce({
-          abi: erc20Abi,
-          address: '0x123',
-        } as unknown as ReturnType<typeof getAerodromeLiquidityPoolContract>)
-        const mockGetBlock = jest
+      jest.mocked(getAerodromeLiquidityPoolContract).mockResolvedValue({
+        abi: erc20Abi,
+        address: '0x123',
+      } as unknown as ReturnType<typeof getAerodromeLiquidityPoolContract>)
+      const mockGetBlock = jest
         .fn()
         .mockImplementation(({ blockNumber }: { blockNumber: bigint }) => {
           return {
@@ -99,7 +99,7 @@ describe('Aerodrome revenue calculation', () => {
         endTimestamp: new Date(),
       })
       expect(getSwapEvents).toHaveBeenCalledTimes(8)
-      expect(result).toEqual(.77)
+      expect(result).toEqual(0.77)
     })
   })
 })
