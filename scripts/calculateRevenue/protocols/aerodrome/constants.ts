@@ -13,7 +13,7 @@ export const AERODROME_NETWORK_ID = NetworkId['base-mainnet']
 
 export const TRANSACTION_VOLUME_USD_PRECISION = 8
 
-export const FEE_DECIMALS = 6
+export const FEE_DECIMALS = 6 // Documented in the pool contract
 
 export const AERODROME_UNIVERSAL_ROUTER_ADDRESS =
   '0x6Cb442acF35158D5eDa88fe602221b67B400Be3E'
