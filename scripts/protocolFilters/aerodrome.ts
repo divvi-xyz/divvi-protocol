@@ -27,7 +27,8 @@ export async function filter(event: ReferralEvent): Promise<boolean> {
           BigInt(block.number),
         )
 
-        hasTransactionsOnlyAfterEvent = blockData.timestamp >= BigInt(event.timestamp)
+        hasTransactionsOnlyAfterEvent =
+          blockData.timestamp >= BigInt(event.timestamp)
         return true // Return from callback and stop further pagination
       }
     }
