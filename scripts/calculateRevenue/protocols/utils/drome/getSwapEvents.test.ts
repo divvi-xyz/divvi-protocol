@@ -5,9 +5,9 @@ import { getAerodromeLiquidityPoolContract } from '../viem'
 import { getSwapEvents } from './getSwapEvents'
 import { AERODROME_NETWORK_ID } from '../../aerodrome/constants'
 
-jest.mock('../utils/events')
-jest.mock('../utils/viem')
-jest.mock('../../../utils')
+jest.mock('../events')
+jest.mock('../viem')
+jest.mock('../../../../utils')
 
 const address1: Address = '0x1111111111111111111111111111111111111111'
 const address2: Address = '0x2222222222222222222222222222222222222222'
