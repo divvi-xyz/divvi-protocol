@@ -1,9 +1,9 @@
 import { Address, erc20Abi } from 'viem'
-import { getErc20Contract, getViemPublicClient } from '../../../utils'
-import { fetchEvents } from '../utils/events'
-import { getAerodromeLiquidityPoolContract } from '../utils/viem'
+import { getErc20Contract, getViemPublicClient } from '../../../../utils'
+import { fetchEvents } from '../events'
+import { getAerodromeLiquidityPoolContract } from '../viem'
 import { getSwapEvents } from './getSwapEvents'
-import { AERODROME_NETWORK_ID } from './constants'
+import { AERODROME_NETWORK_ID } from '../../aerodrome/constants'
 
 jest.mock('../utils/events')
 jest.mock('../utils/viem')
@@ -55,6 +55,7 @@ describe('getSwapEvents', () => {
       '0x123',
       new Date(0),
       new Date(1000000),
+      AERODROME_NETWORK_ID,
     )
     expect(getAerodromeLiquidityPoolContract).toHaveBeenCalledTimes(1)
     expect(fetchEvents).toHaveBeenCalledTimes(1)
@@ -99,6 +100,7 @@ describe('getSwapEvents', () => {
       '0x123',
       new Date(0),
       new Date(1000000),
+      AERODROME_NETWORK_ID,
     )
     expect(getAerodromeLiquidityPoolContract).toHaveBeenCalledTimes(1)
     expect(fetchEvents).toHaveBeenCalledTimes(1)

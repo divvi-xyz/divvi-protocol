@@ -1,23 +1,24 @@
 import { Address, isAddressEqual } from 'viem'
-import { getViemPublicClient, getErc20Contract } from '../../../utils'
-import { fetchEvents } from '../utils/events'
-import { getAerodromeLiquidityPoolContract } from '../utils/viem'
+import { getViemPublicClient, getErc20Contract } from '../../../../utils'
+import { fetchEvents } from '../events'
+import { getAerodromeLiquidityPoolContract } from '../viem'
 import { SwapEvent } from './types'
-import { AERODROME_NETWORK_ID } from './constants'
+import { NetworkId } from '../../../../types'
 
 export async function getSwapEvents(
   address: string,
   liquidityPoolAddress: Address,
   startTimestamp: Date,
   endTimestamp: Date,
+  networkId: NetworkId
 ): Promise<SwapEvent[]> {
   const swapContract = await getAerodromeLiquidityPoolContract(
     liquidityPoolAddress,
-    AERODROME_NETWORK_ID,
+    networkId,
   )
   const allSwapEvents = await fetchEvents({
     contract: swapContract,
-    networkId: AERODROME_NETWORK_ID,
+    networkId: networkId,
     eventName: 'Swap',
     startTimestamp,
     endTimestamp,
@@ -31,7 +32,7 @@ export async function getSwapEvents(
   )
 
   const swapEvents: SwapEvent[] = []
-  const client = getViemPublicClient(AERODROME_NETWORK_ID)
+  const client = getViemPublicClient(networkId)
   const tokenAddress = await client.readContract({
     address: liquidityPoolAddress,
     abi: swapContract.abi,
@@ -39,7 +40,7 @@ export async function getSwapEvents(
   })
   const tokenContract = await getErc20Contract(
     tokenAddress,
-    AERODROME_NETWORK_ID,
+    networkId,
   )
   const tokenDecimals = BigInt(await tokenContract.read.decimals())
 
@@ -55,7 +56,7 @@ export async function getSwapEvents(
       timestamp: new Date(Number(block.timestamp * 1000n)),
       amountInToken: absAmount0,
       tokenDecimals,
-      tokenId: `${AERODROME_NETWORK_ID}:${tokenAddress}`,
+      tokenId: `${networkId}:${tokenAddress}`,
     })
   }
   return swapEvents
