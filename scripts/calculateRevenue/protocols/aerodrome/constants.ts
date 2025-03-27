@@ -11,3 +11,6 @@ export const AERODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES: Address[] = [
 ]
 
 export const AERODROME_NETWORK_ID = NetworkId['base-mainnet']
+
+export const AERODROME_UNIVERSAL_ROUTER_ADDRESS =
+  '0x6Cb442acF35158D5eDa88fe602221b67B400Be3E'
