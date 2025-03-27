@@ -100,9 +100,11 @@ export async function deployContract(
   }
   console.log('Constructor args:', constructorArgs.join(', '))
 
-  console.log('\nTo verify the contract, run:')
   console.log(
-    `yarn hardhat verify ${contractAddress} --network ${hre.network.name} ${constructorArgs.join(' ')}`,
+    `\nTo verify the ${proxyAddress ? 'implementation' : 'contract'}, run:`,
+  )
+  console.log(
+    `yarn hardhat verify ${contractAddress} --network ${hre.network.name} ${proxyAddress ? '' : constructorArgs.join(' ')}`,
   )
 }
 
