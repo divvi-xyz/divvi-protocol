@@ -1,11 +1,16 @@
+import { erc20Abi } from 'viem'
 import { TokenPriceData } from '../../../types'
+import { getViemPublicClient } from '../../../utils'
 import { fetchTokenPrices } from '../utils/tokenPrices'
+import { getAerodromeLiquidityPoolContract } from '../utils/viem'
 import { getSwapEvents } from './getSwapEvents'
 import { calculateSwapRevenue, calculateRevenue } from './index'
 import { SwapEvent } from './types'
 
 jest.mock('../utils/tokenPrices')
 jest.mock('./getSwapEvents')
+jest.mock('../utils/viem')
+jest.mock('../../../utils')
 
 const mockTokenPrices: TokenPriceData[] = [
   {
@@ -48,6 +53,8 @@ const mockSwapEventsOther: SwapEvent[] = [
   },
 ]
 
+const MOCK_FEE = 10000 // 1% fee
+
 describe('Aerodrome revenue calculation', () => {
   beforeEach(() => {
     jest.resetAllMocks()
@@ -62,8 +69,6 @@ describe('Aerodrome revenue calculation', () => {
   })
 
   describe('calculateRevenue', () => {
-    // Same as above because only one liquidity pool supported, as more are
-    // supported this test can be extended.
     it('should return correct calculation', async () => {
       jest
         .mocked(fetchTokenPrices)
@@ -73,13 +78,28 @@ describe('Aerodrome revenue calculation', () => {
         .mocked(getSwapEvents)
         .mockResolvedValue(mockSwapEventsOther)
         .mockResolvedValueOnce(mockSwapEvents)
+      jest.mocked(getAerodromeLiquidityPoolContract).mockResolvedValue({
+        abi: erc20Abi,
+        address: '0x123',
+      } as unknown as ReturnType<typeof getAerodromeLiquidityPoolContract>)
+      const mockGetBlock = jest
+        .fn()
+        .mockImplementation(({ blockNumber }: { blockNumber: bigint }) => {
+          return {
+            timestamp: blockNumber * 100n,
+          }
+        })
+      jest.mocked(getViemPublicClient).mockReturnValue({
+        getBlock: mockGetBlock,
+        readContract: jest.fn().mockResolvedValue(MOCK_FEE),
+      } as unknown as ReturnType<typeof getViemPublicClient>)
       const result = await calculateRevenue({
         address: 'mockAddress',
         startTimestamp: new Date(),
         endTimestamp: new Date(),
       })
-      expect(getSwapEvents).toHaveBeenCalledTimes(8)
-      expect(result).toEqual(77)
+      expect(getSwapEvents).toHaveBeenCalledTimes(6)
+      expect(result).toBeCloseTo(0.61)
     })
   })
 })
