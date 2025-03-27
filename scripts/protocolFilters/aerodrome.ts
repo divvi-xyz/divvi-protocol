@@ -17,7 +17,7 @@ export async function filter(event: ReferralEvent): Promise<boolean> {
     fromBlock: 0,
   }
 
-  let foundPriorTransaction = false
+  let hasTransactionsOnlyAfterEvent = false
 
   await paginateQuery(client, query, async (response) => {
     for (const block of response.data.blocks) {
@@ -27,11 +27,11 @@ export async function filter(event: ReferralEvent): Promise<boolean> {
           BigInt(block.number),
         )
 
-        foundPriorTransaction = blockData.timestamp >= BigInt(event.timestamp)
+        hasTransactionsOnlyAfterEvent = blockData.timestamp >= BigInt(event.timestamp)
         return true // Return from callback and stop further pagination
       }
     }
   })
 
-  return foundPriorTransaction
+  return hasTransactionsOnlyAfterEvent
 }
