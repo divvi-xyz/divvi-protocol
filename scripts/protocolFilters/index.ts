@@ -12,7 +12,7 @@ export const protocolFilters: Record<Protocol, FilterFunction> = {
   aerodrome: _createFilter(filterAerodrome),
   celo: _createFilter(filterCelo),
   arbitrum: _createFilter(filterArbitrum),
-  velodrome: _createFilter(filterVelodrome)
+  velodrome: _createFilter(filterVelodrome),
 }
 
 function _createFilter(filter: (event: ReferralEvent) => Promise<boolean>) {

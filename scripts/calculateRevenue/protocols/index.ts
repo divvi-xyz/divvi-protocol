@@ -12,7 +12,7 @@ const calculateRevenueHandlers: Record<Protocol, CalculateRevenueFn> = {
   somm: calculateRevenueSomm,
   celo: calculateRevenueCelo,
   arbitrum: calculateRevenueArbitrum,
-  velodrome: calculateRevenueVelodrome
+  velodrome: calculateRevenueVelodrome,
 }
 
 export default calculateRevenueHandlers

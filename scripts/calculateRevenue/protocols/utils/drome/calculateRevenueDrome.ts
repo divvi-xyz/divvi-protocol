@@ -46,7 +46,7 @@ export async function calculateRevenueDrome({
   startTimestamp,
   endTimestamp,
   supportedLiquidityPoolAddresses,
-  networkId
+  networkId,
 }: {
   address: string
   startTimestamp: Date

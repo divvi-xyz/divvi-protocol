@@ -10,7 +10,7 @@ export async function getSwapEvents(
   liquidityPoolAddress: Address,
   startTimestamp: Date,
   endTimestamp: Date,
-  networkId: NetworkId
+  networkId: NetworkId,
 ): Promise<SwapEvent[]> {
   const swapContract = await getAerodromeLiquidityPoolContract(
     liquidityPoolAddress,
@@ -38,10 +38,7 @@ export async function getSwapEvents(
     abi: swapContract.abi,
     functionName: 'token0',
   })
-  const tokenContract = await getErc20Contract(
-    tokenAddress,
-    networkId,
-  )
+  const tokenContract = await getErc20Contract(tokenAddress, networkId)
   const tokenDecimals = BigInt(await tokenContract.read.decimals())
 
   for (const swapEvent of filteredSwapEvents) {

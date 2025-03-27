@@ -4,14 +4,20 @@ import { getViemPublicClient } from '../../../../utils'
 import { fetchTokenPrices } from '../tokenPrices'
 import { getAerodromeLiquidityPoolContract } from '../viem'
 import { getSwapEvents } from './getSwapEvents'
-import { calculateSwapRevenue, calculateRevenueDrome } from './calculateRevenueDrome'
+import {
+  calculateSwapRevenue,
+  calculateRevenueDrome,
+} from './calculateRevenueDrome'
 import { SwapEvent } from './types'
-import { AERODROME_NETWORK_ID, AERODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES } from '../../aerodrome/constants'
+import {
+  AERODROME_NETWORK_ID,
+  AERODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
+} from '../../aerodrome/constants'
 
-jest.mock('../utils/tokenPrices')
+jest.mock('../tokenPrices')
 jest.mock('./getSwapEvents')
-jest.mock('../utils/viem')
-jest.mock('../../../utils')
+jest.mock('../viem')
+jest.mock('../../../../utils')
 
 const mockTokenPrices: TokenPriceData[] = [
   {
@@ -98,7 +104,8 @@ describe('Aerodrome revenue calculation', () => {
         address: 'mockAddress',
         startTimestamp: new Date(),
         endTimestamp: new Date(),
-        supportedLiquidityPoolAddresses: AERODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
+        supportedLiquidityPoolAddresses:
+          AERODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
         networkId: AERODROME_NETWORK_ID,
       })
       expect(getSwapEvents).toHaveBeenCalledTimes(6)
