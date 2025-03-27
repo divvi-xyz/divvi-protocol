@@ -26,7 +26,7 @@ describe('filter', () => {
   const userAddress = '0xUser'
   const event: ReferralEvent = {
     userAddress: userAddress,
-    timestamp: Math.round(new Date('2023-09-30T00:00:00Z').getTime() / 1000),
+    timestamp: Math.round(new Date('2025-03-18T00:00:00Z').getTime() / 1000),
     protocol: 'aerodrome',
     referrerId: 'referrer1',
   }
@@ -48,13 +48,10 @@ describe('filter', () => {
     jest.mocked(getBlock).mockImplementation(
       (_networkId: NetworkId, _blockNumber: bigint) =>
         Promise.resolve({
-          timestamp: 1742256000n, // March 18, 2025
+          timestamp: 1742194800n, // March 17, 2025
         }) as unknown as ReturnType<typeof getBlock>,
     )
 
-    event.timestamp = Math.round(
-      new Date('2025-03-19T00:00:00Z').getTime() / 1000,
-    )
     const result = await filter(event)
     expect(result).toBe(false)
     expect(mockClient.get).toHaveBeenCalledTimes(1)
@@ -67,13 +64,10 @@ describe('filter', () => {
     jest.mocked(getBlock).mockImplementation(
       (_networkId: NetworkId, _blockNumber: bigint) =>
         Promise.resolve({
-          timestamp: 1742256000n, // March 18, 2025
+          timestamp: 1742367600n, // March 19, 2025
         }) as unknown as ReturnType<typeof getBlock>,
     )
 
-    event.timestamp = Math.round(
-      new Date('2025-03-17T00:00:00Z').getTime() / 1000,
-    )
     const result = await filter(event)
     expect(result).toBe(true)
     expect(mockClient.get).toHaveBeenCalledTimes(1)
@@ -100,7 +94,7 @@ describe('filter', () => {
     jest.mocked(getBlock).mockImplementation(
       (_networkId: NetworkId, _blockNumber: bigint) =>
         Promise.resolve({
-          timestamp: 1742256000n, // March 18, 2025
+          timestamp: 1742367600n, // March 19, 2025
         }) as unknown as ReturnType<typeof getBlock>,
     )
 
@@ -111,9 +105,6 @@ describe('filter', () => {
         }) as unknown as ReturnType<typeof getBlock>,
     )
 
-    event.timestamp = Math.round(
-      new Date('2025-03-17T00:00:00Z').getTime() / 1000,
-    )
     const result = await filter(event)
     expect(result).toBe(true)
     expect(mockClient.get).toHaveBeenCalledTimes(3)
