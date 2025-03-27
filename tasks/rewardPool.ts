@@ -1,11 +1,10 @@
 import { task, types } from 'hardhat/config'
-import { ethers } from 'ethers'
 import {
   deployContract,
   upgradeContract,
   SUPPORTED_NETWORKS,
   ONE_DAY,
-} from './helpers'
+} from './deployHelpers'
 
 task('deploy:reward-pool', 'Deploy RewardPool contract')
   .addParam('poolToken', 'Address of the token used for rewards')
@@ -41,7 +40,7 @@ task('deploy:reward-pool', 'Deploy RewardPool contract')
 
     const managerAddress = taskArgs.managerAddress || ownerAddress
 
-    const rewardFunctionId = ethers.zeroPadValue(
+    const rewardFunctionId = hre.ethers.zeroPadValue(
       taskArgs.rewardFunction || '0x00',
       32,
     )

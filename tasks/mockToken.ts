@@ -1,5 +1,5 @@
 import { task } from 'hardhat/config'
-import { deployContract } from './helpers'
+import { deployContract } from './deployHelpers'
 
 task('deploy:mock-token', 'Deploy mock ERC-20 token').setAction(
   async (_, hre) => {
