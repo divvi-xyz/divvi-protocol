@@ -4,7 +4,6 @@ import {
 } from './constants'
 import { calculateRevenueDrome } from '../utils/drome/calculateRevenueDrome'
 
-
 export async function calculateRevenue({
   address,
   startTimestamp,
