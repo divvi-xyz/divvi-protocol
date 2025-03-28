@@ -41,13 +41,13 @@ export async function deployContract(
   let proxyAddress: string | undefined
   let contractAddress: string
 
-  console.log(`Deploying ${contractName}`)
-  console.log('Constructor args:', constructorArgs.join(', '))
+  log(`Deploying ${contractName}`)
+  log('Constructor args:', constructorArgs.join(', '))
 
   if (config.useDefender) {
-    console.log(`Using OpenZeppelin Defender`)
+    log(`Using OpenZeppelin Defender`)
     if (config.defenderDeploySalt) {
-      console.log(`Salt: ${config.defenderDeploySalt}`)
+      log(`Salt: ${config.defenderDeploySalt}`)
     }
 
     if (config.isUpgradeable) {
@@ -75,7 +75,7 @@ export async function deployContract(
       contractAddress = await contract.getAddress()
     }
   } else {
-    console.log(`Using local signer`)
+    log(`Using local signer`)
     if (config.isUpgradeable) {
       const proxy = await hre.upgrades.deployProxy(Contract, constructorArgs, {
         kind: 'uups',
@@ -94,18 +94,16 @@ export async function deployContract(
       contractAddress = await contract.getAddress()
     }
   }
-  console.log(`✅ Deployed!`)
+  log(`✅ Deployed!`)
   if (proxyAddress) {
-    console.log('Proxy Address:', proxyAddress)
-    console.log('Implementation Address:', contractAddress)
+    log('Proxy Address:', proxyAddress)
+    log('Implementation Address:', contractAddress)
   } else {
-    console.log('Contract Address:', contractAddress)
+    log('Contract Address:', contractAddress)
   }
 
-  console.log(
-    `\nTo verify the ${proxyAddress ? 'implementation' : 'contract'}, run:`,
-  )
-  console.log(
+  log(`\nTo verify the ${proxyAddress ? 'implementation' : 'contract'}, run:`)
+  log(
     `yarn hardhat verify ${contractAddress} --network ${hre.network.name} ${proxyAddress ? '' : constructorArgs.join(' ')}`,
   )
 }
@@ -122,14 +120,14 @@ export async function upgradeContract(
   let newImplementationAddress: string
 
   if (config?.useDefender) {
-    console.log(`Upgrading ${contractName} with OpenZeppelin Defender`)
-    console.log(`Proxy Address: ${proxyAddress}`)
+    log(`Upgrading ${contractName} with OpenZeppelin Defender`)
+    log(`Proxy Address: ${proxyAddress}`)
 
     const currentImplementationAddress = await getImplementationAddress(
       hre.ethers.provider,
       proxyAddress,
     )
-    console.log('Current Implementation Address:', currentImplementationAddress)
+    log('Current Implementation Address:', currentImplementationAddress)
 
     const proposal = await hre.defender.proposeUpgradeWithApproval(
       proxyAddress,
@@ -139,8 +137,8 @@ export async function upgradeContract(
       },
     )
 
-    console.log('Proposal created:', proposal.url)
-    console.log('Waiting for approval...')
+    log('Proposal created:', proposal.url)
+    log('Waiting for approval...')
 
     newImplementationAddress = currentImplementationAddress
     while (newImplementationAddress === currentImplementationAddress) {
@@ -151,8 +149,8 @@ export async function upgradeContract(
       )
     }
   } else {
-    console.log(`Upgrading ${contractName} with local signer`)
-    console.log(`Proxy Address: ${proxyAddress}`)
+    log(`Upgrading ${contractName} with local signer`)
+    log(`Proxy Address: ${proxyAddress}`)
     const result = await hre.upgrades.upgradeProxy(proxyAddress, Contract)
     await result.waitForDeployment()
 
@@ -161,11 +159,17 @@ export async function upgradeContract(
       proxyAddress,
     )
   }
-  console.log(`✅ Updraded!`)
-  console.log('New Implementation Address:', newImplementationAddress)
+  log(`✅ Updraded!`)
+  log('New Implementation Address:', newImplementationAddress)
 
-  console.log('\nTo verify the new implementation contract, run:')
-  console.log(
+  log('\nTo verify the new implementation contract, run:')
+  log(
     `yarn hardhat verify ${newImplementationAddress} --network ${hre.network.name}`,
   )
+}
+
+function log(...args: any[]) {
+  if (process.env.SHELL !== 'true') {
+    console.log(...args)
+  }
 }
