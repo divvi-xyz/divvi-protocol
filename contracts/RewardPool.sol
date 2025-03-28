@@ -103,7 +103,7 @@ contract RewardPool is
     __UUPSUpgradeable_init();
     __ReentrancyGuard_init();
 
-    grantRole(MANAGER_ROLE, _manager);
+    _grantRole(MANAGER_ROLE, _manager);
 
     poolToken = _poolToken;
     isNativeToken = (_poolToken == NATIVE_TOKEN_ADDRESS);

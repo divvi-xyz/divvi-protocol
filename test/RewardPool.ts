@@ -28,7 +28,7 @@ describe(CONTRACT_NAME, function () {
     tokenType: 'native' | 'erc20'
   }) {
     // Contracts are deployed using the first signer/account by default
-    const [owner, manager, user1, user2, stranger] =
+    const [deployer, owner, manager, user1, user2, stranger] =
       await hre.ethers.getSigners()
 
     const MockERC20 = await hre.ethers.getContractFactory('MockERC20')
@@ -65,6 +65,7 @@ describe(CONTRACT_NAME, function () {
     return {
       rewardPool: proxy,
       mockERC20,
+      deployer,
       owner,
       manager,
       user1,
@@ -745,7 +746,7 @@ describe(CONTRACT_NAME, function () {
 
   describe('Upgrade', function () {
     it('allows admin to upgrade the contract', async function () {
-      const { rewardPool, mockERC20 } = await loadFixture(
+      const { rewardPool, mockERC20, owner } = await loadFixture(
         deployERC20RewardPoolContract,
       )
 
@@ -756,7 +757,10 @@ describe(CONTRACT_NAME, function () {
         await hre.upgrades.erc1967.getImplementationAddress(proxyAddress)
 
       // Deploy new implementation
-      const RewardPoolV2 = await hre.ethers.getContractFactory(CONTRACT_NAME)
+      const RewardPoolV2 = await hre.ethers.getContractFactory(
+        CONTRACT_NAME,
+        owner,
+      )
       const upgradedPool = await hre.upgrades.upgradeProxy(
         proxyAddress,
         RewardPoolV2,
@@ -779,6 +783,28 @@ describe(CONTRACT_NAME, function () {
       expect(await upgradedPool.rewardFunctionId()).to.equal(
         MOCK_REWARD_FUNCTION_ID,
       )
+    })
+
+    it('reverts when deployer tries to upgrade', async function () {
+      const { rewardPool, deployer } = await loadFixture(
+        deployERC20RewardPoolContract,
+      )
+
+      const proxyAddress = await rewardPool.getAddress()
+
+      // Deploy new implementation
+      const RewardPoolV2 = await hre.ethers.getContractFactory(
+        CONTRACT_NAME,
+        deployer,
+      )
+
+      // Try to upgrade proxy
+      await expect(
+        hre.upgrades.upgradeProxy(proxyAddress, RewardPoolV2, {
+          kind: 'uups',
+          redeployImplementation: 'always',
+        }),
+      ).to.be.rejectedWith('AccessControlUnauthorizedAccount')
     })
 
     it('reverts when non-admin tries to upgrade', async function () {
@@ -818,8 +844,11 @@ describe(CONTRACT_NAME, function () {
         ),
       ).to.be.true
 
+      // Connect with owner
+      const poolWithOwner = rewardPool.connect(owner) as typeof rewardPool
+
       // Begin the admin transfer process
-      await rewardPool.beginDefaultAdminTransfer(stranger.address)
+      await poolWithOwner.beginDefaultAdminTransfer(stranger.address)
 
       // Connect with new admin account and try to accept too early
       const rewardPoolWithStranger = rewardPool.connect(
