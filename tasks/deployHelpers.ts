@@ -18,6 +18,10 @@ type BaseDeployConfig = {
   isUpgradeable?: boolean
 }
 
+type LogLevelConfig = {
+  logLevel?: 'verbose' | 'silent'
+}
+
 type DefenderConfig = WithDefender | WithoutDefender
 
 type WithDefender = {
@@ -34,8 +38,10 @@ export async function deployContract(
   hre: HardhatRuntimeEnvironment,
   contractName: string,
   constructorArgs: any[],
-  config: BaseDeployConfig & DefenderConfig = {},
+  config: BaseDeployConfig & LogLevelConfig & DefenderConfig = {},
 ) {
+  const log = getLogger(config.logLevel)
+
   const Contract = await hre.ethers.getContractFactory(contractName)
 
   let proxyAddress: string | undefined
@@ -105,6 +111,7 @@ export async function deployContract(
   log(`\nTo verify the ${proxyAddress ? 'implementation' : 'contract'}, run:`)
   log(
     `yarn hardhat verify ${contractAddress} --network ${hre.network.name} ${proxyAddress ? '' : constructorArgs.join(' ')}`,
+    config,
   )
 }
 
@@ -113,8 +120,10 @@ export async function upgradeContract(
   hre: HardhatRuntimeEnvironment,
   contractName: string,
   proxyAddress: string,
-  config: DefenderConfig = {},
+  config: LogLevelConfig & DefenderConfig = {},
 ) {
+  const log = getLogger(config.logLevel)
+
   const Contract = await hre.ethers.getContractFactory(contractName)
 
   let newImplementationAddress: string
@@ -168,8 +177,10 @@ export async function upgradeContract(
   )
 }
 
-function log(...args: any[]) {
-  if (process.env.SHELL !== 'true') {
-    console.log(...args)
+function getLogger(logLevel: 'verbose' | 'silent' = 'verbose') {
+  return function (...args: any[]) {
+    if (logLevel === 'verbose') {
+      console.log(...args)
+    }
   }
 }
