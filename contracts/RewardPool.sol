@@ -180,7 +180,7 @@ contract RewardPool is
     address[] calldata users,
     uint256[] calldata amounts,
     uint256[] calldata rewardFunctionArgs
-  ) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+  ) external onlyRole(DEFAULT_ADMIN_ROLE) {
     uint256 usersLength = users.length;
     uint256 amountsLength = amounts.length;
     if (usersLength != amountsLength)
