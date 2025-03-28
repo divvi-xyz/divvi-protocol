@@ -333,10 +333,8 @@ describe(CONTRACT_NAME, function () {
   })
 
   describe('Add reward', function () {
-    const depositAmount = hre.ethers.parseEther('100')
-
     let rewardPool: Contract
-    let manager: HardhatEthersSigner
+    let owner: HardhatEthersSigner
     let user1: HardhatEthersSigner
     let user2: HardhatEthersSigner
     let stranger: HardhatEthersSigner
@@ -345,19 +343,16 @@ describe(CONTRACT_NAME, function () {
     beforeEach(async function () {
       const deployment = await loadFixture(deployERC20RewardPoolContract)
       rewardPool = deployment.rewardPool
-      manager = deployment.manager
+      owner = deployment.owner
       user1 = deployment.user1
       user2 = deployment.user2
       stranger = deployment.stranger
 
-      // Connect with manager
-      pool = rewardPool.connect(manager) as typeof rewardPool
-
-      // Deposit funds for most tests
-      await pool.deposit(depositAmount)
+      // Connect with owner
+      pool = rewardPool.connect(owner) as typeof rewardPool
     })
 
-    it('allows manager to add rewards', async function () {
+    it('allows owner to add rewards', async function () {
       // Add rewards
       const users = [user1.address, user2.address]
       const amounts = [hre.ethers.parseEther('10'), hre.ethers.parseEther('20')]
@@ -436,7 +431,7 @@ describe(CONTRACT_NAME, function () {
         .withArgs(0)
     })
 
-    it('reverts when non-manager tries to add rewards', async function () {
+    it('reverts when non-owner tries to add rewards', async function () {
       // Connect with stranger
       const poolWithStranger = rewardPool.connect(stranger) as typeof rewardPool
 
@@ -486,8 +481,13 @@ describe(CONTRACT_NAME, function () {
           // Deposit
           await deposit(poolWithManager, depositAmount)
 
+          // Connect with owner
+          const poolWithOwner = rewardPool.connect(
+            deployment.owner,
+          ) as typeof rewardPool
+
           // Add rewards
-          await poolWithManager.addRewards(
+          await poolWithOwner.addRewards(
             [user1.address],
             [rewardAmount],
             MOCK_REWARD_FUNCTION_ARGS,
