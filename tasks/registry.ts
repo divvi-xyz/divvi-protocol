@@ -24,6 +24,8 @@ task('deploy:registry', 'Deploy Registry contract')
     const ownerAddress =
       taskArgs.ownerAddress || (await hre.ethers.getSigners())[0].address
 
+    const shell = process.env.SHELL === 'true'
+
     const address = await deployContract(
       hre,
       'Registry',
@@ -31,10 +33,11 @@ task('deploy:registry', 'Deploy Registry contract')
       {
         useDefender: taskArgs.useDefender,
         defenderDeploySalt: taskArgs.defenderDeploySalt,
+        logLevel: shell ? 'silent' : 'verbose',
       },
     )
 
-    if (process.env.SHELL === 'true') {
+    if (shell) {
       console.log(`export REGISTRY_ADDRESS=${address}`)
       console.log(`export OWNER_ADDRESS=${ownerAddress}`)
     }
