@@ -20,7 +20,9 @@ Run the localtest in one terminal:
 yarn hardhat node
 ```
 
-And deploy in another:
+### Registry contract
+
+Deploy Registry:
 
 ```
 # Copy-paste environment definition
@@ -33,6 +35,40 @@ And create some dummy data:
 
 ```
 yarn hardhat --network hardhat run scripts/setupTestnet.ts
+```
+
+### RewardPool contract
+
+Deploy mock token:
+
+```bash
+yarn hardhat deploy:mock-token --network localhost
+```
+
+Deploy RewardPool using the deployed mock token address:
+
+```bash
+yarn hardhat deploy:reward-pool \
+    --network localhost \
+    --pool-token 0x5FbDB2315678afecb367f032d93F642f64180aa3 \
+    --reward-function 0xa1b2c3d4e5f67890abcdef1234567890abcdef12 \
+    --timelock 1767222000
+```
+
+> The token address above will match if you deploy the mock token first thing on the fresh Harhat node.
+
+Run Harhdat console:
+
+```
+yarn hardhat console --network localhost
+```
+
+Use `ethers` in Hardhat console to interact with the contract:
+
+```
+const RewardPool = await ethers.getContractFactory("RewardPool")
+const rewardPool = await RewardPool.attach('0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0')
+await rewardPool.rewardFunctionId()
 ```
 
 ## Creating Safe Transactions Batches
@@ -92,10 +128,24 @@ See [`docs/contracts.md`](docs/contracts.md) for network deployments.
 
 We use [OpenZeppelin Defender](https://www.openzeppelin.com/defender) to manage deployments on Mainnet. Before beginning a deployment, make sure that your `.env` file is set up correctly. Namely, make sure to get the `DEFENDER_API_KEY`, `DEFENDER_API_SECRET`, `CELOSCAN_API_KEY` values from GSM and copy them in. (Ideally we could inject these config values into Hardhat automatically, but I haven't found a way to do that.)
 
-To deploy, run:
+To deploy Registry, run:
 
 ```bash
 yarn hardhat run scripts/deploy.ts --network celo
+```
+
+To deploy RewardPool, run:
+
+```bash
+yarn hardhat deploy:reward-pool \
+    --network celo \
+    --use-defender \
+    --defender-deploy-salt <SALT> \
+    --owner-address <OWNER_ADDRESS> \
+    --pool-token <TOKEN_ADDRESS> \
+    --manager-address <MANAGER_ADDRESS> \
+    --reward-function 0x<GIT_HASH> \
+    --timelock <TIMESTAMP> \
 ```
 
 After this is done, you should see output in your terminal with a command to run to verify the contract on the block explorers.
