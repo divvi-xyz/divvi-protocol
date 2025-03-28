@@ -6,6 +6,7 @@ import '@openzeppelin/hardhat-upgrades'
 import { HardhatUserConfig } from 'hardhat/config'
 import { HDAccountsUserConfig } from 'hardhat/types'
 import * as dotenv from 'dotenv'
+import './tasks/registry'
 import './tasks/rewardPool'
 import './tasks/mockToken'
 
