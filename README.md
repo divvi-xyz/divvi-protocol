@@ -26,15 +26,15 @@ Deploy Registry:
 
 ```
 # Copy-paste environment definition
-SHELL=true yarn --silent hardhat --network hardhat deploy:registry
+SHELL=true yarn --silent hardhat --network localhost deploy:registry
 # or use eval
-eval `SHELL=true yarn --silent hardhat --network hardhat deploy:registry`
+eval `SHELL=true yarn --silent hardhat --network localhost deploy:registry`
 ```
 
 And create some dummy data:
 
 ```
-yarn hardhat --network hardhat run scripts/setupTestnet.ts
+yarn hardhat --network localhost run scripts/setupTestnet.ts
 ```
 
 ### RewardPool contract
