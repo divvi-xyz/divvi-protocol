@@ -41,8 +41,11 @@ export async function deployContract(
   let proxyAddress: string | undefined
   let contractAddress: string
 
+  console.log(`Deploying ${contractName}`)
+  console.log('Constructor args:', constructorArgs.join(', '))
+
   if (config.useDefender) {
-    console.log(`Deploying ${contractName} with OpenZeppelin Defender`)
+    console.log(`Using OpenZeppelin Defender`)
     if (config.defenderDeploySalt) {
       console.log(`Salt: ${config.defenderDeploySalt}`)
     }
@@ -72,7 +75,7 @@ export async function deployContract(
       contractAddress = await contract.getAddress()
     }
   } else {
-    console.log(`Deploying ${contractName} with local signer`)
+    console.log(`Using local signer`)
     if (config.isUpgradeable) {
       const proxy = await hre.upgrades.deployProxy(Contract, constructorArgs, {
         kind: 'uups',
@@ -98,7 +101,6 @@ export async function deployContract(
   } else {
     console.log('Contract Address:', contractAddress)
   }
-  console.log('Constructor args:', constructorArgs.join(', '))
 
   console.log(
     `\nTo verify the ${proxyAddress ? 'implementation' : 'contract'}, run:`,
