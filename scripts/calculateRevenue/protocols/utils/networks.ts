@@ -1,6 +1,7 @@
-import { QueryResponse, TransactionField } from '@envio-dev/hypersync-client'
-import { getHyperSyncClient } from '../../../utils'
+import { TransactionField } from '@envio-dev/hypersync-client'
 import { NetworkId } from '../../../types'
+import { getHyperSyncClient } from '../../../utils'
+import { paginateQuery } from '../../../utils/hypersyncPagination'
 
 export async function fetchTotalTransactionFees({
   networkId,
@@ -14,7 +15,6 @@ export async function fetchTotalTransactionFees({
   endBlock?: number
 }): Promise<number> {
   let totalTransactionFees = 0
-  let hasMoreBlocks = true
 
   const client = getHyperSyncClient(networkId)
 
@@ -27,22 +27,11 @@ export async function fetchTotalTransactionFees({
     ...(endBlock && { toBlock: endBlock }),
   }
 
-  while (hasMoreBlocks) {
-    const response: QueryResponse = await client.get(query)
-    if (response.nextBlock === query.fromBlock) {
-      hasMoreBlocks = false
-    } else {
-      query.fromBlock = response.nextBlock
-    }
-
+  await paginateQuery(client, query, async (response) => {
     for (const tx of response.data.transactions) {
       totalTransactionFees += Number(tx.gasUsed ?? 0) * Number(tx.gasPrice ?? 0)
     }
+  })
 
-    // Check if we've reached the desired end block to avoid an unnecessary request
-    if (endBlock && query.fromBlock >= endBlock) {
-      hasMoreBlocks = false
-    }
-  }
   return totalTransactionFees
 }
