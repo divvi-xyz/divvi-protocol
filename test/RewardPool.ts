@@ -160,6 +160,7 @@ describe(CONTRACT_NAME, function () {
     tokenTypes.forEach(function ({ tokenType, deposit, deployFixture }) {
       describe(`with ${tokenType} token`, function () {
         let rewardPool: Contract
+        let owner: HardhatEthersSigner
         let manager: HardhatEthersSigner
         let stranger: HardhatEthersSigner
         let poolWithManager: Contract
@@ -167,6 +168,7 @@ describe(CONTRACT_NAME, function () {
         beforeEach(async function () {
           const deployment = await loadFixture(deployFixture)
           rewardPool = deployment.rewardPool
+          owner = deployment.owner
           manager = deployment.manager
           stranger = deployment.stranger
 
@@ -180,6 +182,14 @@ describe(CONTRACT_NAME, function () {
             .withArgs(depositAmount)
 
           expect(await rewardPool.poolBalance()).to.equal(depositAmount)
+        })
+
+        it('allows owner to deposit tokens', async function () {
+          const poolWithOwner = rewardPool.connect(owner) as typeof rewardPool
+
+          await expect(deposit(poolWithOwner, depositAmount))
+            .to.emit(rewardPool, 'Deposit')
+            .withArgs(depositAmount)
         })
 
         it('reverts when non-manager tries to deposit', async function () {
