@@ -1,16 +1,23 @@
 import { erc20Abi } from 'viem'
-import { TokenPriceData } from '../../../types'
-import { getViemPublicClient } from '../../../utils'
-import { fetchTokenPrices } from '../utils/tokenPrices'
-import { getAerodromeLiquidityPoolContract } from '../utils/viem'
+import { TokenPriceData } from '../../../../types'
+import { getViemPublicClient } from '../../../../utils'
+import { fetchTokenPrices } from '../tokenPrices'
+import { getAerodromeLiquidityPoolContract } from '../viem'
 import { getSwapEvents } from './getSwapEvents'
-import { calculateSwapRevenue, calculateRevenue } from './index'
+import {
+  calculateSwapRevenue,
+  calculateRevenueDrome,
+} from './calculateRevenueDrome'
 import { SwapEvent } from './types'
+import {
+  AERODROME_NETWORK_ID,
+  AERODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
+} from '../../aerodrome/constants'
 
-jest.mock('../utils/tokenPrices')
+jest.mock('../tokenPrices')
 jest.mock('./getSwapEvents')
-jest.mock('../utils/viem')
-jest.mock('../../../utils')
+jest.mock('../viem')
+jest.mock('../../../../utils')
 
 const mockTokenPrices: TokenPriceData[] = [
   {
@@ -68,7 +75,7 @@ describe('Aerodrome revenue calculation', () => {
     })
   })
 
-  describe('calculateRevenue', () => {
+  describe('calculateRevenueDrome', () => {
     it('should return correct calculation', async () => {
       jest
         .mocked(fetchTokenPrices)
@@ -93,10 +100,13 @@ describe('Aerodrome revenue calculation', () => {
         getBlock: mockGetBlock,
         readContract: jest.fn().mockResolvedValue(MOCK_FEE),
       } as unknown as ReturnType<typeof getViemPublicClient>)
-      const result = await calculateRevenue({
+      const result = await calculateRevenueDrome({
         address: 'mockAddress',
         startTimestamp: new Date(),
         endTimestamp: new Date(),
+        supportedLiquidityPoolAddresses:
+          AERODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
+        networkId: AERODROME_NETWORK_ID,
       })
       expect(getSwapEvents).toHaveBeenCalledTimes(6)
       expect(result).toBeCloseTo(0.61)
