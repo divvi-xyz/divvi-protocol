@@ -1,8 +1,5 @@
-/* eslint no-console: 0 */
-import '@nomicfoundation/hardhat-viem'
-import hre from 'hardhat'
 import { Address, stringToHex } from 'viem'
-import yargs from 'yargs'
+import { HardhatRuntimeEnvironment } from 'hardhat/types'
 
 interface ReferrerConfig {
   protocolIds: string[]
@@ -20,31 +17,14 @@ const REFERRERS: Record<string, ReferrerConfig> = {
   },
 }
 
-function parseArgs() {
-  return yargs
-    .env('')
-    .option('registry-address', {
-      description: 'Registry contract owner',
-      type: 'string',
-      demand: true,
-    })
-    .option('owner-address', {
-      description: 'Registry contract owner',
-      type: 'string',
-    })
-    .help()
-    .parseSync()
-}
-
-async function main(args: ReturnType<typeof parseArgs>) {
-  if (hre.network.name !== 'hardhat') {
-    throw new RangeError('Only supports "hardhat" network')
-  }
-
-  const contract = await hre.viem.getContractAt(
-    'Registry',
-    args.registryAddress as Address,
-  )
+export async function populateRegistry({
+  hre,
+  registryAddress,
+}: {
+  hre: HardhatRuntimeEnvironment
+  registryAddress: Address
+}) {
+  const contract = await hre.viem.getContractAt('Registry', registryAddress)
 
   const referrerIds = Object.keys(REFERRERS)
 
@@ -76,11 +56,9 @@ async function main(args: ReturnType<typeof parseArgs>) {
   while (walletClients.length > 0) {
     const walletClient = walletClients.pop()!
 
-    const contract = await hre.viem.getContractAt(
-      'Registry',
-      process.env.REGISTRY_ADDRESS as Address,
-      { client: { wallet: walletClient } },
-    )
+    const contract = await hre.viem.getContractAt('Registry', registryAddress, {
+      client: { wallet: walletClient },
+    })
 
     // This makes sure we use valid values, but can cause repetitive
     // referal behavior.
@@ -100,8 +78,3 @@ async function main(args: ReturnType<typeof parseArgs>) {
     )
   }
 }
-
-main(parseArgs()).catch((error) => {
-  console.error(error)
-  process.exitCode = 1
-})

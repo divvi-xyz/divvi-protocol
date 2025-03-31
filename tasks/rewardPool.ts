@@ -4,7 +4,7 @@ import {
   upgradeContract,
   SUPPORTED_NETWORKS,
   ONE_DAY,
-} from './deployHelpers'
+} from './helpers/deployHelpers'
 
 task('deploy:reward-pool', 'Deploy RewardPool contract')
   .addParam('poolToken', 'Address of the token used for rewards')

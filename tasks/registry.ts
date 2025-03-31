@@ -1,10 +1,18 @@
+import fs from 'fs'
+import path from 'path'
 import { task } from 'hardhat/config'
-import { deployContract, SUPPORTED_NETWORKS, ONE_DAY } from './deployHelpers'
+import {
+  deployContract,
+  SUPPORTED_NETWORKS,
+  ONE_DAY,
+} from './helpers/deployHelpers'
+import { populateRegistry } from './helpers/populateRegistry'
 
-task('deploy:registry', 'Deploy Registry contract')
+task('registry:deploy', 'Deploy Registry contract')
   .addOptionalParam('ownerAddress', 'Address to use as owner')
   .addFlag('useDefender', 'Deploy using OpenZeppelin Defender')
   .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
+  .addOptionalParam('outputFile', 'File to write the deployment info (JSON)')
   .setAction(async (taskArgs, hre) => {
     if (
       taskArgs.useDefender &&
@@ -24,8 +32,6 @@ task('deploy:registry', 'Deploy Registry contract')
     const ownerAddress =
       taskArgs.ownerAddress || (await hre.ethers.getSigners())[0].address
 
-    const shell = process.env.SHELL === 'true'
-
     const address = await deployContract(
       hre,
       'Registry',
@@ -33,12 +39,42 @@ task('deploy:registry', 'Deploy Registry contract')
       {
         useDefender: taskArgs.useDefender,
         defenderDeploySalt: taskArgs.defenderDeploySalt,
-        logLevel: shell ? 'silent' : 'verbose',
       },
     )
 
-    if (shell) {
-      console.log(`export REGISTRY_ADDRESS=${address}`)
-      console.log(`export OWNER_ADDRESS=${ownerAddress}`)
+    if (taskArgs.outputFile) {
+      const exportData = {
+        registryAddress: address,
+        ownerAddress,
+      }
+
+      const exportDir = path.dirname(taskArgs.outputFile)
+      if (!fs.existsSync(exportDir)) {
+        fs.mkdirSync(exportDir, { recursive: true })
+      }
+
+      fs.writeFileSync(taskArgs.outputFile, JSON.stringify(exportData, null, 2))
+      console.log(`\n💾 Deployment info written to ${taskArgs.outputFile}`)
     }
+  })
+
+task('registry:populate', 'Populate Registry contract with test data')
+  .addParam('deploymentInfo', 'Path to JSON file containing deployment info')
+  .setAction(async (taskArgs, hre) => {
+    if (hre.network.name !== 'localhost') {
+      throw new RangeError('Only supports "localhost" network')
+    }
+
+    const fullPath = path.resolve(taskArgs.deploymentInfo)
+    const fileContent = fs.readFileSync(fullPath, 'utf8')
+    const deploymentInfo = JSON.parse(fileContent)
+
+    if (!deploymentInfo.registryAddress) {
+      throw new Error('Deployment info must contain the `registryAddress`')
+    }
+
+    await populateRegistry({
+      hre,
+      registryAddress: deploymentInfo.registryAddress,
+    })
   })
