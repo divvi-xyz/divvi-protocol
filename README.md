@@ -31,7 +31,7 @@ yarn hardhat --network localhost registry:deploy
 And create some dummy data:
 
 ```
-yarn hardhat registry:populate  --network localhost
+yarn hardhat --network localhost registry:populate
 ```
 
 ### RewardPool contract
@@ -128,7 +128,7 @@ We use [OpenZeppelin Defender](https://www.openzeppelin.com/defender) to manage 
 To deploy Registry, run:
 
 ```bash
-yarn hardhat --network celo registry:deploy
+yarn hardhat registry:deploy --network celo
 ```
 
 To deploy RewardPool, run:
