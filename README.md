@@ -25,13 +25,13 @@ yarn hardhat node
 Deploy Registry:
 
 ```
-yarn hardhat registry:deploy --network localhost --output-file $TMPDIR/deployment-registry.json
+yarn hardhat --network localhost registry:deploy
 ```
 
 And create some dummy data:
 
 ```
-yarn hardhat registry:populate --network localhost --deployment-info $TMPDIR/deployment-registry.json
+yarn hardhat --network localhost registry:populate
 ```
 
 ### RewardPool contract
@@ -128,7 +128,7 @@ We use [OpenZeppelin Defender](https://www.openzeppelin.com/defender) to manage 
 To deploy Registry, run:
 
 ```bash
-yarn hardhat registry:deploy --network celo
+yarn hardhat --network celo registry:deploy
 ```
 
 To deploy RewardPool, run:
