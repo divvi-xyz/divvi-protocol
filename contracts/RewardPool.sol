@@ -174,13 +174,13 @@ contract RewardPool is
    * @param users Array of user addresses
    * @param amounts Array of amounts to allocate for each user
    * @param rewardFunctionArgs Arguments used to calculate rewards
-   * @notice Allowed only for address with MANAGER_ROLE
+   * @notice Allowed only for address with DEFAULT_ADMIN_ROLE
    */
   function addRewards(
     address[] calldata users,
     uint256[] calldata amounts,
     uint256[] calldata rewardFunctionArgs
-  ) external onlyRole(MANAGER_ROLE) {
+  ) external onlyRole(DEFAULT_ADMIN_ROLE) {
     uint256 usersLength = users.length;
     uint256 amountsLength = amounts.length;
     if (usersLength != amountsLength)
