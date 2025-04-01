@@ -39,13 +39,13 @@ yarn hardhat --network localhost registry:populate
 Deploy mock token:
 
 ```bash
-yarn hardhat deploy:mock-token --network localhost
+yarn hardhat mock-token:deploy --network localhost
 ```
 
 Deploy RewardPool using the deployed mock token address:
 
 ```bash
-yarn hardhat deploy:reward-pool \
+yarn hardhat reward-pool:deploy \
     --network localhost \
     --pool-token 0x5FbDB2315678afecb367f032d93F642f64180aa3 \
     --reward-function 0xa1b2c3d4e5f67890abcdef1234567890abcdef12 \
@@ -134,7 +134,7 @@ yarn hardhat registry:deploy --network celo
 To deploy RewardPool, run:
 
 ```bash
-yarn hardhat deploy:reward-pool \
+yarn hardhat reward-pool:deploy \
     --network celo \
     --use-defender \
     --defender-deploy-salt <SALT> \
