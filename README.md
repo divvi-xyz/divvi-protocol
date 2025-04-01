@@ -31,7 +31,7 @@ yarn hardhat --network localhost registry:deploy
 And create some dummy data:
 
 ```
-yarn hardhat --network localhost registry:populate
+yarn hardhat registry:populate  --network localhost
 ```
 
 ### RewardPool contract
