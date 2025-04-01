@@ -19,12 +19,12 @@ const REFERRERS: Record<string, ReferrerConfig> = {
 
 export async function populateRegistry({
   hre,
-  registryAddress,
+  contractAddress,
 }: {
   hre: HardhatRuntimeEnvironment
-  registryAddress: Address
+  contractAddress: Address
 }) {
-  const contract = await hre.viem.getContractAt('Registry', registryAddress)
+  const contract = await hre.viem.getContractAt('Registry', contractAddress)
 
   const referrerIds = Object.keys(REFERRERS)
 
@@ -56,7 +56,7 @@ export async function populateRegistry({
   while (walletClients.length > 0) {
     const walletClient = walletClients.pop()!
 
-    const contract = await hre.viem.getContractAt('Registry', registryAddress, {
+    const contract = await hre.viem.getContractAt('Registry', contractAddress, {
       client: { wallet: walletClient },
     })
 

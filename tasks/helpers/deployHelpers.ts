@@ -1,3 +1,5 @@
+import fs from 'fs'
+import path from 'path'
 import { HardhatRuntimeEnvironment } from 'hardhat/types'
 import { getImplementationAddress } from '@openzeppelin/upgrades-core'
 
@@ -102,14 +104,20 @@ export async function deployContract(
     console.log('Contract Address:', contractAddress)
   }
 
+  saveDeploymentMetadata({
+    hre,
+    contractName,
+    metadata: {
+      contractAddress: contractAddress || proxyAddress,
+    },
+  })
+
   console.log(
     `\nTo verify the ${proxyAddress ? 'implementation' : 'contract'}, run:`,
   )
   console.log(
     `yarn hardhat verify ${contractAddress} --network ${hre.network.name} ${proxyAddress ? '' : constructorArgs.join(' ')}`,
   )
-
-  return proxyAddress || contractAddress
 }
 
 // Contract upgrade helper
@@ -170,4 +178,52 @@ export async function upgradeContract(
   console.log(
     `yarn hardhat verify ${newImplementationAddress} --network ${hre.network.name}`,
   )
+}
+
+export function saveDeploymentMetadata({
+  hre,
+  contractName,
+  metadata,
+}: {
+  hre: HardhatRuntimeEnvironment
+  contractName: string
+  metadata: Record<string, any>
+}) {
+  const metadataFile = getDeploymentMetadataFilePath({ hre, contractName })
+  const targetDir = path.dirname(metadataFile)
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true })
+  }
+  fs.writeFileSync(metadataFile, JSON.stringify(metadata, null, 2), 'utf8')
+  console.log(`\n💾 Deployment metadata written to ${metadataFile}`)
+}
+
+export function readDeploymentMetadata({
+  hre,
+  contractName,
+}: {
+  hre: HardhatRuntimeEnvironment
+  contractName: string
+}): Record<string, any> {
+  const metadataFile = getDeploymentMetadataFilePath({ hre, contractName })
+  if (!fs.existsSync(metadataFile)) {
+    throw new Error(`❌ Deployment metadata file not found: ${metadataFile}`)
+  }
+  const metadata = fs.readFileSync(metadataFile, 'utf8')
+  return JSON.parse(metadata)
+}
+
+function getDeploymentMetadataFilePath({
+  hre,
+  contractName,
+}: {
+  hre: HardhatRuntimeEnvironment
+  contractName: string
+}): string {
+  const deploymentArtifactsDir = path.join(
+    hre.config.paths.artifacts,
+    'deployments',
+    contractName,
+  )
+  return path.join(deploymentArtifactsDir, `${hre.network.name}.json`)
 }
