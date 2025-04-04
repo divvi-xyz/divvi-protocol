@@ -31,7 +31,7 @@ export interface BeefyInvestorTransaction {
   usd_diff: number | null
 }
 
-async function fetchWithBackoff(
+export async function fetchWithBackoff(
   url: string,
   options: RequestInit,
   retries: number = 5,
