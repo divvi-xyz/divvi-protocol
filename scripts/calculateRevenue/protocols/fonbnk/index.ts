@@ -10,8 +10,8 @@ import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { NetworkId } from '../../../types'
 import { fetchTokenPrices } from '../utils/tokenPrices'
 import { getTokenPrice } from '../beefy'
-import { AERODROME_NETWORK_ID } from '../aerodrome/constants'
 import { FonbnkTransaction } from './types'
+import { Address } from 'viem'
 
 async function getUserTransactions({
   address,
@@ -19,12 +19,14 @@ async function getUserTransactions({
   startTimestamp,
   endTimestamp,
   client,
+  networkId,
 }: {
   address: string
   payoutWallet: string
   startTimestamp: Date
   endTimestamp: Date
   client: { get: (query: Query) => Promise<QueryResponse> }
+  networkId: NetworkId
 }): Promise<FonbnkTransaction[]> {
   const query = {
     transactions: [{ to: [payoutWallet], from: [address] }],
@@ -33,16 +35,23 @@ async function getUserTransactions({
   }
   let transactions: FonbnkTransaction[] = []
   await paginateQuery(client, query, async (response) => {
-    for (const block of response.data.blocks) {
-      if (block.number) {
-        const blockData = await getBlock(
-          AERODROME_NETWORK_ID,
-          BigInt(block.number),
-        )
-
-        hasTransactionsOnlyAfterEvent =
-          blockData.timestamp >= BigInt(event.timestamp)
-        return true // Return from callback and stop further pagination
+    for (const transaction of response.data.transactions) {
+      if (
+        transaction.blockNumber &&
+        transaction.value &&
+        transaction.contractAddress
+      ) {
+        const block = await getBlock(networkId, BigInt(transaction.blockNumber))
+        if (
+          block.timestamp >= BigInt(startTimestamp.getTime()) &&
+          block.timestamp <= BigInt(endTimestamp.getTime())
+        ) {
+          transactions.push({
+            amount: transaction.value,
+            tokenAddress: transaction.contractAddress as Address,
+            timestamp: new Date(Number(block.timestamp)),
+          })
+        }
       }
     }
   })
@@ -122,6 +131,7 @@ export async function calculateRevenue({
           startTimestamp,
           endTimestamp,
           client,
+          networkId: fonbnkNetworkToNetworkId[supportedNetwork],
         })
         const revenue = await getTotalRevenueUsdFromTransactions({
           transactions,
