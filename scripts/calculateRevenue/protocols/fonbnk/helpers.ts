@@ -1,7 +1,8 @@
 import crypto from 'crypto'
 import { fetchWithBackoff } from '../../../protocolFilters/beefy'
 import { FONBNK_API_URL, FonbnkNetwork } from './constants'
-import { FonbnkAsset } from './types'
+import { FonbnkAsset, FonbnkPayoutWalletReponse } from './types'
+import { Address } from 'viem'
 
 export async function fetchFonbnkAssets(): Promise<FonbnkAsset[]> {
   if (!process.env.FONBNK_CLIENT_ID) {
@@ -45,7 +46,7 @@ export async function getPayoutWallets({
 }: {
   fonbnkNetwork: FonbnkNetwork
   currency: string
-}): Promise<string[]> {
+}): Promise<Address[]> {
   if (!process.env.FONBNK_CLIENT_ID) {
     throw new Error('FONBNK_CLIENT_ID is not set')
   }
@@ -57,7 +58,7 @@ export async function getPayoutWallets({
   const signature = await generateSignature(
     process.env.FONBNK_CLIENT_SECRET,
     timestamp,
-    '/api/util/payout-wallets?network=${fonbnkNetwork}&asset=${currency}',
+    `/api/util/payout-wallets?network=${fonbnkNetwork}&asset=${currency}`,
   )
   const requestOptions = {
     method: 'GET',
@@ -74,10 +75,12 @@ export async function getPayoutWallets({
     if (response.status === 404) {
       return []
     }
-    throw new Error(`Error fetching fonbnk assets: ${response.statusText}`)
+    throw new Error(
+      `Error fetching fonbnk payout wallets (${url}) with status ${response.status}: ${response.statusText}`,
+    )
   }
-  const data: string[] = await response.json()
-  return data
+  const data: FonbnkPayoutWalletReponse = await response.json()
+  return data.wallets
 }
 
 export async function generateSignature(

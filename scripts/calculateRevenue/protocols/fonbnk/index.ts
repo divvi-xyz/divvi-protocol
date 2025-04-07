@@ -1,9 +1,10 @@
-import { BlockField, Query, QueryResponse } from '@envio-dev/hypersync-client'
+import { LogField, Query, QueryResponse } from '@envio-dev/hypersync-client'
 import { getBlock, getErc20Contract, getHyperSyncClient } from '../../../utils'
 import {
   FonbnkNetwork,
   fonbnkNetworkToNetworkId,
   TRANSACTION_VOLUME_USD_PRECISION,
+  TRANSFER_TOPIC,
 } from './constants'
 import { fetchFonbnkAssets, getPayoutWallets } from './helpers'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
@@ -11,7 +12,7 @@ import { NetworkId } from '../../../types'
 import { fetchTokenPrices } from '../utils/tokenPrices'
 import { getTokenPrice } from '../beefy'
 import { FonbnkTransaction } from './types'
-import { Address } from 'viem'
+import { Address, fromHex, isAddress, pad } from 'viem'
 
 async function getUserTransactions({
   address,
@@ -21,35 +22,35 @@ async function getUserTransactions({
   client,
   networkId,
 }: {
-  address: string
-  payoutWallet: string
+  address: Address
+  payoutWallet: Address
   startTimestamp: Date
   endTimestamp: Date
   client: { get: (query: Query) => Promise<QueryResponse> }
   networkId: NetworkId
 }): Promise<FonbnkTransaction[]> {
   const query = {
-    transactions: [{ to: [payoutWallet], from: [address] }],
-    fieldSelection: { block: [BlockField.Number] },
+    logs: [{ topics: [[TRANSFER_TOPIC], [pad(payoutWallet)], [pad(address)]] }],
+    transactions: [{ from: [payoutWallet] }],
+    fieldSelection: {
+      log: [LogField.BlockNumber, LogField.Address, LogField.Data],
+    },
     fromBlock: 0,
   }
   let transactions: FonbnkTransaction[] = []
   await paginateQuery(client, query, async (response) => {
-    for (const transaction of response.data.transactions) {
-      if (
-        transaction.blockNumber &&
-        transaction.value &&
-        transaction.contractAddress
-      ) {
+    for (const transaction of response.data.logs) {
+      if (transaction.blockNumber && transaction.data && transaction.address) {
         const block = await getBlock(networkId, BigInt(transaction.blockNumber))
+        const blockTimestampDate = new Date(Number(block.timestamp) * 1000)
         if (
-          block.timestamp >= BigInt(startTimestamp.getTime()) &&
-          block.timestamp <= BigInt(endTimestamp.getTime())
+            blockTimestampDate >= startTimestamp &&
+            blockTimestampDate <= endTimestamp
         ) {
           transactions.push({
-            amount: transaction.value,
-            tokenAddress: transaction.contractAddress as Address,
-            timestamp: new Date(Number(block.timestamp)),
+            amount: fromHex(transaction.data as Address, 'bigint'),
+            tokenAddress: transaction.address as Address,
+            timestamp: blockTimestampDate,
           })
         }
       }
@@ -110,9 +111,13 @@ export async function calculateRevenue({
   startTimestamp: Date
   endTimestamp: Date
 }): Promise<number> {
+  if (!isAddress(address)) {
+    throw new Error('Invalid address')
+  }
   let totalRevenue = 0
   const fonbnkAssets = await fetchFonbnkAssets()
   for (const supportedNetwork of Object.values(FonbnkNetwork)) {
+    let checkedAddresses = new Set<Address>()
     const client = getHyperSyncClient(
       fonbnkNetworkToNetworkId[supportedNetwork],
     )
@@ -125,21 +130,24 @@ export async function calculateRevenue({
         currency: asset,
       })
       for (const payoutWallet of payoutWallets) {
-        const transactions = await getUserTransactions({
-          address,
-          payoutWallet,
-          startTimestamp,
-          endTimestamp,
-          client,
-          networkId: fonbnkNetworkToNetworkId[supportedNetwork],
-        })
-        const revenue = await getTotalRevenueUsdFromTransactions({
-          transactions,
-          networkId: fonbnkNetworkToNetworkId[supportedNetwork],
-          startTimestamp,
-          endTimestamp,
-        })
-        totalRevenue += revenue
+        if (!checkedAddresses.has(payoutWallet)) {
+          checkedAddresses.add(payoutWallet)
+          const transactions = await getUserTransactions({
+            address,
+            payoutWallet,
+            startTimestamp,
+            endTimestamp,
+            client,
+            networkId: fonbnkNetworkToNetworkId[supportedNetwork],
+          })
+          const revenue = await getTotalRevenueUsdFromTransactions({
+            transactions,
+            networkId: fonbnkNetworkToNetworkId[supportedNetwork],
+            startTimestamp,
+            endTimestamp,
+          })
+          totalRevenue += revenue
+        }
       }
     }
   }
