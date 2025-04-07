@@ -3,7 +3,6 @@ import { NetworkId } from "../../../types";
 export const TRANSACTION_VOLUME_USD_PRECISION = 8
 
 export const FONBNK_API_URL = 'https://aten.fonbnk-services.com'
-export const FONBNK_CLIENT_ID = ''
 
 export enum FonbnkNetwork {
     CELO = 'CELO',

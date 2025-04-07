@@ -1,9 +1,12 @@
 import crypto from 'crypto'
 import { fetchWithBackoff } from '../../../protocolFilters/beefy'
-import { FONBNK_API_URL, FONBNK_CLIENT_ID, FonbnkNetwork } from './constants'
+import { FONBNK_API_URL, FonbnkNetwork } from './constants'
 import { FonbnkAsset } from './types'
 
 export async function fetchFonbnkAssets(): Promise<FonbnkAsset[]> {
+  if (!process.env.FONBNK_CLIENT_ID) {
+    throw new Error('FONBNK_CLIENT_ID is not set')
+  }
   if (!process.env.FONBNK_CLIENT_SECRET) {
     throw new Error('FONBNK_CLIENT_SECRET is not set')
   }
@@ -17,7 +20,7 @@ export async function fetchFonbnkAssets(): Promise<FonbnkAsset[]> {
   const requestOptions = {
     method: 'GET',
     headers: {
-      'x-client-id': FONBNK_CLIENT_ID,
+      'x-client-id': process.env.FONBNK_CLIENT_ID,
       'x-timestamp': timestamp,
       'x-signature': signature,
     },
@@ -43,6 +46,9 @@ export async function getPayoutWallets({
   fonbnkNetwork: FonbnkNetwork
   currency: string
 }): Promise<string[]> {
+  if (!process.env.FONBNK_CLIENT_ID) {
+    throw new Error('FONBNK_CLIENT_ID is not set')
+  }
   if (!process.env.FONBNK_CLIENT_SECRET) {
     throw new Error('FONBNK_CLIENT_SECRET is not set')
   }
@@ -56,7 +62,7 @@ export async function getPayoutWallets({
   const requestOptions = {
     method: 'GET',
     headers: {
-      'x-client-id': FONBNK_CLIENT_ID,
+      'x-client-id': process.env.FONBNK_CLIENT_ID,
       'x-timestamp': timestamp,
       'x-signature': signature,
     },
