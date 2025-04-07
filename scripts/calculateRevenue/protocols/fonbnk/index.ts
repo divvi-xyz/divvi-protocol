@@ -6,7 +6,7 @@ import {
   TRANSACTION_VOLUME_USD_PRECISION,
   TRANSFER_TOPIC,
 } from './constants'
-import { fetchFonbnkAssets, getPayoutWallets } from './helpers'
+import { getFonbnkAssets, getPayoutWallets } from './helpers'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { NetworkId } from '../../../types'
 import { fetchTokenPrices } from '../utils/tokenPrices'
@@ -44,8 +44,8 @@ async function getUserTransactions({
         const block = await getBlock(networkId, BigInt(transaction.blockNumber))
         const blockTimestampDate = new Date(Number(block.timestamp) * 1000)
         if (
-            blockTimestampDate >= startTimestamp &&
-            blockTimestampDate <= endTimestamp
+          blockTimestampDate >= startTimestamp &&
+          blockTimestampDate <= endTimestamp
         ) {
           transactions.push({
             amount: fromHex(transaction.data as Address, 'bigint'),
@@ -115,7 +115,7 @@ export async function calculateRevenue({
     throw new Error('Invalid address')
   }
   let totalRevenue = 0
-  const fonbnkAssets = await fetchFonbnkAssets()
+  const fonbnkAssets = await getFonbnkAssets()
   for (const supportedNetwork of Object.values(FonbnkNetwork)) {
     let checkedAddresses = new Set<Address>()
     const client = getHyperSyncClient(

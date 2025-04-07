@@ -4,7 +4,7 @@ import { FONBNK_API_URL, FonbnkNetwork } from './constants'
 import { FonbnkAsset, FonbnkPayoutWalletReponse } from './types'
 import { Address } from 'viem'
 
-export async function fetchFonbnkAssets(): Promise<FonbnkAsset[]> {
+export async function getFonbnkAssets(): Promise<FonbnkAsset[]> {
   if (!process.env.FONBNK_CLIENT_ID) {
     throw new Error('FONBNK_CLIENT_ID is not set')
   }
