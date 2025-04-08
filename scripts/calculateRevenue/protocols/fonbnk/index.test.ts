@@ -145,8 +145,7 @@ describe('calculateRevenue', () => {
         mockClient as unknown as ReturnType<typeof getHyperSyncClient>,
       )
     mockClient.get
-      .mockResolvedValueOnce(makeQueryResponse(MOCK_HYPERSYNC_LOGS))
-      .mockResolvedValue(makeQueryResponse([]))
+      .mockResolvedValue(makeQueryResponse(MOCK_HYPERSYNC_LOGS))
     jest.mocked(getErc20Contract).mockResolvedValue({
       read: {
         decimals: jest.fn().mockResolvedValue(4n),
