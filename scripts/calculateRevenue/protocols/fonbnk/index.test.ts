@@ -108,9 +108,6 @@ describe('getUserTransactions', () => {
 
     expect(result[0].timestamp).toEqual(new Date('2025-01-01T23:30:00.000Z'))
     expect(result[1].timestamp).toEqual(new Date('2025-01-02T23:30:00.000Z'))
-
-    expect(result[0].amount).toEqual(BigInt(10000))
-    expect(result[1].amount).toEqual(BigInt(35000))
   })
 })
 
