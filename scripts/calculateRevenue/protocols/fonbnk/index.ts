@@ -37,7 +37,7 @@ export async function getUserTransactions({
     },
     fromBlock: 0,
   }
-  let transactions: FonbnkTransaction[] = []
+  const transactions: FonbnkTransaction[] = []
   await paginateQuery(client, query, async (response) => {
     for (const transaction of response.data.logs) {
       if (transaction.blockNumber && transaction.data && transaction.address) {
@@ -117,7 +117,7 @@ export async function calculateRevenue({
   let totalRevenue = 0
   const fonbnkAssets = await getFonbnkAssets()
   for (const supportedNetwork of Object.values(FonbnkNetwork)) {
-    let checkedAddresses = new Set<Address>()
+    const checkedAddresses = new Set<Address>()
     const client = getHyperSyncClient(
       fonbnkNetworkToNetworkId[supportedNetwork],
     )

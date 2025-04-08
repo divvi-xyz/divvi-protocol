@@ -1,5 +1,5 @@
 import nock from 'nock'
-import { generateSignature, getFonbnkAssets } from './helpers'
+import { generateSignature, getFonbnkAssets, getPayoutWallets } from './helpers'
 import { FONBNK_API_URL, FonbnkNetwork } from './constants'
 import { FonbnkAsset, FonbnkPayoutWalletReponse } from './types'
 import { Address } from 'viem'
@@ -33,7 +33,10 @@ describe('getPayoutWallets', () => {
         asset: 'USDC',
       })
       .reply(200, mockResponse)
-    const receivedWallets = await getFonbnkAssets()
+    const receivedWallets = await getPayoutWallets({
+      fonbnkNetwork: FonbnkNetwork.CELO,
+      currency: 'USDC',
+    })
     expect(expectedWallets).toEqual(receivedWallets)
   })
 })

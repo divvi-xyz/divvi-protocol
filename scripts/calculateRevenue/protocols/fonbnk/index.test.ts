@@ -69,6 +69,8 @@ describe('getUserTransactions', () => {
   let mockClient: { get: jest.Mock }
   beforeEach(() => {
     jest.clearAllMocks()
+  })
+  it('should fetch user transactions', async () => {
     mockClient = { get: jest.fn() }
     jest
       .mocked(getHyperSyncClient)
@@ -82,8 +84,6 @@ describe('getUserTransactions', () => {
           timestamp: blockNumber * 100n,
         }) as unknown as ReturnType<typeof getBlock>,
     )
-  })
-  it('should fetch user transactions', async () => {
     const result = await getUserTransactions({
       address: '0x123',
       payoutWallet: '0x456',
@@ -98,14 +98,15 @@ describe('getUserTransactions', () => {
 
 describe('getTotalRevenueUsdFromTransactions', () => {
   beforeEach(() => {
+    jest.clearAllMocks()
+  })
+  it('should return the correct total revenue in USD', async () => {
     jest.mocked(getErc20Contract).mockResolvedValue({
       read: {
         decimals: jest.fn().mockResolvedValue(4n),
       },
     } as unknown as ReturnType<typeof getErc20Contract>)
     jest.mocked(fetchTokenPrices).mockResolvedValue(mockTokenPrices)
-  })
-  it('should return the correct total revenue in USD', async () => {
     const result = await getTotalRevenueUsdFromTransactions({
       transactions: MOCK_FONBNK_TRANSACTIONS,
       networkId: NetworkId['celo-mainnet'],
@@ -120,6 +121,8 @@ describe('calculateRevenue', () => {
   let mockClient: { get: jest.Mock }
   beforeEach(() => {
     jest.clearAllMocks()
+  })
+  it('should calculate revenue correctly', async () => {
     mockClient = { get: jest.fn() }
     jest
       .mocked(getHyperSyncClient)
@@ -139,8 +142,6 @@ describe('calculateRevenue', () => {
           timestamp: blockNumber * 100n,
         }) as unknown as ReturnType<typeof getBlock>,
     )
-  })
-  it('should calculate revenue correctly', async () => {
     const result = await calculateRevenue({
       address: '0x123',
       startTimestamp: new Date('2025-01-01T00:00:00Z'),
