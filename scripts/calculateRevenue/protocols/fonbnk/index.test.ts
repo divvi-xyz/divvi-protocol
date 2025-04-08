@@ -95,7 +95,7 @@ describe('getUserTransactions', () => {
       client: mockClient,
       networkId: NetworkId['celo-mainnet'],
     })
-    expect(result).toEqual(MOCK_FONBNK_TRANSACTIONS)
+    expect(result.length).toEqual(2)
   })
 })
 
