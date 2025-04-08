@@ -166,13 +166,14 @@ describe('calculateRevenue', () => {
     jest
       .mocked(getPayoutWallets)
       .mockResolvedValueOnce(['0x123'])
-      .mockResolvedValueOnce(['0x456', '0x123'])
-      .mockResolvedValue([])
+      .mockResolvedValue(['0x456', '0x123'])
     const result = await calculateRevenue({
       address: MOCK_ADDRESS,
       startTimestamp: new Date('2025-01-01T00:00:00Z'),
       endTimestamp: new Date('2025-01-03T00:00:00Z'),
     })
+    expect(getFonbnkAssets).toHaveBeenCalledTimes(1)
+    expect(getPayoutWallets).toHaveBeenCalledTimes(2)
     expect(result).toEqual(41)
   })
 })
