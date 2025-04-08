@@ -6,7 +6,7 @@ import {
   ONE_DAY,
 } from './helpers/deployHelpers'
 
-task('deploy:reward-pool', 'Deploy RewardPool contract')
+task('reward-pool:deploy', 'Deploy RewardPool contract')
   .addParam('poolToken', 'Address of the token used for rewards')
   .addOptionalParam('managerAddress', 'Address that will have MANAGER_ROLE')
   .addOptionalParam('rewardFunction', 'Identifier of the reward function')
@@ -64,7 +64,7 @@ task('deploy:reward-pool', 'Deploy RewardPool contract')
     )
   })
 
-task('upgrade:reward-pool', 'Upgrade RewardPool contract')
+task('reward-pool:upgrade', 'Upgrade RewardPool contract')
   .addParam('proxyAddress', 'Address of the token used for rewards')
   .addFlag('useDefender', 'Deploy using OpenZeppelin Defender')
   .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
