@@ -9,6 +9,8 @@ import {
   getUserTransactions,
 } from '.'
 import { Address } from 'viem'
+import { getFonbnkAssets, getPayoutWallets } from './helpers'
+import { FonbnkNetwork } from './constants'
 
 jest.mock('../../../utils', () => ({
   getHyperSyncClient: jest.fn(),
@@ -16,6 +18,7 @@ jest.mock('../../../utils', () => ({
   getErc20Contract: jest.fn(),
 }))
 jest.mock('../utils/tokenPrices')
+jest.mocked('./helpers')
 
 const mockTokenPrices: TokenPriceData[] = [
   {
@@ -99,6 +102,15 @@ describe('getUserTransactions', () => {
       networkId: NetworkId['celo-mainnet'],
     })
     expect(result.length).toEqual(2)
+
+    expect(result[0].tokenAddress).toEqual('0x123')
+    expect(result[1].tokenAddress).toEqual('0x123')
+
+    expect(result[0].timestamp).toEqual(new Date('2025-01-01T21:30:00.000Z'))
+    expect(result[1].timestamp).toEqual(new Date('2025-01-02T21:30:00.000Z'))
+
+    expect(result[0].amount).toEqual(BigInt(10000))
+    expect(result[1].amount).toEqual(BigInt(35000))
   })
 })
 
@@ -150,11 +162,20 @@ describe('calculateRevenue', () => {
           timestamp: blockNumber * 100n,
         }) as unknown as ReturnType<typeof getBlock>,
     )
+    jest.mocked(getFonbnkAssets).mockResolvedValue([
+      { network: FonbnkNetwork.CELO, asset: 'USDC' },
+      { network: FonbnkNetwork.CELO, asset: 'CUSD' },
+    ])
+    jest
+      .mocked(getPayoutWallets)
+      .mockResolvedValueOnce(['0x123'])
+      .mockResolvedValueOnce(['0x456', '0x123'])
+      .mockResolvedValue([])
     const result = await calculateRevenue({
       address: MOCK_ADDRESS,
       startTimestamp: new Date('2025-01-01T00:00:00Z'),
       endTimestamp: new Date('2025-01-03T00:00:00Z'),
     })
-    expect(result).toEqual(20.5)
+    expect(result).toEqual(41)
   })
 })
