@@ -8,6 +8,7 @@ import {
   getTotalRevenueUsdFromTransactions,
   getUserTransactions,
 } from '.'
+import { Address } from 'viem'
 
 jest.mock('../../../utils', () => ({
   getHyperSyncClient: jest.fn(),
@@ -65,6 +66,8 @@ const MOCK_FONBNK_TRANSACTIONS: FonbnkTransaction[] = [
     timestamp: new Date('2025-01-02T21:30:00.000Z'),
   },
 ]
+
+const MOCK_ADDRESS = '0x1234567890123456789012345678901234567890' as Address
 
 describe('getUserTransactions', () => {
   let mockClient: { get: jest.Mock }
@@ -148,7 +151,7 @@ describe('calculateRevenue', () => {
         }) as unknown as ReturnType<typeof getBlock>,
     )
     const result = await calculateRevenue({
-      address: '0x123',
+      address: MOCK_ADDRESS,
       startTimestamp: new Date('2025-01-01T00:00:00Z'),
       endTimestamp: new Date('2025-01-03T00:00:00Z'),
     })
