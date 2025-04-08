@@ -14,7 +14,7 @@ import { getTokenPrice } from '../beefy'
 import { FonbnkTransaction } from './types'
 import { Address, fromHex, isAddress, pad } from 'viem'
 
-async function getUserTransactions({
+export async function getUserTransactions({
   address,
   payoutWallet,
   startTimestamp,
@@ -59,7 +59,7 @@ async function getUserTransactions({
   return transactions
 }
 
-async function getTotalRevenueUsdFromTransactions({
+export async function getTotalRevenueUsdFromTransactions({
   transactions,
   networkId,
   startTimestamp,
