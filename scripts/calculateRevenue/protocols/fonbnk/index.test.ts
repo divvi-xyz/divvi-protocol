@@ -12,6 +12,7 @@ import {
 jest.mock('../../../utils', () => ({
   getHyperSyncClient: jest.fn(),
   getBlock: jest.fn(),
+  getErc20Contract: jest.fn(),
 }))
 jest.mock('../utils/tokenPrices')
 
@@ -77,7 +78,9 @@ describe('getUserTransactions', () => {
       .mockReturnValue(
         mockClient as unknown as ReturnType<typeof getHyperSyncClient>,
       )
-    mockClient.get.mockResolvedValueOnce(makeQueryResponse(MOCK_HYPERSYNC_LOGS))
+    mockClient.get
+      .mockResolvedValueOnce(makeQueryResponse(MOCK_HYPERSYNC_LOGS))
+      .mockResolvedValue(makeQueryResponse([]))
     jest.mocked(getBlock).mockImplementation(
       (_networkId: NetworkId, blockNumber: bigint) =>
         Promise.resolve({
@@ -129,7 +132,9 @@ describe('calculateRevenue', () => {
       .mockReturnValue(
         mockClient as unknown as ReturnType<typeof getHyperSyncClient>,
       )
-    mockClient.get.mockResolvedValueOnce(makeQueryResponse(MOCK_HYPERSYNC_LOGS))
+    mockClient.get
+      .mockResolvedValueOnce(makeQueryResponse(MOCK_HYPERSYNC_LOGS))
+      .mockResolvedValue(makeQueryResponse([]))
     jest.mocked(getErc20Contract).mockResolvedValue({
       read: {
         decimals: jest.fn().mockResolvedValue(4n),
