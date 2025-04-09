@@ -4,7 +4,7 @@ import { SUPPORTED_NETWORKS, SupportedNetwork } from './config'
 import { getNearestBlock } from '../utils/events'
 import { getReserveData } from './pool'
 import { getReserveFactorHistory } from './reserveFactor'
-import { getScaledBalances } from './aToken'
+import { getScaledATokenBalances } from './aToken'
 import { getATokenBalanceHistory } from './subgraph'
 import { RAY, rayDiv, rayMul } from './math'
 import { getUSDPrices } from './oracle'
@@ -98,7 +98,7 @@ async function revenueInNetwork(
   }
 
   // Get start balances
-  const startBalances = await getScaledBalances(
+  const startBalances = await getScaledATokenBalances(
     networkId,
     address as Address,
     allATokenAddresses,

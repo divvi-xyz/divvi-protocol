@@ -1,10 +1,16 @@
+import memoize from '@github/memoize'
 import { Address } from 'viem'
 import BigNumber from 'bignumber.js'
 import { NetworkId } from '../../../types'
 import { getViemPublicClient } from '../../../utils'
 import { oracleAbi } from '../../../abis/aave/oracle'
 
-export async function getUSDPrices({
+// Fetches USD prices for a list of tokens using an Aave price oracle
+export const getUSDPrices = memoize(_getUSDPrices, {
+  hash: (...params: Parameters<typeof _getUSDPrices>) => JSON.stringify(params),
+})
+
+export async function _getUSDPrices({
   networkId,
   oracleAddress,
   tokenAddresses,

@@ -8,6 +8,7 @@ export const getReserveData = memoize(_getReserveData, {
   hash: (...params: Parameters<typeof _getReserveData>) => params.join(','),
 })
 
+// Retrieves reserve data in an Aave pool at a specific block number
 export async function _getReserveData(
   networkId: NetworkId,
   poolAddress: Address,

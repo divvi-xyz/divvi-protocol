@@ -2,25 +2,30 @@ import { gql, GraphQLClient } from 'graphql-request'
 import { Address } from 'viem'
 import { SUBGRAPH_BASE_URL, THE_GRAPH_API_KEY } from './config'
 
-interface ATokenBalanceHistoryItem {
-  timestamp: number
-  scaledATokenBalance: string
-  index: string
-}
-
 interface UserReserve {
   reserve: {
     aToken: {
       id: string
     }
   }
-  aTokenBalanceHistory: ATokenBalanceHistoryItem[]
+  aTokenBalanceHistory: {
+    timestamp: number
+    scaledATokenBalance: string
+    index: string
+  }[]
 }
 
 interface AaveUserReservesResponse {
   userReserves: UserReserve[]
 }
 
+interface ATokenBalanceHistoryItem {
+  liquidityIndex: bigint
+  scaledATokenBalance: bigint
+  timestamp: number
+}
+
+// Fetches the aToken balance history from the Aave subgraph for a user address in a block range
 export async function getATokenBalanceHistory({
   subgraphId,
   userAddress,
@@ -31,7 +36,7 @@ export async function getATokenBalanceHistory({
   userAddress: Address
   startTimestamp: Date
   endTimestamp: Date
-}) {
+}): Promise<Map<Address, ATokenBalanceHistoryItem[]>> {
   const subgraphUrl = new URL(subgraphId, SUBGRAPH_BASE_URL).toString()
   console.log(subgraphUrl)
   const client = new GraphQLClient(subgraphUrl, {

@@ -11,11 +11,10 @@ interface ReserveFactor {
   timestamp: number
 }
 
-type ReserveFactorHistory = Map<Address, ReserveFactor[]>
-
+// Retrieves the history of reserve factor changes in a block range
 export const getReserveFactorHistory = memoize(_getReserveFactorHistory, {
   hash: (...params: Parameters<typeof _getReserveFactorHistory>) =>
-    params.join(','),
+    JSON.stringify(params),
 })
 
 export async function _getReserveFactorHistory({
@@ -28,7 +27,7 @@ export async function _getReserveFactorHistory({
   poolConfiguratorAddress: Address
   startBlock: number
   endBlock: number
-}): Promise<ReserveFactorHistory> {
+}): Promise<Map<Address, ReserveFactor[]>> {
   const client = getHyperSyncClient(networkId)
 
   const query = {
@@ -55,7 +54,7 @@ export async function _getReserveFactorHistory({
     },
   }
 
-  const result = new Map() as ReserveFactorHistory
+  const result = new Map()
 
   await paginateQuery(client, query, async (response) => {
     if (response.data.logs.length === 0) {
