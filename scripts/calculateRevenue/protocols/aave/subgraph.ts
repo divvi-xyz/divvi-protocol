@@ -1,7 +1,6 @@
 import { gql, GraphQLClient } from 'graphql-request'
 import { Address } from 'viem'
-
-const THE_GRAPH_API_KEY = process.env.THE_GRAPH_API_KEY
+import { SUBGRAPH_BASE_URL, THE_GRAPH_API_KEY } from './config'
 
 interface ATokenBalanceHistoryItem {
   timestamp: number
@@ -23,16 +22,18 @@ interface AaveUserReservesResponse {
 }
 
 export async function getATokenBalanceHistory({
-  subgraphUrl,
+  subgraphId,
   userAddress,
   startTimestamp,
   endTimestamp,
 }: {
-  subgraphUrl: string
+  subgraphId: string
   userAddress: Address
   startTimestamp: Date
   endTimestamp: Date
 }) {
+  const subgraphUrl = new URL(subgraphId, SUBGRAPH_BASE_URL).toString()
+  console.log(subgraphUrl)
   const client = new GraphQLClient(subgraphUrl, {
     headers: {
       Authorization: `Bearer ${THE_GRAPH_API_KEY}`,

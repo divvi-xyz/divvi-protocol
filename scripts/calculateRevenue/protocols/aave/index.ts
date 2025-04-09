@@ -20,7 +20,7 @@ async function revenueInNetwork(
     poolAddress,
     poolConfiguratorAddress,
     oracleAddress,
-    subgraphUrl,
+    subgraphId,
   } = network
 
   const startBlockNumber = await getNearestBlock(networkId, startTimestamp)
@@ -107,7 +107,7 @@ async function revenueInNetwork(
 
   // Get balance history
   const balanceHistory = await getATokenBalanceHistory({
-    subgraphUrl,
+    subgraphId,
     userAddress: address.toLowerCase() as Address,
     startTimestamp,
     endTimestamp,
