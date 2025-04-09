@@ -3,6 +3,7 @@ import { Address, erc20Abi } from 'viem'
 import { NetworkId } from '../../../../types'
 import { getViemPublicClient } from '../../../../utils'
 import { poolAbi } from '../../../../abis/aave/pool'
+import { ReserveData } from '../types'
 
 // Fetches the reserve data for all reserve tokens in an Aave pool
 export const getReserveData = memoize(_getReserveData, {
@@ -14,7 +15,7 @@ export async function _getReserveData(
   networkId: NetworkId,
   poolAddress: Address,
   blockNumber: number,
-) {
+): Promise<Map<Address, ReserveData>> {
   const publicClient = getViemPublicClient(networkId)
 
   // Check if the contract exists at the given block number

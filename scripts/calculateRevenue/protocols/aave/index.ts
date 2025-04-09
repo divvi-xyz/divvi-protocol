@@ -4,43 +4,25 @@ import { SUPPORTED_NETWORKS, SupportedNetwork } from './config'
 import { RAY, rayDiv, rayMul } from './math'
 import { calculateOverlap, createSegments } from './utils'
 import { fetchBlockchainData } from './blockchainData'
+import { BalanceSnapshot, ReserveData, ReserveFactor } from './types'
 
-interface Segment {
-  value: bigint
+interface RevenueCalculationContext {
+  startReserveData: Map<Address, ReserveData>
+  endReserveData: Map<Address, ReserveData>
+  reserveFactorHistory: Map<Address, ReserveFactor[]>
+  startBalances: Map<Address, bigint>
+  balanceHistory: Map<Address, BalanceSnapshot[]>
   startTimestamp: number
   endTimestamp: number
 }
+
 interface Revenue {
   reserveTokenAddress: Address
   reserveTokenDecimals: number
   revenue: bigint
 }
-
-interface ReserveData {
-  reserveTokenAddress: Address
-  reserveTokenDecimals: number
-  aTokenAddress: Address
-  liquidityIndex: bigint
-  reserveFactor: bigint
-}
-
-interface ReserveFactorHistory {
-  reserveFactor: bigint
-  timestamp: number
-}
-
-interface BalanceSnapshot {
-  scaledATokenBalance: bigint
-  liquidityIndex: bigint
-  timestamp: number
-}
-
-interface RevenueCalculationContext {
-  startReserveData: Map<Address, ReserveData>
-  endReserveData: Map<Address, ReserveData>
-  reserveFactorHistory: Map<Address, ReserveFactorHistory[]>
-  startBalances: Map<Address, bigint>
-  balanceHistory: Map<Address, BalanceSnapshot[]>
+interface Segment {
+  value: bigint
   startTimestamp: number
   endTimestamp: number
 }

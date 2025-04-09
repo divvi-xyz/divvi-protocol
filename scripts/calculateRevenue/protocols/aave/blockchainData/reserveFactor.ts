@@ -5,11 +5,7 @@ import { NetworkId } from '../../../../types'
 import { getHyperSyncClient } from '../../../../utils'
 import { paginateQuery } from '../../../../utils/hypersyncPagination'
 import { poolConfiguratorAbi } from '../../../../abis/aave/poolConfigurator'
-
-interface ReserveFactor {
-  reserveFactor: bigint
-  timestamp: number
-}
+import { ReserveFactor } from '../types'
 
 // Retrieves the history of reserve factor changes in a block range
 export const getReserveFactorHistory = memoize(_getReserveFactorHistory, {
