@@ -55,9 +55,10 @@ export async function _getReserveData(
 
   const result = new Map(
     reserveData.map((data, index) => [
-      data.aTokenAddress.toLowerCase() as Address,
+      reserveTokens[index].toLowerCase() as Address,
       {
         ...data,
+        aTokenAddress: data.aTokenAddress.toLowerCase() as Address,
         reserveTokenAddress: reserveTokens[index].toLowerCase() as Address,
         reserveTokenDecimals: tokenDecimals[index],
         reserveFactor: (data.configuration.data >> BigInt(64)) & BigInt(0xffff), // ReserveFactor is 16 bits from the 64th to the 79th bit

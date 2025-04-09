@@ -22,15 +22,17 @@ interface UserEarningSegment {
 }
 
 interface ProtocolRevenue {
-  aTokenAddress: Address
+  reserveTokenAddress: Address
+  reserveTokenDecimals: number
   revenue: bigint
 }
 
 interface ReserveData {
-  liquidityIndex: bigint
-  reserveFactor: bigint
   reserveTokenAddress: Address
   reserveTokenDecimals: number
+  aTokenAddress: Address
+  liquidityIndex: bigint
+  reserveFactor: bigint
 }
 
 interface ReserveFactorHistory {
@@ -68,6 +70,8 @@ export async function calculateRevenue({
     )
   }
 
+  console.log(revenue.toNumber())
+
   return revenue.toNumber()
 }
 
@@ -103,9 +107,9 @@ async function revenueInNetwork(
     ])
 
   // We expect the end reserve data to include all tokens involved during the period
-  const allATokenAddresses = Array.from(endReserveData.keys())
-  const allReserveTokenAddresses = Array.from(endReserveData.values()).map(
-    (data) => data.reserveTokenAddress,
+  const allReserveTokenAddresses = [...endReserveData.keys()]
+  const allATokenAddresses = [...endReserveData.values()].map(
+    (data) => data.aTokenAddress,
   )
 
   const [startBalances, balanceHistory, tokenUSDPrices] = await Promise.all([
@@ -129,97 +133,94 @@ async function revenueInNetwork(
     }),
   ])
 
-  const protocolRevenueByAToken = calculateProtocolRevenueByAToken(
-    allATokenAddresses,
+  const protocolRevenueByReserve = calculateProtocolRevenueByReserve(
     startReserveData,
     endReserveData,
     reserveFactorHistory,
     startBalances,
     balanceHistory,
-    startTimestamp,
-    endTimestamp,
+    Math.floor(startTimestamp.getTime() / 1000),
+    Math.floor(endTimestamp.getTime() / 1000),
   )
 
-  const t = calculateTotalRevenueInUSD(
-    protocolRevenueByAToken,
-    endReserveData,
-    tokenUSDPrices,
-  )
-  console.log(t.toNumber())
-  return t
+  return calculateTotalRevenueInUSD(protocolRevenueByReserve, tokenUSDPrices)
 }
 
-function calculateProtocolRevenueByAToken(
-  aTokenAddresses: Address[],
+function calculateProtocolRevenueByReserve(
   startReserveData: Map<Address, ReserveData>,
   endReserveData: Map<Address, ReserveData>,
   reserveFactorHistory: Map<Address, ReserveFactorHistory[]>,
   startBalances: Map<Address, bigint>,
   balanceHistory: Map<Address, BalanceSnapshot[]>,
-  startTimestamp: Date,
-  endTimestamp: Date,
+  startTimestamp: number,
+  endTimestamp: number,
 ): ProtocolRevenue[] {
-  return aTokenAddresses.map((aTokenAddress) => {
-    const userEarningsSegments = calculateUserEarningsSegments(
-      aTokenAddress,
-      startReserveData,
-      endReserveData,
-      startBalances,
-      balanceHistory,
-      startTimestamp,
-      endTimestamp,
-    )
-
-    const reserveFactorSegments = calculateReserveFactorSegments(
-      aTokenAddress,
-      startReserveData,
-      endReserveData,
-      reserveFactorHistory,
-      startTimestamp,
-      endTimestamp,
-    )
-
-    let revenue = 0n
-    for (const reserveFactor of reserveFactorSegments) {
-      revenue += calculateProtocolRevenueForReserveFactor(
-        reserveFactor,
-        userEarningsSegments,
+  return [...endReserveData.values()].map(
+    ({ reserveTokenAddress, reserveTokenDecimals, aTokenAddress }) => {
+      const userEarningsSegments = calculateUserEarningsSegments(
+        reserveTokenAddress,
+        aTokenAddress,
+        startReserveData,
+        endReserveData,
+        startBalances,
+        balanceHistory,
+        startTimestamp,
+        endTimestamp,
       )
-    }
 
-    return { aTokenAddress, revenue }
-  })
+      const reserveFactorSegments = calculateReserveFactorSegments(
+        reserveTokenAddress,
+        startReserveData,
+        reserveFactorHistory,
+        startTimestamp,
+        endTimestamp,
+      )
+
+      let revenue = 0n
+      for (const reserveFactor of reserveFactorSegments) {
+        revenue += calculateProtocolRevenueForReserveFactor(
+          reserveFactor,
+          userEarningsSegments,
+        )
+      }
+
+      return { reserveTokenAddress, reserveTokenDecimals, revenue }
+    },
+  )
 }
 
 function calculateUserEarningsSegments(
+  reserveTokenAddress: Address,
   aTokenAddress: Address,
   startReserveData: Map<Address, ReserveData>,
   endReserveData: Map<Address, ReserveData>,
   startBalances: Map<Address, bigint>,
   balanceHistory: Map<Address, BalanceSnapshot[]>,
-  startTimestamp: Date,
-  endTimestamp: Date,
+  startTimestamp: number,
+  endTimestamp: number,
 ): UserEarningSegment[] {
-  const startSnapshot = {
-    liquidityIndex: startReserveData.get(aTokenAddress)?.liquidityIndex ?? 0n,
+  const startBalance = {
+    liquidityIndex:
+      startReserveData.get(reserveTokenAddress)?.liquidityIndex ?? 0n,
     scaledATokenBalance: startBalances.get(aTokenAddress) ?? 0n,
-    timestamp: Math.floor(startTimestamp.getTime() / 1000),
+    timestamp: startTimestamp,
   }
 
-  const endSnapshot = {
-    liquidityIndex: endReserveData.get(aTokenAddress)?.liquidityIndex ?? 0n,
+  const endBalance = {
+    liquidityIndex:
+      endReserveData.get(reserveTokenAddress)?.liquidityIndex ?? 0n,
     scaledATokenBalance: 0n, // The last balance is not needed for the calculation
-    timestamp: Math.floor(endTimestamp.getTime() / 1000),
+    timestamp: endTimestamp,
   }
 
-  const snapshotHistory = balanceHistory.get(aTokenAddress) ?? []
-  const balanceSnapshots = [startSnapshot, ...snapshotHistory, endSnapshot]
+  const history = balanceHistory.get(aTokenAddress) ?? []
+  const combinedHistory = [startBalance, ...history, endBalance]
 
   const userEarningsSegments: UserEarningSegment[] = []
 
-  for (let i = 0; i < balanceSnapshots.length - 1; i++) {
-    const current = balanceSnapshots[i]
-    const next = balanceSnapshots[i + 1]
+  for (let i = 0; i < combinedHistory.length - 1; i++) {
+    const current = combinedHistory[i]
+    const next = combinedHistory[i + 1]
 
     const startBalance = rayMul(
       current.scaledATokenBalance,
@@ -240,29 +241,25 @@ function calculateUserEarningsSegments(
 }
 
 function calculateReserveFactorSegments(
-  aTokenAddress: Address,
+  reserveTokenAddress: Address,
   startReserveData: Map<Address, ReserveData>,
-  endReserveData: Map<Address, ReserveData>,
   reserveFactorHistory: Map<Address, ReserveFactorHistory[]>,
-  startTimestamp: Date,
-  endTimestamp: Date,
+  startTimestamp: number,
+  endTimestamp: number,
 ): ReserveFactorSegment[] {
   const startReserveFactor =
-    startReserveData.get(aTokenAddress)?.reserveFactor ?? 0n
-
-  const reserveTokenAddress =
-    endReserveData.get(aTokenAddress)!.reserveTokenAddress
+    startReserveData.get(reserveTokenAddress)?.reserveFactor ?? 0n
   const history = reserveFactorHistory.get(reserveTokenAddress) ?? []
 
   const combinedHistory = [
     {
       reserveFactor: startReserveFactor,
-      timestamp: Math.floor(startTimestamp.getTime() / 1000),
+      timestamp: startTimestamp,
     },
     ...history,
     {
       reserveFactor: 0n, // The last reserve factor is not needed for the calculation
-      timestamp: Math.floor(endTimestamp.getTime() / 1000),
+      timestamp: endTimestamp,
     },
   ]
 
@@ -334,15 +331,16 @@ function estimateProtocolRevenue(
 }
 
 function calculateTotalRevenueInUSD(
-  protocolRevenueByAToken: ProtocolRevenue[],
-  endReserveData: Map<Address, ReserveData>,
+  protocolRevenueByReserve: ProtocolRevenue[],
   tokenUSDPrices: Map<Address, BigNumber>,
 ): BigNumber {
   let totalRevenueInUSD = new BigNumber(0)
 
-  for (const { aTokenAddress, revenue } of protocolRevenueByAToken) {
-    const { reserveTokenAddress, reserveTokenDecimals } =
-      endReserveData.get(aTokenAddress)!
+  for (const {
+    reserveTokenAddress,
+    reserveTokenDecimals,
+    revenue,
+  } of protocolRevenueByReserve) {
     const tokenPrice = tokenUSDPrices.get(reserveTokenAddress)!
 
     const revenueInUSD = new BigNumber(revenue.toString())
