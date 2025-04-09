@@ -216,12 +216,7 @@ function calculateUserEarningsSegments(
   const history = balanceHistory.get(aTokenAddress) ?? []
   const combinedHistory = [startBalance, ...history, endBalance]
 
-  const userEarningsSegments: UserEarningSegment[] = []
-
-  for (let i = 0; i < combinedHistory.length - 1; i++) {
-    const current = combinedHistory[i]
-    const next = combinedHistory[i + 1]
-
+  return calculateTimeSegments(combinedHistory, (current, next) => {
     const startBalance = rayMul(
       current.scaledATokenBalance,
       current.liquidityIndex,
@@ -230,14 +225,12 @@ function calculateUserEarningsSegments(
 
     const earningsAmount = endBalance - startBalance
 
-    userEarningsSegments.push({
+    return {
       amount: earningsAmount,
       startTimestamp: current.timestamp,
       endTimestamp: next.timestamp,
-    })
-  }
-
-  return userEarningsSegments
+    }
+  })
 }
 
 function calculateReserveFactorSegments(
@@ -263,19 +256,11 @@ function calculateReserveFactorSegments(
     },
   ]
 
-  const reserveFactorSegments: ReserveFactorSegment[] = []
-  for (let i = 0; i < combinedHistory.length - 1; i++) {
-    const current = combinedHistory[i]
-    const next = combinedHistory[i + 1]
-
-    reserveFactorSegments.push({
-      value: current.reserveFactor,
-      startTimestamp: current.timestamp,
-      endTimestamp: next.timestamp,
-    })
-  }
-
-  return reserveFactorSegments
+  return calculateTimeSegments(combinedHistory, (current, next) => ({
+    value: current.reserveFactor,
+    startTimestamp: current.timestamp,
+    endTimestamp: next.timestamp,
+  }))
 }
 
 function calculateProtocolRevenueForReserveFactor(
@@ -313,12 +298,22 @@ function calculateProtocolRevenueForReserveFactor(
   return estimateProtocolRevenue(relatedUserEarnings, reserveFactor.value)
 }
 
+/**
+ * Calculates protocol revenue based on user earnings and reserve factor
+ *
+ * The calculation uses the relationship between user earnings and protocol revenue:
+ * - User earnings come from (1 - reserveFactor) of total interest
+ * - Protocol earnings come from (reserveFactor) of total interest
+ * - Therefore the ratio of protocol to user earnings is: reserveFactor / (1 - reserveFactor)
+ */
 function estimateProtocolRevenue(
   userEarnings: bigint,
   reserveFactor: bigint,
 ): bigint {
+  const BIPS = BigInt(10000)
+
   // Convert reserve factor from base points to a ray value
-  const reserveFactorValue = rayDiv(reserveFactor, BigInt(10000))
+  const reserveFactorValue = rayDiv(reserveFactor, BIPS)
 
   // Protocol earnings to user earnings ratio:
   // reserveFactor / (1 - reserveFactor)
@@ -362,4 +357,20 @@ function calculateOverlap(
   const overlapStart = Math.max(start1, start2)
   const overlapEnd = Math.min(end1, end2)
   return Math.max(0, overlapEnd - overlapStart)
+}
+
+// Generic helper function for time-series segment calculation
+function calculateTimeSegments<T, R>(
+  snapshots: T[],
+  transformFn: (current: T, next: T) => R,
+): R[] {
+  const segments: R[] = []
+
+  for (let i = 0; i < snapshots.length - 1; i++) {
+    const current = snapshots[i]
+    const next = snapshots[i + 1]
+    segments.push(transformFn(current, next))
+  }
+
+  return segments
 }
