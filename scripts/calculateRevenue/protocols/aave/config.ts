@@ -56,4 +56,4 @@ export const SUPPORTED_NETWORKS: SupportedNetwork[] = [
     oracleAddress: AaveV3Optimism.ORACLE,
     subgraphId: 'DSfLz8oQBUeU5atALgUFQKMTSYV9mZAVYp4noLSXAfvb',
   },
-].slice(0, 1) // TODO: remove this to enable all networks
+]
