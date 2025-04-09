@@ -1,8 +1,8 @@
 import memoize from '@github/memoize'
 import { Address, erc20Abi } from 'viem'
-import { NetworkId } from '../../../types'
-import { getViemPublicClient } from '../../../utils'
-import { poolAbi } from '../../../abis/aave/pool'
+import { NetworkId } from '../../../../types'
+import { getViemPublicClient } from '../../../../utils'
+import { poolAbi } from '../../../../abis/aave/pool'
 
 export const getReserveData = memoize(_getReserveData, {
   hash: (...params: Parameters<typeof _getReserveData>) => params.join(','),

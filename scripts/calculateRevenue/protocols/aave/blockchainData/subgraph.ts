@@ -1,6 +1,6 @@
 import { gql, GraphQLClient } from 'graphql-request'
 import { Address } from 'viem'
-import { SUBGRAPH_BASE_URL, THE_GRAPH_API_KEY } from './config'
+import { SUBGRAPH_BASE_URL, THE_GRAPH_API_KEY } from '../config'
 
 interface UserReserve {
   reserve: {

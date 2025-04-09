@@ -1,10 +1,10 @@
 import memoize from '@github/memoize'
 import { Address, decodeEventLog, Hex } from 'viem'
 import { BlockField, LogField } from '@envio-dev/hypersync-client'
-import { NetworkId } from '../../../types'
-import { getHyperSyncClient } from '../../../utils'
-import { paginateQuery } from '../../../utils/hypersyncPagination'
-import { poolConfiguratorAbi } from '../../../abis/aave/poolConfigurator'
+import { NetworkId } from '../../../../types'
+import { getHyperSyncClient } from '../../../../utils'
+import { paginateQuery } from '../../../../utils/hypersyncPagination'
+import { poolConfiguratorAbi } from '../../../../abis/aave/poolConfigurator'
 
 interface ReserveFactor {
   reserveFactor: bigint

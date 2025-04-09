@@ -1,9 +1,9 @@
 import memoize from '@github/memoize'
 import { Address } from 'viem'
 import BigNumber from 'bignumber.js'
-import { NetworkId } from '../../../types'
-import { getViemPublicClient } from '../../../utils'
-import { oracleAbi } from '../../../abis/aave/oracle'
+import { NetworkId } from '../../../../types'
+import { getViemPublicClient } from '../../../../utils'
+import { oracleAbi } from '../../../../abis/aave/oracle'
 
 // Fetches USD prices for a list of tokens using an Aave price oracle
 export const getUSDPrices = memoize(_getUSDPrices, {
