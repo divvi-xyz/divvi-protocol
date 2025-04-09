@@ -4,7 +4,7 @@ import { getViemPublicClient } from '../../../utils'
 import { aTokenAbi } from '../../../abis/aave/aToken'
 
 // Retrieves the scaled balances of user's aTokens at a specific block number
-export async function getScaledATokenBalances(
+export async function getATokenScaledBalances(
   networkId: NetworkId,
   userAddress: Address,
   aTokenAddresses: Address[],

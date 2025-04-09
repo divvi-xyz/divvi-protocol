@@ -25,8 +25,8 @@ interface ATokenBalanceHistoryItem {
   timestamp: number
 }
 
-// Fetches the aToken balance history from the Aave subgraph for a user address in a block range
-export async function getATokenBalanceHistory({
+// Fetches the aToken scaled balance history from the Aave subgraph for a user address in a block range
+export async function getATokenScaledBalanceHistory({
   subgraphId,
   userAddress,
   startTimestamp,
@@ -38,7 +38,7 @@ export async function getATokenBalanceHistory({
   endTimestamp: Date
 }): Promise<Map<Address, ATokenBalanceHistoryItem[]>> {
   const subgraphUrl = new URL(subgraphId, SUBGRAPH_BASE_URL).toString()
-  console.log(subgraphUrl)
+
   const client = new GraphQLClient(subgraphUrl, {
     headers: {
       Authorization: `Bearer ${THE_GRAPH_API_KEY}`,
