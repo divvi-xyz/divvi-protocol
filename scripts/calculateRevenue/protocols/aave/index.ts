@@ -5,19 +5,12 @@ import { RAY, rayDiv, rayMul } from './math'
 import { calculateOverlap, createSegments } from './utils'
 import { fetchBlockchainData } from './blockchainData'
 
-interface ReserveFactorSegment {
+interface Segment {
   value: bigint
   startTimestamp: number
   endTimestamp: number
 }
-
-interface UserEarningSegment {
-  amount: bigint
-  startTimestamp: number
-  endTimestamp: number
-}
-
-interface ProtocolRevenue {
+interface Revenue {
   reserveTokenAddress: Address
   reserveTokenDecimals: number
   revenue: bigint
@@ -103,9 +96,7 @@ async function revenueInNetwork(
   return totalRevenueInUSD(protocolRevenueByReserve, chainData.tokenUSDPrices)
 }
 
-function revenueByReserve(
-  context: RevenueCalculationContext,
-): ProtocolRevenue[] {
+function revenueByReserve(context: RevenueCalculationContext): Revenue[] {
   return [...context.endReserveData.values()].map(
     ({ reserveTokenAddress, reserveTokenDecimals, aTokenAddress }) => {
       const userEarningsSegments = calculateUserEarningsSegments(
@@ -136,7 +127,7 @@ function calculateUserEarningsSegments(
   reserveTokenAddress: Address,
   aTokenAddress: Address,
   context: RevenueCalculationContext,
-): UserEarningSegment[] {
+): Segment[] {
   const startBalance = {
     liquidityIndex:
       context.startReserveData.get(reserveTokenAddress)?.liquidityIndex ?? 0n,
@@ -147,7 +138,7 @@ function calculateUserEarningsSegments(
   const endBalance = {
     liquidityIndex:
       context.endReserveData.get(reserveTokenAddress)?.liquidityIndex ?? 0n,
-    scaledATokenBalance: 0n, // The last balance is not needed for the calculation
+    scaledATokenBalance: 0n, // The last balance is not needed for segment creation
     timestamp: context.endTimestamp,
   }
 
@@ -162,10 +153,10 @@ function calculateUserEarningsSegments(
     )
     const endBalance = rayMul(current.scaledATokenBalance, next.liquidityIndex)
 
-    const earningsAmount = endBalance - startBalance
+    const earnings = endBalance - startBalance
 
     return {
-      amount: earningsAmount,
+      value: earnings,
       startTimestamp: current.timestamp,
       endTimestamp: next.timestamp,
     }
@@ -175,7 +166,7 @@ function calculateUserEarningsSegments(
 function calculateReserveFactorSegments(
   reserveTokenAddress: Address,
   context: RevenueCalculationContext,
-): ReserveFactorSegment[] {
+): Segment[] {
   const startReserveFactor =
     context.startReserveData.get(reserveTokenAddress)?.reserveFactor ?? 0n
   const history = context.reserveFactorHistory.get(reserveTokenAddress) ?? []
@@ -187,7 +178,7 @@ function calculateReserveFactorSegments(
     },
     ...history,
     {
-      reserveFactor: 0n, // The last reserve factor is not needed for the calculation
+      reserveFactor: 0n, // The last reserve factor is not needed for segment creation
       timestamp: context.endTimestamp,
     },
   ]
@@ -200,13 +191,13 @@ function calculateReserveFactorSegments(
 }
 
 function calculateProtocolRevenueForReserveFactor(
-  reserveFactor: ReserveFactorSegment,
-  userEarnings: UserEarningSegment[],
+  reserveFactor: Segment,
+  userEarnings: Segment[],
 ): bigint {
   let relatedUserEarnings = 0n
 
   for (const userEarning of userEarnings) {
-    if (userEarning.amount <= 0n) {
+    if (userEarning.value <= 0n) {
       continue
     }
 
@@ -221,7 +212,7 @@ function calculateProtocolRevenueForReserveFactor(
 
     if (overlap > 0) {
       const overlapRatio = rayDiv(BigInt(overlap), BigInt(duration))
-      relatedUserEarnings += rayMul(userEarning.amount, overlapRatio)
+      relatedUserEarnings += rayMul(userEarning.value, overlapRatio)
     }
   }
 
@@ -237,6 +228,7 @@ function calculateProtocolRevenueForReserveFactor(
 // - User earnings come from (1 - reserveFactor) of total interest
 // - Protocol earnings come from (reserveFactor) of total interest
 // - Therefore the ratio of protocol to user earnings is: reserveFactor / (1 - reserveFactor)
+//
 function estimateProtocolRevenue(
   userEarnings: bigint,
   reserveFactor: bigint,
@@ -257,7 +249,7 @@ function estimateProtocolRevenue(
 }
 
 function totalRevenueInUSD(
-  protocolRevenueByReserve: ProtocolRevenue[],
+  protocolRevenueByReserve: Revenue[],
   tokenUSDPrices: Map<Address, BigNumber>,
 ): BigNumber {
   let totalRevenueInUSD = new BigNumber(0)
