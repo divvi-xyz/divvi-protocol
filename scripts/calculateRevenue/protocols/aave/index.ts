@@ -206,23 +206,21 @@ function calculateProtocolRevenueForReserveFactor(
   let relatedUserEarnings = 0n
 
   for (const userEarning of userEarnings) {
-    if (userEarning.amount <= 0n) continue
+    if (userEarning.amount <= 0n) {
+      continue
+    }
 
-    const overlapDuration = calculateOverlap(
+    const duration = userEarning.endTimestamp - userEarning.startTimestamp
+
+    const overlap = calculateOverlap(
       userEarning.startTimestamp,
       userEarning.endTimestamp,
       reserveFactor.startTimestamp,
       reserveFactor.endTimestamp,
     )
 
-    if (overlapDuration > 0) {
-      const earningsDuration =
-        userEarning.endTimestamp - userEarning.startTimestamp
-
-      const overlapRatio = rayDiv(
-        BigInt(overlapDuration),
-        BigInt(earningsDuration),
-      )
+    if (overlap > 0) {
+      const overlapRatio = rayDiv(BigInt(overlap), BigInt(duration))
       relatedUserEarnings += rayMul(userEarning.amount, overlapRatio)
     }
   }
@@ -234,8 +232,7 @@ function calculateProtocolRevenueForReserveFactor(
   return estimateProtocolRevenue(relatedUserEarnings, reserveFactor.value)
 }
 
-// Calculates protocol revenue based on user earnings and reserve factor
-//
+// Calculates protocol revenue based on user earnings and reserve factor.
 // The calculation uses the relationship between user earnings and protocol revenue:
 // - User earnings come from (1 - reserveFactor) of total interest
 // - Protocol earnings come from (reserveFactor) of total interest
