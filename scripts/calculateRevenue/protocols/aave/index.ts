@@ -63,20 +63,16 @@ export async function calculateRevenue({
 }): Promise<number> {
   let revenue = new BigNumber(0)
 
-  console.log(startTimestamp)
-
   for (const network of SUPPORTED_NETWORKS) {
     revenue = revenue.plus(
       await revenueInNetwork(
         network,
         address as Address,
-        new Date(1718386363000),
+        startTimestamp,
         endTimestamp,
       ),
     )
   }
-
-  console.log(revenue.toNumber())
 
   return revenue.toNumber()
 }
@@ -238,14 +234,12 @@ function calculateProtocolRevenueForReserveFactor(
   return estimateProtocolRevenue(relatedUserEarnings, reserveFactor.value)
 }
 
-/**
- * Calculates protocol revenue based on user earnings and reserve factor
- *
- * The calculation uses the relationship between user earnings and protocol revenue:
- * - User earnings come from (1 - reserveFactor) of total interest
- * - Protocol earnings come from (reserveFactor) of total interest
- * - Therefore the ratio of protocol to user earnings is: reserveFactor / (1 - reserveFactor)
- */
+// Calculates protocol revenue based on user earnings and reserve factor
+//
+// The calculation uses the relationship between user earnings and protocol revenue:
+// - User earnings come from (1 - reserveFactor) of total interest
+// - Protocol earnings come from (reserveFactor) of total interest
+// - Therefore the ratio of protocol to user earnings is: reserveFactor / (1 - reserveFactor)
 function estimateProtocolRevenue(
   userEarnings: bigint,
   reserveFactor: bigint,

@@ -4,6 +4,7 @@ import { NetworkId } from '../../../../types'
 import { getViemPublicClient } from '../../../../utils'
 import { poolAbi } from '../../../../abis/aave/pool'
 
+// Fetches the reserve data for all reserve tokens in an Aave pool
 export const getReserveData = memoize(_getReserveData, {
   hash: (...params: Parameters<typeof _getReserveData>) => params.join(','),
 })
