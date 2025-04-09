@@ -81,6 +81,32 @@ async function revenueInNetwork(
   startTimestamp: Date,
   endTimestamp: Date,
 ): Promise<BigNumber> {
+  const chainData = await fetchBlockchainData(
+    network,
+    userAddress,
+    startTimestamp,
+    endTimestamp,
+  )
+
+  const protocolRevenueByReserve = revenueByReserve(
+    chainData.startReserveData,
+    chainData.endReserveData,
+    chainData.reserveFactorHistory,
+    chainData.startBalances,
+    chainData.balanceHistory,
+    Math.floor(startTimestamp.getTime() / 1000),
+    Math.floor(endTimestamp.getTime() / 1000),
+  )
+
+  return totalRevenueInUSD(protocolRevenueByReserve, chainData.tokenUSDPrices)
+}
+
+async function fetchBlockchainData(
+  network: SupportedNetwork,
+  userAddress: Address,
+  startTimestamp: Date,
+  endTimestamp: Date,
+) {
   const {
     networkId,
     poolAddress,
@@ -133,20 +159,17 @@ async function revenueInNetwork(
     }),
   ])
 
-  const protocolRevenueByReserve = calculateProtocolRevenueByReserve(
+  return {
     startReserveData,
     endReserveData,
     reserveFactorHistory,
     startBalances,
     balanceHistory,
-    Math.floor(startTimestamp.getTime() / 1000),
-    Math.floor(endTimestamp.getTime() / 1000),
-  )
-
-  return calculateTotalRevenueInUSD(protocolRevenueByReserve, tokenUSDPrices)
+    tokenUSDPrices,
+  }
 }
 
-function calculateProtocolRevenueByReserve(
+function revenueByReserve(
   startReserveData: Map<Address, ReserveData>,
   endReserveData: Map<Address, ReserveData>,
   reserveFactorHistory: Map<Address, ReserveFactorHistory[]>,
@@ -214,9 +237,10 @@ function calculateUserEarningsSegments(
   }
 
   const history = balanceHistory.get(aTokenAddress) ?? []
+
   const combinedHistory = [startBalance, ...history, endBalance]
 
-  return calculateTimeSegments(combinedHistory, (current, next) => {
+  return createSegments(combinedHistory, (current, next) => {
     const startBalance = rayMul(
       current.scaledATokenBalance,
       current.liquidityIndex,
@@ -256,7 +280,7 @@ function calculateReserveFactorSegments(
     },
   ]
 
-  return calculateTimeSegments(combinedHistory, (current, next) => ({
+  return createSegments(combinedHistory, (current, next) => ({
     value: current.reserveFactor,
     startTimestamp: current.timestamp,
     endTimestamp: next.timestamp,
@@ -325,7 +349,7 @@ function estimateProtocolRevenue(
   return rayMul(userEarnings, protocolToUserEarningsRatio)
 }
 
-function calculateTotalRevenueInUSD(
+function totalRevenueInUSD(
   protocolRevenueByReserve: ProtocolRevenue[],
   tokenUSDPrices: Map<Address, BigNumber>,
 ): BigNumber {
@@ -359,8 +383,7 @@ function calculateOverlap(
   return Math.max(0, overlapEnd - overlapStart)
 }
 
-// Generic helper function for time-series segment calculation
-function calculateTimeSegments<T, R>(
+function createSegments<T, R>(
   snapshots: T[],
   transformFn: (current: T, next: T) => R,
 ): R[] {
