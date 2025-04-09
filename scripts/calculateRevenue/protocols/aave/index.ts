@@ -294,7 +294,7 @@ function calculateProtocolRevenueForReserveFactor(
       reserveFactor.endTimestamp,
     )
 
-    if (overlapDuration) {
+    if (overlapDuration > 0) {
       const earningsDuration =
         userEarning.endTimestamp - userEarning.startTimestamp
 
@@ -358,8 +358,8 @@ function calculateOverlap(
   end1: number,
   start2: number,
   end2: number,
-): number | null {
+): number {
   const overlapStart = Math.max(start1, start2)
   const overlapEnd = Math.min(end1, end2)
-  return overlapStart < overlapEnd ? overlapEnd - overlapStart : null
+  return Math.max(0, overlapEnd - overlapStart)
 }
