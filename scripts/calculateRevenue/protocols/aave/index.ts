@@ -66,11 +66,7 @@ async function revenueInNetwork(
   )
 
   const protocolRevenueByReserve = revenueByReserve({
-    startReserveData: chainData.startReserveData,
-    endReserveData: chainData.endReserveData,
-    reserveFactorHistory: chainData.reserveFactorHistory,
-    startBalances: chainData.startBalances,
-    balanceHistory: chainData.balanceHistory,
+    ...chainData,
     startTimestamp: Math.floor(startTimestamp.getTime() / 1000),
     endTimestamp: Math.floor(endTimestamp.getTime() / 1000),
   })
@@ -86,7 +82,6 @@ function revenueByReserve(context: RevenueCalculationContext): Revenue[] {
         aTokenAddress,
         context,
       )
-
       const reserveFactorSegments = calculateReserveFactorSegments(
         reserveTokenAddress,
         context,
@@ -94,10 +89,15 @@ function revenueByReserve(context: RevenueCalculationContext): Revenue[] {
 
       let revenue = 0n
       for (const reserveFactor of reserveFactorSegments) {
-        revenue += calculateProtocolRevenueForReserveFactor(
+        const earningsInSegment = earningsInReserveFactorSegment(
           reserveFactor,
           userEarningsSegments,
         )
+        const revenueInSegment = estimateProtocolRevenue(
+          earningsInSegment,
+          reserveFactor.value,
+        )
+        revenue += revenueInSegment
       }
 
       return { reserveTokenAddress, reserveTokenDecimals, revenue }
@@ -172,18 +172,16 @@ function calculateReserveFactorSegments(
   }))
 }
 
-function calculateProtocolRevenueForReserveFactor(
+function earningsInReserveFactorSegment(
   reserveFactor: Segment,
   userEarnings: Segment[],
 ): bigint {
-  let relatedUserEarnings = 0n
+  let userEarningsInSegment = 0n
 
   for (const userEarning of userEarnings) {
     if (userEarning.value <= 0n) {
       continue
     }
-
-    const duration = userEarning.endTimestamp - userEarning.startTimestamp
 
     const overlap = calculateOverlap(
       userEarning.startTimestamp,
@@ -193,16 +191,13 @@ function calculateProtocolRevenueForReserveFactor(
     )
 
     if (overlap > 0) {
+      const duration = userEarning.endTimestamp - userEarning.startTimestamp
       const overlapRatio = rayDiv(BigInt(overlap), BigInt(duration))
-      relatedUserEarnings += rayMul(userEarning.value, overlapRatio)
+      userEarningsInSegment += rayMul(userEarning.value, overlapRatio)
     }
   }
 
-  if (relatedUserEarnings <= 0n) {
-    return 0n
-  }
-
-  return estimateProtocolRevenue(relatedUserEarnings, reserveFactor.value)
+  return userEarningsInSegment
 }
 
 // Calculates protocol revenue based on user earnings and reserve factor.
