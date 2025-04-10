@@ -280,14 +280,14 @@ contract RegistryV1 is
   /**
    * @notice Get the consumer address for a given user and provider
    * @param user The address of the user
-   * @param provider The address of the provider
+   * @param rewardsProvider The address of the rewards provider entity
    * @return The address of the consumer
    */
   function getReferringConsumer(
     address user,
-    address provider
+    address rewardsProvider
   ) external view returns (address) {
-    return _idToEntity[_userReferrals[user][_entityToId[provider]]];
+    return _idToEntity[_userReferrals[user][_entityToId[rewardsProvider]]];
   }
 
   /**
