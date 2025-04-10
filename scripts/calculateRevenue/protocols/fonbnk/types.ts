@@ -1,5 +1,4 @@
 import { Address } from 'viem'
-import { FonbnkNetwork } from './constants'
 
 export interface FonbnkAsset {
   network: FonbnkNetwork
@@ -15,3 +14,6 @@ export interface FonbnkTransaction {
   tokenAddress: Address
   timestamp: Date
 }
+
+export const SUPPORTED_FONBNK_NETWORKS = ['CELO' , 'ETHEREUM' , 'ARBITRUM' , 'OPTIMISM' , 'POLYGON' , 'BASE']
+export type FonbnkNetwork = typeof SUPPORTED_FONBNK_NETWORKS[number]

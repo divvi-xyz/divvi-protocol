@@ -1,26 +1,22 @@
+import { encodeEventTopics, erc20Abi } from 'viem'
 import { NetworkId } from '../../../types'
+import { FonbnkNetwork } from './types'
 
 export const TRANSACTION_VOLUME_USD_PRECISION = 8
 
 export const FONBNK_API_URL = 'https://aten.fonbnk-services.com'
 
-export const TRANSFER_TOPIC =
-  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-
-export enum FonbnkNetwork {
-  CELO = 'CELO',
-  ETHEREUM = 'ETHEREUM',
-  POLYGON = 'POLYGON',
-  BASE = 'BASE',
-  OPTIMISM = 'OPTIMISM',
-  ARBITRUM = 'ARBITRUM',
-}
+export const TRANSFER_TOPIC = encodeEventTopics({
+  abi: erc20Abi,
+  eventName: 'Transfer',
+})[0]
+// Gets transfer topic hash, should be 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
 
 export const fonbnkNetworkToNetworkId: Record<FonbnkNetwork, NetworkId> = {
-  [FonbnkNetwork.CELO]: NetworkId['celo-mainnet'],
-  [FonbnkNetwork.ETHEREUM]: NetworkId['ethereum-mainnet'],
-  [FonbnkNetwork.ARBITRUM]: NetworkId['arbitrum-one'],
-  [FonbnkNetwork.OPTIMISM]: NetworkId['op-mainnet'],
-  [FonbnkNetwork.POLYGON]: NetworkId['polygon-pos-mainnet'],
-  [FonbnkNetwork.BASE]: NetworkId['base-mainnet'],
+  CELO: NetworkId['celo-mainnet'],
+  ETHEREUM: NetworkId['ethereum-mainnet'],
+  ARBITRUM: NetworkId['arbitrum-one'],
+  OPTIMISM: NetworkId['op-mainnet'],
+  POLYGON: NetworkId['polygon-pos-mainnet'],
+  BASE: NetworkId['base-mainnet'],
 }

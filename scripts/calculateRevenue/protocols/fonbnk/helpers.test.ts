@@ -1,6 +1,6 @@
 import nock from 'nock'
 import { generateSignature, getFonbnkAssets, getPayoutWallets } from './helpers'
-import { FONBNK_API_URL, FonbnkNetwork } from './constants'
+import { FONBNK_API_URL } from './constants'
 import { FonbnkAsset, FonbnkPayoutWalletReponse } from './types'
 import { Address } from 'viem'
 
@@ -9,13 +9,15 @@ describe('getFonbnkAssets', () => {
     process.env.FONBNK_CLIENT_ID = 'test-client-id'
     process.env.FONBNK_CLIENT_SECRET = 'test-client-secret'
     const mockFonbnkAssets: FonbnkAsset[] = [
-      { network: FonbnkNetwork.CELO, asset: 'CUSD' },
-      { network: FonbnkNetwork.ETHEREUM, asset: 'USDC' },
+      { network: 'CELO', asset: 'CUSD' },
+      { network: 'ETHEREUM', asset: 'USDC' },
     ]
     nock(FONBNK_API_URL)
       .get(`/api/pay-widget-merchant/assets`)
       .reply(200, mockFonbnkAssets)
+
     const expectedAssets = await getFonbnkAssets()
+    
     expect(mockFonbnkAssets).toEqual(expectedAssets)
   })
 })
@@ -33,10 +35,12 @@ describe('getPayoutWallets', () => {
         asset: 'USDC',
       })
       .reply(200, mockResponse)
+
     const receivedWallets = await getPayoutWallets({
-      fonbnkNetwork: FonbnkNetwork.CELO,
-      currency: 'USDC',
+      fonbnkNetwork: 'CELO',
+      asset: 'USDC',
     })
+
     expect(expectedWallets).toEqual(receivedWallets)
   })
 })
