@@ -175,15 +175,15 @@ contract RegistryV1 is
       revert EntityDoesNotExist(providerId == 0 ? rewardsProvider : msg.sender);
     }
 
+    // If the provider requires approval, revert the transaction
+    if (_requiresApproval[providerId]) {
+      revert ProviderRequiresApproval(rewardsProvider);
+    }
+
     // Check if agreement already exists
     bytes32 agreementKey = keccak256(abi.encodePacked(providerId, consumerId));
     if (_agreements[agreementKey]) {
       revert AgreementAlreadyExists(rewardsProvider, msg.sender);
-    }
-
-    // If the provider requires approval, revert the transaction
-    if (_requiresApproval[providerId]) {
-      revert ProviderRequiresApproval(rewardsProvider);
     }
 
     _agreements[agreementKey] = true;
@@ -275,6 +275,19 @@ contract RegistryV1 is
     _userReferrals[user][providerId] = consumerId;
     emit ReferralRegistered(rewardsProvider, rewardsConsumer, user);
     return true;
+  }
+
+  /**
+   * @notice Get the consumer address for a given user and provider
+   * @param user The address of the user
+   * @param provider The address of the provider
+   * @return The address of the consumer
+   */
+  function getReferringConsumer(
+    address user,
+    address provider
+  ) external view returns (address) {
+    return _idToEntity[_userReferrals[user][_entityToId[provider]]];
   }
 
   /**
