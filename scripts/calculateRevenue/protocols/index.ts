@@ -6,6 +6,7 @@ import { calculateRevenue as calculateRevenueCelo } from './celo'
 import { calculateRevenue as calculateRevenueArbitrum } from './arbitrum'
 import { calculateRevenue as calculateRevenueVelodrome } from './velodrome'
 import { calculateRevenue as calculateRevenueFonbnk } from './fonbnk'
+import { calculateRevenue as calculateRevenueAave } from './aave'
 
 const calculateRevenueHandlers: Record<Protocol, CalculateRevenueFn> = {
   beefy: calculateRevenueBeefy,
@@ -15,6 +16,7 @@ const calculateRevenueHandlers: Record<Protocol, CalculateRevenueFn> = {
   arbitrum: calculateRevenueArbitrum,
   velodrome: calculateRevenueVelodrome,
   fonbnk: calculateRevenueFonbnk,
+  aave: calculateRevenueAave,
 }
 
 export default calculateRevenueHandlers

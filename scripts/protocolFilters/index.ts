@@ -6,6 +6,7 @@ import { filter as filterCelo } from './celo'
 import { filter as filterArbitrum } from './arbitrum'
 import { filter as filterVelodrome } from './velodrome'
 import { filter as filterFonbnk } from './fonbnk'
+import { filter as filterAave } from './aave'
 
 export const protocolFilters: Record<Protocol, FilterFunction> = {
   beefy: _createFilter(filterBeefy),
@@ -15,6 +16,7 @@ export const protocolFilters: Record<Protocol, FilterFunction> = {
   arbitrum: _createFilter(filterArbitrum),
   velodrome: _createFilter(filterVelodrome),
   fonbnk: _createFilter(filterFonbnk),
+  aave: _createFilter(filterAave),
 }
 
 function _createFilter(filter: (event: ReferralEvent) => Promise<boolean>) {
