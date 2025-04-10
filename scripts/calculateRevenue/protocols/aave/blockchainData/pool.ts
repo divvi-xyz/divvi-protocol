@@ -59,10 +59,10 @@ export async function _getReserveData(
     reserveData.map((data, index) => [
       reserveTokens[index].toLowerCase() as Address,
       {
-        ...data,
-        aTokenAddress: data.aTokenAddress.toLowerCase() as Address,
         reserveTokenAddress: reserveTokens[index].toLowerCase() as Address,
         reserveTokenDecimals: tokenDecimals[index],
+        aTokenAddress: data.aTokenAddress.toLowerCase() as Address,
+        liquidityIndex: data.liquidityIndex,
         reserveFactor: (data.configuration.data >> BigInt(64)) & BigInt(0xffff), // ReserveFactor is 16 bits from the 64th to the 79th bit
       },
     ]),
