@@ -52,7 +52,7 @@ export async function calculateRevenue({
   return revenue.toNumber()
 }
 
-async function revenueInNetwork(
+export async function revenueInNetwork(
   network: SupportedNetwork,
   userAddress: Address,
   startTimestamp: Date,
@@ -76,33 +76,46 @@ async function revenueInNetwork(
 
 function revenueByReserve(context: RevenueCalculationContext): Revenue[] {
   return [...context.endReserveData.values()].map(
-    ({ reserveTokenAddress, reserveTokenDecimals, aTokenAddress }) => {
-      const userEarningsSegments = calculateUserEarningsSegments(
+    ({ reserveTokenAddress, reserveTokenDecimals, aTokenAddress }) =>
+      revenueInReserve(
         reserveTokenAddress,
+        reserveTokenDecimals,
         aTokenAddress,
         context,
-      )
-      const reserveFactorSegments = calculateReserveFactorSegments(
-        reserveTokenAddress,
-        context,
-      )
-
-      let revenue = 0n
-      for (const reserveFactor of reserveFactorSegments) {
-        const earningsInSegment = earningsInReserveFactorSegment(
-          reserveFactor,
-          userEarningsSegments,
-        )
-        const revenueInSegment = estimateProtocolRevenue(
-          earningsInSegment,
-          reserveFactor.value,
-        )
-        revenue += revenueInSegment
-      }
-
-      return { reserveTokenAddress, reserveTokenDecimals, revenue }
-    },
+      ),
   )
+}
+
+export function revenueInReserve(
+  reserveTokenAddress: Address,
+  reserveTokenDecimals: number,
+  aTokenAddress: Address,
+  context: RevenueCalculationContext,
+): Revenue {
+  const userEarningsSegments = calculateUserEarningsSegments(
+    reserveTokenAddress,
+    aTokenAddress,
+    context,
+  )
+  const reserveFactorSegments = calculateReserveFactorSegments(
+    reserveTokenAddress,
+    context,
+  )
+
+  let revenue = 0n
+  for (const reserveFactor of reserveFactorSegments) {
+    const earningsInSegment = earningsInReserveFactorSegment(
+      reserveFactor,
+      userEarningsSegments,
+    )
+    const revenueInSegment = estimateProtocolRevenue(
+      earningsInSegment,
+      reserveFactor.value,
+    )
+    revenue += revenueInSegment
+  }
+
+  return { reserveTokenAddress, reserveTokenDecimals, revenue }
 }
 
 function calculateUserEarningsSegments(
