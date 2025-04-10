@@ -17,7 +17,7 @@ describe('getFonbnkAssets', () => {
       .reply(200, mockFonbnkAssets)
 
     const expectedAssets = await getFonbnkAssets()
-    
+
     expect(mockFonbnkAssets).toEqual(expectedAssets)
   })
 })

@@ -81,7 +81,7 @@ export async function getPayoutWallets({
       `Error fetching fonbnk payout wallets (${url}) with status ${response.status}: ${response.statusText}`,
     )
   }
-  
+
   const data: FonbnkPayoutWalletReponse = await response.json()
   return data.wallets
 }

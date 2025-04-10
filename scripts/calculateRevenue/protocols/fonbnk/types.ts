@@ -15,5 +15,12 @@ export interface FonbnkTransaction {
   timestamp: Date
 }
 
-export const SUPPORTED_FONBNK_NETWORKS = ['CELO' , 'ETHEREUM' , 'ARBITRUM' , 'OPTIMISM' , 'POLYGON' , 'BASE']
-export type FonbnkNetwork = typeof SUPPORTED_FONBNK_NETWORKS[number]
+export const SUPPORTED_FONBNK_NETWORKS = [
+  'CELO',
+  'ETHEREUM',
+  'ARBITRUM',
+  'OPTIMISM',
+  'POLYGON',
+  'BASE',
+]
+export type FonbnkNetwork = (typeof SUPPORTED_FONBNK_NETWORKS)[number]
