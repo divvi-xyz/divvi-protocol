@@ -8,10 +8,10 @@ import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import {MessageHashUtils} from '@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol';
 
 /**
- * @title RegistryV1
+ * @title DivviRegistry
  * @notice A registry contract for managing rewards entities and agreements
  */
-contract RegistryV1 is
+contract DivviRegistry is
   Initializable,
   AccessControlDefaultAdminRulesUpgradeable,
   UUPSUpgradeable
@@ -74,10 +74,11 @@ contract RegistryV1 is
   error EntityDoesNotExist(address entity);
   error NotEntityOwner(address entity, address owner);
   error AgreementAlreadyExists(address provider, address consumer);
+  error AgreementDoesNotExist(address provider, address consumer);
   error ProviderRequiresApproval(address provider);
   error InvalidSignature();
+  error UserAlreadyReferred(address provider, address consumer, address user);
 
-  /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
     _disableInitializers();
   }
@@ -214,18 +215,23 @@ contract RegistryV1 is
    * @param userSignature The user's signature authorizing the referral
    * @param rewardsConsumer The address of the rewards consumer entity
    * @param rewardsProvider The address of the rewards provider entity
+   * @param shouldRevertOnFailure Whether the function should revert on failure
    * @return success Whether the referral was successfully registered
    */
-  function registerReferral(
+  function _registerReferral(
     address user,
     bytes memory userSignature,
     address rewardsConsumer,
-    address rewardsProvider
-  ) public returns (bool success) {
+    address rewardsProvider,
+    bool shouldRevertOnFailure
+  ) private returns (bool success) {
     // Verify user signature
     bytes32 hash = keccak256(abi.encodePacked('Confirm referral'));
     address signer = hash.toEthSignedMessageHash().recover(userSignature);
     if (user != signer) {
+      if (shouldRevertOnFailure) {
+        revert InvalidSignature();
+      }
       emit ReferralFailed(
         rewardsProvider,
         rewardsConsumer,
@@ -239,6 +245,11 @@ contract RegistryV1 is
     uint256 providerId = _entityToId[rewardsProvider];
 
     if (consumerId == 0 || providerId == 0) {
+      if (shouldRevertOnFailure) {
+        revert EntityDoesNotExist(
+          consumerId == 0 ? rewardsConsumer : rewardsProvider
+        );
+      }
       emit ReferralFailed(
         rewardsProvider,
         rewardsConsumer,
@@ -251,6 +262,9 @@ contract RegistryV1 is
     // Check if agreement exists and is approved
     bytes32 agreementKey = keccak256(abi.encodePacked(providerId, consumerId));
     if (!_agreements[agreementKey]) {
+      if (shouldRevertOnFailure) {
+        revert AgreementDoesNotExist(rewardsProvider, rewardsConsumer);
+      }
       emit ReferralFailed(
         rewardsProvider,
         rewardsConsumer,
@@ -262,6 +276,9 @@ contract RegistryV1 is
 
     // Skip if user is already referred to this provider
     if (_userReferrals[user][providerId] != 0) {
+      if (shouldRevertOnFailure) {
+        revert UserAlreadyReferred(rewardsProvider, rewardsConsumer, user);
+      }
       emit ReferralFailed(
         rewardsProvider,
         rewardsConsumer,
@@ -277,6 +294,44 @@ contract RegistryV1 is
     return true;
   }
 
+  function registerReferral(
+    address user,
+    bytes memory userSignature,
+    address rewardsConsumer,
+    address rewardsProvider
+  ) external returns (bool success) {
+    return
+      _registerReferral(
+        user,
+        userSignature,
+        rewardsConsumer,
+        rewardsProvider,
+        true
+      );
+  }
+
+  /**
+   * @notice Registers multiple users as being referred to rewards agreements
+   * @dev Each referral is processed independently. Failed referrals emit events but don't revert the transaction.
+   * @param referrals Array of Referral structs containing user addresses, signatures, and entity addresses
+   * @return success Array of boolean values indicating whether each referral was successfully registered
+   */
+  function batchRegisterReferrals(
+    Referral[] calldata referrals
+  ) external returns (bool[] memory success) {
+    success = new bool[](referrals.length);
+
+    for (uint256 i = 0; i < referrals.length; i++) {
+      success[i] = _registerReferral(
+        referrals[i].user,
+        referrals[i].userSignature,
+        referrals[i].rewardsConsumer,
+        referrals[i].rewardsProvider,
+        false
+      );
+    }
+  }
+
   /**
    * @notice Get the consumer address for a given user and provider
    * @param user The address of the user
@@ -288,26 +343,5 @@ contract RegistryV1 is
     address rewardsProvider
   ) external view returns (address) {
     return _idToEntity[_userReferrals[user][_entityToId[rewardsProvider]]];
-  }
-
-  /**
-   * @notice Registers multiple users as being referred to rewards agreements
-   * @dev Each referral is processed independently. Failed referrals emit events but don't revert the transaction.
-   * @param referrals Array of Referral structs containing user addresses, signatures, and entity addresses
-   * @return success Array of boolean values indicating whether each referral was successfully registered
-   */
-  function batchRegisterReferral(
-    Referral[] calldata referrals
-  ) external returns (bool[] memory success) {
-    success = new bool[](referrals.length);
-
-    for (uint256 i = 0; i < referrals.length; i++) {
-      success[i] = registerReferral(
-        referrals[i].user,
-        referrals[i].userSignature,
-        referrals[i].rewardsConsumer,
-        referrals[i].rewardsProvider
-      );
-    }
   }
 }
