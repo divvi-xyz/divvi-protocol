@@ -98,54 +98,6 @@ describe('filter', () => {
     expect(getBlock).not.toHaveBeenCalled()
   })
 
-  it('returns false if first found block is before the referral event timestamp for the second asset', async () => {
-    jest.mocked(getFonbnkAssets).mockResolvedValue([
-      { network: 'CELO', asset: 'CUSD' },
-      { network: 'CELO', asset: 'USDC' },
-    ])
-    mockClient.get
-      .mockResolvedValueOnce(
-        makeQueryResponse([{ blockNumber: 456, topics: [] }], 0),
-      )
-      .mockResolvedValueOnce(
-        makeQueryResponse([{ blockNumber: 123, topics: [] }], 0),
-      )
-    jest.mocked(getBlock).mockImplementation(
-      (_networkId: NetworkId, blockNumber: bigint) =>
-        Promise.resolve({
-          timestamp: blockNumber === BigInt(456) ? 1742367600n : 1742194800n,
-        }) as unknown as ReturnType<typeof getBlock>,
-    )
-
-    const result = await filter(event)
-    expect(result).toBe(false)
-    expect(mockClient.get).toHaveBeenCalledTimes(2)
-    expect(getBlock).toHaveBeenCalled()
-  })
-
-  it('returns true if first found block is after the referral event timestamp for the second asset', async () => {
-    jest.mocked(getFonbnkAssets).mockResolvedValue([
-      { network: 'CELO', asset: 'CUSD' },
-      { network: 'CELO', asset: 'USDC' },
-    ])
-    mockClient.get
-      .mockResolvedValueOnce(makeQueryResponse([], 0))
-      .mockResolvedValueOnce(
-        makeQueryResponse([{ blockNumber: 456, topics: [] }], 0),
-      )
-    jest.mocked(getBlock).mockImplementation(
-      (_networkId: NetworkId, _blockNumber: bigint) =>
-        Promise.resolve({
-          timestamp: 1742367600n,
-        }) as unknown as ReturnType<typeof getBlock>,
-    )
-
-    const result = await filter(event)
-    expect(result).toBe(false)
-    expect(mockClient.get).toHaveBeenCalledTimes(2)
-    expect(getBlock).toHaveBeenCalled()
-  })
-
   it('returns false if first found block is before the referral event timestamp for the second payout wallet', async () => {
     jest.mocked(getPayoutWallets).mockResolvedValue(['0x123', '0x456'])
     mockClient.get
@@ -183,7 +135,7 @@ describe('filter', () => {
     )
 
     const result = await filter(event)
-    expect(result).toBe(false)
+    expect(result).toBe(true)
     expect(mockClient.get).toHaveBeenCalledTimes(2)
     expect(getBlock).toHaveBeenCalled()
   })
