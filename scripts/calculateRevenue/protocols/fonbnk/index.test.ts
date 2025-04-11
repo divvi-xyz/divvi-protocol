@@ -1,4 +1,8 @@
-import { Log, QueryResponse } from '@envio-dev/hypersync-client'
+import {
+  HypersyncClient,
+  Log,
+  QueryResponse,
+} from '@envio-dev/hypersync-client'
 import { getBlock, getErc20Contract, getHyperSyncClient } from '../../../utils'
 import { NetworkId, TokenPriceData } from '../../../types'
 import { fetchTokenPrices } from '../utils/tokenPrices'
@@ -114,7 +118,7 @@ describe('getUserTransactions', () => {
       payoutWallet: '0x456',
       startTimestamp: new Date('2025-01-01T00:00:00Z'),
       endTimestamp: new Date('2025-01-03T00:00:00Z'),
-      client: mockClient as any,
+      client: mockClient as unknown as HypersyncClient,
       networkId: NetworkId['celo-mainnet'],
     })
 
