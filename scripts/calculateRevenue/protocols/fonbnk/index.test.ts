@@ -114,7 +114,7 @@ describe('getUserTransactions', () => {
       payoutWallet: '0x456',
       startTimestamp: new Date('2025-01-01T00:00:00Z'),
       endTimestamp: new Date('2025-01-03T00:00:00Z'),
-      client: mockClient,
+      client: mockClient as any,
       networkId: NetworkId['celo-mainnet'],
     })
 
@@ -195,6 +195,7 @@ describe('calculateRevenue', () => {
     expect(getPayoutWallets).toHaveBeenCalledTimes(2)
     // The first included transaction has hex value 0x2710 with 4 decimals which is 1, with a price of 3 that is 3 USD
     // The second included transaction has hex value 0x88B8 with 4 decimals which is 3.5, with a price of 5 that is 17.5 USD
+    // Then each transaction is included twice, once for each payout wallet (since the mocked hypersync returns the same for each)
     expect(result).toEqual(41)
   })
 })

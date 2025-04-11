@@ -4,25 +4,33 @@ import { FonbnkAsset, FonbnkNetwork, FonbnkPayoutWalletReponse } from './types'
 import { Address } from 'viem'
 import { fetchWithBackoff } from '../../../utils/fetchWithBackoff'
 
-export async function getFonbnkAssets(): Promise<FonbnkAsset[]> {
+function getFonbnkEvnVariables() {
   if (!process.env.FONBNK_CLIENT_ID) {
     throw new Error('FONBNK_CLIENT_ID is not set')
   }
   if (!process.env.FONBNK_CLIENT_SECRET) {
     throw new Error('FONBNK_CLIENT_SECRET is not set')
   }
+  return {
+    clientId: process.env.FONBNK_CLIENT_ID,
+    clientSecret: process.env.FONBNK_CLIENT_SECRET,
+  }
+}
+
+export async function getFonbnkAssets(): Promise<FonbnkAsset[]> {
+  const { clientId, clientSecret } = getFonbnkEvnVariables()
 
   const url = `${FONBNK_API_URL}/api/pay-widget-merchant/assets`
   const timestamp = String(Date.now())
   const signature = await generateSignature(
-    process.env.FONBNK_CLIENT_SECRET,
+    clientSecret,
     timestamp,
     '/api/pay-widget-merchant/assets',
   )
   const requestOptions = {
     method: 'GET',
     headers: {
-      'x-client-id': process.env.FONBNK_CLIENT_ID,
+      'x-client-id': clientId,
       'x-timestamp': timestamp,
       'x-signature': signature,
     },
@@ -48,24 +56,19 @@ export async function getPayoutWallets({
   fonbnkNetwork: FonbnkNetwork
   asset: string
 }): Promise<Address[]> {
-  if (!process.env.FONBNK_CLIENT_ID) {
-    throw new Error('FONBNK_CLIENT_ID is not set')
-  }
-  if (!process.env.FONBNK_CLIENT_SECRET) {
-    throw new Error('FONBNK_CLIENT_SECRET is not set')
-  }
+  const { clientId, clientSecret } = getFonbnkEvnVariables()
 
   const url = `${FONBNK_API_URL}/api/util/payout-wallets?network=${fonbnkNetwork}&asset=${asset}`
   const timestamp = String(Date.now())
   const signature = await generateSignature(
-    process.env.FONBNK_CLIENT_SECRET,
+    clientSecret,
     timestamp,
     `/api/util/payout-wallets?network=${fonbnkNetwork}&asset=${asset}`,
   )
   const requestOptions = {
     method: 'GET',
     headers: {
-      'x-client-id': process.env.FONBNK_CLIENT_ID,
+      'x-client-id': clientId,
       'x-timestamp': timestamp,
       'x-signature': signature,
     },

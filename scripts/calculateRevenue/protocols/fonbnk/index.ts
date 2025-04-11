@@ -1,4 +1,4 @@
-import { LogField, Query, QueryResponse } from '@envio-dev/hypersync-client'
+import { HypersyncClient, LogField } from '@envio-dev/hypersync-client'
 import { getBlock, getErc20Contract, getHyperSyncClient } from '../../../utils'
 import {
   fonbnkNetworkToNetworkId,
@@ -25,7 +25,7 @@ export async function getUserTransactions({
   payoutWallet: Address
   startTimestamp: Date
   endTimestamp: Date
-  client: { get: (query: Query) => Promise<QueryResponse> }
+  client: HypersyncClient
   networkId: NetworkId
 }): Promise<FonbnkTransaction[]> {
   // Query for all transfers from the payout wallet to the user
@@ -56,6 +56,10 @@ export async function getUserTransactions({
             timestamp: blockTimestampDate,
           })
         }
+      } else {
+        console.log(
+          `Fonbnk transfer transaction missing one of the required fields: ${transaction}`,
+        )
       }
     }
   })
