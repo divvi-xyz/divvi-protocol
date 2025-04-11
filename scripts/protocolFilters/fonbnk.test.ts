@@ -6,12 +6,15 @@ import {
   getFonbnkAssets,
   getPayoutWallets,
 } from '../calculateRevenue/protocols/fonbnk/helpers'
+import { Address } from 'viem'
 
 jest.mock('../utils', () => ({
   getHyperSyncClient: jest.fn(),
   getBlock: jest.fn(),
 }))
 jest.mock('../calculateRevenue/protocols/fonbnk/helpers')
+
+const MOCK_ADDRESS = '0x1234567890123456789012345678901234567890' as Address
 
 const makeQueryResponse = (logs: Log[], nextBlock = 100): QueryResponse => ({
   data: {
@@ -25,7 +28,7 @@ const makeQueryResponse = (logs: Log[], nextBlock = 100): QueryResponse => ({
 })
 
 describe('filter', () => {
-  const userAddress = '0xUser'
+  const userAddress = MOCK_ADDRESS
   const event: ReferralEvent = {
     userAddress: userAddress,
     timestamp: Math.round(new Date('2025-03-18T00:00:00Z').getTime() / 1000),
