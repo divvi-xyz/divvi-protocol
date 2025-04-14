@@ -12,6 +12,7 @@ interface RevenueCalculationContext {
   reserveFactorHistory: Map<Address, ReserveFactor[]>
   startBalances: Map<Address, bigint>
   balanceHistory: Map<Address, BalanceSnapshot[]>
+  tokenUSDPrices: Map<Address, BigNumber>
   startTimestamp: number
   endTimestamp: number
 }
@@ -65,13 +66,17 @@ export async function revenueInNetwork(
     endTimestamp,
   )
 
-  const protocolRevenueByReserve = revenueByReserve({
+  const context: RevenueCalculationContext = {
     ...chainData,
     startTimestamp: Math.floor(startTimestamp.getTime() / 1000),
     endTimestamp: Math.floor(endTimestamp.getTime() / 1000),
-  })
+  }
 
-  return totalRevenueInUSD(protocolRevenueByReserve, chainData.tokenUSDPrices)
+  const protocolRevenueByReserve = revenueByReserve(context)
+
+  const revenue = totalRevenueInUSD(protocolRevenueByReserve, context)
+
+  return revenue
 }
 
 function revenueByReserve(context: RevenueCalculationContext): Revenue[] {
@@ -92,19 +97,19 @@ export function revenueInReserve(
   aTokenAddress: Address,
   context: RevenueCalculationContext,
 ): Revenue {
-  const userEarningsSegments = calculateUserEarningsSegments(
+  const userEarningsSegments = splitUserEarningHistoryIntoSegments(
     reserveTokenAddress,
     aTokenAddress,
     context,
   )
-  const reserveFactorSegments = calculateReserveFactorSegments(
+  const reserveFactorSegments = splitReserveFactorHistoryIntoSegments(
     reserveTokenAddress,
     context,
   )
 
   let revenue = 0n
   for (const reserveFactor of reserveFactorSegments) {
-    const earningsInSegment = earningsInReserveFactorSegment(
+    const earningsInSegment = earningsOverlappingReserveFactorSegment(
       reserveFactor,
       userEarningsSegments,
     )
@@ -118,7 +123,7 @@ export function revenueInReserve(
   return { reserveTokenAddress, reserveTokenDecimals, revenue }
 }
 
-function calculateUserEarningsSegments(
+function splitUserEarningHistoryIntoSegments(
   reserveTokenAddress: Address,
   aTokenAddress: Address,
   context: RevenueCalculationContext,
@@ -158,7 +163,7 @@ function calculateUserEarningsSegments(
   })
 }
 
-function calculateReserveFactorSegments(
+function splitReserveFactorHistoryIntoSegments(
   reserveTokenAddress: Address,
   context: RevenueCalculationContext,
 ): Segment[] {
@@ -185,7 +190,7 @@ function calculateReserveFactorSegments(
   }))
 }
 
-function earningsInReserveFactorSegment(
+function earningsOverlappingReserveFactorSegment(
   reserveFactor: Segment,
   userEarnings: Segment[],
 ): bigint {
@@ -240,7 +245,7 @@ function estimateProtocolRevenue(
 
 function totalRevenueInUSD(
   protocolRevenueByReserve: Revenue[],
-  tokenUSDPrices: Map<Address, BigNumber>,
+  context: RevenueCalculationContext,
 ): BigNumber {
   let totalRevenueInUSD = new BigNumber(0)
 
@@ -249,7 +254,7 @@ function totalRevenueInUSD(
     reserveTokenDecimals,
     revenue,
   } of protocolRevenueByReserve) {
-    const tokenPrice = tokenUSDPrices.get(reserveTokenAddress)!
+    const tokenPrice = context.tokenUSDPrices.get(reserveTokenAddress)!
 
     const revenueInUSD = new BigNumber(revenue.toString())
       .multipliedBy(tokenPrice)
