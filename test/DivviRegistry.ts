@@ -217,19 +217,25 @@ describe(CONTRACT_NAME, function () {
     })
 
     it('should revert when registering duplicate referral', async function () {
+      const mockUserAddress = '0x1234567890123456789012345678901234567890'
       const { registry, owner, addr1, addr2, addr3 } =
         await deployDivviRegistryContract()
 
       // Register entities
       await registry.registerRewardsEntity(addr1.address, false) // Provider
-      await registry.registerRewardsEntity(addr2.address, false) // Consumer
+      await registry.registerRewardsEntity(addr2.address, false) // Consumer1
+      await registry.registerRewardsEntity(addr3.address, false) // Consumer2
 
-      const registryContractAsConsumer = registry.connect(
+      const registryContractAsConsumer1 = registry.connect(
         addr2,
       ) as typeof registry
+      const registryContractAsConsumer2 = registry.connect(
+        addr3,
+      ) as typeof registry
 
-      // Register agreement
-      await registryContractAsConsumer.registerRewardsAgreement(addr1.address)
+      // Register agreements
+      await registryContractAsConsumer1.registerRewardsAgreement(addr1.address)
+      await registryContractAsConsumer2.registerRewardsAgreement(addr1.address)
 
       // Grant referral registrar role
       await registry.grantRole(
@@ -237,19 +243,23 @@ describe(CONTRACT_NAME, function () {
         owner.address,
       )
 
-      // Register first referral
+      // Register referral of user to provider with consumer1
       await registry.registerReferral(
-        addr3.address,
+        mockUserAddress,
         addr2.address,
         addr1.address,
       )
 
-      // Try to register again
+      // Try to register the user to the provider with consumer2
       await expect(
-        registry.registerReferral(addr3.address, addr2.address, addr1.address),
+        registry.registerReferral(
+          mockUserAddress,
+          addr3.address,
+          addr1.address,
+        ),
       )
         .to.be.revertedWithCustomError(registry, 'UserAlreadyReferred')
-        .withArgs(addr1.address, addr3.address)
+        .withArgs(mockUserAddress, addr1.address)
     })
   })
 
