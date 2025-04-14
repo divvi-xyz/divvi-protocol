@@ -92,18 +92,16 @@ const MOCK_FONBNK_TRANSACTIONS: FonbnkTransaction[] = [
 const MOCK_ADDRESS = '0x1234567890123456789012345678901234567890' as Address
 
 describe('getUserTransactions', () => {
-  let mockClient: { get: jest.Mock }
+  const mockClient: HypersyncClient = {
+    get: jest.fn(),
+  } as any as HypersyncClient
   beforeEach(() => {
     jest.clearAllMocks()
   })
   it('should fetch user transactions', async () => {
-    mockClient = { get: jest.fn() }
+    jest.mocked(getHyperSyncClient).mockReturnValue(mockClient)
     jest
-      .mocked(getHyperSyncClient)
-      .mockReturnValue(
-        mockClient as unknown as ReturnType<typeof getHyperSyncClient>,
-      )
-    mockClient.get
+      .mocked(mockClient.get)
       .mockResolvedValueOnce(makeQueryResponse(MOCK_HYPERSYNC_LOGS))
       .mockResolvedValue(makeQueryResponse([]))
     jest.mocked(getBlock).mockImplementation(
@@ -156,18 +154,17 @@ describe('getTotalRevenueUsdFromTransactions', () => {
 })
 
 describe('calculateRevenue', () => {
-  let mockClient: { get: jest.Mock }
+  const mockClient: HypersyncClient = {
+    get: jest.fn(),
+  } as any as HypersyncClient
   beforeEach(() => {
     jest.clearAllMocks()
   })
   it('should calculate revenue correctly', async () => {
-    mockClient = { get: jest.fn() }
+    jest.mocked(getHyperSyncClient).mockReturnValue(mockClient)
     jest
-      .mocked(getHyperSyncClient)
-      .mockReturnValue(
-        mockClient as unknown as ReturnType<typeof getHyperSyncClient>,
-      )
-    mockClient.get.mockResolvedValue(makeQueryResponse(MOCK_HYPERSYNC_LOGS, 0))
+      .mocked(mockClient.get)
+      .mockResolvedValue(makeQueryResponse(MOCK_HYPERSYNC_LOGS, 0))
     jest.mocked(getErc20Contract).mockResolvedValue({
       read: {
         decimals: jest.fn().mockResolvedValue(4n),
