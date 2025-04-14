@@ -66,7 +66,10 @@ describe('filter', () => {
     const result = await filter(event)
     expect(result).toBe(false)
     expect(mockClient.get).toHaveBeenCalledTimes(1)
-    expect(getBlock).toHaveBeenCalledWith(NetworkId['celo-mainnet'], BigInt(123))
+    expect(getBlock).toHaveBeenCalledWith(
+      NetworkId['celo-mainnet'],
+      BigInt(123),
+    )
   })
 
   it('returns true if a first found block is after the referral event timestamp', async () => {
@@ -84,7 +87,10 @@ describe('filter', () => {
     const result = await filter(event)
     expect(result).toBe(true)
     expect(mockClient.get).toHaveBeenCalledTimes(1)
-    expect(getBlock).toHaveBeenCalledWith(NetworkId['celo-mainnet'], BigInt(456))
+    expect(getBlock).toHaveBeenCalledWith(
+      NetworkId['celo-mainnet'],
+      BigInt(456),
+    )
   })
 
   it('returns false if no blocks are found', async () => {
@@ -137,7 +143,10 @@ describe('filter', () => {
     const result = await filter(event)
     expect(result).toBe(true)
     expect(mockClient.get).toHaveBeenCalledTimes(2)
-    expect(getBlock).toHaveBeenCalledTimes(2)
+    expect(getBlock).toHaveBeenCalledWith(
+      NetworkId['celo-mainnet'],
+      BigInt(456),
+    )
   })
 
   it('handles paginated results and returns true if the first found block is after the referral event timestamp ', async () => {
@@ -165,7 +174,10 @@ describe('filter', () => {
     const result = await filter(event)
     expect(result).toBe(true)
     expect(mockClient.get).toHaveBeenCalledTimes(3)
-    expect(getBlock).toHaveBeenCalledWith(NetworkId['celo-mainnet'], BigInt(456))
+    expect(getBlock).toHaveBeenCalledWith(
+      NetworkId['celo-mainnet'],
+      BigInt(456),
+    )
   })
 
   it('throws if API fails', async () => {
