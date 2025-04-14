@@ -1,4 +1,7 @@
-import { VELODROME_NETWORK_ID, VELODROME_UNIVERSAL_ROUTER_ADDRESS } from '../calculateRevenue/protocols/velodrome/constants'
+import {
+  VELODROME_NETWORK_ID,
+  VELODROME_UNIVERSAL_ROUTER_ADDRESS,
+} from '../calculateRevenue/protocols/velodrome/constants'
 import { ReferralEvent } from '../types'
 import { filterDrome } from '../utils/filterDrome'
 
