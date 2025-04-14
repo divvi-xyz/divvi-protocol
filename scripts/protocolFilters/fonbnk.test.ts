@@ -66,7 +66,7 @@ describe('filter', () => {
     const result = await filter(event)
     expect(result).toBe(false)
     expect(mockClient.get).toHaveBeenCalledTimes(1)
-    expect(getBlock).toHaveBeenCalled()
+    expect(getBlock).toHaveBeenCalledWith(NetworkId['celo-mainnet'], BigInt(123))
   })
 
   it('returns true if a first found block is after the referral event timestamp', async () => {
@@ -84,7 +84,7 @@ describe('filter', () => {
     const result = await filter(event)
     expect(result).toBe(true)
     expect(mockClient.get).toHaveBeenCalledTimes(1)
-    expect(getBlock).toHaveBeenCalled()
+    expect(getBlock).toHaveBeenCalledWith(NetworkId['celo-mainnet'], BigInt(456))
   })
 
   it('returns false if no blocks are found', async () => {
@@ -117,7 +117,7 @@ describe('filter', () => {
     const result = await filter(event)
     expect(result).toBe(false)
     expect(mockClient.get).toHaveBeenCalledTimes(2)
-    expect(getBlock).toHaveBeenCalled()
+    expect(getBlock).toHaveBeenCalledTimes(2)
   })
 
   it('returns true if first found block is after the referral event timestamp for the second payout wallet', async () => {
@@ -137,7 +137,7 @@ describe('filter', () => {
     const result = await filter(event)
     expect(result).toBe(true)
     expect(mockClient.get).toHaveBeenCalledTimes(2)
-    expect(getBlock).toHaveBeenCalled()
+    expect(getBlock).toHaveBeenCalledTimes(2)
   })
 
   it('handles paginated results and returns true if the first found block is after the referral event timestamp ', async () => {
@@ -165,7 +165,7 @@ describe('filter', () => {
     const result = await filter(event)
     expect(result).toBe(true)
     expect(mockClient.get).toHaveBeenCalledTimes(3)
-    expect(getBlock).toHaveBeenCalledTimes(1)
+    expect(getBlock).toHaveBeenCalledWith(NetworkId['celo-mainnet'], BigInt(456))
   })
 
   it('throws if API fails', async () => {
