@@ -22,7 +22,7 @@ contract DivviRegistry is
   mapping(address => bool) private _requiresApproval; // entity => boolean (if entity requires approval)
 
   // Referral tracking
-  mapping(address => mapping(address => address)) private _userReferrals; // user => provider => consumer
+  mapping(bytes32 => address) private _userReferrals; // keccak256(user, provider) => consumer
 
   // Role constants
   bytes32 public constant REFERRAL_REGISTRAR_ROLE =
@@ -181,12 +181,13 @@ contract DivviRegistry is
     }
 
     // Skip if user is already referred to this provider
-    if (_userReferrals[user][rewardsProvider] != address(0)) {
+    bytes32 referralKey = keccak256(abi.encodePacked(user, rewardsProvider));
+    if (_userReferrals[referralKey] != address(0)) {
       revert UserAlreadyReferred(rewardsProvider, rewardsConsumer, user);
     }
 
     // Add referral
-    _userReferrals[user][rewardsProvider] = rewardsConsumer;
+    _userReferrals[referralKey] = rewardsConsumer;
     emit ReferralRegistered(rewardsProvider, rewardsConsumer, user);
   }
 
@@ -236,6 +237,7 @@ contract DivviRegistry is
     address user,
     address provider
   ) external view returns (address consumer) {
-    return _userReferrals[user][provider];
+    bytes32 referralKey = keccak256(abi.encodePacked(user, provider));
+    return _userReferrals[referralKey];
   }
 }
