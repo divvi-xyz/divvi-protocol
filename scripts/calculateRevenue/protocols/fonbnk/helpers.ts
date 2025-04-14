@@ -4,7 +4,7 @@ import { FonbnkAsset, FonbnkNetwork, FonbnkPayoutWalletReponse } from './types'
 import { Address } from 'viem'
 import { fetchWithBackoff } from '../../../utils/fetchWithBackoff'
 
-function getFonbnkEvnVariables() {
+function getFonbnkConfig() {
   if (!process.env.FONBNK_CLIENT_ID) {
     throw new Error('FONBNK_CLIENT_ID is not set')
   }
@@ -18,7 +18,7 @@ function getFonbnkEvnVariables() {
 }
 
 export async function getFonbnkAssets(): Promise<FonbnkAsset[]> {
-  const { clientId, clientSecret } = getFonbnkEvnVariables()
+  const { clientId, clientSecret } = getFonbnkConfig()
 
   const url = `${FONBNK_API_URL}/api/pay-widget-merchant/assets`
   const timestamp = String(Date.now())
@@ -56,7 +56,7 @@ export async function getPayoutWallets({
   fonbnkNetwork: FonbnkNetwork
   asset: string
 }): Promise<Address[]> {
-  const { clientId, clientSecret } = getFonbnkEvnVariables()
+  const { clientId, clientSecret } = getFonbnkConfig()
 
   const url = `${FONBNK_API_URL}/api/util/payout-wallets?network=${fonbnkNetwork}&asset=${asset}`
   const timestamp = String(Date.now())

@@ -58,7 +58,7 @@ export async function getUserTransactions({
         }
       } else {
         console.log(
-          `Fonbnk transfer transaction missing one of the required fields: ${transaction}`,
+          `Fonbnk transfer transaction missing one of the required fields. blockNumber: ${transaction.blockNumber}, data: ${transaction.data}, address: ${transaction.address}`,
         )
       }
     }
