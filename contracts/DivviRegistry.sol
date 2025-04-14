@@ -55,7 +55,7 @@ contract DivviRegistry is
   error AgreementAlreadyExists(address provider, address consumer);
   error AgreementDoesNotExist(address provider, address consumer);
   error ProviderRequiresApproval(address provider);
-  error UserAlreadyReferred(address provider, address consumer, address user);
+  error UserAlreadyReferred(address provider, address user);
   error MissingReferralRegistrarRole(address account);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
@@ -184,7 +184,7 @@ contract DivviRegistry is
     // Skip if user is already referred to this provider
     bytes32 referralKey = keccak256(abi.encodePacked(user, rewardsProvider));
     if (_userReferrals[referralKey] != address(0)) {
-      revert UserAlreadyReferred(rewardsProvider, rewardsConsumer, user);
+      revert UserAlreadyReferred(rewardsProvider, user);
     }
 
     // Add referral

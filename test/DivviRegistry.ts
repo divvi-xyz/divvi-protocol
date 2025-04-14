@@ -249,7 +249,7 @@ describe(CONTRACT_NAME, function () {
         registry.registerReferral(addr3.address, addr2.address, addr1.address),
       )
         .to.be.revertedWithCustomError(registry, 'UserAlreadyReferred')
-        .withArgs(addr1.address, addr2.address, addr3.address)
+        .withArgs(addr1.address, addr3.address)
     })
   })
 
