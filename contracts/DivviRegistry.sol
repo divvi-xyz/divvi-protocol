@@ -189,4 +189,53 @@ contract DivviRegistry is
     _userReferrals[user][rewardsProvider] = rewardsConsumer;
     emit ReferralRegistered(rewardsProvider, rewardsConsumer, user);
   }
+
+  /**
+   * @notice Check if an agreement exists between a consumer and provider
+   * @param consumer The consumer entity address
+   * @param provider The provider entity address
+   * @return exists Whether the agreement exists
+   */
+  function agreementExists(
+    address consumer,
+    address provider
+  ) external view returns (bool exists) {
+    bytes32 agreementKey = keccak256(abi.encodePacked(provider, consumer));
+    return _agreements[agreementKey];
+  }
+
+  /**
+   * @notice Check if an entity is registered
+   * @param entity The entity address to check
+   * @return registered Whether the entity is registered
+   */
+  function isEntityRegistered(
+    address entity
+  ) external view returns (bool registered) {
+    return _entities[entity];
+  }
+
+  /**
+   * @notice Check if an entity requires approval for agreements
+   * @param entity The entity address to check
+   * @return requiresApproval Whether the entity requires approval
+   */
+  function requiresApprovalForAgreements(
+    address entity
+  ) external view returns (bool requiresApproval) {
+    return _requiresApproval[entity];
+  }
+
+  /**
+   * @notice Get the referring consumer for a user and provider
+   * @param user The address of the user
+   * @param provider The address of the provider entity
+   * @return consumer The address of the referring consumer, or address(0) if the user has not been referred to the provider
+   */
+  function getReferringConsumer(
+    address user,
+    address provider
+  ) external view returns (address consumer) {
+    return _userReferrals[user][provider];
+  }
 }
