@@ -94,7 +94,7 @@ const MOCK_ADDRESS = '0x1234567890123456789012345678901234567890' as Address
 describe('getUserTransactions', () => {
   const mockClient: HypersyncClient = {
     get: jest.fn(),
-  } as any as HypersyncClient
+  } as unknown as HypersyncClient
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -156,7 +156,7 @@ describe('getTotalRevenueUsdFromTransactions', () => {
 describe('calculateRevenue', () => {
   const mockClient: HypersyncClient = {
     get: jest.fn(),
-  } as any as HypersyncClient
+  } as unknown as HypersyncClient
   beforeEach(() => {
     jest.clearAllMocks()
   })
