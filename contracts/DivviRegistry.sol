@@ -7,7 +7,7 @@ import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/U
 
 /**
  * @title DivviRegistry
- * @notice A registry contract for managing rewards entities and agreements
+ * @notice A registry contract for managing Divvi entities and agreements
  */
 contract DivviRegistry is
   Initializable,
@@ -18,14 +18,18 @@ contract DivviRegistry is
   mapping(address => bool) private _entities; // entity => true (if entity exists)
 
   // Agreement storage
-  mapping(bytes32 => bool) private _agreements; // keccak256(providerId, consumerId) => true (if agreement exists)
-  mapping(address => bool) private _requiresApproval; // entityId => boolean (if entity requires approval)
+  mapping(bytes32 => bool) private _agreements; // keccak256(provider, consumer) => true (if agreement exists)
+  mapping(address => bool) private _requiresApproval; // entity => boolean (if entity requires approval)
 
   // Referral tracking
-  mapping(address => mapping(address => address)) private _userReferrals; // user => providerId => consumerId
+  mapping(address => mapping(address => address)) private _userReferrals; // user => provider => consumer
+
+  // Role constants
+  bytes32 public constant REFERRAL_REGISTRAR_ROLE =
+    keccak256('REFERRAL_REGISTRAR_ROLE');
 
   // Events
-  event RewardsEntityRegistered(address indexed entity);
+  event RewardsEntityRegistered(address indexed entity, bool requiresApproval);
   event RequiresApprovalForRewardsAgreements(
     address indexed entity,
     bool requiresApproval
@@ -52,6 +56,7 @@ contract DivviRegistry is
   error AgreementDoesNotExist(address provider, address consumer);
   error ProviderRequiresApproval(address provider);
   error UserAlreadyReferred(address provider, address consumer, address user);
+  error MissingReferralRegistrarRole(address account);
 
   constructor() {
     _disableInitializers();
@@ -79,7 +84,8 @@ contract DivviRegistry is
 
   /**
    * @notice Register a new rewards entity
-   * @param entity The entity owner address
+   * @param entity The entity address to register
+   * @param requiresApproval Whether the entity requires approval for agreements
    */
   function registerRewardsEntity(
     address entity,
@@ -95,7 +101,7 @@ contract DivviRegistry is
 
     _entities[entity] = true;
     _requiresApproval[entity] = requiresApproval;
-    emit RewardsEntityRegistered(entity);
+    emit RewardsEntityRegistered(entity, requiresApproval);
   }
 
   /**
@@ -110,7 +116,8 @@ contract DivviRegistry is
   }
 
   /**
-   * @notice Registers a Rewards Consumer - Rewards Provider relationship between two Rewards Entities, should be called by the Rewards Consumer
+   * @notice Register a Rewards Consumer - Rewards Provider relationship
+   * @dev Should be called by the Rewards Consumer
    * @param rewardsProvider The provider entity address
    */
   function registerRewardsAgreement(
@@ -134,7 +141,8 @@ contract DivviRegistry is
   }
 
   /**
-   * @notice Approve a rewards agreement, should be called by the Rewards Provider
+   * @notice Approve a rewards agreement
+   * @dev Should be called by the Rewards Provider
    * @param rewardsConsumer The consumer entity address
    */
   function approveRewardsAgreement(
@@ -149,7 +157,8 @@ contract DivviRegistry is
   }
 
   /**
-   * @notice Registers a user as being referred to a rewards agreement
+   * @notice Register a user as being referred to a rewards agreement
+   * @dev Requires REFERRAL_REGISTRAR_ROLE
    * @param user The address of the user being referred
    * @param rewardsConsumer The address of the rewards consumer entity
    * @param rewardsProvider The address of the rewards provider entity
@@ -159,7 +168,10 @@ contract DivviRegistry is
     address rewardsConsumer,
     address rewardsProvider
   ) external entityExists(rewardsProvider) entityExists(rewardsConsumer) {
-    // TODO: add role check
+    if (!hasRole(REFERRAL_REGISTRAR_ROLE, msg.sender)) {
+      revert MissingReferralRegistrarRole(msg.sender);
+    }
+
     // Check if agreement exists
     bytes32 agreementKey = keccak256(
       abi.encodePacked(rewardsProvider, rewardsConsumer)
