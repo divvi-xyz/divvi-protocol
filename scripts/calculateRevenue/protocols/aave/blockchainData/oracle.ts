@@ -24,29 +24,28 @@ export async function _getUSDPrices({
   const publicClient = getViemPublicClient(networkId)
 
   // Check if the contract exists at the given block number
-  const poolByteCode = await publicClient.getCode({
+  const oracleByteCode = await publicClient.getCode({
     address: oracleAddress,
     blockNumber: BigInt(blockNumber),
   })
 
-  const baseCurrencyUnit = poolByteCode
-    ? await publicClient.readContract({
-        address: oracleAddress,
-        abi: oracleAbi,
-        functionName: 'BASE_CURRENCY_UNIT',
-        blockNumber: BigInt(blockNumber),
-      })
-    : 0n
-
-  const prices = poolByteCode
-    ? await publicClient.readContract({
-        address: oracleAddress,
-        abi: oracleAbi,
-        functionName: 'getAssetsPrices',
-        args: [tokenAddresses],
-        blockNumber: BigInt(blockNumber),
-      })
-    : []
+  const [baseCurrencyUnit, prices] = oracleByteCode
+    ? await Promise.all([
+        await publicClient.readContract({
+          address: oracleAddress,
+          abi: oracleAbi,
+          functionName: 'BASE_CURRENCY_UNIT',
+          blockNumber: BigInt(blockNumber),
+        }),
+        publicClient.readContract({
+          address: oracleAddress,
+          abi: oracleAbi,
+          functionName: 'getAssetsPrices',
+          args: [tokenAddresses],
+          blockNumber: BigInt(blockNumber),
+        }),
+      ])
+    : [0n, []]
 
   const result = new Map(
     tokenAddresses.map((address, index) => {
