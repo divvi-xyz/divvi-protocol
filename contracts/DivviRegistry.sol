@@ -43,9 +43,9 @@ contract DivviRegistry is
     address indexed rewardsConsumer
   );
   event ReferralRegistered(
-    address indexed rewardsProvider,
+    address indexed user,
     address indexed rewardsConsumer,
-    address indexed user
+    address indexed rewardsProvider
   );
 
   // Errors
@@ -58,6 +58,7 @@ contract DivviRegistry is
   error UserAlreadyReferred(address provider, address consumer, address user);
   error MissingReferralRegistrarRole(address account);
 
+  /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
     _disableInitializers();
   }
@@ -188,7 +189,7 @@ contract DivviRegistry is
 
     // Add referral
     _userReferrals[referralKey] = rewardsConsumer;
-    emit ReferralRegistered(rewardsProvider, rewardsConsumer, user);
+    emit ReferralRegistered(user, rewardsConsumer, rewardsProvider);
   }
 
   /**
