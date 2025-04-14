@@ -33,27 +33,28 @@ export async function _getReserveData(
       })
     : []
 
-  const reserveData = await Promise.all(
-    reserveTokens.map((tokenAddress) =>
-      publicClient.readContract({
-        address: poolAddress,
-        abi: poolAbi,
-        functionName: 'getReserveData',
-        args: [tokenAddress],
-        blockNumber: BigInt(blockNumber),
-      }),
+  const [reserveData, tokenDecimals] = await Promise.all([
+    Promise.all(
+      reserveTokens.map((tokenAddress) =>
+        publicClient.readContract({
+          address: poolAddress,
+          abi: poolAbi,
+          functionName: 'getReserveData',
+          args: [tokenAddress],
+          blockNumber: BigInt(blockNumber),
+        }),
+      ),
     ),
-  )
-
-  const tokenDecimals = await Promise.all(
-    reserveTokens.map((tokenAddress) =>
-      publicClient.readContract({
-        address: tokenAddress,
-        abi: erc20Abi,
-        functionName: 'decimals',
-      }),
+    Promise.all(
+      reserveTokens.map((tokenAddress) =>
+        publicClient.readContract({
+          address: tokenAddress,
+          abi: erc20Abi,
+          functionName: 'decimals',
+        }),
+      ),
     ),
-  )
+  ])
 
   const result = new Map(
     reserveData.map((data, index) => [
