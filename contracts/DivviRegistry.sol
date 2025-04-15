@@ -38,14 +38,10 @@ contract DivviRegistry is
     address indexed rewardsProvider,
     address indexed rewardsConsumer
   );
-  event RewardsAgreementApproved(
-    address indexed rewardsProvider,
-    address indexed rewardsConsumer
-  );
   event ReferralRegistered(
     address indexed user,
-    address indexed rewardsConsumer,
-    address indexed rewardsProvider
+    address indexed rewardsProvider,
+    address indexed rewardsConsumer
   );
 
   // Errors
@@ -121,7 +117,7 @@ contract DivviRegistry is
    * @dev Should be called by the Rewards Consumer
    * @param rewardsProvider The provider entity address
    */
-  function registerRewardsAgreement(
+  function registerAgreementAsConsumer(
     address rewardsProvider
   ) external entityExists(rewardsProvider) entityExists(msg.sender) {
     // If the provider requires approval, revert the transaction
@@ -142,32 +138,37 @@ contract DivviRegistry is
   }
 
   /**
-   * @notice Approve a rewards agreement
+   * @notice Register a Rewards Consumer - Rewards Provider relationship
    * @dev Should be called by the Rewards Provider
    * @param rewardsConsumer The consumer entity address
    */
-  function approveRewardsAgreement(
+  function registerAgreementAsProvider(
     address rewardsConsumer
   ) external entityExists(rewardsConsumer) entityExists(msg.sender) {
-    // Create the agreement
+    // Check if agreement already exists
     bytes32 agreementKey = keccak256(
       abi.encodePacked(msg.sender, rewardsConsumer)
     );
+    if (_agreements[agreementKey]) {
+      revert AgreementAlreadyExists(msg.sender, rewardsConsumer);
+    }
+
+    // Create the agreement
     _agreements[agreementKey] = true;
-    emit RewardsAgreementApproved(msg.sender, rewardsConsumer);
+    emit RewardsAgreementRegistered(msg.sender, rewardsConsumer);
   }
 
   /**
    * @notice Register a user as being referred to a rewards agreement
    * @dev Requires REFERRAL_REGISTRAR_ROLE
    * @param user The address of the user being referred
-   * @param rewardsConsumer The address of the rewards consumer entity
    * @param rewardsProvider The address of the rewards provider entity
+   * @param rewardsConsumer The address of the rewards consumer entity
    */
   function registerReferral(
     address user,
-    address rewardsConsumer,
-    address rewardsProvider
+    address rewardsProvider,
+    address rewardsConsumer
   ) external entityExists(rewardsProvider) entityExists(rewardsConsumer) {
     if (!hasRole(REFERRAL_REGISTRAR_ROLE, msg.sender)) {
       revert MissingReferralRegistrarRole(msg.sender);
@@ -189,18 +190,18 @@ contract DivviRegistry is
 
     // Add referral
     _userReferrals[referralKey] = rewardsConsumer;
-    emit ReferralRegistered(user, rewardsConsumer, rewardsProvider);
+    emit ReferralRegistered(user, rewardsProvider, rewardsConsumer);
   }
 
   /**
    * @notice Check if an agreement exists between a consumer and provider
-   * @param consumer The consumer entity address
    * @param provider The provider entity address
+   * @param consumer The consumer entity address
    * @return exists Whether the agreement exists
    */
   function agreementExists(
-    address consumer,
-    address provider
+    address provider,
+    address consumer
   ) external view returns (bool exists) {
     bytes32 agreementKey = keccak256(abi.encodePacked(provider, consumer));
     return _agreements[agreementKey];

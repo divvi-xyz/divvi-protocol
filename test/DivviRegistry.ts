@@ -5,7 +5,7 @@ const CONTRACT_NAME = 'DivviRegistry'
 
 describe(CONTRACT_NAME, function () {
   async function deployDivviRegistryContract() {
-    const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners()
+    const [owner, provider, consumer, user] = await hre.ethers.getSigners()
 
     // Deploy the DivviRegistry contract
     const DivviRegistry = await hre.ethers.getContractFactory(CONTRACT_NAME)
@@ -16,32 +16,32 @@ describe(CONTRACT_NAME, function () {
     )
     await registry.waitForDeployment()
 
-    return { registry, owner, addr1, addr2, addr3 }
+    return { registry, owner, provider, consumer, user }
   }
 
   describe('Entity Registration', function () {
     it('should register a new entity', async function () {
-      const { registry, addr1 } = await deployDivviRegistryContract()
+      const { registry, provider } = await deployDivviRegistryContract()
 
-      await expect(registry.registerRewardsEntity(addr1.address, false))
+      await expect(registry.registerRewardsEntity(provider.address, false))
         .to.emit(registry, 'RewardsEntityRegistered')
-        .withArgs(addr1.address, false)
+        .withArgs(provider.address, false)
 
-      expect(await registry.isEntityRegistered(addr1.address)).to.be.true
-      expect(await registry.requiresApprovalForAgreements(addr1.address)).to.be
-        .false
+      expect(await registry.isEntityRegistered(provider.address)).to.be.true
+      expect(await registry.requiresApprovalForAgreements(provider.address)).to
+        .be.false
     })
 
     it('should register a new entity with approval required', async function () {
-      const { registry, addr1 } = await deployDivviRegistryContract()
+      const { registry, provider } = await deployDivviRegistryContract()
 
-      await expect(registry.registerRewardsEntity(addr1.address, true))
+      await expect(registry.registerRewardsEntity(provider.address, true))
         .to.emit(registry, 'RewardsEntityRegistered')
-        .withArgs(addr1.address, true)
+        .withArgs(provider.address, true)
 
-      expect(await registry.isEntityRegistered(addr1.address)).to.be.true
-      expect(await registry.requiresApprovalForAgreements(addr1.address)).to.be
-        .true
+      expect(await registry.isEntityRegistered(provider.address)).to.be.true
+      expect(await registry.requiresApprovalForAgreements(provider.address)).to
+        .be.true
     })
 
     it('should revert when registering zero address', async function () {
@@ -55,122 +55,150 @@ describe(CONTRACT_NAME, function () {
     })
 
     it('should revert when registering an existing entity', async function () {
-      const { registry, addr1 } = await deployDivviRegistryContract()
+      const { registry, provider } = await deployDivviRegistryContract()
 
-      await registry.registerRewardsEntity(addr1.address, false)
+      await registry.registerRewardsEntity(provider.address, false)
 
-      await expect(registry.registerRewardsEntity(addr1.address, false))
+      await expect(registry.registerRewardsEntity(provider.address, false))
         .to.be.revertedWithCustomError(registry, 'EntityAlreadyExists')
-        .withArgs(addr1.address)
+        .withArgs(provider.address)
     })
   })
 
   describe('Agreement Management', function () {
-    it('should register an agreement when approval not required', async function () {
-      const { registry, addr1, addr2 } = await deployDivviRegistryContract()
+    it('should allow the consumer to register an agreement with a provider who does not need approval', async function () {
+      const { registry, provider, consumer } =
+        await deployDivviRegistryContract()
 
       // Register entities
-      await registry.registerRewardsEntity(addr1.address, false) // Provider
-      await registry.registerRewardsEntity(addr2.address, false) // Consumer
+      await registry.registerRewardsEntity(provider.address, false) // Provider
+      await registry.registerRewardsEntity(consumer.address, false) // Consumer
 
       const registryContractAsConsumer = registry.connect(
-        addr2,
+        consumer,
       ) as typeof registry
 
       // Register agreement
       await expect(
-        registryContractAsConsumer.registerRewardsAgreement(addr1.address),
+        registryContractAsConsumer.registerAgreementAsConsumer(
+          provider.address,
+        ),
       )
         .to.emit(registry, 'RewardsAgreementRegistered')
-        .withArgs(addr1.address, addr2.address)
+        .withArgs(provider.address, consumer.address)
 
-      expect(await registry.agreementExists(addr2.address, addr1.address)).to.be
-        .true
+      expect(await registry.agreementExists(provider.address, consumer.address))
+        .to.be.true
     })
 
-    it('should register and approve an agreement when approval required', async function () {
-      const { registry, addr1, addr2 } = await deployDivviRegistryContract()
+    it('should revert when consumer tries to register an agreement with a provider needs approval', async function () {
+      const { registry, provider, consumer } =
+        await deployDivviRegistryContract()
 
       // Register entities
-      await registry.registerRewardsEntity(addr1.address, true) // Provider
-      await registry.registerRewardsEntity(addr2.address, false) // Consumer
+      await registry.registerRewardsEntity(provider.address, true) // Provider
+      await registry.registerRewardsEntity(consumer.address, false) // Consumer
 
       // Register agreement as consumer reverts
       const registryContractAsConsumer = registry.connect(
-        addr2,
+        consumer,
       ) as typeof registry
       await expect(
-        registryContractAsConsumer.registerRewardsAgreement(addr1.address),
+        registryContractAsConsumer.registerAgreementAsConsumer(
+          provider.address,
+        ),
       )
         .to.be.revertedWithCustomError(registry, 'ProviderRequiresApproval')
-        .withArgs(addr1.address)
-
-      // Approving agreement succeeds
-      const registryContractAsProvider = registry.connect(
-        addr1,
-      ) as typeof registry
-      await expect(
-        registryContractAsProvider.approveRewardsAgreement(addr2.address),
-      )
-        .to.emit(registry, 'RewardsAgreementApproved')
-        .withArgs(addr1.address, addr2.address)
-
-      expect(await registry.agreementExists(addr2.address, addr1.address)).to.be
-        .true
+        .withArgs(provider.address)
     })
 
     it('should revert when registering agreement with unregistered entity', async function () {
-      const { registry, addr1, addr2 } = await deployDivviRegistryContract()
+      const { registry, provider, consumer } =
+        await deployDivviRegistryContract()
 
-      await registry.registerRewardsEntity(addr1.address, false) // Provider only
+      await registry.registerRewardsEntity(provider.address, false) // Provider only
       const registryContractAsConsumer = registry.connect(
-        addr2,
+        consumer,
       ) as typeof registry
 
       await expect(
-        registryContractAsConsumer.registerRewardsAgreement(addr1.address),
+        registryContractAsConsumer.registerAgreementAsConsumer(
+          provider.address,
+        ),
       )
         .to.be.revertedWithCustomError(registry, 'EntityDoesNotExist')
-        .withArgs(addr2.address)
+        .withArgs(consumer.address)
     })
 
     it('should revert when registering duplicate agreement', async function () {
-      const { registry, addr1, addr2 } = await deployDivviRegistryContract()
+      const { registry, provider, consumer } =
+        await deployDivviRegistryContract()
 
       // Register entities
-      await registry.registerRewardsEntity(addr1.address, false) // Provider
-      await registry.registerRewardsEntity(addr2.address, false) // Consumer
+      await registry.registerRewardsEntity(provider.address, false) // Provider
+      await registry.registerRewardsEntity(consumer.address, false) // Consumer
 
       // Register agreement
       const registryContractAsConsumer = registry.connect(
-        addr2,
+        consumer,
       ) as typeof registry
-      await registryContractAsConsumer.registerRewardsAgreement(addr1.address)
+      await registryContractAsConsumer.registerAgreementAsConsumer(
+        provider.address,
+      )
 
       // Try to register again
       await expect(
-        registryContractAsConsumer.registerRewardsAgreement(addr1.address),
+        registryContractAsConsumer.registerAgreementAsConsumer(
+          provider.address,
+        ),
       )
         .to.be.revertedWithCustomError(registry, 'AgreementAlreadyExists')
-        .withArgs(addr1.address, addr2.address)
+        .withArgs(provider.address, consumer.address)
+    })
+
+    it('should allow the provider to register an agreement with a consumer', async function () {
+      const { registry, provider, consumer } =
+        await deployDivviRegistryContract()
+
+      // Register entities
+      await registry.registerRewardsEntity(provider.address, false) // Provider
+      await registry.registerRewardsEntity(consumer.address, false) // Consumer
+
+      const registryContractAsProvider = registry.connect(
+        provider,
+      ) as typeof registry
+
+      // Register agreement
+      await expect(
+        registryContractAsProvider.registerAgreementAsProvider(
+          consumer.address,
+        ),
+      )
+        .to.emit(registry, 'RewardsAgreementRegistered')
+        .withArgs(provider.address, consumer.address)
+
+      expect(await registry.agreementExists(provider.address, consumer.address))
+        .to.be.true
     })
   })
 
   describe('Referral Management', function () {
     it('should register a referral', async function () {
-      const { registry, owner, addr1, addr2, addr3 } =
+      const { registry, owner, provider, consumer, user } =
         await deployDivviRegistryContract()
 
       // Register entities
-      await registry.registerRewardsEntity(addr1.address, false) // Provider
-      await registry.registerRewardsEntity(addr2.address, false) // Consumer
+      await registry.registerRewardsEntity(provider.address, false) // Provider
+      await registry.registerRewardsEntity(consumer.address, false) // Consumer
 
       const registryContractAsConsumer = registry.connect(
-        addr2,
+        consumer,
       ) as typeof registry
 
       // Register agreement
-      await registryContractAsConsumer.registerRewardsAgreement(addr1.address)
+      await registryContractAsConsumer.registerAgreementAsConsumer(
+        provider.address,
+      )
 
       // Grant referral registrar role
       await registry.grantRole(
@@ -180,62 +208,77 @@ describe(CONTRACT_NAME, function () {
 
       // Register referral
       await expect(
-        registry.registerReferral(addr3.address, addr2.address, addr1.address),
+        registry.registerReferral(
+          user.address,
+          provider.address,
+          consumer.address,
+        ),
       )
         .to.emit(registry, 'ReferralRegistered')
-        .withArgs(addr3.address, addr2.address, addr1.address)
+        .withArgs(user.address, provider.address, consumer.address)
 
       expect(
-        await registry.getReferringConsumer(addr3.address, addr1.address),
-      ).to.equal(addr2.address)
+        await registry.getReferringConsumer(user.address, provider.address),
+      ).to.equal(consumer.address)
     })
 
     it('should revert when registering referral without role', async function () {
-      const { registry, addr1, addr2, addr3 } =
+      const { registry, provider, consumer, user } =
         await deployDivviRegistryContract()
 
       // Register entities
-      await registry.registerRewardsEntity(addr1.address, false) // Provider
-      await registry.registerRewardsEntity(addr2.address, false) // Consumer
+      await registry.registerRewardsEntity(provider.address, false) // Provider
+      await registry.registerRewardsEntity(consumer.address, false) // Consumer
 
       const registryContractAsConsumer = registry.connect(
-        addr2,
+        consumer,
       ) as typeof registry
 
       // Register agreement
-      await registryContractAsConsumer.registerRewardsAgreement(addr1.address)
+      await registryContractAsConsumer.registerAgreementAsConsumer(
+        provider.address,
+      )
 
       await expect(
         registryContractAsConsumer.registerReferral(
-          addr3.address,
-          addr2.address,
-          addr1.address,
+          user.address,
+          provider.address,
+          consumer.address,
         ),
       )
         .to.be.revertedWithCustomError(registry, 'MissingReferralRegistrarRole')
-        .withArgs(addr2.address)
+        .withArgs(consumer.address)
     })
 
     it('should revert when registering duplicate referral', async function () {
       const mockUserAddress = '0x1234567890123456789012345678901234567890'
-      const { registry, owner, addr1, addr2, addr3 } =
-        await deployDivviRegistryContract()
+      const {
+        registry,
+        owner,
+        provider,
+        consumer: consumer1,
+        user: consumer2,
+      } = await deployDivviRegistryContract()
 
       // Register entities
-      await registry.registerRewardsEntity(addr1.address, false) // Provider
-      await registry.registerRewardsEntity(addr2.address, false) // Consumer1
-      await registry.registerRewardsEntity(addr3.address, false) // Consumer2
+      await registry.registerRewardsEntity(provider.address, false) // Provider
+      await registry.registerRewardsEntity(consumer1.address, false) // Consumer1
+      await registry.registerRewardsEntity(consumer2.address, false) // Consumer2
 
       const registryContractAsConsumer1 = registry.connect(
-        addr2,
+        consumer1,
       ) as typeof registry
       const registryContractAsConsumer2 = registry.connect(
-        addr3,
+        consumer2,
       ) as typeof registry
 
       // Register agreements
-      await registryContractAsConsumer1.registerRewardsAgreement(addr1.address)
-      await registryContractAsConsumer2.registerRewardsAgreement(addr1.address)
+      await registryContractAsConsumer1.registerAgreementAsConsumer(
+        provider.address,
+      )
+      await registryContractAsConsumer2.registerAgreementAsConsumer(
+        provider.address,
+      )
 
       // Grant referral registrar role
       await registry.grantRole(
@@ -246,33 +289,33 @@ describe(CONTRACT_NAME, function () {
       // Register referral of user to provider with consumer1
       await registry.registerReferral(
         mockUserAddress,
-        addr2.address,
-        addr1.address,
+        provider.address,
+        consumer1.address,
       )
 
       // Try to register the user to the provider with consumer2
       await expect(
         registry.registerReferral(
           mockUserAddress,
-          addr3.address,
-          addr1.address,
+          provider.address,
+          consumer2.address,
         ),
       )
         .to.be.revertedWithCustomError(registry, 'UserAlreadyReferred')
-        .withArgs(mockUserAddress, addr1.address)
+        .withArgs(mockUserAddress, provider.address)
     })
   })
 
   describe('Approval Settings', function () {
     it('should update approval requirement', async function () {
-      const { registry, addr1 } = await deployDivviRegistryContract()
+      const { registry, provider } = await deployDivviRegistryContract()
 
       // Register entity
-      await registry.registerRewardsEntity(addr1.address, false)
+      await registry.registerRewardsEntity(provider.address, false)
 
       // Update approval requirement
       const registryContractAsProvider = registry.connect(
-        addr1,
+        provider,
       ) as typeof registry
       await expect(
         registryContractAsProvider.setRequiresApprovalForRewardsAgreements(
@@ -280,17 +323,17 @@ describe(CONTRACT_NAME, function () {
         ),
       )
         .to.emit(registry, 'RequiresApprovalForRewardsAgreements')
-        .withArgs(addr1.address, true)
+        .withArgs(provider.address, true)
 
-      expect(await registry.requiresApprovalForAgreements(addr1.address)).to.be
-        .true
+      expect(await registry.requiresApprovalForAgreements(provider.address)).to
+        .be.true
     })
 
     it('should revert when non-entity tries to update approval requirement', async function () {
-      const { registry, addr1 } = await deployDivviRegistryContract()
+      const { registry, provider } = await deployDivviRegistryContract()
 
       const registryContractAsUnkownAddress = registry.connect(
-        addr1,
+        provider,
       ) as typeof registry
       await expect(
         registryContractAsUnkownAddress.setRequiresApprovalForRewardsAgreements(
@@ -298,7 +341,7 @@ describe(CONTRACT_NAME, function () {
         ),
       )
         .to.be.revertedWithCustomError(registry, 'EntityDoesNotExist')
-        .withArgs(addr1.address)
+        .withArgs(provider.address)
     })
   })
 })
