@@ -52,7 +52,6 @@ contract DivviRegistry is
   error AgreementDoesNotExist(address provider, address consumer);
   error ProviderRequiresApproval(address provider);
   error UserAlreadyReferred(address user, address provider);
-  error MissingReferralRegistrarRole(address account);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -81,7 +80,7 @@ contract DivviRegistry is
 
   /**
    * @notice Register a new rewards entity
-   * @param entity The entity address to register
+   * @param entity An address that the entity owns, which will be used to identify the entity and call privileged functions on this contract
    * @param requiresApproval Whether the entity requires approval for agreements
    */
   function registerRewardsEntity(
@@ -169,11 +168,12 @@ contract DivviRegistry is
     address user,
     address rewardsProvider,
     address rewardsConsumer
-  ) external entityExists(rewardsProvider) entityExists(rewardsConsumer) {
-    if (!hasRole(REFERRAL_REGISTRAR_ROLE, msg.sender)) {
-      revert MissingReferralRegistrarRole(msg.sender);
-    }
-
+  )
+    external
+    onlyRole(REFERRAL_REGISTRAR_ROLE)
+    entityExists(rewardsProvider)
+    entityExists(rewardsConsumer)
+  {
     // Check if agreement exists
     bytes32 agreementKey = keccak256(
       abi.encodePacked(rewardsProvider, rewardsConsumer)

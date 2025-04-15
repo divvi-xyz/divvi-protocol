@@ -245,9 +245,10 @@ describe(CONTRACT_NAME, function () {
           provider.address,
           consumer.address,
         ),
+      ).to.be.revertedWithCustomError(
+        registry,
+        'AccessControlUnauthorizedAccount',
       )
-        .to.be.revertedWithCustomError(registry, 'MissingReferralRegistrarRole')
-        .withArgs(consumer.address)
     })
 
     it('should revert when registering duplicate referral', async function () {
