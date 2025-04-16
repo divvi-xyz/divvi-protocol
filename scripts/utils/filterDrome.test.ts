@@ -1,7 +1,11 @@
 import { QueryResponse } from '@envio-dev/hypersync-client'
 import { NetworkId, ReferralEvent } from '../types'
-import { getBlock, getHyperSyncClient } from '../utils'
-import { filter } from './aerodrome'
+import { getBlock, getHyperSyncClient } from '.'
+import { filterDrome } from './filterDrome'
+import {
+  AERODROME_NETWORK_ID,
+  AERODROME_UNIVERSAL_ROUTER_ADDRESS,
+} from '../calculateRevenue/protocols/aerodrome/constants'
 
 jest.mock('../utils', () => ({
   getHyperSyncClient: jest.fn(),
@@ -22,7 +26,7 @@ const makeQueryResponse = (
   totalExecutionTime: 50,
 })
 
-describe('filter', () => {
+describe('filterDrome', () => {
   const userAddress = '0xUser'
   const event: ReferralEvent = {
     userAddress: userAddress,
@@ -52,7 +56,11 @@ describe('filter', () => {
         }) as unknown as ReturnType<typeof getBlock>,
     )
 
-    const result = await filter(event)
+    const result = await filterDrome({
+      event,
+      routerAddress: AERODROME_UNIVERSAL_ROUTER_ADDRESS,
+      networkId: AERODROME_NETWORK_ID,
+    })
     expect(result).toBe(false)
     expect(mockClient.get).toHaveBeenCalledTimes(1)
     expect(getBlock).toHaveBeenCalled()
@@ -68,7 +76,11 @@ describe('filter', () => {
         }) as unknown as ReturnType<typeof getBlock>,
     )
 
-    const result = await filter(event)
+    const result = await filterDrome({
+      event,
+      routerAddress: AERODROME_UNIVERSAL_ROUTER_ADDRESS,
+      networkId: AERODROME_NETWORK_ID,
+    })
     expect(result).toBe(true)
     expect(mockClient.get).toHaveBeenCalledTimes(1)
     expect(getBlock).toHaveBeenCalled()
@@ -79,7 +91,11 @@ describe('filter', () => {
       .mockResolvedValueOnce(makeQueryResponse([]))
       .mockResolvedValueOnce(makeQueryResponse([])) // causes loop to break
 
-    const result = await filter(event)
+    const result = await filterDrome({
+      event,
+      routerAddress: AERODROME_UNIVERSAL_ROUTER_ADDRESS,
+      networkId: AERODROME_NETWORK_ID,
+    })
     expect(result).toBe(false)
     expect(mockClient.get).toHaveBeenCalledTimes(2)
     expect(getBlock).not.toHaveBeenCalled()
@@ -105,7 +121,11 @@ describe('filter', () => {
         }) as unknown as ReturnType<typeof getBlock>,
     )
 
-    const result = await filter(event)
+    const result = await filterDrome({
+      event,
+      routerAddress: AERODROME_UNIVERSAL_ROUTER_ADDRESS,
+      networkId: AERODROME_NETWORK_ID,
+    })
     expect(result).toBe(true)
     expect(mockClient.get).toHaveBeenCalledTimes(3)
     expect(getBlock).toHaveBeenCalledTimes(1)
@@ -114,7 +134,13 @@ describe('filter', () => {
   it('throws if API fails', async () => {
     mockClient.get.mockRejectedValueOnce(new Error('API failed'))
 
-    await expect(filter(event)).rejects.toThrow('API failed')
+    await expect(
+      filterDrome({
+        event,
+        routerAddress: AERODROME_UNIVERSAL_ROUTER_ADDRESS,
+        networkId: AERODROME_NETWORK_ID,
+      }),
+    ).rejects.toThrow('API failed')
     expect(mockClient.get).toHaveBeenCalledTimes(1)
   })
 })

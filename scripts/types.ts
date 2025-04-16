@@ -5,6 +5,8 @@ export const protocols = [
   'celo',
   'arbitrum',
   'velodrome',
+  'fonbnk',
+  'aave',
 ] as const
 export type Protocol = (typeof protocols)[number]
 export type FilterFunction = (
