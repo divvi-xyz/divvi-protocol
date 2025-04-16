@@ -496,6 +496,12 @@ describe(CONTRACT_NAME, function () {
         )
 
       expect(
+        await registry.isUserReferredToProvider(
+          mockUserAddress,
+          provider.address,
+        ),
+      ).to.equal(true)
+      expect(
         await registry.getReferringConsumer(mockUserAddress, provider.address),
       ).to.equal(consumer.address)
     })

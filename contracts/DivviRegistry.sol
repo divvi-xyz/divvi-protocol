@@ -219,7 +219,7 @@ contract DivviRegistry is
       return;
     }
 
-    // Skip if user is already referred to this provider
+    // Check if user is already referred to this provider
     bytes32 referralKey = keccak256(abi.encodePacked(user, rewardsProvider));
     if (_registeredReferrals[referralKey] != address(0)) {
       emit ReferralSkipped(
@@ -287,7 +287,7 @@ contract DivviRegistry is
   }
 
   /**
-   * @notice Check if an entity requires approval for agreements
+   * @notice Check if a rewards provider entity requires approval to form an agreement
    * @param entity The entity address to check
    * @return requiresApproval Whether the entity requires approval
    */
@@ -295,6 +295,19 @@ contract DivviRegistry is
     address entity
   ) external view returns (bool requiresApproval) {
     return _requiresApproval[entity];
+  }
+
+  /**
+   * @notice Check if a user has been referred to a provider
+   * @param user The address of the user
+   * @param provider The address of the provider entity
+   * @return isReferred Whether the user has been referred to the provider
+   */
+  function isUserReferredToProvider(
+    address user,
+    address provider
+  ) external view returns (bool isReferred) {
+    return getReferringConsumer(user, provider) != address(0);
   }
 
   /**
@@ -306,7 +319,7 @@ contract DivviRegistry is
   function getReferringConsumer(
     address user,
     address provider
-  ) external view returns (address consumer) {
+  ) public view returns (address consumer) {
     bytes32 referralKey = keccak256(abi.encodePacked(user, provider));
     return _registeredReferrals[referralKey];
   }
