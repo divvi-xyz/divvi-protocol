@@ -182,331 +182,6 @@ describe(CONTRACT_NAME, function () {
     })
   })
 
-  describe('Referral Management', function () {
-    const mockUserAddress = '0x1234567890123456789012345678901234567890'
-    const txHash = hre.ethers.keccak256(hre.ethers.toUtf8Bytes('test-tx'))
-    const chainId = 1
-
-    it('should register a referral', async function () {
-      const {
-        registry,
-        owner,
-        provider,
-        consumer,
-        extraUser: user,
-      } = await deployDivviRegistryContract()
-
-      // Register entities
-      await registry.registerRewardsEntity(provider.address, false) // Provider
-      await registry.registerRewardsEntity(consumer.address, false) // Consumer
-
-      const registryContractAsConsumer = registry.connect(
-        consumer,
-      ) as typeof registry
-
-      // Register agreement
-      await registryContractAsConsumer.registerAgreementAsConsumer(
-        provider.address,
-      )
-
-      // Grant referral registrar role
-      await registry.grantRole(
-        await registry.REFERRAL_REGISTRAR_ROLE(),
-        owner.address,
-      )
-
-      // Register referral
-      await expect(
-        registry.registerReferral(
-          user.address,
-          provider.address,
-          consumer.address,
-          txHash,
-          chainId,
-        ),
-      )
-        .to.emit(registry, 'ReferralRegistered')
-        .withArgs(
-          user.address,
-          provider.address,
-          consumer.address,
-          chainId,
-          txHash,
-        )
-
-      expect(
-        await registry.getReferringConsumer(user.address, provider.address),
-      ).to.equal(consumer.address)
-    })
-
-    for (const entityType of ['provider', 'consumer']) {
-      it(`should emit ReferralSkipped when ${entityType} entity does not exist`, async function () {
-        const {
-          registry,
-          owner,
-          provider,
-          consumer,
-          extraUser: user,
-        } = await deployDivviRegistryContract()
-
-        // Register only provider entity
-        await registry.registerRewardsEntity(
-          entityType === 'provider' ? provider.address : consumer.address,
-          false,
-        )
-
-        // Grant referral registrar role
-        await registry.grantRole(
-          await registry.REFERRAL_REGISTRAR_ROLE(),
-          owner.address,
-        )
-
-        // Register referral
-        await expect(
-          registry.registerReferral(
-            user.address,
-            provider.address,
-            consumer.address,
-            txHash,
-            chainId,
-          ),
-        )
-          .to.emit(registry, 'ReferralSkipped')
-          .withArgs(
-            user.address,
-            provider.address,
-            consumer.address,
-            chainId,
-            txHash,
-            'One or both rewards entities do not exist',
-          )
-
-        expect(
-          await registry.getReferringConsumer(user.address, provider.address),
-        ).to.equal(hre.ethers.ZeroAddress)
-      })
-    }
-
-    it('should emit ReferralSkipped when agreement does not exist', async function () {
-      const {
-        registry,
-        owner,
-        provider,
-        consumer,
-        extraUser: user,
-      } = await deployDivviRegistryContract()
-
-      // Register entities
-      await registry.registerRewardsEntity(provider.address, false)
-      await registry.registerRewardsEntity(consumer.address, false)
-
-      // Grant referral registrar role
-      await registry.grantRole(
-        await registry.REFERRAL_REGISTRAR_ROLE(),
-        owner.address,
-      )
-
-      // Register referral
-      await expect(
-        registry.registerReferral(
-          user.address,
-          provider.address,
-          consumer.address,
-          txHash,
-          chainId,
-        ),
-      )
-        .to.emit(registry, 'ReferralSkipped')
-        .withArgs(
-          user.address,
-          provider.address,
-          consumer.address,
-          chainId,
-          txHash,
-          'Agreement does not exist between rewards provider and rewards consumer',
-        )
-
-      expect(
-        await registry.getReferringConsumer(user.address, provider.address),
-      ).to.equal(hre.ethers.ZeroAddress)
-    })
-
-    it('should revert when registering referral without role', async function () {
-      const {
-        registry,
-        provider,
-        consumer,
-        extraUser: user,
-      } = await deployDivviRegistryContract()
-
-      // Register entities
-      await registry.registerRewardsEntity(provider.address, false) // Provider
-      await registry.registerRewardsEntity(consumer.address, false) // Consumer
-
-      const registryContractAsConsumer = registry.connect(
-        consumer,
-      ) as typeof registry
-
-      // Register agreement
-      await registryContractAsConsumer.registerAgreementAsConsumer(
-        provider.address,
-      )
-
-      await expect(
-        registryContractAsConsumer.registerReferral(
-          user.address,
-          provider.address,
-          consumer.address,
-          txHash,
-          chainId,
-        ),
-      ).to.be.revertedWithCustomError(
-        registry,
-        'AccessControlUnauthorizedAccount',
-      )
-    })
-
-    it('should emit ReferralSkipped when registering duplicate referral', async function () {
-      const {
-        registry,
-        owner,
-        provider,
-        consumer: consumer1,
-        extraUser: consumer2,
-      } = await deployDivviRegistryContract()
-
-      // Register entities
-      await registry.registerRewardsEntity(provider.address, false) // Provider
-      await registry.registerRewardsEntity(consumer1.address, false) // Consumer1
-      await registry.registerRewardsEntity(consumer2.address, false) // Consumer2
-
-      const registryContractAsConsumer1 = registry.connect(
-        consumer1,
-      ) as typeof registry
-      const registryContractAsConsumer2 = registry.connect(
-        consumer2,
-      ) as typeof registry
-
-      // Register agreements
-      await registryContractAsConsumer1.registerAgreementAsConsumer(
-        provider.address,
-      )
-      await registryContractAsConsumer2.registerAgreementAsConsumer(
-        provider.address,
-      )
-
-      // Grant referral registrar role
-      await registry.grantRole(
-        await registry.REFERRAL_REGISTRAR_ROLE(),
-        owner.address,
-      )
-
-      // Register referral of user to provider with consumer1
-      await registry.registerReferral(
-        mockUserAddress,
-        provider.address,
-        consumer1.address,
-        txHash,
-        chainId,
-      )
-
-      // Try to register the user to the provider with consumer2
-      await expect(
-        registry.registerReferral(
-          mockUserAddress,
-          provider.address,
-          consumer2.address,
-          txHash,
-          chainId,
-        ),
-      )
-        .to.emit(registry, 'ReferralSkipped')
-        .withArgs(
-          mockUserAddress,
-          provider.address,
-          consumer2.address,
-          chainId,
-          txHash,
-          'User has already been referred to this rewards provider',
-        )
-
-      expect(
-        await registry.getReferringConsumer(mockUserAddress, provider.address),
-      ).to.equal(consumer1.address)
-    })
-
-    it('should emit ReferralSkipped when transaction has already been used', async function () {
-      const {
-        registry,
-        owner,
-        provider,
-        consumer,
-        extraUser: provider1,
-      } = await deployDivviRegistryContract()
-
-      // Register entities
-      await registry.registerRewardsEntity(provider.address, false)
-      await registry.registerRewardsEntity(provider1.address, false)
-      await registry.registerRewardsEntity(consumer.address, false)
-
-      // Register agreements
-      const registryContractAsConsumer = registry.connect(
-        consumer,
-      ) as typeof registry
-      await registryContractAsConsumer.registerAgreementAsConsumer(
-        provider.address,
-      )
-      await registryContractAsConsumer.registerAgreementAsConsumer(
-        provider1.address,
-      )
-
-      // Grant referral registrar role
-      await registry.grantRole(
-        await registry.REFERRAL_REGISTRAR_ROLE(),
-        owner.address,
-      )
-
-      // Register referral first time
-      await registry.registerReferral(
-        mockUserAddress,
-        provider.address,
-        consumer.address,
-        txHash,
-        chainId,
-      )
-
-      // Try to register with the same transaction hash to a different provider
-      await expect(
-        registry.registerReferral(
-          mockUserAddress,
-          provider1.address,
-          consumer.address,
-          txHash,
-          chainId,
-        ),
-      )
-        .to.emit(registry, 'ReferralSkipped')
-        .withArgs(
-          mockUserAddress,
-          provider1.address,
-          consumer.address,
-          chainId,
-          txHash,
-          'Transaction has already been used to register a referral',
-        )
-
-      expect(
-        await registry.isUserReferredToProvider(
-          mockUserAddress,
-          provider.address,
-        ),
-      ).to.equal(true)
-      expect(
-        await registry.getReferringConsumer(mockUserAddress, provider.address),
-      ).to.equal(consumer.address)
-    })
-  })
-
   describe('Agreement Approval Settings', function () {
     it('should update approval requirement', async function () {
       const { registry, provider } = await deployDivviRegistryContract()
@@ -543,6 +218,285 @@ describe(CONTRACT_NAME, function () {
       )
         .to.be.revertedWithCustomError(registry, 'EntityDoesNotExist')
         .withArgs(provider.address)
+    })
+  })
+
+  describe('Batch Referral Registration', function () {
+    const mockUserAddress = '0x1234567890123456789012345678901234567890'
+    const mockUserAddress2 = '0x1234567890123456789012345678901234567891'
+    const chainId = 1
+    const txHash1 = hre.ethers.keccak256(hre.ethers.toUtf8Bytes('test-tx-1'))
+    const txHash2 = hre.ethers.keccak256(hre.ethers.toUtf8Bytes('test-tx-2'))
+
+    it('should register multiple referrals in a single transaction', async function () {
+      const { registry, owner, provider, consumer } =
+        await deployDivviRegistryContract()
+
+      // Register entities
+      await registry.registerRewardsEntity(provider.address, false)
+      await registry.registerRewardsEntity(consumer.address, false)
+
+      // Register agreement
+      const registryContractAsConsumer = registry.connect(
+        consumer,
+      ) as typeof registry
+      await registryContractAsConsumer.registerAgreementAsConsumer(
+        provider.address,
+      )
+
+      // Grant registrar role
+      await registry.grantRole(
+        await registry.REFERRAL_REGISTRAR_ROLE(),
+        owner.address,
+      )
+
+      // Register multiple referrals
+      await expect(
+        registry.batchRegisterReferral([
+          {
+            user: mockUserAddress,
+            rewardsProvider: provider.address,
+            rewardsConsumer: consumer.address,
+            txHash: txHash1,
+            chainId,
+          },
+          {
+            user: mockUserAddress2,
+            rewardsProvider: provider.address,
+            rewardsConsumer: consumer.address,
+            txHash: txHash2,
+            chainId,
+          },
+        ]),
+      )
+        .to.emit(registry, 'ReferralRegistered')
+        .withArgs(
+          mockUserAddress,
+          provider.address,
+          consumer.address,
+          chainId,
+          txHash1,
+        )
+        .to.emit(registry, 'ReferralRegistered')
+        .withArgs(
+          mockUserAddress2,
+          provider.address,
+          consumer.address,
+          chainId,
+          txHash2,
+        )
+
+      expect(
+        await registry.isUserReferredToProvider(
+          mockUserAddress,
+          provider.address,
+        ),
+      ).to.be.true
+      expect(
+        await registry.isUserReferredToProvider(
+          mockUserAddress2,
+          provider.address,
+        ),
+      ).to.be.true
+    })
+
+    it('should handle mixed success and failure in batch registration', async function () {
+      const { registry, owner, provider, consumer } =
+        await deployDivviRegistryContract()
+
+      // Register entities
+      await registry.registerRewardsEntity(provider.address, false)
+      await registry.registerRewardsEntity(consumer.address, false)
+
+      // Register agreement
+      const registryContractAsConsumer = registry.connect(
+        consumer,
+      ) as typeof registry
+      await registryContractAsConsumer.registerAgreementAsConsumer(
+        provider.address,
+      )
+
+      // Grant registrar role
+      await registry.grantRole(
+        await registry.REFERRAL_REGISTRAR_ROLE(),
+        owner.address,
+      )
+
+      // Register first referral
+      await registry.batchRegisterReferral([
+        {
+          user: mockUserAddress,
+          rewardsProvider: provider.address,
+          rewardsConsumer: consumer.address,
+          txHash: txHash1,
+          chainId,
+        },
+      ])
+
+      // Try to register both a new referral and a duplicate
+      await expect(
+        registry.batchRegisterReferral([
+          {
+            user: mockUserAddress2,
+            rewardsProvider: provider.address,
+            rewardsConsumer: consumer.address,
+            txHash: txHash2,
+            chainId,
+          },
+          {
+            user: mockUserAddress,
+            rewardsProvider: provider.address,
+            rewardsConsumer: consumer.address,
+            txHash: txHash1,
+            chainId,
+          },
+        ]),
+      )
+        .to.emit(registry, 'ReferralRegistered')
+        .withArgs(
+          mockUserAddress2,
+          provider.address,
+          consumer.address,
+          chainId,
+          txHash2,
+        )
+        .to.emit(registry, 'ReferralSkipped')
+        .withArgs(
+          mockUserAddress,
+          provider.address,
+          consumer.address,
+          chainId,
+          txHash1,
+          'User has already been referred to this rewards provider',
+        )
+
+      expect(
+        await registry.isUserReferredToProvider(
+          mockUserAddress,
+          provider.address,
+        ),
+      ).to.be.true
+      expect(
+        await registry.isUserReferredToProvider(
+          mockUserAddress2,
+          provider.address,
+        ),
+      ).to.be.true
+    })
+
+    it('should emit ReferralSkipped when either provider or consumer entity does not exist', async function () {
+      const { registry, owner, provider, consumer, extraUser } =
+        await deployDivviRegistryContract()
+
+      // Register only the provider
+      await registry.registerRewardsEntity(provider.address, false)
+
+      // Grant registrar role
+      await registry.grantRole(
+        await registry.REFERRAL_REGISTRAR_ROLE(),
+        owner.address,
+      )
+
+      // Try to register referral with non-existent consumer
+      await expect(
+        registry.batchRegisterReferral([
+          {
+            user: extraUser.address,
+            rewardsProvider: provider.address,
+            rewardsConsumer: consumer.address,
+            txHash: txHash1,
+            chainId,
+          },
+        ]),
+      )
+        .to.emit(registry, 'ReferralSkipped')
+        .withArgs(
+          extraUser.address,
+          provider.address,
+          consumer.address,
+          chainId,
+          txHash1,
+          'One or both rewards entities do not exist',
+        )
+
+      expect(
+        await registry.isUserReferredToProvider(
+          extraUser.address,
+          provider.address,
+        ),
+      ).to.be.false
+    })
+
+    it('should emit ReferralSkipped when agreement does not exist', async function () {
+      const { registry, owner, provider, consumer, extraUser } =
+        await deployDivviRegistryContract()
+
+      // Register entities
+      await registry.registerRewardsEntity(provider.address, false)
+      await registry.registerRewardsEntity(consumer.address, false)
+
+      // Grant registrar role
+      await registry.grantRole(
+        await registry.REFERRAL_REGISTRAR_ROLE(),
+        owner.address,
+      )
+
+      // Try to register referral without agreement
+      await expect(
+        registry.batchRegisterReferral([
+          {
+            user: extraUser.address,
+            rewardsProvider: provider.address,
+            rewardsConsumer: consumer.address,
+            txHash: txHash1,
+            chainId,
+          },
+        ]),
+      )
+        .to.emit(registry, 'ReferralSkipped')
+        .withArgs(
+          extraUser.address,
+          provider.address,
+          consumer.address,
+          chainId,
+          txHash1,
+          'Agreement does not exist between rewards provider and rewards consumer',
+        )
+
+      expect(
+        await registry.isUserReferredToProvider(
+          extraUser.address,
+          provider.address,
+        ),
+      ).to.be.false
+    })
+
+    it('should revert when caller does not have REFERRAL_REGISTRAR_ROLE', async function () {
+      const { registry, provider, consumer, extraUser } =
+        await deployDivviRegistryContract()
+
+      // Try to register referral without role
+      await expect(
+        registry.batchRegisterReferral([
+          {
+            user: extraUser.address,
+            rewardsProvider: provider.address,
+            rewardsConsumer: consumer.address,
+            txHash: txHash1,
+            chainId,
+          },
+        ]),
+      ).to.be.revertedWithCustomError(
+        registry,
+        'AccessControlUnauthorizedAccount',
+      )
+
+      expect(
+        await registry.isUserReferredToProvider(
+          extraUser.address,
+          provider.address,
+        ),
+      ).to.be.false
     })
   })
 })

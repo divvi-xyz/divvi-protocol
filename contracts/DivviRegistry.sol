@@ -62,6 +62,23 @@ contract DivviRegistry is
   error AgreementAlreadyExists(address provider, address consumer);
   error ProviderRequiresApproval(address provider);
 
+  // Data structs
+  struct ReferralData {
+    address user;
+    address rewardsProvider;
+    address rewardsConsumer;
+    bytes32 txHash;
+    uint256 chainId;
+  }
+
+  enum ReferralStatus {
+    SUCCESS,
+    ENTITY_NOT_FOUND,
+    AGREEMENT_NOT_FOUND,
+    ALREADY_REGISTERED,
+    TX_ALREADY_USED
+  }
+
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
     _disableInitializers();
@@ -175,32 +192,78 @@ contract DivviRegistry is
   }
 
   /**
-   * @notice Register a user as being referred to a rewards agreement
+   * @notice Register multiple referrals in a single transaction
    * @dev Requires REFERRAL_REGISTRAR_ROLE
+   * @param referrals Array of referral data to register
+   */
+  function batchRegisterReferral(
+    ReferralData[] calldata referrals
+  ) external onlyRole(REFERRAL_REGISTRAR_ROLE) {
+    for (uint256 i = 0; i < referrals.length; i++) {
+      ReferralData calldata referral = referrals[i];
+
+      // Process the referral and get the status
+      ReferralStatus status = _registerReferral(
+        referral.user,
+        referral.rewardsProvider,
+        referral.rewardsConsumer,
+        referral.txHash,
+        referral.chainId
+      );
+
+      // Emit appropriate event based on status
+      if (status == ReferralStatus.SUCCESS) {
+        emit ReferralRegistered(
+          referral.user,
+          referral.rewardsProvider,
+          referral.rewardsConsumer,
+          referral.chainId,
+          referral.txHash
+        );
+      } else {
+        string memory reason;
+        if (status == ReferralStatus.ENTITY_NOT_FOUND) {
+          reason = 'One or both rewards entities do not exist';
+        } else if (status == ReferralStatus.AGREEMENT_NOT_FOUND) {
+          reason = 'Agreement does not exist between rewards provider and rewards consumer';
+        } else if (status == ReferralStatus.ALREADY_REGISTERED) {
+          reason = 'User has already been referred to this rewards provider';
+        } else if (status == ReferralStatus.TX_ALREADY_USED) {
+          reason = 'Transaction has already been used to register a referral';
+        }
+
+        emit ReferralSkipped(
+          referral.user,
+          referral.rewardsProvider,
+          referral.rewardsConsumer,
+          referral.chainId,
+          referral.txHash,
+          reason
+        );
+      }
+    }
+  }
+
+  /**
+   * @notice Register a user as being referred to a rewards agreement
+   * @dev Internal function that returns status instead of emitting events
    * @param user The address of the user being referred
    * @param rewardsProvider The address of the rewards provider entity
    * @param rewardsConsumer The address of the rewards consumer entity
    * @param txHash The hash of the transaction that initiated the referral
    * @param chainId The ID of the blockchain where the referral transaction occurred
+   * @return status The status of the referral registration
    */
-  function registerReferral(
+  function _registerReferral(
     address user,
     address rewardsProvider,
     address rewardsConsumer,
     bytes32 txHash,
     uint256 chainId
-  ) external onlyRole(REFERRAL_REGISTRAR_ROLE) {
+  ) internal returns (ReferralStatus status) {
     // Check if entities exist
     if (!_entities[rewardsProvider] || !_entities[rewardsConsumer]) {
-      emit ReferralSkipped(
-        user,
-        rewardsProvider,
-        rewardsConsumer,
-        chainId,
-        txHash,
-        'One or both rewards entities do not exist'
-      );
-      return;
+      return ReferralStatus.ENTITY_NOT_FOUND;
     }
 
     // Check if agreement exists
@@ -208,29 +271,13 @@ contract DivviRegistry is
       abi.encodePacked(rewardsProvider, rewardsConsumer)
     );
     if (!_agreements[agreementKey]) {
-      emit ReferralSkipped(
-        user,
-        rewardsProvider,
-        rewardsConsumer,
-        chainId,
-        txHash,
-        'Agreement does not exist between rewards provider and rewards consumer'
-      );
-      return;
+      return ReferralStatus.AGREEMENT_NOT_FOUND;
     }
 
     // Check if user is already referred to this provider
     bytes32 referralKey = keccak256(abi.encodePacked(user, rewardsProvider));
     if (_registeredReferrals[referralKey] != address(0)) {
-      emit ReferralSkipped(
-        user,
-        rewardsProvider,
-        rewardsConsumer,
-        chainId,
-        txHash,
-        'User has already been referred to this rewards provider'
-      );
-      return;
+      return ReferralStatus.ALREADY_REGISTERED;
     }
 
     // Check if transaction has already been used for registering a referral
@@ -238,27 +285,13 @@ contract DivviRegistry is
       abi.encodePacked(chainId, txHash)
     );
     if (_registrationTransactions[registrationTransactionKey]) {
-      emit ReferralSkipped(
-        user,
-        rewardsProvider,
-        rewardsConsumer,
-        chainId,
-        txHash,
-        'Transaction has already been used to register a referral'
-      );
-      return;
+      return ReferralStatus.TX_ALREADY_USED;
     }
 
     // Add referral
     _registeredReferrals[referralKey] = rewardsConsumer;
     _registrationTransactions[registrationTransactionKey] = true;
-    emit ReferralRegistered(
-      user,
-      rewardsProvider,
-      rewardsConsumer,
-      chainId,
-      txHash
-    );
+    return ReferralStatus.SUCCESS;
   }
 
   /**
