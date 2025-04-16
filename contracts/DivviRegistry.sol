@@ -22,7 +22,8 @@ contract DivviRegistry is
   mapping(address => bool) private _requiresApproval; // entity => boolean (if entity requires approval)
 
   // Referral tracking
-  mapping(bytes32 => address) private _userReferrals; // keccak256(user, provider) => consumer
+  mapping(bytes32 => address) private _registeredReferrals; // keccak256(user, provider) => consumer
+  mapping(bytes32 => bool) private _registrationTransactions; // keccak256(chainId, txHash) => true (if the transaction has been used for registering a referral)
 
   // Role constants
   bytes32 public constant REFERRAL_REGISTRAR_ROLE =
@@ -39,9 +40,19 @@ contract DivviRegistry is
     address indexed rewardsConsumer
   );
   event ReferralRegistered(
-    address indexed user,
+    address user,
     address indexed rewardsProvider,
-    address indexed rewardsConsumer
+    address indexed rewardsConsumer,
+    uint256 indexed chainId,
+    bytes32 txHash
+  );
+  event ReferralSkipped(
+    address indexed user,
+    address rewardsProvider,
+    address indexed rewardsConsumer,
+    uint256 chainId,
+    bytes32 indexed txHash,
+    string reason
   );
 
   // Errors
@@ -49,20 +60,26 @@ contract DivviRegistry is
   error EntityAlreadyExists(address entity);
   error EntityDoesNotExist(address entity);
   error AgreementAlreadyExists(address provider, address consumer);
-  error AgreementDoesNotExist(address provider, address consumer);
   error ProviderRequiresApproval(address provider);
-  error UserAlreadyReferred(address user, address provider);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
     _disableInitializers();
   }
 
+  /**
+   * @notice Initialize the contract with an owner and transfer delay
+   * @param owner The address that will have the DEFAULT_ADMIN_ROLE
+   * @param transferDelay The delay in seconds before admin role can be transferred
+   */
   function initialize(address owner, uint48 transferDelay) public initializer {
     __AccessControlDefaultAdminRules_init(transferDelay, owner);
     __UUPSUpgradeable_init();
   }
 
+  /**
+   * @notice Authorize contract upgrades
+   */
   function _authorizeUpgrade(
     address
   ) internal override onlyRole(DEFAULT_ADMIN_ROLE) {} // solhint-disable-line no-empty-blocks
@@ -163,34 +180,85 @@ contract DivviRegistry is
    * @param user The address of the user being referred
    * @param rewardsProvider The address of the rewards provider entity
    * @param rewardsConsumer The address of the rewards consumer entity
+   * @param txHash The hash of the transaction that initiated the referral
+   * @param chainId The ID of the blockchain where the referral transaction occurred
    */
   function registerReferral(
     address user,
     address rewardsProvider,
-    address rewardsConsumer
-  )
-    external
-    onlyRole(REFERRAL_REGISTRAR_ROLE)
-    entityExists(rewardsProvider)
-    entityExists(rewardsConsumer)
-  {
+    address rewardsConsumer,
+    bytes32 txHash,
+    uint256 chainId
+  ) external onlyRole(REFERRAL_REGISTRAR_ROLE) {
+    // Check if entities exist
+    if (!_entities[rewardsProvider] || !_entities[rewardsConsumer]) {
+      emit ReferralSkipped(
+        user,
+        rewardsProvider,
+        rewardsConsumer,
+        chainId,
+        txHash,
+        'One or both rewards entities do not exist'
+      );
+      return;
+    }
+
     // Check if agreement exists
     bytes32 agreementKey = keccak256(
       abi.encodePacked(rewardsProvider, rewardsConsumer)
     );
     if (!_agreements[agreementKey]) {
-      revert AgreementDoesNotExist(rewardsProvider, rewardsConsumer);
+      emit ReferralSkipped(
+        user,
+        rewardsProvider,
+        rewardsConsumer,
+        chainId,
+        txHash,
+        'Agreement does not exist between rewards provider and rewards consumer'
+      );
+      return;
     }
 
     // Skip if user is already referred to this provider
     bytes32 referralKey = keccak256(abi.encodePacked(user, rewardsProvider));
-    if (_userReferrals[referralKey] != address(0)) {
-      revert UserAlreadyReferred(user, rewardsProvider);
+    if (_registeredReferrals[referralKey] != address(0)) {
+      emit ReferralSkipped(
+        user,
+        rewardsProvider,
+        rewardsConsumer,
+        chainId,
+        txHash,
+        'User has already been referred to this rewards provider'
+      );
+      return;
+    }
+
+    // Check if transaction has already been used for registering a referral
+    bytes32 registrationTransactionKey = keccak256(
+      abi.encodePacked(chainId, txHash)
+    );
+    if (_registrationTransactions[registrationTransactionKey]) {
+      emit ReferralSkipped(
+        user,
+        rewardsProvider,
+        rewardsConsumer,
+        chainId,
+        txHash,
+        'Transaction has already been used to register a referral'
+      );
+      return;
     }
 
     // Add referral
-    _userReferrals[referralKey] = rewardsConsumer;
-    emit ReferralRegistered(user, rewardsProvider, rewardsConsumer);
+    _registeredReferrals[referralKey] = rewardsConsumer;
+    _registrationTransactions[registrationTransactionKey] = true;
+    emit ReferralRegistered(
+      user,
+      rewardsProvider,
+      rewardsConsumer,
+      chainId,
+      txHash
+    );
   }
 
   /**
@@ -240,6 +308,6 @@ contract DivviRegistry is
     address provider
   ) external view returns (address consumer) {
     bytes32 referralKey = keccak256(abi.encodePacked(user, provider));
-    return _userReferrals[referralKey];
+    return _registeredReferrals[referralKey];
   }
 }
