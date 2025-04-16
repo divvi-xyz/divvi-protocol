@@ -21,6 +21,14 @@ contract DivviRegistry is
   mapping(bytes32 => bool) private _agreements; // keccak256(provider, consumer) => true (if agreement exists)
   mapping(address => bool) private _requiresApproval; // entity => boolean (if entity requires approval)
 
+  // Referral tracking
+  mapping(bytes32 => address) private _registeredReferrals; // keccak256(user, provider) => consumer
+  mapping(bytes32 => bool) private _registrationTransactions; // keccak256(chainId, txHash) => true (if the transaction has been used for registering a referral)
+
+  // Role constants
+  bytes32 public constant REFERRAL_REGISTRAR_ROLE =
+    keccak256('REFERRAL_REGISTRAR_ROLE');
+
   // Events
   event RewardsEntityRegistered(address indexed entity, bool requiresApproval);
   event RequiresApprovalForRewardsAgreements(
@@ -30,6 +38,21 @@ contract DivviRegistry is
   event RewardsAgreementRegistered(
     address indexed rewardsProvider,
     address indexed rewardsConsumer
+  );
+  event ReferralRegistered(
+    address user,
+    address indexed rewardsProvider,
+    address indexed rewardsConsumer,
+    uint256 indexed chainId,
+    bytes32 txHash
+  );
+  event ReferralSkipped(
+    address indexed user,
+    address rewardsProvider,
+    address indexed rewardsConsumer,
+    uint256 chainId,
+    bytes32 indexed txHash,
+    string reason
   );
 
   // Errors
@@ -152,6 +175,93 @@ contract DivviRegistry is
   }
 
   /**
+   * @notice Register a user as being referred to a rewards agreement
+   * @dev Requires REFERRAL_REGISTRAR_ROLE
+   * @param user The address of the user being referred
+   * @param rewardsProvider The address of the rewards provider entity
+   * @param rewardsConsumer The address of the rewards consumer entity
+   * @param txHash The hash of the transaction that initiated the referral
+   * @param chainId The ID of the blockchain where the referral transaction occurred
+   */
+  function registerReferral(
+    address user,
+    address rewardsProvider,
+    address rewardsConsumer,
+    bytes32 txHash,
+    uint256 chainId
+  ) external onlyRole(REFERRAL_REGISTRAR_ROLE) {
+    // Check if entities exist
+    if (!_entities[rewardsProvider] || !_entities[rewardsConsumer]) {
+      emit ReferralSkipped(
+        user,
+        rewardsProvider,
+        rewardsConsumer,
+        chainId,
+        txHash,
+        'One or both rewards entities do not exist'
+      );
+      return;
+    }
+
+    // Check if agreement exists
+    bytes32 agreementKey = keccak256(
+      abi.encodePacked(rewardsProvider, rewardsConsumer)
+    );
+    if (!_agreements[agreementKey]) {
+      emit ReferralSkipped(
+        user,
+        rewardsProvider,
+        rewardsConsumer,
+        chainId,
+        txHash,
+        'Agreement does not exist between rewards provider and rewards consumer'
+      );
+      return;
+    }
+
+    // Skip if user is already referred to this provider
+    bytes32 referralKey = keccak256(abi.encodePacked(user, rewardsProvider));
+    if (_registeredReferrals[referralKey] != address(0)) {
+      emit ReferralSkipped(
+        user,
+        rewardsProvider,
+        rewardsConsumer,
+        chainId,
+        txHash,
+        'User has already been referred to this rewards provider'
+      );
+      return;
+    }
+
+    // Check if transaction has already been used for registering a referral
+    bytes32 registrationTransactionKey = keccak256(
+      abi.encodePacked(chainId, txHash)
+    );
+    if (_registrationTransactions[registrationTransactionKey]) {
+      emit ReferralSkipped(
+        user,
+        rewardsProvider,
+        rewardsConsumer,
+        chainId,
+        txHash,
+        'Transaction has already been used to register a referral'
+      );
+      return;
+    }
+
+    // Add referral
+    _registeredReferrals[referralKey] = rewardsConsumer;
+    _registrationTransactions[registrationTransactionKey] = true;
+    emit ReferralRegistered(
+      user,
+      rewardsProvider,
+      rewardsConsumer,
+      chainId,
+      txHash
+    );
+  }
+
+  /**
    * @notice Check if an agreement exists between a consumer and provider
    * @param provider The provider entity address
    * @param consumer The consumer entity address
@@ -185,5 +295,19 @@ contract DivviRegistry is
     address entity
   ) external view returns (bool requiresApproval) {
     return _requiresApproval[entity];
+  }
+
+  /**
+   * @notice Get the referring consumer for a user and provider
+   * @param user The address of the user
+   * @param provider The address of the provider entity
+   * @return consumer The address of the referring consumer, or address(0) if the user has not been referred to the provider
+   */
+  function getReferringConsumer(
+    address user,
+    address provider
+  ) external view returns (address consumer) {
+    bytes32 referralKey = keccak256(abi.encodePacked(user, provider));
+    return _registeredReferrals[referralKey];
   }
 }
