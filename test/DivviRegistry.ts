@@ -116,8 +116,8 @@ describe(CONTRACT_NAME, function () {
         .to.emit(registry, 'RewardsAgreementRegistered')
         .withArgs(provider.address, consumer.address)
 
-      expect(await registry.agreementExists(provider.address, consumer.address))
-        .to.be.true
+      expect(await registry.hasAgreement(provider.address, consumer.address)).to
+        .be.true
     })
 
     it('should revert when consumer tries to register an agreement with a provider needs approval', async function () {
@@ -186,8 +186,8 @@ describe(CONTRACT_NAME, function () {
         .to.emit(registry, 'RewardsAgreementRegistered')
         .withArgs(provider.address, consumer.address)
 
-      expect(await registry.agreementExists(provider.address, consumer.address))
-        .to.be.true
+      expect(await registry.hasAgreement(provider.address, consumer.address)).to
+        .be.true
     })
   })
 
