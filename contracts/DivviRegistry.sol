@@ -34,8 +34,7 @@ contract DivviRegistry is
     SUCCESS,
     ENTITY_NOT_FOUND,
     AGREEMENT_NOT_FOUND,
-    USER_ALREADY_REFERRED,
-    TX_ALREADY_USED
+    USER_ALREADY_REFERRED
   }
 
   // Entities storage
@@ -46,7 +45,6 @@ contract DivviRegistry is
 
   // Referral tracking
   mapping(bytes32 => address) private _registeredReferrals; // keccak256(user, provider) => consumer
-  mapping(bytes32 => bool) private _registrationTransactions; // keccak256(chainId, txHash) => true (if the transaction has been used for registering a referral)
 
   // Role constants
   bytes32 public constant REFERRAL_REGISTRAR_ROLE =
@@ -279,17 +277,8 @@ contract DivviRegistry is
       return ReferralStatus.USER_ALREADY_REFERRED;
     }
 
-    // Check if transaction has already been used for registering a referral
-    bytes32 registrationTransactionKey = keccak256(
-      abi.encodePacked(chainId, txHash)
-    );
-    if (_registrationTransactions[registrationTransactionKey]) {
-      return ReferralStatus.TX_ALREADY_USED;
-    }
-
     // Add referral
     _registeredReferrals[referralKey] = rewardsConsumer;
-    _registrationTransactions[registrationTransactionKey] = true;
     return ReferralStatus.SUCCESS;
   }
 
