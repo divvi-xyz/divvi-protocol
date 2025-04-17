@@ -165,7 +165,7 @@ contract DivviRegistry is
    * @param consumer The consumer entity address
    * @return exists Whether the agreement exists
    */
-  function agreementExists(
+  function hasAgreement(
     address provider,
     address consumer
   ) external view returns (bool exists) {
