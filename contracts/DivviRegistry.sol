@@ -33,7 +33,7 @@ contract DivviRegistry is
   );
 
   // Errors
-  error InvalidEntityAddress(address entity);
+  error EntityMustBeCaller(address caller, address entity);
   error EntityAlreadyExists(address entity);
   error EntityDoesNotExist(address entity);
   error AgreementAlreadyExists(address provider, address consumer);
@@ -81,8 +81,8 @@ contract DivviRegistry is
     address entity,
     bool requiresApproval
   ) external {
-    if (entity == address(0)) {
-      revert InvalidEntityAddress(entity);
+    if (msg.sender != entity) {
+      revert EntityMustBeCaller(msg.sender, entity);
     }
 
     if (_entities[entity]) {

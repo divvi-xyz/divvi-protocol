@@ -20,60 +20,89 @@ describe(CONTRACT_NAME, function () {
   }
 
   describe('Entity Registration', function () {
-    it('should register a new entity', async function () {
-      const { registry, provider } = await deployDivviRegistryContract()
+    for (const approvalRequired of [true, false]) {
+      it(`should register a new entity with ${approvalRequired ? 'approval' : 'no approval'} requirement`, async function () {
+        const { registry, provider } = await deployDivviRegistryContract()
 
-      await expect(registry.registerRewardsEntity(provider.address, false))
-        .to.emit(registry, 'RewardsEntityRegistered')
-        .withArgs(provider.address, false)
+        // Connect as the provider to register themselves
+        const registryAsProvider = registry.connect(provider) as typeof registry
 
-      expect(await registry.isEntityRegistered(provider.address)).to.be.true
-      expect(await registry.requiresApprovalForAgreements(provider.address)).to
-        .be.false
-    })
+        await expect(
+          registryAsProvider.registerRewardsEntity(
+            provider.address,
+            approvalRequired,
+          ),
+        )
+          .to.emit(registry, 'RewardsEntityRegistered')
+          .withArgs(provider.address, approvalRequired)
 
-    it('should register a new entity with approval required', async function () {
-      const { registry, provider } = await deployDivviRegistryContract()
+        expect(await registry.isEntityRegistered(provider.address)).to.be.true
+        expect(
+          await registry.requiresApprovalForAgreements(provider.address),
+        ).to.equal(approvalRequired)
+      })
+    }
 
-      await expect(registry.registerRewardsEntity(provider.address, true))
-        .to.emit(registry, 'RewardsEntityRegistered')
-        .withArgs(provider.address, true)
+    it('should revert when trying to register another address', async function () {
+      const { registry, provider, consumer } =
+        await deployDivviRegistryContract()
 
-      expect(await registry.isEntityRegistered(provider.address)).to.be.true
-      expect(await registry.requiresApprovalForAgreements(provider.address)).to
-        .be.true
-    })
-
-    it('should revert when registering zero address', async function () {
-      const { registry } = await deployDivviRegistryContract()
+      // Try to register consumer's address while connected as provider
+      const registryAsProvider = registry.connect(provider) as typeof registry
 
       await expect(
-        registry.registerRewardsEntity(hre.ethers.ZeroAddress, false),
+        registryAsProvider.registerRewardsEntity(consumer.address, false),
       )
-        .to.be.revertedWithCustomError(registry, 'InvalidEntityAddress')
-        .withArgs(hre.ethers.ZeroAddress)
+        .to.be.revertedWithCustomError(registry, 'EntityMustBeCaller')
+        .withArgs(provider.address, consumer.address)
     })
 
     it('should revert when registering an existing entity', async function () {
       const { registry, provider } = await deployDivviRegistryContract()
 
-      await registry.registerRewardsEntity(provider.address, false)
+      // Register entity first
+      const registryAsProvider = registry.connect(provider) as typeof registry
+      await registryAsProvider.registerRewardsEntity(provider.address, false)
 
-      await expect(registry.registerRewardsEntity(provider.address, false))
+      // Try to register again
+      await expect(
+        registryAsProvider.registerRewardsEntity(provider.address, false),
+      )
         .to.be.revertedWithCustomError(registry, 'EntityAlreadyExists')
         .withArgs(provider.address)
     })
   })
 
   describe('Agreement Management', function () {
-    it('should allow the consumer to register an agreement with a provider who does not need approval', async function () {
-      const { registry, provider, consumer } =
-        await deployDivviRegistryContract()
+    let registry: Awaited<
+      ReturnType<typeof deployDivviRegistryContract>
+    >['registry']
+    let provider: Awaited<
+      ReturnType<typeof deployDivviRegistryContract>
+    >['provider']
+    let consumer: Awaited<
+      ReturnType<typeof deployDivviRegistryContract>
+    >['consumer']
+    let extraUser: Awaited<
+      ReturnType<typeof deployDivviRegistryContract>
+    >['extraUser']
+
+    beforeEach(async function () {
+      const deployed = await deployDivviRegistryContract()
+      registry = deployed.registry
+      provider = deployed.provider
+      consumer = deployed.consumer
+      extraUser = deployed.extraUser
 
       // Register entities
-      await registry.registerRewardsEntity(provider.address, false) // Provider
-      await registry.registerRewardsEntity(consumer.address, false) // Consumer
+      const registryAsProvider = registry.connect(provider) as typeof registry
+      const registryAsConsumer = registry.connect(consumer) as typeof registry
 
+      await registryAsProvider.registerRewardsEntity(provider.address, false)
+      await registryAsConsumer.registerRewardsEntity(consumer.address, false)
+    })
+
+    it('should allow the consumer to register an agreement with a provider who does not need approval', async function () {
       const registryContractAsConsumer = registry.connect(
         consumer,
       ) as typeof registry
@@ -92,12 +121,9 @@ describe(CONTRACT_NAME, function () {
     })
 
     it('should revert when consumer tries to register an agreement with a provider needs approval', async function () {
-      const { registry, provider, consumer } =
-        await deployDivviRegistryContract()
-
-      // Register entities
-      await registry.registerRewardsEntity(provider.address, true) // Provider
-      await registry.registerRewardsEntity(consumer.address, false) // Consumer
+      // Update provider to require approval
+      const registryAsProvider = registry.connect(provider) as typeof registry
+      await registryAsProvider.setRequiresApprovalForRewardsAgreements(true)
 
       // Register agreement as consumer reverts
       const registryContractAsConsumer = registry.connect(
@@ -113,35 +139,25 @@ describe(CONTRACT_NAME, function () {
     })
 
     it('should revert when registering agreement with unregistered entity', async function () {
-      const { registry, provider, consumer } =
-        await deployDivviRegistryContract()
-
-      await registry.registerRewardsEntity(provider.address, false) // Provider only
       const registryContractAsConsumer = registry.connect(
         consumer,
       ) as typeof registry
 
       await expect(
         registryContractAsConsumer.registerAgreementAsConsumer(
-          provider.address,
+          extraUser.address,
         ),
       )
         .to.be.revertedWithCustomError(registry, 'EntityDoesNotExist')
-        .withArgs(consumer.address)
+        .withArgs(extraUser.address)
     })
 
     it('should revert when registering duplicate agreement', async function () {
-      const { registry, provider, consumer } =
-        await deployDivviRegistryContract()
-
-      // Register entities
-      await registry.registerRewardsEntity(provider.address, false) // Provider
-      await registry.registerRewardsEntity(consumer.address, false) // Consumer
-
-      // Register agreement
       const registryContractAsConsumer = registry.connect(
         consumer,
       ) as typeof registry
+
+      // Register agreement
       await registryContractAsConsumer.registerAgreementAsConsumer(
         provider.address,
       )
@@ -157,13 +173,6 @@ describe(CONTRACT_NAME, function () {
     })
 
     it('should allow the provider to register an agreement with a consumer', async function () {
-      const { registry, provider, consumer } =
-        await deployDivviRegistryContract()
-
-      // Register entities
-      await registry.registerRewardsEntity(provider.address, false) // Provider
-      await registry.registerRewardsEntity(consumer.address, false) // Consumer
-
       const registryContractAsProvider = registry.connect(
         provider,
       ) as typeof registry
@@ -187,12 +196,15 @@ describe(CONTRACT_NAME, function () {
       const { registry, provider } = await deployDivviRegistryContract()
 
       // Register entity
-      await registry.registerRewardsEntity(provider.address, false)
-
-      // Update approval requirement
       const registryContractAsProvider = registry.connect(
         provider,
       ) as typeof registry
+      await registryContractAsProvider.registerRewardsEntity(
+        provider.address,
+        false,
+      )
+
+      // Update approval requirement
       await expect(
         registryContractAsProvider.setRequiresApprovalForRewardsAgreements(
           true,
