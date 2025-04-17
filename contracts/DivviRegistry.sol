@@ -14,11 +14,28 @@ contract DivviRegistry is
   AccessControlDefaultAdminRulesUpgradeable,
   UUPSUpgradeable
 {
+  // Data structs
   struct EntityData {
     bool exists;
     bool requiresApproval;
     // fields can be added here in a future upgrade if needed
     // this is upgrade safe as long as `EntityData` is only used in a mapping
+  }
+
+  struct ReferralData {
+    address user;
+    address rewardsProvider;
+    address rewardsConsumer;
+    bytes32 txHash;
+    uint256 chainId;
+  }
+
+  enum ReferralStatus {
+    SUCCESS,
+    ENTITY_NOT_FOUND,
+    AGREEMENT_NOT_FOUND,
+    USER_ALREADY_REFERRED,
+    TX_ALREADY_USED
   }
 
   // Entities storage
@@ -58,7 +75,7 @@ contract DivviRegistry is
     address indexed rewardsConsumer,
     uint256 chainId,
     bytes32 indexed txHash,
-    string reason
+    ReferralStatus status
   );
 
   // Errors
@@ -67,23 +84,6 @@ contract DivviRegistry is
   error EntityDoesNotExist(address entity);
   error AgreementAlreadyExists(address provider, address consumer);
   error ProviderRequiresApproval(address provider);
-
-  // Data structs
-  struct ReferralData {
-    address user;
-    address rewardsProvider;
-    address rewardsConsumer;
-    bytes32 txHash;
-    uint256 chainId;
-  }
-
-  enum ReferralStatus {
-    SUCCESS,
-    ENTITY_NOT_FOUND,
-    AGREEMENT_NOT_FOUND,
-    ALREADY_REGISTERED,
-    TX_ALREADY_USED
-  }
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -229,24 +229,13 @@ contract DivviRegistry is
           referral.txHash
         );
       } else {
-        string memory reason;
-        if (status == ReferralStatus.ENTITY_NOT_FOUND) {
-          reason = 'One or both rewards entities do not exist';
-        } else if (status == ReferralStatus.AGREEMENT_NOT_FOUND) {
-          reason = 'Agreement does not exist between rewards provider and rewards consumer';
-        } else if (status == ReferralStatus.ALREADY_REGISTERED) {
-          reason = 'User has already been referred to this rewards provider';
-        } else if (status == ReferralStatus.TX_ALREADY_USED) {
-          reason = 'Transaction has already been used to register a referral';
-        }
-
         emit ReferralSkipped(
           referral.user,
           referral.rewardsProvider,
           referral.rewardsConsumer,
           referral.chainId,
           referral.txHash,
-          reason
+          status
         );
       }
     }
@@ -270,7 +259,9 @@ contract DivviRegistry is
     uint256 chainId
   ) internal returns (ReferralStatus status) {
     // Check if entities exist
-    if (!_entities[rewardsProvider] || !_entities[rewardsConsumer]) {
+    if (
+      !_entities[rewardsProvider].exists || !_entities[rewardsConsumer].exists
+    ) {
       return ReferralStatus.ENTITY_NOT_FOUND;
     }
 
@@ -285,7 +276,7 @@ contract DivviRegistry is
     // Check if user is already referred to this provider
     bytes32 referralKey = keccak256(abi.encodePacked(user, rewardsProvider));
     if (_registeredReferrals[referralKey] != address(0)) {
-      return ReferralStatus.ALREADY_REGISTERED;
+      return ReferralStatus.USER_ALREADY_REFERRED;
     }
 
     // Check if transaction has already been used for registering a referral
