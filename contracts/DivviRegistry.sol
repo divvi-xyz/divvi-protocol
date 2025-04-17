@@ -14,12 +14,18 @@ contract DivviRegistry is
   AccessControlDefaultAdminRulesUpgradeable,
   UUPSUpgradeable
 {
+  struct EntityData {
+    bool exists;
+    bool requiresApproval;
+    // fields can be added here in a future upgrade if needed
+    // this is upgrade safe as long as `EntityData` is only used in a mapping
+  }
+
   // Entities storage
-  mapping(address => bool) private _entities; // entity => true (if entity exists)
+  mapping(address => EntityData) private _entities;
 
   // Agreement storage
   mapping(bytes32 => bool) private _agreements; // keccak256(provider, consumer) => true (if agreement exists)
-  mapping(address => bool) private _requiresApproval; // entity => boolean (if entity requires approval)
 
   // Referral tracking
   mapping(bytes32 => address) private _registeredReferrals; // keccak256(user, provider) => consumer
@@ -56,7 +62,7 @@ contract DivviRegistry is
   );
 
   // Errors
-  error InvalidEntityAddress(address entity);
+  error EntityMustBeCaller(address caller, address entity);
   error EntityAlreadyExists(address entity);
   error EntityDoesNotExist(address entity);
   error AgreementAlreadyExists(address provider, address consumer);
@@ -106,7 +112,7 @@ contract DivviRegistry is
    * @param entity The entity address to check
    */
   modifier entityExists(address entity) {
-    if (!_entities[entity]) {
+    if (!_entities[entity].exists) {
       revert EntityDoesNotExist(entity);
     }
     _;
@@ -121,16 +127,18 @@ contract DivviRegistry is
     address entity,
     bool requiresApproval
   ) external {
-    if (entity == address(0)) {
-      revert InvalidEntityAddress(entity);
+    if (msg.sender != entity) {
+      revert EntityMustBeCaller(msg.sender, entity);
     }
 
-    if (_entities[entity]) {
+    if (_entities[entity].exists) {
       revert EntityAlreadyExists(entity);
     }
 
-    _entities[entity] = true;
-    _requiresApproval[entity] = requiresApproval;
+    _entities[entity] = EntityData({
+      exists: true,
+      requiresApproval: requiresApproval
+    });
     emit RewardsEntityRegistered(entity, requiresApproval);
   }
 
@@ -141,7 +149,7 @@ contract DivviRegistry is
   function setRequiresApprovalForRewardsAgreements(
     bool requiresApproval
   ) external entityExists(msg.sender) {
-    _requiresApproval[msg.sender] = requiresApproval;
+    _entities[msg.sender].requiresApproval = requiresApproval;
     emit RequiresApprovalForRewardsAgreements(msg.sender, requiresApproval);
   }
 
@@ -154,7 +162,7 @@ contract DivviRegistry is
     address rewardsProvider
   ) external entityExists(rewardsProvider) entityExists(msg.sender) {
     // If the provider requires approval, revert the transaction
-    if (_requiresApproval[rewardsProvider]) {
+    if (_entities[rewardsProvider].requiresApproval) {
       revert ProviderRequiresApproval(rewardsProvider);
     }
 
@@ -300,7 +308,7 @@ contract DivviRegistry is
    * @param consumer The consumer entity address
    * @return exists Whether the agreement exists
    */
-  function agreementExists(
+  function hasAgreement(
     address provider,
     address consumer
   ) external view returns (bool exists) {
@@ -316,7 +324,7 @@ contract DivviRegistry is
   function isEntityRegistered(
     address entity
   ) external view returns (bool registered) {
-    return _entities[entity];
+    return _entities[entity].exists;
   }
 
   /**
@@ -327,7 +335,7 @@ contract DivviRegistry is
   function requiresApprovalForAgreements(
     address entity
   ) external view returns (bool requiresApproval) {
-    return _requiresApproval[entity];
+    return _entities[entity].requiresApproval;
   }
 
   /**
