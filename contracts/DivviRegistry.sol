@@ -69,10 +69,10 @@ contract DivviRegistry is
   );
   event ReferralSkipped(
     address indexed user,
-    address rewardsProvider,
+    address indexed rewardsProvider,
     address indexed rewardsConsumer,
     uint256 chainId,
-    bytes32 indexed txHash,
+    bytes32 txHash,
     ReferralStatus status
   );
 
