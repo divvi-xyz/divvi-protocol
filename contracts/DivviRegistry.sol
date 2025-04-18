@@ -39,7 +39,6 @@ contract DivviRegistry is
   );
 
   // Errors
-  error EntityMustBeCaller(address caller, address entity);
   error EntityAlreadyExists(address entity);
   error EntityDoesNotExist(address entity);
   error AgreementAlreadyExists(address provider, address consumer);
@@ -79,27 +78,19 @@ contract DivviRegistry is
   }
 
   /**
-   * @notice Register a new rewards entity
-   * @param entity An address that the entity owns, which will be used to identify the entity and call privileged functions on this contract
+   * @notice Register the caller as a new rewards entity
    * @param requiresApproval Whether the entity requires approval for agreements
    */
-  function registerRewardsEntity(
-    address entity,
-    bool requiresApproval
-  ) external {
-    if (msg.sender != entity) {
-      revert EntityMustBeCaller(msg.sender, entity);
+  function registerRewardsEntity(bool requiresApproval) external {
+    if (_entities[msg.sender].exists) {
+      revert EntityAlreadyExists(msg.sender);
     }
 
-    if (_entities[entity].exists) {
-      revert EntityAlreadyExists(entity);
-    }
-
-    _entities[entity] = EntityData({
+    _entities[msg.sender] = EntityData({
       exists: true,
       requiresApproval: requiresApproval
     });
-    emit RewardsEntityRegistered(entity, requiresApproval);
+    emit RewardsEntityRegistered(msg.sender, requiresApproval);
   }
 
   /**
