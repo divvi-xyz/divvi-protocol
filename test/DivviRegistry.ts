@@ -242,8 +242,8 @@ describe(CONTRACT_NAME, function () {
       const registryAsProvider = registry.connect(provider) as typeof registry
       const registryAsConsumer = registry.connect(consumer) as typeof registry
 
-      await registryAsProvider.registerRewardsEntity(provider.address, false)
-      await registryAsConsumer.registerRewardsEntity(consumer.address, false)
+      await registryAsProvider.registerRewardsEntity(false)
+      await registryAsConsumer.registerRewardsEntity(false)
 
       // Register agreement between provider and consumer
       await registryAsProvider.registerAgreementAsProvider(consumer.address)
@@ -415,7 +415,7 @@ describe(CONTRACT_NAME, function () {
     it('should emit ReferralSkipped when agreement does not exist', async function () {
       // Register extraUser as an entity
       const registryAsExtraUser = registry.connect(extraUser) as typeof registry
-      await registryAsExtraUser.registerRewardsEntity(extraUser.address, false)
+      await registryAsExtraUser.registerRewardsEntity(false)
 
       // Grant registrar role
       await registry.grantRole(
