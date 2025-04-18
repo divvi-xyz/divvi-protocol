@@ -61,10 +61,10 @@ contract DivviRegistry is
     address indexed rewardsConsumer
   );
   event ReferralRegistered(
-    address user,
+    address indexed user,
     address indexed rewardsProvider,
     address indexed rewardsConsumer,
-    uint256 indexed chainId,
+    uint256 chainId,
     bytes32 txHash
   );
   event ReferralSkipped(
