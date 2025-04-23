@@ -20,9 +20,16 @@ type BaseDeployConfig = {
   isUpgradeable?: boolean
 }
 
-type DefenderConfig = {
-  useDefender?: boolean
+type DefenderConfig = WithDefender | WithoutDefender
+
+type WithDefender = {
+  useDefender: true
   defenderDeploySalt?: string
+}
+
+type WithoutDefender = {
+  useDefender?: false
+  defenderDeploySalt?: never
 }
 
 // Contract deployment helper
@@ -133,16 +140,6 @@ export async function upgradeContract(
   proxyAddress: string,
   config: DefenderConfig = {},
 ) {
-  if (config.useDefender && !SUPPORTED_NETWORKS.includes(hre.network.name)) {
-    throw Error(`--use-defender only supports networks: ${SUPPORTED_NETWORKS}`)
-  }
-
-  if (config.defenderDeploySalt && !config.useDefender) {
-    throw new Error(
-      `--defender-deploy-salt can only be used with --use-defender`,
-    )
-  }
-
   const Contract = await hre.ethers.getContractFactory(contractName)
 
   let newImplementationAddress: string
