@@ -1,3 +1,7 @@
 {
   extends: ['github>valora-inc/renovate-config:default.json5'],
+  // A list of dependencies to be ignored by Renovate - "exact match" only
+  ignoreDeps: [
+    'chai', // Keep Chai v4 for now: https://github.com/NomicFoundation/hardhat/issues/4762
+  ],
 }

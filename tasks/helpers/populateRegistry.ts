@@ -9,7 +9,11 @@ interface ReferrerConfig {
 const REFERRERS: Record<string, ReferrerConfig> = {
   leefy: {
     protocolIds: ['dompounder', 'zoot', 'bartender'],
-    rewardRates: [BigInt('1000000000000000000'), BigInt('1000000000000000000')],
+    rewardRates: [
+      BigInt('1000000000000000000'),
+      BigInt('1000000000000000000'),
+      BigInt('1000000000000000000'),
+    ],
   },
   marianashot: {
     protocolIds: ['memenfts', 'zoot'],
