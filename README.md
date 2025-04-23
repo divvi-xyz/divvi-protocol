@@ -20,7 +20,7 @@ Run the localtest in one terminal:
 yarn hardhat node
 ```
 
-### Registry contract
+### Registry contract (v0)
 
 Deploy Registry:
 
@@ -32,6 +32,14 @@ And create some dummy data:
 
 ```
 yarn hardhat --network localhost registry:populate
+```
+
+### DivviRegistry contract (v1)
+
+Deploy DivviRegistry:
+
+```
+yarn hardhat --network localhost divvi-registry:deploy
 ```
 
 ### RewardPool contract
@@ -129,6 +137,16 @@ To deploy Registry, run:
 
 ```bash
 yarn hardhat registry:deploy --network celo
+```
+
+To deploy DivviRegistry, run:
+
+```bash
+yarn hardhat divvi-registry:deploy \
+    --network optimism \
+    --use-defender \
+    --defender-deploy-salt <SALT> \
+    --owner-address <OWNER_ADDRESS> \
 ```
 
 To deploy RewardPool, run:

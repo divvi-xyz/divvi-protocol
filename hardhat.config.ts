@@ -9,6 +9,7 @@ import * as dotenv from 'dotenv'
 import './tasks/registry'
 import './tasks/rewardPool'
 import './tasks/mockToken'
+import './tasks/divviRegistry'
 
 dotenv.config()
 

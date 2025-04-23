@@ -1,7 +1,6 @@
 import { task } from 'hardhat/config'
 import {
   deployContract,
-  SUPPORTED_NETWORKS,
   ONE_DAY,
   readDeploymentMetadata,
 } from './helpers/deployHelpers'
@@ -14,21 +13,6 @@ task('registry:deploy', 'Deploy Registry contract')
   .addFlag('useDefender', 'Deploy using OpenZeppelin Defender')
   .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
   .setAction(async (taskArgs, hre) => {
-    if (
-      taskArgs.useDefender &&
-      !SUPPORTED_NETWORKS.includes(hre.network.name)
-    ) {
-      throw new Error(
-        `--use-defender only supports networks: ${SUPPORTED_NETWORKS}`,
-      )
-    }
-
-    if (taskArgs.defenderDeploySalt && !taskArgs.useDefender) {
-      throw new Error(
-        `--defender-deploy-salt can only be used with --use-defender`,
-      )
-    }
-
     const ownerAddress =
       taskArgs.ownerAddress || (await hre.ethers.getSigners())[0].address
 

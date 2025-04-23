@@ -2,7 +2,6 @@ import { task, types } from 'hardhat/config'
 import {
   deployContract,
   upgradeContract,
-  SUPPORTED_NETWORKS,
   ONE_DAY,
 } from './helpers/deployHelpers'
 
@@ -20,21 +19,6 @@ task('reward-pool:deploy', 'Deploy RewardPool contract')
   .addFlag('useDefender', 'Deploy using OpenZeppelin Defender')
   .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
   .setAction(async (taskArgs, hre) => {
-    if (
-      taskArgs.useDefender &&
-      !SUPPORTED_NETWORKS.includes(hre.network.name)
-    ) {
-      throw new Error(
-        `--use-defender only supports networks: ${SUPPORTED_NETWORKS}`,
-      )
-    }
-
-    if (taskArgs.defenderDeploySalt && !taskArgs.useDefender) {
-      throw new Error(
-        `--defender-deploy-salt can only be used with --use-defender`,
-      )
-    }
-
     const ownerAddress =
       taskArgs.ownerAddress || (await hre.ethers.getSigners())[0].address
 
@@ -69,21 +53,6 @@ task('reward-pool:upgrade', 'Upgrade RewardPool contract')
   .addFlag('useDefender', 'Deploy using OpenZeppelin Defender')
   .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
   .setAction(async (taskArgs, hre) => {
-    if (
-      taskArgs.useDefender &&
-      !SUPPORTED_NETWORKS.includes(hre.network.name)
-    ) {
-      throw Error(
-        `--use-defender only supports networks: ${SUPPORTED_NETWORKS}`,
-      )
-    }
-
-    if (taskArgs.defenderDeploySalt && !taskArgs.useDefender) {
-      throw new Error(
-        `--defender-deploy-salt can only be used with --use-defender`,
-      )
-    }
-
     await upgradeContract(hre, 'RewardPool', taskArgs.proxyAddress, {
       useDefender: taskArgs.useDefender,
       defenderDeploySalt: taskArgs.defenderDeploySalt,

@@ -203,9 +203,7 @@ contract DivviRegistry is
       ReferralStatus status = _registerReferral(
         referral.user,
         referral.rewardsProvider,
-        referral.rewardsConsumer,
-        referral.txHash,
-        referral.chainId
+        referral.rewardsConsumer
       );
 
       // Emit appropriate event based on status
@@ -236,16 +234,12 @@ contract DivviRegistry is
    * @param user The address of the user being referred
    * @param rewardsProvider The address of the rewards provider entity
    * @param rewardsConsumer The address of the rewards consumer entity
-   * @param txHash The hash of the transaction that initiated the referral
-   * @param chainId The ID of the blockchain where the referral transaction occurred
    * @return status The status of the referral registration
    */
   function _registerReferral(
     address user,
     address rewardsProvider,
-    address rewardsConsumer,
-    bytes32 txHash,
-    uint256 chainId
+    address rewardsConsumer
   ) internal returns (ReferralStatus status) {
     // Check if entities exist
     if (
