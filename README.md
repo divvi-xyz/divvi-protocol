@@ -143,10 +143,10 @@ To deploy DivviRegistry, run:
 
 ```bash
 yarn hardhat divvi-registry:deploy \
-    --network optimism \
+    --network op \
     --use-defender \
     --defender-deploy-salt <SALT> \
-    --owner-address <OWNER_ADDRESS> \
+    --owner-address <OWNER_ADDRESS>
 ```
 
 To deploy RewardPool, run:
