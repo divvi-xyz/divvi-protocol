@@ -164,3 +164,17 @@ yarn hardhat reward-pool:deploy \
 ```
 
 After this is done, you should see output in your terminal with a command to run to verify the contract on the block explorers.
+
+To upgrade DivviRegistry, run:
+
+```bash
+yarn hardhat divvi-registry:upgrade \
+    --network op \
+    --use-defender \
+    --defender-deploy-salt <SALT> \
+    --proxy-address <PROXY_ADDRESS>
+```
+
+### Metadata of upgradable contracts
+
+Metadata about proxy and implementation deployments is automatically generated and stored in the `.openzeppelin/` directory, which should be checked into version control.
