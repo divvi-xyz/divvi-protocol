@@ -66,9 +66,7 @@ contract Registry is AccessControlDefaultAdminRules {
       bytes32[] storage referrerIds = _protocolIdToReferrerIds[protocol];
 
       for (uint256 j = 0; j < referrerIds.length; j++) {
-        if (
-            referrerIds[j] == referrerId
-        ) {
+        if (referrerIds[j] == referrerId) {
           // Replace the current element with the last element
           referrerIds[j] = referrerIds[referrerIds.length - 1];
           referrerIds.pop(); // Remove the last element
@@ -97,45 +95,48 @@ contract Registry is AccessControlDefaultAdminRules {
   }
 
   function isUserRegistered(
-                                 address userAddress,
-                                 bytes32[] calldata protocolIds
+    address userAddress,
+    bytes32[] calldata protocolIds
   ) external view returns (bool[] memory) {
-      bool[] memory registeredStatuses = new bool[](protocolIds.length);
-      for (uint256 i = 0; i < protocolIds.length; i++) {
-          registeredStatuses[i] = _userInfoByProtocol[protocolIds[i]][userAddress].timestamp != 0;
-      }
-      return registeredStatuses;
+    bool[] memory registeredStatuses = new bool[](protocolIds.length);
+    for (uint256 i = 0; i < protocolIds.length; i++) {
+      registeredStatuses[i] =
+        _userInfoByProtocol[protocolIds[i]][userAddress].timestamp != 0;
+    }
+    return registeredStatuses;
   }
 
   function registerReferrals(
     bytes32 referrerId,
     bytes32[] calldata protocolIds
   ) external {
-      for (uint256 i = 0; i < protocolIds.length; i++) {
-                bool referrerIsRegistered = false;
-                bytes32 protocolId = protocolIds[i];
-      for (uint256 j = 0; j < _referrerIdToProtocolIds[referrerId].length; j++) {
-      if (
-        _referrerIdToProtocolIds[referrerId][j] == protocolId
+    for (uint256 i = 0; i < protocolIds.length; i++) {
+      bool referrerIsRegistered = false;
+      bytes32 protocolId = protocolIds[i];
+      for (
+        uint256 j = 0;
+        j < _referrerIdToProtocolIds[referrerId].length;
+        j++
       ) {
-        referrerIsRegistered = true;
-        break;
+        if (_referrerIdToProtocolIds[referrerId][j] == protocolId) {
+          referrerIsRegistered = true;
+          break;
+        }
+      }
+      // Check if the referrer is active with the protocol
+      if (!referrerIsRegistered) {
+        revert ReferrerNotRegistered(protocolId, referrerId);
+        // And that the user has not been registered before to the given protocol
+      } else if (_userInfoByProtocol[protocolId][msg.sender].timestamp != 0) {
+        revert UserAlreadyRegistered(protocolId, referrerId, msg.sender);
+      } else {
+        _userInfoByProtocol[protocolId][msg.sender] = User(block.timestamp);
+        _referrerInfoByProtocol[protocolId][referrerId].userAddresses.push(
+          msg.sender
+        );
+        emit ReferralRegistered(protocolId, referrerId, msg.sender);
       }
     }
-    // Check if the referrer is active with the protocol
-    if (!referrerIsRegistered) {
-      revert ReferrerNotRegistered(protocolId, referrerId);
-      // And that the user has not been registered before to the given protocol
-    } else if (_userInfoByProtocol[protocolId][msg.sender].timestamp != 0) {
-      revert UserAlreadyRegistered(protocolId, referrerId, msg.sender);
-    } else {
-      _userInfoByProtocol[protocolId][msg.sender] = User(block.timestamp);
-      _referrerInfoByProtocol[protocolId][referrerId].userAddresses.push(
-        msg.sender
-      );
-      emit ReferralRegistered(protocolId, referrerId, msg.sender);
-    }
-      }
   }
 
   function getReferrers(

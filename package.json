@@ -73,6 +73,5 @@
     "typescript": "^5.8.3",
     "viem": "^2.24.1",
     "yargs": "^17.7.2"
-  },
-  "prettier": "@valora/prettier-config"
+  }
 }
