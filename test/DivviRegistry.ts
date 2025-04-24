@@ -212,7 +212,7 @@ describe(CONTRACT_NAME, function () {
   describe('Batch Referral Registration', function () {
     const mockUserAddress = '0x1234567890123456789012345678901234567890'
     const mockUserAddress2 = '0x1234567890123456789012345678901234567891'
-    const chainId = 1
+    const chainId = 'eip155:1'
     const txHash1 = hre.ethers.keccak256(hre.ethers.toUtf8Bytes('test-tx-1'))
     const txHash2 = hre.ethers.keccak256(hre.ethers.toUtf8Bytes('test-tx-2'))
 

@@ -27,7 +27,7 @@ contract DivviRegistry is
     address rewardsProvider;
     address rewardsConsumer;
     bytes32 txHash;
-    uint256 chainId;
+    string chainId;
   }
 
   enum ReferralStatus {
@@ -64,14 +64,14 @@ contract DivviRegistry is
     address indexed user,
     address indexed rewardsProvider,
     address indexed rewardsConsumer,
-    uint256 chainId,
+    string chainId,
     bytes32 txHash
   );
   event ReferralSkipped(
     address indexed user,
     address indexed rewardsProvider,
     address indexed rewardsConsumer,
-    uint256 chainId,
+    string chainId,
     bytes32 txHash,
     ReferralStatus status
   );
