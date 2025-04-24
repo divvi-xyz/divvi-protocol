@@ -4,6 +4,8 @@ pragma solidity ^0.8.24;
 import {AccessControlDefaultAdminRulesUpgradeable} from '@openzeppelin/contracts-upgradeable/access/extensions/AccessControlDefaultAdminRulesUpgradeable.sol';
 import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import {ERC2771ContextUpgradeable} from '@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol';
+import {ContextUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol';
 
 /**
  * @title DivviRegistry
@@ -12,7 +14,8 @@ import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/U
 contract DivviRegistry is
   Initializable,
   AccessControlDefaultAdminRulesUpgradeable,
-  UUPSUpgradeable
+  UUPSUpgradeable,
+  ERC2771ContextUpgradeable
 {
   // Data structs
   struct EntityData {
@@ -50,6 +53,15 @@ contract DivviRegistry is
   bytes32 public constant REFERRAL_REGISTRAR_ROLE =
     keccak256('REFERRAL_REGISTRAR_ROLE');
 
+  /**
+   * @notice Role identifier for trusted forwarders compliant with ERC-2771.
+   * @dev Addresses granted this role are recognized by `isTrustedForwarder` and can relay meta-transactions,
+   * affecting the result of `_msgSender()`. Crucially, this role should ONLY be granted to audited,
+   * immutable forwarder contracts to prevent security risks like context manipulation or unauthorized actions.
+   */
+  bytes32 public constant TRUSTED_FORWARDER_ROLE =
+    keccak256('TRUSTED_FORWARDER_ROLE');
+
   // Events
   event RewardsEntityRegistered(address indexed entity, bool requiresApproval);
   event RequiresApprovalForRewardsAgreements(
@@ -83,7 +95,7 @@ contract DivviRegistry is
   error ProviderRequiresApproval(address provider);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
-  constructor() {
+  constructor() ERC2771ContextUpgradeable(address(0x0)) {
     _disableInitializers();
   }
 
@@ -120,15 +132,16 @@ contract DivviRegistry is
    * @param requiresApproval Whether the entity requires approval for agreements
    */
   function registerRewardsEntity(bool requiresApproval) external {
-    if (_entities[msg.sender].exists) {
-      revert EntityAlreadyExists(msg.sender);
+    address msgSender = _msgSender();
+    if (_entities[msgSender].exists) {
+      revert EntityAlreadyExists(msgSender);
     }
 
-    _entities[msg.sender] = EntityData({
+    _entities[msgSender] = EntityData({
       exists: true,
       requiresApproval: requiresApproval
     });
-    emit RewardsEntityRegistered(msg.sender, requiresApproval);
+    emit RewardsEntityRegistered(msgSender, requiresApproval);
   }
 
   /**
@@ -137,9 +150,10 @@ contract DivviRegistry is
    */
   function setRequiresApprovalForRewardsAgreements(
     bool requiresApproval
-  ) external entityExists(msg.sender) {
-    _entities[msg.sender].requiresApproval = requiresApproval;
-    emit RequiresApprovalForRewardsAgreements(msg.sender, requiresApproval);
+  ) external entityExists(_msgSender()) {
+    address msgSender = _msgSender();
+    _entities[msgSender].requiresApproval = requiresApproval;
+    emit RequiresApprovalForRewardsAgreements(msgSender, requiresApproval);
   }
 
   /**
@@ -149,22 +163,23 @@ contract DivviRegistry is
    */
   function registerAgreementAsConsumer(
     address rewardsProvider
-  ) external entityExists(rewardsProvider) entityExists(msg.sender) {
+  ) external entityExists(rewardsProvider) entityExists(_msgSender()) {
     // If the provider requires approval, revert the transaction
     if (_entities[rewardsProvider].requiresApproval) {
       revert ProviderRequiresApproval(rewardsProvider);
     }
 
+    address msgSender = _msgSender();
     // Check if agreement already exists
     bytes32 agreementKey = keccak256(
-      abi.encodePacked(rewardsProvider, msg.sender)
+      abi.encodePacked(rewardsProvider, msgSender)
     );
     if (_agreements[agreementKey]) {
-      revert AgreementAlreadyExists(rewardsProvider, msg.sender);
+      revert AgreementAlreadyExists(rewardsProvider, msgSender);
     }
 
     _agreements[agreementKey] = true;
-    emit RewardsAgreementRegistered(rewardsProvider, msg.sender);
+    emit RewardsAgreementRegistered(rewardsProvider, msgSender);
   }
 
   /**
@@ -174,18 +189,19 @@ contract DivviRegistry is
    */
   function registerAgreementAsProvider(
     address rewardsConsumer
-  ) external entityExists(rewardsConsumer) entityExists(msg.sender) {
+  ) external entityExists(rewardsConsumer) entityExists(_msgSender()) {
+    address msgSender = _msgSender();
     // Check if agreement already exists
     bytes32 agreementKey = keccak256(
-      abi.encodePacked(msg.sender, rewardsConsumer)
+      abi.encodePacked(msgSender, rewardsConsumer)
     );
     if (_agreements[agreementKey]) {
-      revert AgreementAlreadyExists(msg.sender, rewardsConsumer);
+      revert AgreementAlreadyExists(msgSender, rewardsConsumer);
     }
 
     // Create the agreement
     _agreements[agreementKey] = true;
-    emit RewardsAgreementRegistered(msg.sender, rewardsConsumer);
+    emit RewardsAgreementRegistered(msgSender, rewardsConsumer);
   }
 
   /**
@@ -328,5 +344,58 @@ contract DivviRegistry is
   ) public view returns (address consumer) {
     bytes32 referralKey = keccak256(abi.encodePacked(user, provider));
     return _registeredReferrals[referralKey];
+  }
+
+  // ERC2771Context overrides
+
+  /**
+   * @notice Check if a forwarder is trusted
+   * @param forwarder The address of the forwarder to check
+   * @return isTrusted Whether the forwarder is trusted
+   * @dev Overridden to use the TRUSTED_FORWARDER_ROLE for checking trusted forwarders.
+   */
+  function isTrustedForwarder(
+    address forwarder
+  ) public view override(ERC2771ContextUpgradeable) returns (bool) {
+    return hasRole(TRUSTED_FORWARDER_ROLE, forwarder);
+  }
+
+  /**
+   * @dev Override required due to multiple inheritance.
+   */
+  function _msgSender()
+    internal
+    view
+    virtual
+    override(ContextUpgradeable, ERC2771ContextUpgradeable)
+    returns (address sender)
+  {
+    return super._msgSender();
+  }
+
+  /**
+   * @dev Override required due to multiple inheritance.
+   */
+  function _msgData()
+    internal
+    view
+    virtual
+    override(ContextUpgradeable, ERC2771ContextUpgradeable)
+    returns (bytes calldata)
+  {
+    return super._msgData();
+  }
+
+  /**
+   * @dev Override required due to multiple inheritance.
+   */
+  function _contextSuffixLength()
+    internal
+    view
+    virtual
+    override(ContextUpgradeable, ERC2771ContextUpgradeable)
+    returns (uint256)
+  {
+    return super._contextSuffixLength();
   }
 }
