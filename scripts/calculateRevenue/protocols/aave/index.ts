@@ -230,14 +230,12 @@ function estimateProtocolRevenue(
 ): bigint {
   const BIPS = 10_000n // 100% = 10,000 bips
 
-  // Convert reserve factor from base points to a ray value
-  const reserveFactorValue = rayDiv(reserveFactor, BIPS)
+  const protocolEarningsShare = reserveFactor * RAY
+  const userEarningsShare = (BIPS - reserveFactor) * RAY
 
-  // Protocol earnings to user earnings ratio:
-  // reserveFactor / (1 - reserveFactor)
   const protocolToUserEarningsRatio = rayDiv(
-    reserveFactorValue,
-    rayDiv(RAY - reserveFactorValue, RAY),
+    protocolEarningsShare,
+    userEarningsShare,
   )
 
   return rayMul(userEarnings, protocolToUserEarningsRatio)
