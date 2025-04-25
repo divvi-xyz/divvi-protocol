@@ -228,7 +228,7 @@ function estimateProtocolRevenue(
   userEarnings: bigint,
   reserveFactor: bigint,
 ): bigint {
-  const BIPS = BigInt(10000)
+  const BIPS = 10_000n // 100% = 10,000 bips
 
   // Convert reserve factor from base points to a ray value
   const reserveFactorValue = rayDiv(reserveFactor, BIPS)
