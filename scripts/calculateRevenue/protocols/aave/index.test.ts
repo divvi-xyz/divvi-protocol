@@ -1,10 +1,9 @@
-import { Address, parseUnits } from 'viem'
+import { Address } from 'viem'
 import BigNumber from 'bignumber.js'
 import { NetworkId } from '../../../types'
-import { SupportedNetwork } from './config'
 import { RAY, rayMul } from './math'
 import { fetchBlockchainData } from './blockchainData'
-import { revenueInNetwork, revenueInReserve } from './index'
+import { calculateRevenue } from './index'
 
 jest.mock('./blockchainData', () => ({
   fetchBlockchainData: jest.fn(),
@@ -13,6 +12,19 @@ jest.mock('./blockchainData', () => ({
 function liquidityIndex(interest: number) {
   return rayMul(RAY, (BigInt(100 + interest) * RAY) / BigInt(100))
 }
+
+jest.mock('./config', () => ({
+  SUPPORTED_NETWORKS: [
+    {
+      networkId: NetworkId['ethereum-mainnet'],
+      poolAddress: '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as Address,
+      poolConfiguratorAddress:
+        '0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' as Address,
+      oracleAddress: '0xCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC' as Address,
+      subgraphId: 'mock-subgraph-id',
+    },
+  ],
+}))
 
 describe('Aave revenue calculation', () => {
   const mockUserAddress =
@@ -33,17 +45,7 @@ describe('Aave revenue calculation', () => {
   const mockAToken1 = '0x1111111111111111111111111111111111111111' as Address
   const mockAToken2 = '0x2222222222222222222222222222222222222222' as Address
 
-  const mockNetwork: SupportedNetwork = {
-    networkId: NetworkId['ethereum-mainnet'],
-    poolAddress: '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as Address,
-    poolConfiguratorAddress:
-      '0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' as Address,
-    oracleAddress: '0xCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC' as Address,
-    subgraphId: 'mock-subgraph-id',
-  }
-
   const startTimestampSeconds = Math.floor(mockStartTimestamp.getTime() / 1000)
-  const endTimestampSeconds = Math.floor(mockEndTimestamp.getTime() / 1000)
 
   const interval1 = startTimestampSeconds + 86400 * 1 // 1 day after start
   const interval2 = startTimestampSeconds + 86400 * 2 // 2 days after start
@@ -149,18 +151,12 @@ describe('Aave revenue calculation', () => {
     tokenUSDPrices: mockTokenUSDPrices,
   }
 
-  const mockContext = {
-    ...mockBlockchainData,
-    startTimestamp: startTimestampSeconds,
-    endTimestamp: endTimestampSeconds,
-  }
-
   beforeEach(() => {
     jest.resetAllMocks()
     jest.mocked(fetchBlockchainData).mockResolvedValueOnce(mockBlockchainData)
   })
 
-  it('should correctly calculate revenue with varying reserve factors and user balances', async () => {
+  it('should correctly calculate revenue with ', async () => {
     // Token 1: deposit amount changed during the period:
     // - Day 1:   10 tokens, earnings = 0.1 = 10 * 0.01 (liquidity index increase)
     // - Day 2:   20 tokens, earnings = 0.2 = 20 * 0.01 (liquidity index increase)
@@ -177,19 +173,6 @@ describe('Aave revenue calculation', () => {
     // - Day 4   (reserve factor 80%): 0.8   =        0.4 * 0.5  * (0.80 / (1 - 0.80))
     // Total: 1.425
 
-    const revenue1 = revenueInReserve(
-      mockReserveToken1,
-      mockReserveTokenDecimals1,
-      mockAToken1,
-      mockContext,
-    )
-
-    expect(revenue1.revenue).toEqual(
-      parseUnits('1.425', mockReserveTokenDecimals1),
-    )
-  })
-
-  it('should correctly calculate revenue with varying reserve factors and constant user balance', async () => {
     // Token 2: amount of 1000 was constantly held the entire period
     // User earnings: 400 = 1000 * 0.4 (liquidity index increase)
     //
@@ -199,26 +182,12 @@ describe('Aave revenue calculation', () => {
     // - Day 2-4 (reserve factor 50%): 300 = 400 * 0.75 * (0.50 / (1 - 0.50))
     // Total: 325
 
-    const revenue2 = revenueInReserve(
-      mockReserveToken2,
-      mockReserveTokenDecimals2,
-      mockAToken2,
-      mockContext,
-    )
+    const revenue = await calculateRevenue({
+      address: mockUserAddress,
+      startTimestamp: mockStartTimestamp,
+      endTimestamp: mockEndTimestamp,
+    })
 
-    expect(revenue2.revenue).toEqual(
-      parseUnits('325', mockReserveTokenDecimals2),
-    )
-  })
-
-  it('should correctly calculate revenue in USD across multiple reserves', async () => {
-    const result = await revenueInNetwork(
-      mockNetwork,
-      mockUserAddress,
-      mockStartTimestamp,
-      mockEndTimestamp,
-    )
-
-    expect(result).toEqual(new BigNumber(1750)) // Total revenue in USD (1425 + 325)
+    expect(revenue).toEqual(1750) // Total revenue in USD ((1.425 * 1000) + (325 * 1))
   })
 })

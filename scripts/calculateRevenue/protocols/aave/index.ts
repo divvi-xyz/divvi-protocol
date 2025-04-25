@@ -53,7 +53,7 @@ export async function calculateRevenue({
   return revenue.toNumber()
 }
 
-export async function revenueInNetwork(
+async function revenueInNetwork(
   network: SupportedNetwork,
   userAddress: Address,
   startTimestamp: Date,
@@ -91,7 +91,7 @@ function revenueByReserve(context: RevenueCalculationContext): Revenue[] {
   )
 }
 
-export function revenueInReserve(
+function revenueInReserve(
   reserveTokenAddress: Address,
   reserveTokenDecimals: number,
   aTokenAddress: Address,
