@@ -41,10 +41,7 @@ contract DataAvailability is AccessControlDefaultAdminRules {
 
     // Mapping to store the rolling hash for each timestamp
     mapping(uint256 => bytes32) private timestampHashes;
-    
-    // Mapping to track which timestamps have data
-    mapping(uint256 => bool) private timestampsWithData;
-    
+
     // Array to store timestamps that have data, sorted in ascending order
     uint256[] private timestamps;
     
@@ -135,15 +132,14 @@ contract DataAvailability is AccessControlDefaultAdminRules {
             
             emit DataUploaded(timestamp, msg.sender, users[i], values[i]);
         }
-        
-        // Update the stored hash for the given timestamp
-        timestampHashes[timestamp] = currentHash;
-        
+         
         // Add timestamp to the array if it's new
-        if (!timestampsWithData[timestamp]) {
-            timestampsWithData[timestamp] = true;
+        if (!this.hasDataForTimestamp(timestamp)) {
             insertTimestamp(timestamp);
         }
+
+        // Update the stored hash for the given timestamp
+        timestampHashes[timestamp] = currentHash;
     }
 
     /**
@@ -152,7 +148,7 @@ contract DataAvailability is AccessControlDefaultAdminRules {
      * @return The stored hash for the given timestamp
      */
     function getHash(uint256 timestamp) external view returns (bytes32) {
-        if(!timestampsWithData[timestamp]) {
+        if(!this.hasDataForTimestamp(timestamp)) {
             return bytes32(0);
         }
         return timestampHashes[timestamp];
@@ -164,7 +160,7 @@ contract DataAvailability is AccessControlDefaultAdminRules {
      * @return true if data exists for the timestamp, false otherwise
      */
     function hasDataForTimestamp(uint256 timestamp) external view returns (bool) {
-        return timestampsWithData[timestamp];
+        return timestampHashes[timestamp] != bytes32(0);
     }
 
     /**
