@@ -10,8 +10,6 @@ import './tasks/registry'
 import './tasks/rewardPool'
 import './tasks/mockToken'
 import './tasks/divviRegistry'
-import '@typechain/hardhat'
-
 
 dotenv.config()
 

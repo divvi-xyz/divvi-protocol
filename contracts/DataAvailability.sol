@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {AccessControlDefaultAdminRules} from '@openzeppelin/contracts/access/extensions/AccessControlDefaultAdminRules.sol';
 
 contract DataAvailability is AccessControlDefaultAdminRules {
-    /**
+  /**
      * @dev DataAvailability stores information about the objective function value for users
      * across timestamps.
      * 
@@ -33,176 +33,193 @@ contract DataAvailability is AccessControlDefaultAdminRules {
      *   period between t_0 and t_1.
      */
 
-    // Role for authorized uploaders
-    bytes32 public constant UPLOADER_ROLE = keccak256("UPLOADER_ROLE");
+  // Role for authorized uploaders
+  bytes32 public constant UPLOADER_ROLE = keccak256('UPLOADER_ROLE');
 
-    // Address of the contract creator
-    address public immutable creator;
+  // Address of the contract creator
+  address public immutable creator;
 
-    // Mapping to store the rolling hash for each timestamp
-    mapping(uint256 => bytes32) private timestampHashes;
+  // Mapping to store the rolling hash for each timestamp
+  mapping(uint256 => bytes32) private timestampHashes;
 
-    // Array to store timestamps that have data, sorted in ascending order
-    uint256[] private timestamps;
-    
-    // Mapping to track the most recent timestamp for each user
-    mapping(address => uint256) private userLastTimestamp;
+  // Array to store timestamps that have data, sorted in ascending order
+  uint256[] private timestamps;
 
-    // Events
-    event DataUploaded(uint256 timestamp, address indexed uploader, address indexed user, uint256 value);
+  // Mapping to track the most recent timestamp for each user
+  mapping(address => uint256) private userLastTimestamp;
 
-    constructor() AccessControlDefaultAdminRules(0, msg.sender) {
-        creator = msg.sender;
-        // Grant the deployer the uploader role
-        _grantRole(UPLOADER_ROLE, msg.sender);
+  // Events
+  event DataUploaded(
+    uint256 timestamp,
+    address indexed uploader,
+    address indexed user,
+    uint256 value
+  );
+
+  constructor() AccessControlDefaultAdminRules(0, msg.sender) {
+    creator = msg.sender;
+    // Grant the deployer the uploader role
+    _grantRole(UPLOADER_ROLE, msg.sender);
+  }
+
+  /**
+   * @dev Override to prevent the creator from losing their uploader role
+   */
+  function revokeRole(bytes32 role, address account) public virtual override {
+    require(
+      !(role == UPLOADER_ROLE && account == creator),
+      'Cannot revoke uploader role from creator'
+    );
+    super.revokeRole(role, account);
+  }
+
+  /**
+   * @dev Override to prevent the creator from losing their uploader role
+   */
+  function renounceRole(bytes32 role, address account) public virtual override {
+    require(
+      !(role == UPLOADER_ROLE && account == creator),
+      'Creator cannot renounce uploader role'
+    );
+    super.renounceRole(role, account);
+  }
+
+  /**
+   * @dev Insert a timestamp into the sorted array
+   * @param timestamp The timestamp to insert
+   * @notice This function assumes timestamps are non-decreasing and only called for new timestamps
+   */
+  function insertTimestamp(uint256 timestamp) private {
+    // If this is the first timestamp or the new timestamp is greater than the last one,
+    // simply append it to the array
+    if (
+      timestamps.length == 0 || timestamp > timestamps[timestamps.length - 1]
+    ) {
+      timestamps.push(timestamp);
+    }
+    // If the timestamp equals the last one, we don't need to do anything
+    // as it's already in the array
+  }
+
+  /**
+   * @dev Upload data for multiple users at a given timestamp
+   * @param timestamp The timestamp for which the data is being uploaded
+   * @param users Array of user addresses
+   * @param values Array of corresponding values
+   * @notice The timestamp must be greater than the most recent timestamp with data
+   * @notice Each user can only have one data point per timestamp
+   */
+  function uploadData(
+    uint256 timestamp,
+    address[] calldata users,
+    uint256[] calldata values
+  ) external onlyRole(UPLOADER_ROLE) {
+    require(users.length == values.length, 'Arrays length mismatch');
+
+    // Ensure the timestamp is greater than the most recent timestamp
+    if (timestamps.length > 0) {
+      require(
+        timestamp >= timestamps[timestamps.length - 1],
+        'Timestamp must be greater than or equal to most recent timestamp'
+      );
     }
 
-    /**
-     * @dev Override to prevent the creator from losing their uploader role
-     */
-    function revokeRole(bytes32 role, address account) public virtual override {
-        require(
-            !(role == UPLOADER_ROLE && account == creator),
-            "Cannot revoke uploader role from creator"
-        );
-        super.revokeRole(role, account);
+    bytes32 currentHash = this.getHash(timestamp);
+
+    for (uint256 i = 0; i < users.length; i++) {
+      // Check if this user already has data at this timestamp
+      require(
+        userLastTimestamp[users[i]] != timestamp,
+        'User already has data at this timestamp'
+      );
+
+      // Calculate hash for this user:value pair
+      bytes32 pairHash = keccak256(abi.encodePacked(users[i], values[i]));
+      // XOR with current hash
+      currentHash = currentHash ^ pairHash;
+
+      // Update the most recent timestamp for this user
+      if (timestamp > userLastTimestamp[users[i]]) {
+        userLastTimestamp[users[i]] = timestamp;
+      }
+
+      emit DataUploaded(timestamp, msg.sender, users[i], values[i]);
     }
 
-    /**
-     * @dev Override to prevent the creator from losing their uploader role
-     */
-    function renounceRole(bytes32 role, address account) public virtual override {
-        require(
-            !(role == UPLOADER_ROLE && account == creator),
-            "Creator cannot renounce uploader role"
-        );
-        super.renounceRole(role, account);
+    // Add timestamp to the array if it's new
+    if (!this.hasDataForTimestamp(timestamp)) {
+      insertTimestamp(timestamp);
     }
 
-    /**
-     * @dev Insert a timestamp into the sorted array
-     * @param timestamp The timestamp to insert
-     * @notice This function assumes timestamps are non-decreasing and only called for new timestamps
-     */
-    function insertTimestamp(uint256 timestamp) private {
-        // If this is the first timestamp or the new timestamp is greater than the last one,
-        // simply append it to the array
-        if (timestamps.length == 0 || timestamp > timestamps[timestamps.length - 1]) {
-            timestamps.push(timestamp);
-        }
-        // If the timestamp equals the last one, we don't need to do anything
-        // as it's already in the array
+    // Update the stored hash for the given timestamp
+    timestampHashes[timestamp] = currentHash;
+  }
+
+  /**
+   * @dev Get the stored hash for a given timestamp
+   * @param timestamp The timestamp to query
+   * @return The stored hash for the given timestamp
+   */
+  function getHash(uint256 timestamp) external view returns (bytes32) {
+    if (!this.hasDataForTimestamp(timestamp)) {
+      return bytes32(0);
     }
+    return timestampHashes[timestamp];
+  }
 
-    /**
-     * @dev Upload data for multiple users at a given timestamp
-     * @param timestamp The timestamp for which the data is being uploaded
-     * @param users Array of user addresses
-     * @param values Array of corresponding values
-     * @notice The timestamp must be greater than the most recent timestamp with data
-     * @notice Each user can only have one data point per timestamp
-     */
-    function uploadData(
-        uint256 timestamp,
-        address[] calldata users,
-        uint256[] calldata values
-    ) external onlyRole(UPLOADER_ROLE) {
-        require(users.length == values.length, "Arrays length mismatch");
-        
-        // Ensure the timestamp is greater than the most recent timestamp
-        if (timestamps.length > 0) {
-            require(timestamp >= timestamps[timestamps.length - 1], "Timestamp must be greater than or equal to most recent timestamp");
-        }
-        
-        bytes32 currentHash = this.getHash(timestamp);
+  /**
+   * @dev Check if data exists for a given timestamp
+   * @param timestamp The timestamp to check
+   * @return true if data exists for the timestamp, false otherwise
+   */
+  function hasDataForTimestamp(uint256 timestamp) external view returns (bool) {
+    return timestampHashes[timestamp] != bytes32(0);
+  }
 
-        for (uint256 i = 0; i < users.length; i++) {
-            // Check if this user already has data at this timestamp
-            require(userLastTimestamp[users[i]] != timestamp, "User already has data at this timestamp");
-            
-            // Calculate hash for this user:value pair
-            bytes32 pairHash = keccak256(abi.encodePacked(users[i], values[i]));
-            // XOR with current hash
-            currentHash = currentHash ^ pairHash;
-            
-            // Update the most recent timestamp for this user
-            if (timestamp > userLastTimestamp[users[i]]) {
-                userLastTimestamp[users[i]] = timestamp;
-            }
-            
-            emit DataUploaded(timestamp, msg.sender, users[i], values[i]);
-        }
-         
-        // Add timestamp to the array if it's new
-        if (!this.hasDataForTimestamp(timestamp)) {
-            insertTimestamp(timestamp);
-        }
+  /**
+   * @dev Get all timestamps that have data. Not strictly necessary, since events are emitted for each upload.
+   * @return An array of timestamps that have data, sorted in ascending order
+   */
+  function getAllTimestamps() external view returns (uint256[] memory) {
+    return timestamps;
+  }
 
-        // Update the stored hash for the given timestamp
-        timestampHashes[timestamp] = currentHash;
-    }
+  /**
+   * @dev Get the most recent timestamp for which data exists for a user
+   * @param user The address to query
+   * @return The most recent timestamp with data for the user, or 0 if no data exists
+   */
+  function getLastTimestamp(address user) external view returns (uint256) {
+    return userLastTimestamp[user];
+  }
 
-    /**
-     * @dev Get the stored hash for a given timestamp
-     * @param timestamp The timestamp to query
-     * @return The stored hash for the given timestamp
-     */
-    function getHash(uint256 timestamp) external view returns (bytes32) {
-        if(!this.hasDataForTimestamp(timestamp)) {
-            return bytes32(0);
-        }
-        return timestampHashes[timestamp];
-    }
+  /**
+   * @dev Grant uploader role to an address
+   * @param uploader The address to grant the uploader role to
+   */
+  function grantUploaderRole(
+    address uploader
+  ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    _grantRole(UPLOADER_ROLE, uploader);
+  }
 
-    /**
-     * @dev Check if data exists for a given timestamp
-     * @param timestamp The timestamp to check
-     * @return true if data exists for the timestamp, false otherwise
-     */
-    function hasDataForTimestamp(uint256 timestamp) external view returns (bool) {
-        return timestampHashes[timestamp] != bytes32(0);
-    }
+  /**
+   * @dev Revoke uploader role from an address
+   * @param uploader The address to revoke the uploader role from
+   */
+  function revokeUploaderRole(
+    address uploader
+  ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    require(uploader != creator, 'Cannot revoke uploader role from creator');
+    _revokeRole(UPLOADER_ROLE, uploader);
+  }
 
-    /**
-     * @dev Get all timestamps that have data. Not strictly necessary, since events are emitted for each upload.
-     * @return An array of timestamps that have data, sorted in ascending order
-     */
-    function getAllTimestamps() external view returns (uint256[] memory) {
-        return timestamps;
-    }
-
-    /**
-     * @dev Get the most recent timestamp for which data exists for a user
-     * @param user The address to query
-     * @return The most recent timestamp with data for the user, or 0 if no data exists
-     */
-    function getLastTimestamp(address user) external view returns (uint256) {
-        return userLastTimestamp[user];
-    }
-
-    /**
-     * @dev Grant uploader role to an address
-     * @param uploader The address to grant the uploader role to
-     */
-    function grantUploaderRole(address uploader) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _grantRole(UPLOADER_ROLE, uploader);
-    }
-
-    /**
-     * @dev Revoke uploader role from an address
-     * @param uploader The address to revoke the uploader role from
-     */
-    function revokeUploaderRole(address uploader) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(uploader != creator, "Cannot revoke uploader role from creator");
-        _revokeRole(UPLOADER_ROLE, uploader);
-    }
-
-    /**
-     * @dev Check if an address has the uploader role
-     * @param account The address to check
-     * @return true if the address has the uploader role, false otherwise
-     */
-    function isUploader(address account) external view returns (bool) {
-        return hasRole(UPLOADER_ROLE, account);
-    }
+  /**
+   * @dev Check if an address has the uploader role
+   * @param account The address to check
+   * @return true if the address has the uploader role, false otherwise
+   */
+  function isUploader(address account) external view returns (bool) {
+    return hasRole(UPLOADER_ROLE, account);
+  }
 }
