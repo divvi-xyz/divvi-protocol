@@ -1,12 +1,12 @@
 import { expect } from 'chai'
 import hre from 'hardhat'
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers'
-import { Contract } from 'ethers'
+import { DataAvailabilityInterface } from '../typechain-types/contracts/DataAvailability'
 
 const CONTRACT_NAME = 'DataAvailability'
 
 describe('DataAvailability', () => {
-  let dataAvailability: Contract
+  let dataAvailability: DataAvailabilityInterface
   let owner: SignerWithAddress
   let uploader: SignerWithAddress
   let extraUser: SignerWithAddress
@@ -25,7 +25,6 @@ describe('DataAvailability', () => {
 
     return { dataAvailability, owner, uploader, extraUser }
   }
-
   beforeEach(async () => {
     const deployed = await deployDataAvailabilityContract()
     dataAvailability = deployed.dataAvailability

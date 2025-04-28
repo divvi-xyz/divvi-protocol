@@ -42,6 +42,8 @@
     "@openzeppelin/contracts": "5.2.0",
     "@openzeppelin/contracts-upgradeable": "^5.2.0",
     "@openzeppelin/hardhat-upgrades": "^3.9.0",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@typechain/hardhat": "^9.1.0",
     "@types/jest": "^29.5.14",
     "@types/mocha": "^10.0.10",
     "@types/node-fetch": "^2.6.12",
@@ -70,9 +72,11 @@
     "solidity-coverage": "^0.8.14",
     "ts-jest": "^29.3.0",
     "ts-node": "^10.9.2",
+    "typechain": "^8.3.2",
     "typescript": "^5.8.3",
     "viem": "^2.24.1",
     "yargs": "^17.7.2"
   },
-  "prettier": "@valora/prettier-config"
+  "prettier": "@valora/prettier-config",
+  "dependencies": {}
 }
