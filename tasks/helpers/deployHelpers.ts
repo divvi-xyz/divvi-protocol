@@ -29,6 +29,7 @@ type WithDefender = {
 
 type WithoutDefender = {
   useDefender?: false
+  defenderDeploySalt?: never
 }
 
 // Contract deployment helper
@@ -38,6 +39,18 @@ export async function deployContract(
   constructorArgs: any[],
   config: BaseDeployConfig & DefenderConfig = {},
 ) {
+  if (config.useDefender && !SUPPORTED_NETWORKS.includes(hre.network.name)) {
+    throw new Error(
+      `--use-defender only supports networks: ${SUPPORTED_NETWORKS}`,
+    )
+  }
+
+  if (config.defenderDeploySalt && !config.useDefender) {
+    throw new Error(
+      `--defender-deploy-salt can only be used with --use-defender`,
+    )
+  }
+
   const Contract = await hre.ethers.getContractFactory(contractName)
 
   let proxyAddress: string | undefined

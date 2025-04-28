@@ -20,7 +20,7 @@ Run the localtest in one terminal:
 yarn hardhat node
 ```
 
-### Registry contract
+### Registry contract (v0)
 
 Deploy Registry:
 
@@ -32,6 +32,14 @@ And create some dummy data:
 
 ```
 yarn hardhat --network localhost registry:populate
+```
+
+### DivviRegistry contract (v1)
+
+Deploy DivviRegistry:
+
+```
+yarn hardhat --network localhost divvi-registry:deploy
 ```
 
 ### RewardPool contract
@@ -131,6 +139,16 @@ To deploy Registry, run:
 yarn hardhat registry:deploy --network celo
 ```
 
+To deploy DivviRegistry, run:
+
+```bash
+yarn hardhat divvi-registry:deploy \
+    --network op \
+    --use-defender \
+    --defender-deploy-salt <SALT> \
+    --owner-address <OWNER_ADDRESS>
+```
+
 To deploy RewardPool, run:
 
 ```bash
@@ -146,3 +164,17 @@ yarn hardhat reward-pool:deploy \
 ```
 
 After this is done, you should see output in your terminal with a command to run to verify the contract on the block explorers.
+
+To upgrade DivviRegistry, run:
+
+```bash
+yarn hardhat divvi-registry:upgrade \
+    --network op \
+    --use-defender \
+    --defender-deploy-salt <SALT> \
+    --proxy-address <PROXY_ADDRESS>
+```
+
+### Metadata of upgradable contracts
+
+Metadata about proxy and implementation deployments is automatically generated and stored in the `.openzeppelin/` directory, which should be checked into version control.
