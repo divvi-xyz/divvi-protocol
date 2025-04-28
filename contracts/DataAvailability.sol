@@ -4,14 +4,43 @@ pragma solidity ^0.8.24;
 import {AccessControlDefaultAdminRules} from '@openzeppelin/contracts/access/extensions/AccessControlDefaultAdminRules.sol';
 
 contract DataAvailability is AccessControlDefaultAdminRules {
+    /**
+     * @dev DataAvailability stores information about the objective function value for users
+     * across timestamps.
+     * 
+     * The contract creator and any permitted uploaders may upload user objective function data
+     * at a given timestamp. The objective function data that are uploaded represent the delta
+     * between the objective function value at the current timestamp and the value at the
+     * previous timestamp that data was uploaded. The data is not actually stored in the contract,
+     * but events are emitted for each upload, which can be used to reconstruct the full data history.
+     *
+     * Instead of storing all data in the contract, a rolling hash of the data is calculated and stored
+     * for each timestamp. When verifying the data, the submitted proof will contain a hash of the data
+     * computed in a trusted zkVM; if the hash contained in the proof matches the hash stored in the contract,
+     * the data is considered valid.
+
+     * The rolling hash is calculated by XORing the existing hash for a given timestamp with the hash of each
+     * user:value pair as they are received by the contract. Since XOR is both commutative and associative, this
+     * results in a hash that is invariant to the order of uploads. Since we cannot "remove" information about
+     * a data entry from the hash, we require that information about a user:value pair is only submitted once
+     * per timestamp, to ensure that the hash is correct.
+     *
+     * The intended usage pattern of this contract is as follows:
+     * - For a given timestamp t_1, changes in objective function values since the last timestamp t_0 are calculated.
+     * - These data are submitted to the contract, and a rolling hash is calculated.
+     * - The contract emits events for each upload, which can be used to reconstruct the full data history.
+     * - These data are used by an off-chain reward distribution service to calculate rewards owed for the
+     *   period between t_0 and t_1.
+     */
+
     // Role for authorized uploaders
     bytes32 public constant UPLOADER_ROLE = keccak256("UPLOADER_ROLE");
 
     // Address of the contract creator
     address public immutable creator;
 
-    // Mapping to store data: timestamp => (address => value)
-    mapping(uint256 => mapping(address => uint256)) private data;
+    // Mapping to store the rolling hash for each timestamp
+    mapping(uint256 => bytes32) private timestampHashes;
     
     // Mapping to track which timestamps have data
     mapping(uint256 => bool) private timestampsWithData;
@@ -23,36 +52,12 @@ contract DataAvailability is AccessControlDefaultAdminRules {
     mapping(address => uint256) private userLastTimestamp;
 
     // Events
-    event DataUploaded(uint256 timestamp, address indexed entity, address indexed user, uint256 value);
+    event DataUploaded(uint256 timestamp, address indexed uploader, address indexed user, uint256 value);
 
     constructor() AccessControlDefaultAdminRules(0, msg.sender) {
         creator = msg.sender;
         // Grant the deployer the uploader role
         _grantRole(UPLOADER_ROLE, msg.sender);
-    }
-
-    /**
-     * @dev Override to prevent the creator from losing their admin role
-     */
-    function beginDefaultAdminTransfer(address newAdmin) public virtual override {
-        require(newAdmin != creator, "Cannot transfer admin role from creator");
-        super.beginDefaultAdminTransfer(newAdmin);
-    }
-
-    /**
-     * @dev Override to prevent the creator from losing their admin role
-     */
-    function acceptDefaultAdminTransfer() public virtual override {
-        require(msg.sender != creator, "Creator cannot accept admin transfer");
-        super.acceptDefaultAdminTransfer();
-    }
-
-    /**
-     * @dev Override to prevent the creator from losing their admin role
-     */
-    function cancelDefaultAdminTransfer() public virtual override {
-        require(msg.sender != creator, "Creator cannot cancel admin transfer");
-        super.cancelDefaultAdminTransfer();
     }
 
     /**
@@ -78,79 +83,18 @@ contract DataAvailability is AccessControlDefaultAdminRules {
     }
 
     /**
-     * @dev Find the insertion point for a new timestamp in the sorted array
-     * @param timestamp The timestamp to find the insertion point for
-     * @return The index where the timestamp should be inserted
-     */
-    function findInsertionPoint(uint256 timestamp) private view returns (uint256) {
-        if (timestamps.length == 0 || timestamp > timestamps[timestamps.length - 1]) {
-            return timestamps.length;
-        }
-        
-        uint256 left = 0;
-        uint256 right = timestamps.length;
-        
-        while (left < right) {
-            uint256 mid = (left + right) / 2;
-            if (timestamps[mid] < timestamp) {
-                left = mid + 1;
-            } else {
-                right = mid;
-            }
-        }
-        
-        return left;
-    }
-
-    /**
-     * @dev Find the most recent timestamp that is less than or equal to the given timestamp
-     * @param timestamp The timestamp to search for
-     * @return The most recent timestamp that is less than or equal to the given timestamp, or 0 if none exists
-     */
-    function findMostRecentTimestamp(uint256 timestamp) private view returns (uint256) {
-        if (timestamps.length == 0) {
-            return 0;
-        }
-
-        // If the requested timestamp is after the last timestamp, return the last timestamp
-        if (timestamp >= timestamps[timestamps.length - 1]) {
-            return timestamps[timestamps.length - 1];
-        }
-
-        // Find the first timestamp that is greater than the requested timestamp
-        uint256 index = findInsertionPoint(timestamp);
-        
-        // If the found timestamp is equal to the requested timestamp, return it
-        if (index < timestamps.length && timestamps[index] == timestamp) {
-            return timestamp;
-        }
-        
-        // Otherwise, return the previous timestamp (if it exists)
-        return index > 0 ? timestamps[index - 1] : 0;
-    }
-
-    /**
      * @dev Insert a timestamp into the sorted array
      * @param timestamp The timestamp to insert
+     * @notice This function assumes timestamps are non-decreasing and only called for new timestamps
      */
     function insertTimestamp(uint256 timestamp) private {
-        uint256 insertIndex = findInsertionPoint(timestamp);
-        
-        // If the timestamp is already in the array, don't insert it
-        if (insertIndex < timestamps.length && timestamps[insertIndex] == timestamp) {
-            return;
+        // If this is the first timestamp or the new timestamp is greater than the last one,
+        // simply append it to the array
+        if (timestamps.length == 0 || timestamp > timestamps[timestamps.length - 1]) {
+            timestamps.push(timestamp);
         }
-        
-        // Add a new element to the end of the array
-        timestamps.push(0);
-        
-        // Shift elements to make room for the new timestamp
-        for (uint256 i = timestamps.length - 1; i > insertIndex; i--) {
-            timestamps[i] = timestamps[i - 1];
-        }
-        
-        // Insert the new timestamp
-        timestamps[insertIndex] = timestamp;
+        // If the timestamp equals the last one, we don't need to do anything
+        // as it's already in the array
     }
 
     /**
@@ -158,22 +102,42 @@ contract DataAvailability is AccessControlDefaultAdminRules {
      * @param timestamp The timestamp for which the data is being uploaded
      * @param users Array of user addresses
      * @param values Array of corresponding values
+     * @notice The timestamp must be greater than the most recent timestamp with data
+     * @notice Each user can only have one data point per timestamp
      */
-    function uploadBatchData(
+    function uploadData(
         uint256 timestamp,
         address[] calldata users,
         uint256[] calldata values
     ) external onlyRole(UPLOADER_ROLE) {
         require(users.length == values.length, "Arrays length mismatch");
         
+        // Ensure the timestamp is greater than the most recent timestamp
+        if (timestamps.length > 0) {
+            require(timestamp >= timestamps[timestamps.length - 1], "Timestamp must be greater than or equal to most recent timestamp");
+        }
+        
+        bytes32 currentHash = this.getHash(timestamp);
+
         for (uint256 i = 0; i < users.length; i++) {
-            data[timestamp][users[i]] = values[i];
+            // Check if this user already has data at this timestamp
+            require(userLastTimestamp[users[i]] != timestamp, "User already has data at this timestamp");
+            
+            // Calculate hash for this user:value pair
+            bytes32 pairHash = keccak256(abi.encodePacked(users[i], values[i]));
+            // XOR with current hash
+            currentHash = currentHash ^ pairHash;
+            
             // Update the most recent timestamp for this user
             if (timestamp > userLastTimestamp[users[i]]) {
                 userLastTimestamp[users[i]] = timestamp;
             }
+            
             emit DataUploaded(timestamp, msg.sender, users[i], values[i]);
         }
+        
+        // Update the stored hash for the given timestamp
+        timestampHashes[timestamp] = currentHash;
         
         // Add timestamp to the array if it's new
         if (!timestampsWithData[timestamp]) {
@@ -183,34 +147,15 @@ contract DataAvailability is AccessControlDefaultAdminRules {
     }
 
     /**
-     * @dev Get the value for a specific address at a given timestamp
+     * @dev Get the stored hash for a given timestamp
      * @param timestamp The timestamp to query
-     * @param user The address to query
-     * @return The stored value for the given address and timestamp, or the most recent value if not available
+     * @return The stored hash for the given timestamp
      */
-    function getData(uint256 timestamp, address user) external view returns (uint256) {
-        // If data exists for the requested timestamp, return it
-        if (data[timestamp][user] != 0 || timestampsWithData[timestamp]) {
-            return data[timestamp][user];
+    function getHash(uint256 timestamp) external view returns (bytes32) {
+        if(!timestampsWithData[timestamp]) {
+            return bytes32(0);
         }
-        
-        // If no data exists for this user at all, return 0
-        if (userLastTimestamp[user] == 0) {
-            return 0;
-        }
-        
-        // If the requested timestamp is after the user's last data point, return the last value
-        if (timestamp > userLastTimestamp[user]) {
-            return data[userLastTimestamp[user]][user];
-        }
-        
-        // Find the most recent timestamp before or equal to the requested timestamp
-        uint256 mostRecentTimestamp = findMostRecentTimestamp(timestamp);
-        if (mostRecentTimestamp > 0) {
-            return data[mostRecentTimestamp][user];
-        }
-        
-        return 0;
+        return timestampHashes[timestamp];
     }
 
     /**
@@ -223,38 +168,11 @@ contract DataAvailability is AccessControlDefaultAdminRules {
     }
 
     /**
-     * @dev Get all timestamps that have data
+     * @dev Get all timestamps that have data. Not strictly necessary, since events are emitted for each upload.
      * @return An array of timestamps that have data, sorted in ascending order
      */
     function getAllTimestamps() external view returns (uint256[] memory) {
         return timestamps;
-    }
-
-    /**
-     * @dev Get timestamps that have data within a range
-     * @param start The start of the range (inclusive)
-     * @param end The end of the range (inclusive)
-     * @return An array of timestamps that have data within the range, sorted in ascending order
-     */
-    function getTimestampsInRange(uint256 start, uint256 end) external view returns (uint256[] memory) {
-        require(start <= end, "Invalid range");
-
-        // Find the first timestamp >= start
-        uint256 startIndex = findInsertionPoint(start);
-        
-        // Find the first timestamp > end
-        uint256 endIndex = findInsertionPoint(end + 1);
-        
-        // Calculate the number of timestamps in range
-        uint256 count = endIndex - startIndex;
-        
-        // Create and populate the result array
-        uint256[] memory result = new uint256[](count);
-        for (uint256 i = 0; i < count; i++) {
-            result[i] = timestamps[startIndex + i];
-        }
-
-        return result;
     }
 
     /**
@@ -290,10 +208,5 @@ contract DataAvailability is AccessControlDefaultAdminRules {
      */
     function isUploader(address account) external view returns (bool) {
         return hasRole(UPLOADER_ROLE, account);
-    }
-
-    // The following functions are overrides required by Solidity
-    function supportsInterface(bytes4 interfaceId) public view override(AccessControlDefaultAdminRules) returns (bool) {
-        return super.supportsInterface(interfaceId);
     }
 }
