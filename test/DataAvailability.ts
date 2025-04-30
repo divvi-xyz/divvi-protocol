@@ -3,22 +3,13 @@ import hre from 'hardhat'
 
 const CONTRACT_NAME = 'DataAvailability'
 
-function xorBuffers(buffer1: Buffer, buffer2: Buffer) {
-  if (!Buffer.isBuffer(buffer1) || !Buffer.isBuffer(buffer2)) {
-    throw new TypeError('Both arguments must be Buffers.')
-  }
+function sumBuffersModulo(buffer1: Buffer, buffer2: Buffer) {
+  const buffer1BigInt = BigInt('0x' + buffer1.toString('hex'))
+  const buffer2BigInt = BigInt('0x' + buffer2.toString('hex'))
 
-  if (buffer1.length !== buffer2.length) {
-    throw new Error('Buffers must be of the same length.')
-  }
+  const result = (buffer1BigInt + buffer2BigInt) % 2n ** 256n
 
-  const result = Buffer.alloc(buffer1.length)
-
-  for (let i = 0; i < buffer1.length; i++) {
-    result[i] = buffer1[i] ^ buffer2[i]
-  }
-
-  return result
+  return Buffer.from(result.toString(16), 'hex')
 }
 
 describe('DataAvailability', () => {
@@ -241,7 +232,7 @@ describe('DataAvailability', () => {
           [uploader.address, 200],
         ),
       )
-      const expectedHash = `0x${xorBuffers(Buffer.from(hash1.slice(2), 'hex'), Buffer.from(hash2.slice(2), 'hex')).toString('hex')}`
+      const expectedHash = `0x${sumBuffersModulo(Buffer.from(hash1.slice(2), 'hex'), Buffer.from(hash2.slice(2), 'hex')).toString('hex')}`
 
       const hash = await dataAvailability.getHash(timestamp)
       expect(hash).to.equal(expectedHash)
@@ -271,7 +262,7 @@ describe('DataAvailability', () => {
           [uploader.address, 200],
         ),
       )
-      const expectedHash = `0x${xorBuffers(Buffer.from(hash1.slice(2), 'hex'), Buffer.from(hash2.slice(2), 'hex')).toString('hex')}`
+      const expectedHash = `0x${sumBuffersModulo(Buffer.from(hash1.slice(2), 'hex'), Buffer.from(hash2.slice(2), 'hex')).toString('hex')}`
 
       const hash = await dataAvailability.getHash(timestamp)
       expect(hash).to.equal(expectedHash)

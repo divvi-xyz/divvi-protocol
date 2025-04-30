@@ -19,8 +19,8 @@ contract DataAvailability is AccessControlDefaultAdminRules {
      * computed in a trusted zkVM; if the hash contained in the proof matches the hash stored in the contract,
      * the data is considered valid.
 
-     * The rolling hash is calculated by XORing the existing hash for a given timestamp with the hash of each
-     * user:value pair as they are received by the contract. Since XOR is both commutative and associative, this
+     * The rolling hash is calculated by summing the existing hash for a given timestamp with the hash of each
+     * user:value pair modulo 2^256 as they are received by the contract. Since modular addition is both commutative and associative, this
      * results in a hash that is invariant to the order of uploads. Since we cannot "remove" information about
      * a data entry from the hash, we require that information about a user:value pair is only submitted once
      * per timestamp, to ensure that the hash is correct.
@@ -133,10 +133,12 @@ contract DataAvailability is AccessControlDefaultAdminRules {
         'User already has data at this timestamp'
       );
 
-      // Calculate hash for this user:value pair
+      // Calculate the hash for this user:value pair
       bytes32 pairHash = keccak256(abi.encodePacked(users[i], values[i]));
-      // XOR with current hash
-      currentHash = currentHash ^ pairHash;
+      // Sum the hashes and take modulo 2^256
+      currentHash = bytes32(
+        addmod(uint256(pairHash), uint256(currentHash), type(uint256).max)
+      );
 
       // Update the most recent timestamp for this user
       if (timestamp > userLastTimestamp[users[i]]) {
