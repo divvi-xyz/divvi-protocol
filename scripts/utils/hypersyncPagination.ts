@@ -6,7 +6,7 @@ import {
 } from '@envio-dev/hypersync-client'
 
 export async function paginateQuery(
-  client: HypersyncClient,
+  client: { get: (query: Query) => Promise<QueryResponse> },
   query: Query,
   onPage: (response: QueryResponse) => Promise<boolean | void>,
 ): Promise<void> {

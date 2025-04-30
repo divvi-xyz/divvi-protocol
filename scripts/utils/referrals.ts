@@ -73,6 +73,7 @@ export async function fetchReferralEvents(
       log: [
         LogField.TransactionHash,
         LogField.Data,
+        LogField.Topic0,
         LogField.Topic1,
         LogField.Topic2,
         LogField.Topic3,
@@ -108,8 +109,8 @@ export async function fetchReferralEvents(
 
         referralEvents.push({
           protocol,
-          userAddress: decodedEvent.args.user,
-          referrerId: decodedEvent.args.rewardsConsumer,
+          userAddress: decodedEvent.args.user.toLowerCase(),
+          referrerId: decodedEvent.args.rewardsConsumer.toLowerCase(),
           timestamp: Number(event.block.timestamp),
         })
       }
