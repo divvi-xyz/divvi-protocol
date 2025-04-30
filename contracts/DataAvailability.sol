@@ -161,9 +161,6 @@ contract DataAvailability is AccessControlDefaultAdminRules {
    * @return The stored hash for the given timestamp
    */
   function getHash(uint256 timestamp) external view returns (bytes32) {
-    if (!this.hasDataForTimestamp(timestamp)) {
-      return bytes32(0);
-    }
     return timestampHashes[timestamp];
   }
 
