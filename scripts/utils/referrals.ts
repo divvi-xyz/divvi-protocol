@@ -8,7 +8,7 @@ import { paginateEventsQuery } from './hypersyncPagination'
 const REGISTRY_CONTRACT_ADDRESS = '0xedb51a8c390fc84b1c2a40e0ae9c9882fa7b7277'
 const STAGING_REGISTRY_CONTRACT_ADDRESS =
   '0x2f5E320698dB89CbefB810Fa19264103d99aAFB1'
-const REWARDS_NETWORK_ID = NetworkId['op-mainnet']
+const REGISTRY_NETWORK_ID = NetworkId['op-mainnet']
 
 const REGISTRY_START_BLOCK = 134945942 // Block where the registry contract was deployed
 
@@ -56,7 +56,7 @@ export async function fetchReferralEvents(
     eventName: 'ReferralRegistered',
   })
 
-  const hypersyncClient = getHyperSyncClient(REWARDS_NETWORK_ID)
+  const hypersyncClient = getHyperSyncClient(REGISTRY_NETWORK_ID)
 
   const hypersyncQuery: Query = {
     fromBlock: REGISTRY_START_BLOCK,
