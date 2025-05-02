@@ -18,6 +18,17 @@ async function getArgs() {
   }
 }
 
+function removeDuplicates<T>(arr: T[]): T[] {
+  const seen = new Set<T>()
+  return arr.filter((item) => {
+    if (seen.has(item)) {
+      return false
+    }
+    seen.add(item)
+    return true
+  })
+}
+
 async function getDivviIntegrators(): Promise<Address[]> {
   const usersThatHaveIntegrated: Address[] = []
   const usersThatHaveReceivedRewards = new Set<Address>()
@@ -63,8 +74,12 @@ async function getDivviIntegrators(): Promise<Address[]> {
     }),
   ])
 
+  const deduplicatedUsersThatHaveIntegrated = removeDuplicates(
+    usersThatHaveIntegrated,
+  )
+
   // TODO: Also filter for if the user is whitelisted
-  const userToReceiveRewards = usersThatHaveIntegrated.filter(
+  const userToReceiveRewards = deduplicatedUsersThatHaveIntegrated.filter(
     (user: Address) => !usersThatHaveReceivedRewards.has(user),
   )
 
