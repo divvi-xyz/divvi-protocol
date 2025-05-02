@@ -38,12 +38,12 @@ async function getDivviIntegrators(): Promise<Address[]> {
       {
         topics: [
           [
-            '0xfddf272d6cdce612f7757626eff4fda5e235d0da62a22cc77ebe3e295b1479d0',  // ReferralRegistered topic
+            '0xfddf272d6cdce612f7757626eff4fda5e235d0da62a22cc77ebe3e295b1479d0', // ReferralRegistered topic
           ],
         ],
       },
     ],
-    transactions: [{ from: ['0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'] }],  // DivviRegistry production contract
+    transactions: [{ from: ['0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'] }], // DivviRegistry production contract
     fieldSelection: {
       log: [LogField.Topic0, LogField.Topic1, LogField.Topic2, LogField.Topic3],
     },
