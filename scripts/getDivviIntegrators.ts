@@ -15,7 +15,7 @@ const DIVVI_INTEGRATION_REWARDS_ENTITY =
   '0x6226ddE08402642964f9A6de844ea3116F0dFc7e'
 
 const WHITELIST_URL =
-  'https://raw.githubusercontent.com/divvi-xyz/divvi-integration/main/src/integration-list.json'
+  'https://raw.githubusercontent.com/divvi-xyz/integration-list/main/src/integration-list.json'
 type WhitelistedUser = {
   entityAddress: string
   githubUsername: string
