@@ -14,6 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+/* solhint-disable */
 pragma solidity ^0.8.9;
 
 /// @notice reverse the byte order of the uint256 value.

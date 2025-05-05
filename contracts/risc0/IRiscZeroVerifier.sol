@@ -14,7 +14,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-pragma solidity ^0.8.9;
+/* solhint-disable */
+pragma solidity ^0.8.24;
 
 import {reverseByteOrderUint32} from './Util.sol';
 
