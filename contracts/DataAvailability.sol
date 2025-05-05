@@ -8,7 +8,7 @@ contract DataAvailability is AccessControlDefaultAdminRules {
      * @dev DataAvailability stores information about the objective function value for users
      * across timestamps.
      * 
-     * The contract creator and any permitted uploaders may upload user objective function data
+     * The contract owner and any permitted uploaders may upload user objective function data
      * at a given timestamp. The objective function data that are uploaded represent the delta
      * between the objective function value at the current timestamp and the value at the
      * previous timestamp that data was uploaded. The data is not actually stored in the contract,
@@ -36,9 +36,6 @@ contract DataAvailability is AccessControlDefaultAdminRules {
   // Role for authorized uploaders
   bytes32 public constant UPLOADER_ROLE = keccak256('UPLOADER_ROLE');
 
-  // Address of the contract creator
-  address public immutable creator;
-
   // Mapping to store the rolling hash for each timestamp
   mapping(uint256 => bytes32) private timestampHashes;
 
@@ -56,30 +53,29 @@ contract DataAvailability is AccessControlDefaultAdminRules {
     uint256 value
   );
 
-  constructor() AccessControlDefaultAdminRules(0, msg.sender) {
-    creator = msg.sender;
+  constructor(address _owner) AccessControlDefaultAdminRules(0, _owner) {
     // Grant the deployer the uploader role
-    _grantRole(UPLOADER_ROLE, msg.sender);
+    _grantRole(UPLOADER_ROLE, _owner);
   }
 
   /**
-   * @dev Override to prevent the creator from losing their uploader role
+   * @dev Override to prevent the owner from losing their uploader role
    */
   function revokeRole(bytes32 role, address account) public virtual override {
     require(
-      !(role == UPLOADER_ROLE && account == creator),
-      'Cannot revoke uploader role from creator'
+      !(role == UPLOADER_ROLE && hasRole(DEFAULT_ADMIN_ROLE, account)),
+      'Cannot revoke uploader role from owner'
     );
     super.revokeRole(role, account);
   }
 
   /**
-   * @dev Override to prevent the creator from losing their uploader role
+   * @dev Override to prevent the owner from losing their uploader role
    */
   function renounceRole(bytes32 role, address account) public virtual override {
     require(
-      !(role == UPLOADER_ROLE && account == creator),
-      'Creator cannot renounce uploader role'
+      !(role == UPLOADER_ROLE && hasRole(DEFAULT_ADMIN_ROLE, account)),
+      'owner cannot renounce uploader role'
     );
     super.renounceRole(role, account);
   }
@@ -209,7 +205,10 @@ contract DataAvailability is AccessControlDefaultAdminRules {
   function revokeUploaderRole(
     address uploader
   ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    require(uploader != creator, 'Cannot revoke uploader role from creator');
+    require(
+      !hasRole(DEFAULT_ADMIN_ROLE, uploader),
+      'Cannot revoke uploader role from owner'
+    );
     _revokeRole(UPLOADER_ROLE, uploader);
   }
 

@@ -22,7 +22,7 @@ describe('DataAvailability', () => {
 
     // Deploy the DataAvailability contract
     const DataAvailability = await hre.ethers.getContractFactory(CONTRACT_NAME)
-    const dataAvailability = await DataAvailability.deploy()
+    const dataAvailability = await DataAvailability.deploy(owner.address)
 
     return { dataAvailability, owner, uploader, extraUser }
   }
@@ -76,11 +76,11 @@ describe('DataAvailability', () => {
       )
     })
 
-    it('should not allow revoking uploader role from creator', async () => {
+    it('should not allow revoking uploader role from owner', async () => {
       const { dataAvailability, owner } = await deployDataAvailabilityContract()
       await expect(
         dataAvailability.revokeUploaderRole(owner.address),
-      ).to.be.revertedWith('Cannot revoke uploader role from creator')
+      ).to.be.revertedWith('Cannot revoke uploader role from owner')
     })
   })
 
