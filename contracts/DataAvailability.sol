@@ -3,35 +3,52 @@ pragma solidity ^0.8.24;
 
 import {AccessControlDefaultAdminRules} from '@openzeppelin/contracts/access/extensions/AccessControlDefaultAdminRules.sol';
 
+import {IRiscZeroVerifier} from './risc0/IRiscZeroVerifier.sol';
+import {Steel} from './risc0/steel/Steel.sol';
+
 contract DataAvailability is AccessControlDefaultAdminRules {
   /**
-     * @dev DataAvailability stores information about the objective function value for users
-     * across timestamps.
-     * 
-     * The contract creator and any permitted uploaders may upload user objective function data
-     * at a given timestamp. The objective function data that are uploaded represent the delta
-     * between the objective function value at the current timestamp and the value at the
-     * previous timestamp that data was uploaded. The data is not actually stored in the contract,
-     * but events are emitted for each upload, which can be used to reconstruct the full data history.
-     *
-     * Instead of storing all data in the contract, a rolling hash of the data is calculated and stored
-     * for each timestamp. When verifying the data, the submitted proof will contain a hash of the data
-     * computed in a trusted zkVM; if the hash contained in the proof matches the hash stored in the contract,
-     * the data is considered valid.
+   * @dev DataAvailability stores information about the objective function value for users
+   * across timestamps.
+   *
+   * The contract creator and any permitted uploaders may upload user objective function data
+   * at a given timestamp. The objective function data that are uploaded represent the delta
+   * between the objective function value at the current timestamp and the value at the
+   * previous timestamp that data was uploaded. The data is not actually stored in the contract,
+   * but events are emitted for each upload, which can be used to reconstruct the full data history.
+   *
+   * Instead of storing all data in the contract, a rolling hash of the data is calculated and stored
+   * for each timestamp. When verifying the data, the submitted proof will contain a hash of the data
+   * computed in a trusted zkVM; if the hash contained in the proof matches the hash stored in the contract,
+   * the data is considered valid.
+   *
+   * The rolling hash is calculated by summing the existing hash for a given timestamp with the hash of each
+   * user:value pair modulo 2^256 as they are received by the contract. Since modular addition is both commutative and associative, this
+   * results in a hash that is invariant to the order of uploads. Since we cannot "remove" information about
+   * a data entry from the hash, we require that information about a user:value pair is only submitted once
+   * per timestamp, to ensure that the hash is correct.
+   *
+   * The intended usage pattern of this contract is as follows:
+   * - For a given timestamp t_1, changes in objective function values since the last timestamp t_0 are calculated.
+   * - These data are submitted to the contract, and a rolling hash is calculated.
+   * - The contract emits events for each upload, which can be used to reconstruct the full data history.
+   * - These data are used by an off-chain reward distribution service to calculate rewards owed for the
+   *   period between t_0 and t_1.
+   */
 
-     * The rolling hash is calculated by summing the existing hash for a given timestamp with the hash of each
-     * user:value pair modulo 2^256 as they are received by the contract. Since modular addition is both commutative and associative, this
-     * results in a hash that is invariant to the order of uploads. Since we cannot "remove" information about
-     * a data entry from the hash, we require that information about a user:value pair is only submitted once
-     * per timestamp, to ensure that the hash is correct.
-     *
-     * The intended usage pattern of this contract is as follows:
-     * - For a given timestamp t_1, changes in objective function values since the last timestamp t_0 are calculated.
-     * - These data are submitted to the contract, and a rolling hash is calculated.
-     * - The contract emits events for each upload, which can be used to reconstruct the full data history.
-     * - These data are used by an off-chain reward distribution service to calculate rewards owed for the
-     *   period between t_0 and t_1.
-     */
+  uint256 private constant PRIME_MODULUS = 2 ** 256 - 189;
+
+  // Image ID of the only zkVM binary to accept verification from
+  bytes32 public immutable imageID;
+
+  // RISC Zero verifier contract address
+  IRiscZeroVerifier public immutable verifier;
+
+  /// Journal that is committed to by the guest.
+  struct Journal {
+    uint256 timestamp;
+    uint256 hash;
+  }
 
   // Role for authorized uploaders
   bytes32 public constant UPLOADER_ROLE = keccak256('UPLOADER_ROLE');
@@ -41,6 +58,9 @@ contract DataAvailability is AccessControlDefaultAdminRules {
 
   // Mapping to store the rolling hash for each timestamp
   mapping(uint256 => bytes32) private timestampHashes;
+
+  // Mapping to store verification status for timestamps
+  mapping(uint256 => bool) private verifiedTimestamps;
 
   // Array to store timestamps that have data, sorted in ascending order
   uint256[] private timestamps;
@@ -56,7 +76,12 @@ contract DataAvailability is AccessControlDefaultAdminRules {
     uint256 value
   );
 
-  constructor() AccessControlDefaultAdminRules(0, msg.sender) {
+  constructor(
+    bytes32 _imageID,
+    IRiscZeroVerifier _verifier
+  ) AccessControlDefaultAdminRules(0, msg.sender) {
+    imageID = _imageID;
+    verifier = _verifier;
     creator = msg.sender;
     // Grant the deployer the uploader role
     _grantRole(UPLOADER_ROLE, msg.sender);
@@ -82,6 +107,34 @@ contract DataAvailability is AccessControlDefaultAdminRules {
       'Creator cannot renounce uploader role'
     );
     super.renounceRole(role, account);
+  }
+
+  /**
+   * @dev Verify data stored in the contract by submitting a Steel proof
+   * @param journalData The journal data generated by the proving program
+   * @param seal The seal data generated by the proving program
+   */
+  function verify(bytes calldata journalData, bytes calldata seal) external {
+    // Decode and validate journal data
+    Journal memory journal = abi.decode(journalData, (Journal));
+    require(
+      timestampHashes[journal.timestamp] != bytes32(0),
+      'No data for provided timestamp'
+    );
+    require(
+      timestampHashes[journal.timestamp] == bytes32(journal.hash),
+      'Journal hash does not match on-chain hash'
+    );
+    require(
+      !verifiedTimestamps[journal.timestamp],
+      'Data for timestamp already verified'
+    );
+
+    // Verify the proof
+    bytes32 journalHash = sha256(journalData);
+    verifier.verify(seal, imageID, journalHash);
+
+    verifiedTimestamps[journal.timestamp] = true;
   }
 
   /**
@@ -115,6 +168,10 @@ contract DataAvailability is AccessControlDefaultAdminRules {
     uint256[] calldata values
   ) external onlyRole(UPLOADER_ROLE) {
     require(users.length == values.length, 'Arrays length mismatch');
+    require(
+      !verifiedTimestamps[timestamp],
+      'Data cannot be updated for timestamp after verification'
+    );
 
     // Ensure the timestamp is greater than the most recent timestamp
     if (timestamps.length > 0) {
@@ -137,7 +194,7 @@ contract DataAvailability is AccessControlDefaultAdminRules {
       bytes32 pairHash = keccak256(abi.encodePacked(users[i], values[i]));
       // Sum the hashes and take modulo 2^256
       currentHash = bytes32(
-        addmod(uint256(pairHash), uint256(currentHash), type(uint256).max)
+        addmod(uint256(pairHash), uint256(currentHash), PRIME_MODULUS)
       );
 
       // Update the most recent timestamp for this user
@@ -164,6 +221,15 @@ contract DataAvailability is AccessControlDefaultAdminRules {
    */
   function getHash(uint256 timestamp) external view returns (bytes32) {
     return timestampHashes[timestamp];
+  }
+
+  /**
+   * @dev Get the verification status for data at a particular timestamp
+   * @param timestamp The timestamp to query
+   * @return The verification status for the given timestamp
+   */
+  function isDataVerified(uint256 timestamp) external view returns (bool) {
+    return verifiedTimestamps[timestamp];
   }
 
   /**
