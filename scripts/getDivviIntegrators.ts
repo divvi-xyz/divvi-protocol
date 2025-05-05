@@ -14,9 +14,9 @@ const DIVVI_REGISTRY_CONTRACT_ADDRESS =
 const DIVVI_INTEGRATION_REWARDS_ENTITY =
   '0x6226ddE08402642964f9A6de844ea3116F0dFc7e'
 
-const WHITELIST_URL =
+const ALLOWLIST_URL =
   'https://raw.githubusercontent.com/divvi-xyz/integration-list/main/src/integration-list.json'
-type WhitelistedUser = {
+type AllowlistedUser = {
   entityAddress: string
   githubUsername: string
 }
@@ -150,16 +150,16 @@ async function getDivviIntegrators({
     usersThatHaveIntegrated,
   )
 
-  const fetchWhitelistResponse = await fetchWithTimeout(WHITELIST_URL)
-  if (!fetchWhitelistResponse.ok) {
+  const fetchAllowlistResponse = await fetchWithTimeout(ALLOWLIST_URL)
+  if (!fetchAllowlistResponse.ok) {
     throw new Error(
-      `Failed to fetch whitelist: ${fetchWhitelistResponse.statusText}`,
+      `Failed to fetch allowlist: ${fetchAllowlistResponse.statusText}`,
     )
   }
-  const whitelistedUserObjects =
-    (await fetchWhitelistResponse.json()) as WhitelistedUser[]
-  const whitelistedUsers = new Set(
-    whitelistedUserObjects.map(({ entityAddress }) =>
+  const allowlistedUserObjects =
+    (await fetchAllowlistResponse.json()) as AllowlistedUser[]
+  const allowlistedUsers = new Set(
+    allowlistedUserObjects.map(({ entityAddress }) =>
       entityAddress.toLowerCase(),
     ),
   )
@@ -168,7 +168,7 @@ async function getDivviIntegrators({
     (user: Address) =>
       !usersThatHaveReceivedRewards.has(user) &&
       usersThatHaveRegisteredAgreements.has(user) &&
-      whitelistedUsers.has(user),
+      allowlistedUsers.has(user),
   )
 
   return userToReceiveRewards
