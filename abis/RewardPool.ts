@@ -1,0 +1,1 @@
+export const rewardPoolAbi = [] as const

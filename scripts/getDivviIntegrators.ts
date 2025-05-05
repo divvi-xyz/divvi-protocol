@@ -5,6 +5,13 @@ import { LogField } from '@envio-dev/hypersync-client'
 import { paginateQuery } from './utils/hypersyncPagination'
 import { getHyperSyncClient } from './utils'
 import { NetworkId } from './types'
+import { divviRegistryAbi } from '../abis/DivviRegistry'
+import { rewardPoolAbi } from '../abis/RewardPool'
+
+const DIVVI_REGISTRY_CONTRACT_ADDRESS =
+  '0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'
+const DIVVI_INTEGRATION_REWARDS_ENTITY =
+  '0x6226ddE08402642964f9A6de844ea3116F0dFc7e'
 
 async function getArgs() {
   const argv = await yargs
@@ -51,15 +58,16 @@ async function getDivviIntegrators({
   const usersThatHaveReceivedRewards = new Set<Address>()
   const usersThatHaveRegisteredAgreements = new Set<Address>()
 
+  const REFERRAL_REGISTERED_TOPIC = encodeEventTopics({
+    abi: divviRegistryAbi,
+    eventName: 'ReferralRegistered',
+  })[0]
+
   const queryForIntegrators = {
     logs: [
       {
-        address: ['0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'], // DivviRegistry production contract
-        topics: [
-          [
-            '0xfddf272d6cdce612f7757626eff4fda5e235d0da62a22cc77ebe3e295b1479d0', // ReferralRegistered topic
-          ],
-        ],
+        address: [DIVVI_REGISTRY_CONTRACT_ADDRESS],
+        topics: [[REFERRAL_REGISTERED_TOPIC]],
       },
     ],
     fieldSelection: {
@@ -83,15 +91,18 @@ async function getDivviIntegrators({
     fromBlock: 0,
   }
 
+  const REWARDS_AGREEMENT_REGISTERES_TOPIC = encodeEventTopics({
+    abi: divviRegistryAbi,
+    eventName: 'RewardsAgreementRegistered',
+  })[0]
+
   const queryForRegisteredAgreements = {
     logs: [
       {
-        address: ['0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'], // DivviRegistry production contract
+        address: [DIVVI_REGISTRY_CONTRACT_ADDRESS],
         topics: [
-          [
-            '0x71ca44fbbd43371f6298c2bef5521b2ade5a42b3239e920cb28a5af430be9bf0', // RewardsAgreementRegistered topic
-          ],
-          ['0x6226ddE08402642964f9A6de844ea3116F0dFc7e'], // Divvi Integration Rewards entity
+          [REWARDS_AGREEMENT_REGISTERES_TOPIC],
+          [DIVVI_INTEGRATION_REWARDS_ENTITY],
         ],
       },
     ],
