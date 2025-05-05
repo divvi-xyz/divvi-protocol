@@ -7,11 +7,19 @@ import { getHyperSyncClient } from './utils'
 import { NetworkId } from './types'
 import { divviRegistryAbi } from '../abis/DivviRegistry'
 import { rewardPoolAbi } from '../abis/RewardPool'
+import { fetchWithTimeout } from './utils/fetchWithTimeout'
 
 const DIVVI_REGISTRY_CONTRACT_ADDRESS =
   '0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'
 const DIVVI_INTEGRATION_REWARDS_ENTITY =
   '0x6226ddE08402642964f9A6de844ea3116F0dFc7e'
+
+const WHITELIST_URL =
+  'https://raw.githubusercontent.com/divvi-xyz/divvi-integration/main/src/integration-list.json'
+type WhitelistedUser = {
+  entityAddress: string
+  githubUsername: string
+}
 
 async function getArgs() {
   const argv = await yargs
@@ -117,17 +125,23 @@ async function getDivviIntegrators({
   await Promise.all([
     paginateQuery(client, queryForIntegrators, async (response) => {
       for (const transaction of response.data.logs) {
-        usersThatHaveIntegrated.push(transaction.topics[3] as Address)
+        usersThatHaveIntegrated.push(
+          transaction.topics[3]?.toLowerCase() as Address,
+        )
       }
     }),
     paginateQuery(client, queryForRewardsReceivers, async (response) => {
       for (const transaction of response.data.logs) {
-        usersThatHaveReceivedRewards.add(transaction.topics[1] as Address)
+        usersThatHaveReceivedRewards.add(
+          transaction.topics[1]?.toLowerCase() as Address,
+        )
       }
     }),
     paginateQuery(client, queryForRegisteredAgreements, async (response) => {
       for (const transaction of response.data.logs) {
-        usersThatHaveRegisteredAgreements.add(transaction.topics[2] as Address)
+        usersThatHaveRegisteredAgreements.add(
+          transaction.topics[2]?.toLowerCase() as Address,
+        )
       }
     }),
   ])
@@ -136,11 +150,25 @@ async function getDivviIntegrators({
     usersThatHaveIntegrated,
   )
 
-  // TODO(ENG-345): Also filter for if the user is whitelisted
+  const fetchWhitelistResponse = await fetchWithTimeout(WHITELIST_URL)
+  if (!fetchWhitelistResponse.ok) {
+    throw new Error(
+      `Failed to fetch whitelist: ${fetchWhitelistResponse.statusText}`,
+    )
+  }
+  const whitelistedUserObjects =
+    (await fetchWhitelistResponse.json()) as WhitelistedUser[]
+  const whitelistedUsers = new Set(
+    whitelistedUserObjects.map(({ entityAddress }) =>
+      entityAddress.toLowerCase(),
+    ),
+  )
+
   const userToReceiveRewards = deduplicatedUsersThatHaveIntegrated.filter(
     (user: Address) =>
       !usersThatHaveReceivedRewards.has(user) &&
-      usersThatHaveRegisteredAgreements.has(user),
+      usersThatHaveRegisteredAgreements.has(user) &&
+      whitelistedUsers.has(user),
   )
 
   return userToReceiveRewards
