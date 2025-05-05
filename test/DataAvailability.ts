@@ -28,6 +28,7 @@ describe('DataAvailability', () => {
     // Deploy the DataAvailability contract with the mock verifier
     const DataAvailability = await hre.ethers.getContractFactory(CONTRACT_NAME)
     const dataAvailability = await DataAvailability.deploy(
+      owner.address,
       hre.ethers.ZeroHash, // imageID - using zero hash for testing
       await mockVerifier.getAddress(), // verifier address
     )
@@ -84,11 +85,11 @@ describe('DataAvailability', () => {
       )
     })
 
-    it('should not allow revoking uploader role from creator', async () => {
+    it('should not allow revoking uploader role from owner', async () => {
       const { dataAvailability, owner } = await deployDataAvailabilityContract()
       await expect(
         dataAvailability.revokeUploaderRole(owner.address),
-      ).to.be.revertedWith('Cannot revoke uploader role from creator')
+      ).to.be.revertedWith('Cannot revoke uploader role from owner')
     })
   })
 
