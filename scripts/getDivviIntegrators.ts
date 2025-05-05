@@ -25,7 +25,7 @@ async function getArgs() {
     }).argv
 
   return {
-    output: argv['output-file'] ?? `${argv['protocol']}-referrals.csv`,
+    output: argv['output-file'] ?? 'divvi-integrator-rewards.csv',
     rewardPoolContractAddress: argv['reward-pool'],
     rewardAmount: argv['reward-amount'],
   }
