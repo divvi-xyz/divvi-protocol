@@ -8,6 +8,7 @@ import { NetworkId } from './types'
 import { divviRegistryAbi } from '../abis/DivviRegistry'
 import { rewardPoolAbi } from '../abis/RewardPool'
 import { fetchWithTimeout } from './utils/fetchWithTimeout'
+import { getNearestBlock } from './calculateRevenue/protocols/utils/events'
 
 const DIVVI_REGISTRY_CONTRACT_ADDRESS =
   '0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'
@@ -37,12 +38,28 @@ async function getArgs() {
     .option('reward-amount', {
       description: 'reward amount for integration',
       type: 'string',
+    })
+    .option('start-timestamp', {
+      alias: 's',
+      description:
+        'inclusive timestamp at which to start checking for integrators (new Date() compatible)',
+      type: 'number',
+      demandOption: true,
+    })
+    .option('end-timestamp', {
+      alias: 'e',
+      description:
+        'exclusive timestamp at which to stop checking for integrators (new Date() compatible)',
+      type: 'number',
+      demandOption: true,
     }).argv
 
   return {
     output: argv['output-file'] ?? 'divvi-integrator-rewards.csv',
     rewardPoolContractAddress: argv['reward-pool'],
     rewardAmount: argv['reward-amount'],
+    startTimestamp: new Date(argv['start-timestamp']),
+    endTimestamp: new Date(argv['end-timestamp']),
   }
 }
 
@@ -81,19 +98,30 @@ function removeDuplicates<T>(arr: T[]): T[] {
 
 async function getDivviIntegrators({
   rewardPoolContractAddress,
+  startTimestamp,
+  endTimestamp,
 }: {
   rewardPoolContractAddress: string
+  startTimestamp: Date
+  endTimestamp: Date
 }): Promise<Address[]> {
-  const usersThatHaveIntegrated: Address[] = []
-  const usersThatHaveReceivedRewards = new Set<Address>()
-  const usersThatHaveRegisteredAgreements = new Set<Address>()
+  const consumersThatHaveIntegrated: Address[] = []
+  const consumersThatHaveReceivedRewards = new Set<Address>()
+  const consumersWithDivviIntegrationAgreement = new Set<Address>()
 
   const REFERRAL_REGISTERED_TOPIC = encodeEventTopics({
     abi: divviRegistryAbi,
     eventName: 'ReferralRegistered',
   })[0]
 
+  const [startBlock, endBlock] = await Promise.all([
+    getNearestBlock(NetworkId['op-mainnet'], startTimestamp),
+    getNearestBlock(NetworkId['op-mainnet'], endTimestamp),
+  ])
+
   const queryForIntegrators = {
+    fromBlock: startBlock,
+    toBlock: endBlock,
     logs: [
       {
         address: [DIVVI_REGISTRY_CONTRACT_ADDRESS],
@@ -103,7 +131,6 @@ async function getDivviIntegrators({
     fieldSelection: {
       log: [LogField.Topic0, LogField.Topic1, LogField.Topic2, LogField.Topic3],
     },
-    fromBlock: 0,
   }
 
   const ADD_REWARD_TOPIC = encodeEventTopics({
@@ -121,17 +148,17 @@ async function getDivviIntegrators({
     fromBlock: 0,
   }
 
-  const REWARDS_AGREEMENT_REGISTERES_TOPIC = encodeEventTopics({
+  const REWARDS_AGREEMENT_REGISTERED_TOPIC = encodeEventTopics({
     abi: divviRegistryAbi,
     eventName: 'RewardsAgreementRegistered',
   })[0]
 
-  const queryForRegisteredAgreements = {
+  const queryForRegisteredDivviIntegrationAgreement = {
     logs: [
       {
         address: [DIVVI_REGISTRY_CONTRACT_ADDRESS],
         topics: [
-          [REWARDS_AGREEMENT_REGISTERES_TOPIC],
+          [REWARDS_AGREEMENT_REGISTERED_TOPIC],
           [DIVVI_INTEGRATION_REWARDS_ENTITY],
         ],
       },
@@ -147,21 +174,21 @@ async function getDivviIntegrators({
   const [_void1, _void2, _void3, allowlistedUsers] = await Promise.all([
     paginateQuery(client, queryForIntegrators, async (response) => {
       for (const transaction of response.data.logs) {
-        usersThatHaveIntegrated.push(
+        consumersThatHaveIntegrated.push(
           transaction.topics[3]?.toLowerCase() as Address,
         )
       }
     }),
     paginateQuery(client, queryForRewardsReceivers, async (response) => {
       for (const transaction of response.data.logs) {
-        usersThatHaveReceivedRewards.add(
+        consumersThatHaveReceivedRewards.add(
           transaction.topics[1]?.toLowerCase() as Address,
         )
       }
     }),
-    paginateQuery(client, queryForRegisteredAgreements, async (response) => {
+    paginateQuery(client, queryForRegisteredDivviIntegrationAgreement, async (response) => {
       for (const transaction of response.data.logs) {
-        usersThatHaveRegisteredAgreements.add(
+        consumersWithDivviIntegrationAgreement.add(
           transaction.topics[2]?.toLowerCase() as Address,
         )
       }
@@ -169,18 +196,18 @@ async function getDivviIntegrators({
     getAllowlist(),
   ])
 
-  const deduplicatedUsersThatHaveIntegrated = removeDuplicates(
-    usersThatHaveIntegrated,
+  const deduplicatedConsumersThatHaveIntegrated = removeDuplicates(
+    consumersThatHaveIntegrated,
   )
 
-  const userToReceiveRewards = deduplicatedUsersThatHaveIntegrated.filter(
+  const consumerToReceiveRewards = deduplicatedConsumersThatHaveIntegrated.filter(
     (user: Address) =>
-      !usersThatHaveReceivedRewards.has(user) &&
-      usersThatHaveRegisteredAgreements.has(user) &&
+      !consumersThatHaveReceivedRewards.has(user) &&
+      consumersWithDivviIntegrationAgreement.has(user) &&
       allowlistedUsers.has(user),
   )
 
-  return userToReceiveRewards
+  return consumerToReceiveRewards
 }
 
 async function main() {
@@ -188,6 +215,8 @@ async function main() {
 
   const integratorAddresses = await getDivviIntegrators({
     rewardPoolContractAddress: args.rewardPoolContractAddress,
+    startTimestamp: args.startTimestamp,
+    endTimestamp: args.endTimestamp,
   })
 
   writeFileSync(
