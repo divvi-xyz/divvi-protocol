@@ -175,6 +175,17 @@ yarn hardhat divvi-registry:upgrade \
     --proxy-address <PROXY_ADDRESS>
 ```
 
+To deploy DataAvailability, run:
+
+```bash
+yarn hardhat data-availability:deploy --network op \
+  --owner-address <OWNER_ADDRESS> \
+  --image-id <IMAGE_ID> \
+  --verifier-address 0x0b144e07a0826182b6b59788c34b32bfa86fb711
+```
+
+More context is provided in the [risc0-example](https://github.com/divvi-xyz/risc0-example) repo.
+
 ### Metadata of upgradable contracts
 
 Metadata about proxy and implementation deployments is automatically generated and stored in the `.openzeppelin/` directory, which should be checked into version control.
