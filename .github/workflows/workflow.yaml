@@ -31,6 +31,7 @@ jobs:
           node-version-file: 'package.json'
           check-latest: true
       - run: yarn
+      - run: yarn compile
       - run: yarn typecheck
       - run: yarn format:check
       - run: yarn lint
