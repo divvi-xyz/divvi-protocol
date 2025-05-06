@@ -184,7 +184,7 @@ export async function upgradeContract(
       proxyAddress,
     )
   }
-  console.log(`✅ Updraded!`)
+  console.log(`✅ Upgraded!`)
   console.log('New Implementation Address:', newImplementationAddress)
 
   console.log('\nTo verify the new implementation contract, run:')
