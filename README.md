@@ -139,6 +139,9 @@ yarn ts-node scripts/dataAvailability/getTokenTransfers.ts --token-address 0x471
   --upload
 ```
 
+Raw objective function data will always be output to `--output-file`. If `--upload` is set, the script will additionally upload the data to the specified contract,
+using the account stored in the `MNEMONIC` environment variable.
+
 More context on this script and how it can be used/modified can be found in the [risc0-example](https://github.com/divvi-xyz/risc0-example) repo.
 
 ## Contracts
