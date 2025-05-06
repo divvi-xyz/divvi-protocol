@@ -6,14 +6,11 @@ import { NetworkId } from '../types'
 import { getHyperSyncClient, getBlock } from '../utils'
 import { LogField, QueryResponse } from '@envio-dev/hypersync-client'
 import { paginateQuery } from '../utils/hypersyncPagination'
-import { createWalletClient, http } from 'viem'
+import { createWalletClient, http, optimism, getContract } from 'viem'
 import { mnemonicToAccount } from 'viem/accounts'
-import { getContract } from 'viem'
-import { optimism } from 'viem/chains'
 import DataAvailabilityAbi from '../../artifacts/contracts/DataAvailability.sol/DataAvailability.json'
 import * as dotenv from 'dotenv'
 
-// Load environment variables from .env file
 dotenv.config()
 
 interface TransferCount {
@@ -116,7 +113,6 @@ async function getTokenTransfers(
         const from = ethers.getAddress('0x' + topics[1].slice(26))
         const to = ethers.getAddress('0x' + topics[2].slice(26))
 
-        // Increment counts for both sender and receiver
         transferCounts[from] = (transferCounts[from] || 0) + 1
         transferCounts[to] = (transferCounts[to] || 0) + 1
         count++
@@ -146,18 +142,10 @@ function calculateHash(users: string[], values: number[]): string {
   const PRIME_MODULUS = 2n ** 256n - 189n
   let currentHash = 0n
 
-  // Create array of user:value pairs
   const pairs = users.map((user, index) => ({
     user,
     value: values[index],
   }))
-
-  // Sort pairs by user address (lowest to highest)
-  pairs.sort((a, b) => {
-    const addrA = BigInt(a.user)
-    const addrB = BigInt(b.user)
-    return addrA < addrB ? -1 : addrA > addrB ? 1 : 0
-  })
 
   // Calculate hash for each sorted pair
   for (const { user, value } of pairs) {
@@ -185,7 +173,6 @@ async function uploadDataToContract(
   timestamp: number,
   transferCounts: TransferCount,
 ) {
-  // Create wallet client from mnemonic in .env file
   const mnemonic = process.env.MNEMONIC
   if (!mnemonic) {
     throw new Error('MNEMONIC must be set in .env file')
@@ -198,18 +185,15 @@ async function uploadDataToContract(
     transport: http(),
   })
 
-  // Get contract instance
   const contract = getContract({
     address: dataAvailabilityAddress as `0x${string}`,
     abi: DataAvailabilityAbi.abi,
     client,
   })
 
-  // Prepare data for upload
   const users = Object.keys(transferCounts)
   const values = users.map((user) => transferCounts[user])
 
-  // Upload data
   const hash = await contract.write.uploadData([timestamp, users, values])
   console.log(`Data uploaded with transaction hash: ${hash}`)
 }
@@ -225,16 +209,14 @@ async function main() {
       args.endBlock,
     )
 
-    // Format results as CSV
     const output = Object.entries(transferCounts)
       .map(([address, count]) => `${address},${count}`)
       .join('\n')
 
-    // Write results to file
     writeFileSync(args.output, output)
     console.log(`Wrote results to ${args.output}`)
 
-    // Calculate and log the hash
+    // Calculate and log the hash for informational purposes
     const users = Object.keys(transferCounts)
     const values = users.map((user) => transferCounts[user])
     const calculatedHash = calculateHash(users, values)
