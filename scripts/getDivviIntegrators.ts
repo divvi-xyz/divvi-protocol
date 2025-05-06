@@ -46,6 +46,28 @@ async function getArgs() {
   }
 }
 
+async function getAllowlist() {
+  try {
+    const fetchAllowlistResponse = await fetchWithTimeout(ALLOWLIST_URL)
+    if (!fetchAllowlistResponse.ok) {
+      throw new Error(
+        `Failed to fetch allowlist: ${fetchAllowlistResponse.statusText}`,
+      )
+    }
+    const allowlistedUserObjects =
+      (await fetchAllowlistResponse.json()) as AllowlistedUser[]
+    const allowlistedUsers = new Set(
+      allowlistedUserObjects.map(({ entityAddress }) =>
+        entityAddress.toLowerCase(),
+      ),
+    )
+    return allowlistedUsers
+  } catch (error) {
+    console.log('Error fetching allowlist:', error)
+    return new Set<string>()
+  }
+}
+
 function removeDuplicates<T>(arr: T[]): T[] {
   const seen = new Set<T>()
   return arr.filter((item) => {
@@ -122,7 +144,7 @@ async function getDivviIntegrators({
 
   const client = getHyperSyncClient(NetworkId['op-mainnet'])
 
-  await Promise.all([
+  const [_void1, _void2, _void3, allowlistedUsers] = await Promise.all([
     paginateQuery(client, queryForIntegrators, async (response) => {
       for (const transaction of response.data.logs) {
         usersThatHaveIntegrated.push(
@@ -144,24 +166,11 @@ async function getDivviIntegrators({
         )
       }
     }),
+    getAllowlist(),
   ])
 
   const deduplicatedUsersThatHaveIntegrated = removeDuplicates(
     usersThatHaveIntegrated,
-  )
-
-  const fetchAllowlistResponse = await fetchWithTimeout(ALLOWLIST_URL)
-  if (!fetchAllowlistResponse.ok) {
-    throw new Error(
-      `Failed to fetch allowlist: ${fetchAllowlistResponse.statusText}`,
-    )
-  }
-  const allowlistedUserObjects =
-    (await fetchAllowlistResponse.json()) as AllowlistedUser[]
-  const allowlistedUsers = new Set(
-    allowlistedUserObjects.map(({ entityAddress }) =>
-      entityAddress.toLowerCase(),
-    ),
   )
 
   const userToReceiveRewards = deduplicatedUsersThatHaveIntegrated.filter(
