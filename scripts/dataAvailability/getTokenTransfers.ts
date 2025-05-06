@@ -94,7 +94,12 @@ async function getTokenTransfers(
       },
     ],
     fieldSelection: {
-      log: [LogField.Topic0, LogField.Topic1, LogField.Topic2, LogField.BlockNumber],
+      log: [
+        LogField.Topic0,
+        LogField.Topic1,
+        LogField.Topic2,
+        LogField.BlockNumber,
+      ],
     },
   }
 
