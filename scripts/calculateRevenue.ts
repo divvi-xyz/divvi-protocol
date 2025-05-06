@@ -12,6 +12,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
   const eligibleUsers = parse(readFileSync(inputFile, 'utf-8').toString(), {
     skip_empty_lines: true,
     delimiter: ',',
+    columns: true,
   })
   const handler = calculateRevenueHandlers[args['protocol'] as Protocol]
 
@@ -22,18 +23,18 @@ async function main(args: ReturnType<typeof parseArgs>) {
   }> = []
 
   for (let i = 0; i < eligibleUsers.length; i++) {
-    const [referrerId, address] = eligibleUsers[i]
+    const { referrerId, userAddress } = eligibleUsers[i]
     console.log(
-      `Calculating revenue for ${address} (${i + 1}/${eligibleUsers.length})`,
+      `Calculating revenue for ${userAddress} (${i + 1}/${eligibleUsers.length})`,
     )
     const revenue = await handler({
-      address,
+      address: userAddress,
       startTimestamp: new Date(args['start-timestamp']),
       endTimestamp: new Date(args['end-timestamp']),
     })
     allResults.push({
       referrerId,
-      address,
+      address: userAddress,
       revenue,
     })
   }
