@@ -73,6 +73,13 @@ contract DataAvailability is AccessControlDefaultAdminRules {
     uint256 value
   );
 
+  event Verify(
+    uint256 indexed timestamp,
+    uint256 hash,
+    bytes journalData,
+    bytes seal
+  );
+
   constructor(
     address _owner,
     bytes32 _imageID,
@@ -132,6 +139,9 @@ contract DataAvailability is AccessControlDefaultAdminRules {
     verifier.verify(seal, imageID, journalHash);
 
     verifiedTimestamps[journal.timestamp] = true;
+
+    // Emit Verify event
+    emit Verify(journal.timestamp, journal.hash, journalData, seal);
   }
 
   /**
