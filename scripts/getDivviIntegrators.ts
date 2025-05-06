@@ -186,13 +186,17 @@ async function getDivviIntegrators({
         )
       }
     }),
-    paginateQuery(client, queryForRegisteredDivviIntegrationAgreement, async (response) => {
-      for (const transaction of response.data.logs) {
-        consumersWithDivviIntegrationAgreement.add(
-          transaction.topics[2]?.toLowerCase() as Address,
-        )
-      }
-    }),
+    paginateQuery(
+      client,
+      queryForRegisteredDivviIntegrationAgreement,
+      async (response) => {
+        for (const transaction of response.data.logs) {
+          consumersWithDivviIntegrationAgreement.add(
+            transaction.topics[2]?.toLowerCase() as Address,
+          )
+        }
+      },
+    ),
     getAllowlist(),
   ])
 
@@ -200,12 +204,13 @@ async function getDivviIntegrators({
     consumersThatHaveIntegrated,
   )
 
-  const consumerToReceiveRewards = deduplicatedConsumersThatHaveIntegrated.filter(
-    (user: Address) =>
-      !consumersThatHaveReceivedRewards.has(user) &&
-      consumersWithDivviIntegrationAgreement.has(user) &&
-      allowlistedUsers.has(user),
-  )
+  const consumerToReceiveRewards =
+    deduplicatedConsumersThatHaveIntegrated.filter(
+      (user: Address) =>
+        !consumersThatHaveReceivedRewards.has(user) &&
+        consumersWithDivviIntegrationAgreement.has(user) &&
+        allowlistedUsers.has(user),
+    )
 
   return consumerToReceiveRewards
 }
