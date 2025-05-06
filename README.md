@@ -123,6 +123,24 @@ Fetch the count of users referred for a specific protocol. If no network IDs or 
 yarn ts-node ./scripts/referrerUserCount.ts --protocol Beefy --referrerIds app1 app2 app3 --networkIds celo-mainnet base-mainnet
 ```
 
+### Example Data Availability Contract Upload
+
+Our example Data Availability contract (located on Op Mainnet at [0x2Bcbfc02AAa1dB9798179902DeE48F268C8DD3CC](https://optimistic.etherscan.io/address/0x2bcbfc02aaa1db9798179902dee48f268c8dd3cc))
+tracks the number of Celo transfers users have made over a period of time. The script found in `scripts/dataAvailability/getTokenTransfers.ts` calculates this data for a specified time range
+and uploads it to a specified contract. It can be invoked with:
+
+```bash
+yarn ts-node scripts/dataAvailability/getTokenTransfers.ts --token-address 0x471EcE3750Da237f93B8E339c536989b8978a438 \
+  --network celo-mainnet
+  --start-block 34304880
+  --end-block 34304900
+  --output-file out.csv
+  --data-availability-address=<DATA_AVAILABILITY_CONTRACT_ADDRESS>
+  --upload
+```
+
+More context on this script and how it can be used/modified can be found in the [risc0-example](https://github.com/divvi-xyz/risc0-example) repo.
+
 ## Contracts
 
 This repository contains the contract(s) necessary to support the Divvi protocol v0.
