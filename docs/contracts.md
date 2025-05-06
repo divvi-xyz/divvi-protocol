@@ -17,7 +17,14 @@ The Registry contract is deployed on all supported networks. The contract and ow
 
 ## DivviRegistry Contract (v1)
 
-The DivviRegistry contract is upgradable and deployed on Optimism only.
+The DivviRegistry contract is upgradable. Both staging and production contracts are deployed on Optimism only.
+
+### Production
 
 Proxy address:[0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277](https://optimistic.etherscan.io/address/0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277)
 Owner address: [0xfC95675a6bB93406C0CbBa9403a084Dd8D566F06](https://app.safe.global/home?safe=oeth:0xfC95675a6bB93406C0CbBa9403a084Dd8D566F06)
+
+## Staging
+
+Proxy address:[0x2f5E320698dB89CbefB810Fa19264103d99aAFB1](https://optimistic.etherscan.io/address/0x2f5E320698dB89CbefB810Fa19264103d99aAFB1)
+Owner address: [0x8CA1cCe5c6420502d61e56eE69521b7F03eEFc8C](https://app.safe.global/home?safe=oeth:0x8CA1cCe5c6420502d61e56eE69521b7F03eEFc8C)
