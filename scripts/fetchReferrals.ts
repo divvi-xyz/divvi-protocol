@@ -1,6 +1,5 @@
 import { writeFileSync } from 'fs'
 import yargs from 'yargs'
-import { supportedNetworkIds } from './utils/networks'
 import { protocolFilters } from './protocolFilters'
 import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
 import { Protocol, protocols } from './types'
@@ -17,12 +16,18 @@ async function getArgs() {
       alias: 'o',
       description: 'output file',
       type: 'string',
+    })
+    .option('use-staging', {
+      description: 'use staging registry contract',
+      type: 'boolean',
+      default: false,
     }).argv
 
   return {
     protocol: argv['protocol'] as Protocol,
     protocolFilter: protocolFilters[argv['protocol'] as Protocol],
     output: argv['output-file'] ?? `${argv['protocol']}-referrals.csv`,
+    useStaging: argv['use-staging'],
   }
 }
 
@@ -30,8 +35,9 @@ async function main() {
   const args = await getArgs()
 
   const referralEvents = await fetchReferralEvents(
-    supportedNetworkIds,
     args.protocol,
+    undefined,
+    args.useStaging,
   )
   const uniqueEvents = removeDuplicates(referralEvents)
 

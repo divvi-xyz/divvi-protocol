@@ -35,3 +35,34 @@ export async function fetchTotalTransactionFees({
 
   return totalTransactionFees
 }
+
+export async function fetchTotalTransactions({
+  networkId,
+  users,
+  startBlock,
+  endBlock,
+}: {
+  networkId: NetworkId
+  users: string[]
+  startBlock?: number
+  endBlock?: number
+}): Promise<number> {
+  let totalTransactions = 0
+
+  const client = getHyperSyncClient(networkId)
+
+  const query = {
+    transactions: [{ from: users }],
+    fieldSelection: {
+      transaction: [TransactionField.Hash],
+    },
+    fromBlock: startBlock ?? 0,
+    ...(endBlock && { toBlock: endBlock }),
+  }
+
+  await paginateQuery(client, query, async (response) => {
+    totalTransactions += response.data.transactions.length
+  })
+
+  return totalTransactions
+}
