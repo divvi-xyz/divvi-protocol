@@ -1,6 +1,6 @@
 import { writeFileSync } from 'fs'
 import yargs from 'yargs'
-import { Address, encodeEventTopics } from 'viem'
+import { Address, encodeEventTopics, pad } from 'viem'
 import { LogField } from '@envio-dev/hypersync-client'
 import { paginateQuery } from './utils/hypersyncPagination'
 import { getHyperSyncClient } from './utils'
@@ -17,9 +17,9 @@ const DIVVI_INTEGRATION_REWARDS_ENTITY =
 
 const ALLOWLIST_URL =
   'https://raw.githubusercontent.com/divvi-xyz/integration-list/main/src/integration-list.json'
-type AllowlistedUser = {
-  entityAddress: string
-  githubUsername: string
+type AllowlistedConsumer = {
+  entityAddress: Address
+  githubConsumername: string
 }
 
 async function getArgs() {
@@ -71,14 +71,14 @@ async function getAllowlist() {
         `Failed to fetch allowlist: ${fetchAllowlistResponse.statusText}`,
       )
     }
-    const allowlistedUserObjects =
-      (await fetchAllowlistResponse.json()) as AllowlistedUser[]
-    const allowlistedUsers = new Set(
-      allowlistedUserObjects.map(({ entityAddress }) =>
-        entityAddress.toLowerCase(),
+    const allowlistedConsumerObjects =
+      (await fetchAllowlistResponse.json()) as AllowlistedConsumer[]
+    const allowlistedConsumers = new Set(
+      allowlistedConsumerObjects.map(({ entityAddress }) =>
+        pad(entityAddress).toLowerCase(),
       ),
     )
-    return allowlistedUsers
+    return allowlistedConsumers
   } catch (error) {
     console.log('Error fetching allowlist:', error)
     return new Set<string>()
@@ -159,7 +159,7 @@ async function getDivviIntegrators({
         address: [DIVVI_REGISTRY_CONTRACT_ADDRESS],
         topics: [
           [REWARDS_AGREEMENT_REGISTERED_TOPIC],
-          [DIVVI_INTEGRATION_REWARDS_ENTITY],
+          [pad(DIVVI_INTEGRATION_REWARDS_ENTITY)],
         ],
       },
     ],
@@ -171,7 +171,9 @@ async function getDivviIntegrators({
 
   const client = getHyperSyncClient(NetworkId['op-mainnet'])
 
-  const [_void1, _void2, _void3, allowlistedUsers] = await Promise.all([
+  console.log('Querying for consumers...')
+
+  const [_void1, _void2, _void3, allowlistedConsumers] = await Promise.all([
     paginateQuery(client, queryForIntegrators, async (response) => {
       for (const transaction of response.data.logs) {
         consumersThatHaveIntegrated.push(
@@ -204,12 +206,25 @@ async function getDivviIntegrators({
     consumersThatHaveIntegrated,
   )
 
+  console.log(
+    `Found ${deduplicatedConsumersThatHaveIntegrated.length} consumers that have integrated`,
+  )
+  console.log(
+    `Found ${consumersThatHaveReceivedRewards.size} consumers that have received rewards`,
+  )
+  console.log(
+    `Found ${consumersWithDivviIntegrationAgreement.size} consumers with Divvi integration agreement`,
+  )
+  console.log(
+    `Found ${allowlistedConsumers.size} consumers that are allowlisted`,
+  )
+
   const consumerToReceiveRewards =
     deduplicatedConsumersThatHaveIntegrated.filter(
-      (user: Address) =>
-        !consumersThatHaveReceivedRewards.has(user) &&
-        consumersWithDivviIntegrationAgreement.has(user) &&
-        allowlistedUsers.has(user),
+      (consumer: Address) =>
+        !consumersThatHaveReceivedRewards.has(consumer) &&
+        consumersWithDivviIntegrationAgreement.has(consumer) &&
+        allowlistedConsumers.has(consumer),
     )
 
   return consumerToReceiveRewards
