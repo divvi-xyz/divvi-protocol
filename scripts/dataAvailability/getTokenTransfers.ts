@@ -78,9 +78,6 @@ async function getTokenTransfers(
 ): Promise<{ transferCounts: TransferCount; endBlockTimestamp: number }> {
   const client = getHyperSyncClient(network)
 
-  const endBlockData = await getBlock(network, BigInt(endBlock))
-  const endBlockTimestamp = Number(endBlockData.timestamp)
-
   // Query for ERC20 Transfer events
   const query = {
     fromBlock: startBlock,
@@ -97,11 +94,13 @@ async function getTokenTransfers(
       },
     ],
     fieldSelection: {
-      log: [LogField.Topic0, LogField.Topic1, LogField.Topic2],
+      log: [LogField.Topic0, LogField.Topic1, LogField.Topic2, LogField.BlockNumber],
     },
   }
 
   const transferCounts: TransferCount = {}
+  let count = 0
+  let latestBlockNumber = 0
 
   // Use pagination to handle large result sets
   await paginateQuery(client, query, async (response: QueryResponse) => {
@@ -115,9 +114,25 @@ async function getTokenTransfers(
         // Increment counts for both sender and receiver
         transferCounts[from] = (transferCounts[from] || 0) + 1
         transferCounts[to] = (transferCounts[to] || 0) + 1
+        count++
+
+        // Update latest block number if this log is more recent
+        const blockNumber = Number(log.blockNumber)
+        if (blockNumber > latestBlockNumber) {
+          latestBlockNumber = blockNumber
+        }
       }
     }
   })
+
+  console.log(`Processed ${count} logs`)
+  if (latestBlockNumber === 0) {
+    throw new Error('No logs found in the specified block range')
+  }
+
+  // Get the timestamp for the latest block
+  const latestBlock = await getBlock(network, BigInt(latestBlockNumber))
+  const endBlockTimestamp = Number(latestBlock.timestamp)
 
   return { transferCounts, endBlockTimestamp }
 }
