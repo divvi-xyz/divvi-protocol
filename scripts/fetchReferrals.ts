@@ -3,6 +3,7 @@ import yargs from 'yargs'
 import { protocolFilters } from './protocolFilters'
 import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
 import { Protocol, protocols } from './types'
+import { stringify } from 'csv-stringify/sync'
 
 async function getArgs() {
   const argv = await yargs
@@ -42,13 +43,14 @@ async function main() {
   const uniqueEvents = removeDuplicates(referralEvents)
 
   const filteredEvents = await args.protocolFilter(uniqueEvents)
-  const output = filteredEvents
-    .map(
-      (event) => `${event.referrerId},${event.userAddress},${event.timestamp}`,
-    )
-    .join('\n')
-
-  writeFileSync(args.output, output)
+  const outputEvents = filteredEvents.map((event) => ({
+    referrerId: event.referrerId,
+    userAddress: event.userAddress,
+    timestamp: event.timestamp,
+  }))
+  writeFileSync(args.output, stringify(outputEvents, { header: true }), {
+    encoding: 'utf-8',
+  })
   console.log(`Wrote results to ${args.output}`)
 }
 
