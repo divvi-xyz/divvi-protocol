@@ -39,7 +39,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     })
   }
 
-  writeFileSync(outputFile, stringify(allResults), {
+  writeFileSync(outputFile, stringify(allResults, { header: true }), {
     encoding: 'utf-8',
   })
 
