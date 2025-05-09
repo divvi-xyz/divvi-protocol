@@ -55,7 +55,7 @@ export const createAddRewardSafeTransactionJSON = ({
         contractInputsValues: {
           users: `[${users.join(', ')}]`,
           amounts: `[${amounts.join(', ')}]`,
-          rewardFunctionArgs: `[${BigInt(startTimestamp)}, ${BigInt(endTimestamp)}]`, // TODO: check if this is correct
+          rewardFunctionArgs: `[${BigInt(startTimestamp)}, ${BigInt(endTimestamp)}]`,
         },
       },
     ],
