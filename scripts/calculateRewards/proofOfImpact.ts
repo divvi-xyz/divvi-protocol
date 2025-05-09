@@ -17,7 +17,9 @@ const rewardsPerMillisecond = new BigNumber(totalRewards).div(
   ),
 )
 
-function calculateRewardsProofOfImpact({
+export const _rewardsPerMillisecond = rewardsPerMillisecond // for testing
+
+export function calculateRewardsProofOfImpact({
   kpiData,
   startTimestamp,
   endTimestamp,
@@ -52,7 +54,7 @@ function calculateRewardsProofOfImpact({
     return {
       referrerId,
       kpi,
-      reward: totalRewardsForPeriod.times(kpi).div(total).toString(),
+      rewardAmount: totalRewardsForPeriod.times(kpi).div(total).toString(),
     }
   })
 
@@ -111,7 +113,10 @@ async function main(args: ReturnType<typeof parseArgs>) {
   console.log(rewards)
 }
 
-main(parseArgs()).catch((error) => {
-  console.error(error)
-  process.exit(1)
-})
+// Only run main if this file is being executed directly
+if (require.main === module) {
+  main(parseArgs()).catch((error) => {
+    console.error(error)
+    process.exit(1)
+  })
+}
