@@ -11,6 +11,7 @@ const proofOfImpactStartTimestamp = '1746687600000'
 // May 29 2025 12:00:00 AM UTC
 const proofOfImpactEndTimestamp = '1748502000000'
 const totalRewards = parseEther('14839')
+const REWARD_POOL_ADDRESS = '0xE2bEdafB063e0B7f12607ebcf4636e2690A427a3' // on Celo mainnet
 
 const rewardsPerMillisecond = new BigNumber(totalRewards).div(
   new BigNumber(proofOfImpactEndTimestamp).minus(
@@ -88,12 +89,6 @@ function parseArgs() {
       type: 'string',
       demandOption: true,
     })
-    .option('reward-pool-address', {
-      alias: 'r',
-      description: 'reward pool address',
-      type: 'string',
-      demandOption: true,
-    })
     .strict()
     .parseSync()
 }
@@ -123,7 +118,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
 
   createAddRewardSafeTransactionJSON({
     filePath: outputPath,
-    rewardPoolAddress: args['reward-pool-address'],
+    rewardPoolAddress: REWARD_POOL_ADDRESS,
     rewards,
     startTimestamp: args['start-timestamp'],
     endTimestamp: args['end-timestamp'],
