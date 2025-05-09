@@ -3,6 +3,7 @@ import { parse } from 'csv-parse/sync'
 import { readFileSync } from 'fs'
 import { parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
+import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 
 // proof-of-impact campaign parameters
 // May 8 2025 12:00:00 AM UTC
@@ -87,6 +88,12 @@ function parseArgs() {
       type: 'string',
       demandOption: true,
     })
+    .option('reward-pool-address', {
+      alias: 'r',
+      description: 'reward pool address',
+      type: 'string',
+      demandOption: true,
+    })
     .strict()
     .parseSync()
 }
@@ -99,6 +106,9 @@ interface KpiRow {
 
 async function main(args: ReturnType<typeof parseArgs>) {
   const inputPath = args['input-file'] ?? `${args['protocol']}-revenue.csv`
+  const outputPath =
+    args['output-file'] ?? `${args['protocol']}-safeTransactions.json`
+
   const kpiData = parse(readFileSync(inputPath, 'utf-8').toString(), {
     skip_empty_lines: true,
     delimiter: ',',
@@ -110,7 +120,14 @@ async function main(args: ReturnType<typeof parseArgs>) {
     startTimestamp: args['start-timestamp'],
     endTimestamp: args['end-timestamp'],
   })
-  console.log(rewards)
+
+  createAddRewardSafeTransactionJSON({
+    filePath: outputPath,
+    rewardPoolAddress: args['reward-pool-address'],
+    rewards,
+    startTimestamp: args['start-timestamp'],
+    endTimestamp: args['end-timestamp'],
+  })
 }
 
 // Only run main if this file is being executed directly
