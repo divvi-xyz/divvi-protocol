@@ -18,7 +18,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
 
   const allResults: Array<{
     referrerId: string
-    address: string
+    userAddress: string
     revenue: number
   }> = []
 
@@ -34,7 +34,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     })
     allResults.push({
       referrerId,
-      address: userAddress,
+      userAddress,
       revenue,
     })
   }
