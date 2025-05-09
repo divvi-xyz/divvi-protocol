@@ -56,7 +56,10 @@ export function calculateRewardsProofOfImpact({
     return {
       referrerId,
       kpi,
-      rewardAmount: totalRewardsForPeriod.times(kpi).div(total).toString(),
+      rewardAmount: totalRewardsForPeriod
+        .times(kpi)
+        .div(total)
+        .toFixed(0, BigNumber.ROUND_DOWN),
     }
   })
 
@@ -100,9 +103,9 @@ interface KpiRow {
 }
 
 async function main(args: ReturnType<typeof parseArgs>) {
-  const inputPath = args['input-file'] ?? `${args['protocol']}-revenue.csv`
+  const inputPath = args['input-file'] ?? 'celo-transactions-revenue.csv'
   const outputPath =
-    args['output-file'] ?? `${args['protocol']}-safeTransactions.json`
+    args['output-file'] ?? 'celo-transactions-safeTransactions.json'
 
   const kpiData = parse(readFileSync(inputPath, 'utf-8').toString(), {
     skip_empty_lines: true,
