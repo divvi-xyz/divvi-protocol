@@ -40,12 +40,12 @@ describe('calculateRewardsProofOfImpact', () => {
       {
         referrerId: '0xreferrer1',
         kpi: BigInt(300),
-        reward: expectedTotalRewardsForPeriod.times(0.3).toString(),
+        rewardAmount: expectedTotalRewardsForPeriod.times(0.3).toString(),
       },
       {
         referrerId: '0xreferrer2',
         kpi: BigInt(700),
-        reward: expectedTotalRewardsForPeriod.times(0.7).toString(),
+        rewardAmount: expectedTotalRewardsForPeriod.times(0.7).toString(),
       },
     ])
   })
@@ -79,7 +79,7 @@ describe('calculateRewardsProofOfImpact', () => {
       {
         referrerId: '0xreferrer1',
         kpi: BigInt(100),
-        reward: expectedTotalRewardsForPeriod.toString(),
+        rewardAmount: expectedTotalRewardsForPeriod.toString(),
       },
     ])
   })
