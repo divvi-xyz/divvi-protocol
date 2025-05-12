@@ -75,7 +75,7 @@ function parseArgs() {
     })
     .option('reward-amount', {
       alias: 'e',
-      description: 'the reward amount for this time period',
+      description: 'the reward amount for this time period in CELO',
       type: 'string',
       demandOption: true,
     })
