@@ -98,7 +98,7 @@ interface KpiRow {
 }
 
 async function main(args: ReturnType<typeof parseArgs>) {
-  const inputPath = args['input-file'] ?? `${args['protocol']}-revenue.csv`
+  const inputPath = args['input-file'] ?? `celo-transactions-revenue.csv`
   const kpiData = parse(readFileSync(inputPath, 'utf-8').toString(), {
     skip_empty_lines: true,
     delimiter: ',',
