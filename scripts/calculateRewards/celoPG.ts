@@ -5,7 +5,7 @@ import { parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 
-const REWARD_POOL_ADDRESS = '0x???' // on Celo mainnet
+const REWARD_POOL_ADDRESS = '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3' // on Celo mainnet
 
 export function calculateRewardsCeloPG({
   kpiData,
@@ -36,7 +36,7 @@ export function calculateRewardsCeloPG({
   const rewards = Object.entries(referrerKpis).map(([referrerId, kpi]) => {
     return {
       referrerId,
-      kpi,
+      kpi: kpi.toString(),
       rewardAmount: totalRewardsForPeriod
         .times(kpi)
         .div(total)
