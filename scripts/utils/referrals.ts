@@ -1,9 +1,9 @@
 import { NetworkId, Protocol, ReferralEvent } from '../types'
 import { getHyperSyncClient } from './index'
 import { Address, decodeEventLog, encodeEventTopics, Hex, pad } from 'viem'
-import { registryContractAbi } from '../../abis/Registry'
 import { BlockField, LogField, Query } from '@envio-dev/hypersync-client'
 import { paginateEventsQuery } from './hypersyncPagination'
+import { divviRegistryAbi } from '../../abis/DivviRegistry'
 
 const REGISTRY_CONTRACT_ADDRESS = '0xedb51a8c390fc84b1c2a40e0ae9c9882fa7b7277'
 const STAGING_REGISTRY_CONTRACT_ADDRESS =
@@ -52,7 +52,7 @@ export async function fetchReferralEvents(
     : REGISTRY_CONTRACT_ADDRESS
 
   const topics = encodeEventTopics({
-    abi: registryContractAbi,
+    abi: divviRegistryAbi,
     eventName: 'ReferralRegistered',
   })
 
@@ -94,7 +94,7 @@ export async function fetchReferralEvents(
         }
 
         const decodedEvent = decodeEventLog({
-          abi: registryContractAbi,
+          abi: divviRegistryAbi,
           eventName: 'ReferralRegistered',
           topics: event.log.topics as [Hex, ...Hex[]],
           data: event.log.data as Hex,
