@@ -6,6 +6,11 @@
       "txHash": "0x0436592e0956f71ebc7c92ff5b3c4ada994c42c72fe7b548968a01ed059c6244",
       "remoteDeploymentId": "86263ee1-5d9e-4c81-8096-a5c24099628c",
       "kind": "uups"
+    },
+    {
+      "address": "0x5782CaB7e3dC7991d15665A413aa64a52E62B769",
+      "txHash": "0x3b86fdcbbf8fd5860eaf4f0d34ac10a833343268699f7122ec3d1733caed544c",
+      "kind": "uups"
     }
   ],
   "impls": {
