@@ -37,7 +37,6 @@ export async function _getNearestBlock(
     `${DEFI_LLAMA_API_URL}/block/${defiLlamaChain}/${unixTimestamp}`,
   )
   if (!response.ok) {
-    console.log(response)
     throw new Error(
       `Error while fetching block timestamp from DefiLlama: ${response}`,
     )
