@@ -1,20 +1,30 @@
 import calculateRevenueHandlers from './calculateRevenue/protocols'
-import { parse } from 'csv-parse/sync'
 import { stringify } from 'csv-stringify/sync'
-import { readFileSync, writeFileSync } from 'fs'
+import { writeFileSync } from 'fs'
 import yargs from 'yargs'
-import { protocols, Protocol } from './types'
+import { protocols } from './types'
+import { fetchUniqueReferralEvents } from './utils/referrals'
+import { protocolFilters } from './protocolFilters'
 
 async function main(args: ReturnType<typeof parseArgs>) {
-  const inputFile = args['input-file'] ?? `${args['protocol']}-referrals.csv`
   const outputFile = args['output-file'] ?? `${args['protocol']}-revenue.csv`
 
-  const eligibleUsers = parse(readFileSync(inputFile, 'utf-8').toString(), {
-    skip_empty_lines: true,
-    delimiter: ',',
-    columns: true,
-  })
-  const handler = calculateRevenueHandlers[args['protocol'] as Protocol]
+  const uniqueReferralEvents = await fetchUniqueReferralEvents(
+    args.protocol,
+    undefined,
+    args.useStaging,
+  )
+
+  const filteredEvents =
+    await protocolFilters[args.protocol](uniqueReferralEvents)
+
+  const outputEvents = filteredEvents.map((event) => ({
+    referrerId: event.referrerId,
+    userAddress: event.userAddress,
+    timestamp: event.timestamp,
+  }))
+
+  const handler = calculateRevenueHandlers[args.protocol]
 
   const allResults: Array<{
     referrerId: string
@@ -22,10 +32,10 @@ async function main(args: ReturnType<typeof parseArgs>) {
     revenue: number
   }> = []
 
-  for (let i = 0; i < eligibleUsers.length; i++) {
-    const { referrerId, userAddress } = eligibleUsers[i]
+  for (let i = 0; i < outputEvents.length; i++) {
+    const { referrerId, userAddress } = outputEvents[i]
     console.log(
-      `Calculating revenue for ${userAddress} (${i + 1}/${eligibleUsers.length})`,
+      `Calculating revenue for ${userAddress} (${i + 1}/${outputEvents.length})`,
     )
     const revenue = await handler({
       address: userAddress,
@@ -48,12 +58,6 @@ async function main(args: ReturnType<typeof parseArgs>) {
 
 function parseArgs() {
   return yargs
-    .option('input-file', {
-      alias: 'i',
-      description: 'input file path of referrals, newline separated',
-      type: 'string',
-      demandOption: false,
-    })
     .option('output-file', {
       alias: 'o',
       description: 'output file path to write csv results',
@@ -79,6 +83,11 @@ function parseArgs() {
         'timestamp at which to stop checking for revenue (new Date() compatible)',
       type: 'number',
       demandOption: true,
+    })
+    .option('use-staging', {
+      description: 'use staging registry contract',
+      type: 'boolean',
+      default: false,
     })
     .strict()
     .parseSync()

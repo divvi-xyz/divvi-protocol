@@ -4,7 +4,7 @@ import yargs from 'yargs'
 import { protocolFilters } from './protocolFilters'
 import { NetworkId, Protocol, protocols } from './types'
 import { supportedNetworkIds } from './utils/networks'
-import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
+import { fetchUniqueReferralEvents } from './utils/referrals'
 import { Address } from 'viem'
 
 async function getArgs() {
@@ -52,8 +52,10 @@ async function main() {
   const referrerArray =
     args.referrers && !!args.referrers.length ? args.referrers : undefined
 
-  const referralEvents = await fetchReferralEvents(args.protocol, referrerArray)
-  const uniqueEvents = removeDuplicates(referralEvents)
+  const uniqueEvents = await fetchUniqueReferralEvents(
+    args.protocol,
+    referrerArray,
+  )
   const protocolFilteredEvents = await args.protocolFilter(uniqueEvents)
 
   // Initialize allResultsObj with referrer IDs from referrerArray

@@ -17,7 +17,7 @@ const REWARDS_PROVIDERS: Partial<Record<Protocol, Address>> = {
 }
 
 // Remove duplicate events, keeping only the earliest event for each user
-export function removeDuplicates(events: ReferralEvent[]): ReferralEvent[] {
+function removeDuplicates(events: ReferralEvent[]): ReferralEvent[] {
   const uniqueEventsMap: Map<string, ReferralEvent> = new Map()
 
   for (const event of events) {
@@ -32,7 +32,7 @@ export function removeDuplicates(events: ReferralEvent[]): ReferralEvent[] {
 }
 
 // Fetch referral events on networks for the given protocol with an optional list of referrer addresses
-export async function fetchReferralEvents(
+export async function fetchUniqueReferralEvents(
   protocol: Protocol,
   referrerIds?: Address[],
   useStaging = false,
@@ -117,5 +117,5 @@ export async function fetchReferralEvents(
     },
   )
 
-  return referralEvents
+  return removeDuplicates(referralEvents)
 }
