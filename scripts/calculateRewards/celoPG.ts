@@ -7,7 +7,7 @@ import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransacti
 
 const REWARD_POOL_ADDRESS = '0x???' // on Celo mainnet
 
-export function calculateRewardsProofOfImpact({
+export function calculateRewardsCeloPG({
   kpiData,
   rewardAmount,
 }: {
@@ -101,7 +101,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     columns: true,
   }) as KpiRow[]
 
-  const rewards = calculateRewardsProofOfImpact({
+  const rewards = calculateRewardsCeloPG({
     kpiData,
     rewardAmount,
   })
