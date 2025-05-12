@@ -2,7 +2,7 @@ export const protocols = [
   'beefy',
   'aerodrome',
   'somm',
-  'celo',
+  'celo-pg',
   'arbitrum',
   'velodrome',
   'fonbnk',
