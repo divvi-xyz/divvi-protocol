@@ -5,6 +5,9 @@ import { readFileSync, writeFileSync } from 'fs'
 import yargs from 'yargs'
 import { protocols, Protocol } from './types'
 
+// Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
+const REFERRAL_TIME_BUFFER_IN_SECONDS = 30 * 60 // 30 minutes
+
 async function main(args: ReturnType<typeof parseArgs>) {
   const inputFile = args['input-file'] ?? `${args['protocol']}-referrals.csv`
   const outputFile = args['output-file'] ?? `${args['protocol']}-revenue.csv`
@@ -23,13 +26,21 @@ async function main(args: ReturnType<typeof parseArgs>) {
   }> = []
 
   for (let i = 0; i < eligibleUsers.length; i++) {
-    const { referrerId, userAddress } = eligibleUsers[i]
+    const { referrerId, userAddress, timestamp } = eligibleUsers[i]
     console.log(
       `Calculating revenue for ${userAddress} (${i + 1}/${eligibleUsers.length})`,
     )
+
+    const referralDate = new Date(timestamp - REFERRAL_TIME_BUFFER_IN_SECONDS)
+    const periodStartDate = new Date(args['start-timestamp'])
+
     const revenue = await handler({
       address: userAddress,
-      startTimestamp: new Date(args['start-timestamp']),
+      // if the referral happened after the start of the period, only calculate revenue from the referral block onwards so that we exclude user activity before the referral
+      startTimestamp:
+        referralDate.getTime() > periodStartDate.getTime()
+          ? referralDate
+          : periodStartDate,
       endTimestamp: new Date(args['end-timestamp']),
     })
     allResults.push({
