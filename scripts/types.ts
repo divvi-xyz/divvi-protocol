@@ -14,7 +14,7 @@ export const protocols = [
 export type Protocol = (typeof protocols)[number]
 export type FilterFunction = (
   events: ReferralEvent[],
-  allowList?: Address[],
+  referrerAllowList?: Address[],
 ) => Promise<ReferralEvent[]>
 
 export enum NetworkId {

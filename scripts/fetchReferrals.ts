@@ -36,7 +36,7 @@ async function getArgs() {
     protocolFilter: protocolFilters[argv['protocol'] as Protocol],
     output: argv['output-file'] ?? `${argv['protocol']}-referrals.csv`,
     useStaging: argv['use-staging'],
-    allowlist: argv['allowlist-file'],
+    referrerAllowList: argv['allowlist-file'],
   }
 }
 
@@ -49,15 +49,15 @@ async function main() {
     args.useStaging,
   )
   const uniqueEvents = removeDuplicates(referralEvents)
-  const allowList = args.allowlist
-    ? (parse(readFileSync(args.allowlist, 'utf-8').toString(), {
+  const referrerAllowList = args.referrerAllowList
+    ? (parse(readFileSync(args.referrerAllowList, 'utf-8').toString(), {
         skip_empty_lines: true,
         delimiter: ',',
         columns: true,
       }) as Address[])
     : undefined
 
-  const filteredEvents = await args.protocolFilter(uniqueEvents, allowList)
+  const filteredEvents = await args.protocolFilter(uniqueEvents, referrerAllowList)
   const outputEvents = filteredEvents.map((event) => ({
     referrerId: event.referrerId,
     userAddress: event.userAddress,
