@@ -36,7 +36,7 @@ export function calculateRewardsCeloPG({
   const rewards = Object.entries(referrerKpis).map(([referrerId, kpi]) => {
     return {
       referrerId,
-      kpi: kpi.toString(),
+      kpi: kpi,
       rewardAmount: totalRewardsForPeriod
         .times(kpi)
         .div(total)
@@ -53,7 +53,7 @@ function parseArgs() {
       alias: 'i',
       description: 'input file path containing revenue data',
       type: 'string',
-      demandOption: false,
+      demandOption: true,
     })
     .option('output-file', {
       alias: 'o',
@@ -74,8 +74,8 @@ function parseArgs() {
       demandOption: true,
     })
     .option('reward-amount', {
-      alias: 'e',
-      description: 'the reward amount for this time period in CELO',
+      alias: 'r',
+      description: 'the reward amount for this time period in CELO in decimals',
       type: 'string',
       demandOption: true,
     })
@@ -90,9 +90,9 @@ interface KpiRow {
 }
 
 async function main(args: ReturnType<typeof parseArgs>) {
-  const inputPath = args['input-file'] ?? 'celo-transactions-revenue.csv'
+  const inputPath = args['input-file']
   const outputPath =
-    args['output-file'] ?? 'celo-transactions-safe-transactions.json'
+    args['output-file'] ?? 'celo-pg-safe-transactions.json'
   const rewardAmount = args['reward-amount']
 
   const kpiData = parse(readFileSync(inputPath, 'utf-8').toString(), {
