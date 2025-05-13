@@ -33,14 +33,12 @@ describe('calculateRewardsCeloPG', () => {
     expect(rewards).toEqual([
       {
         referrerId: '0xreferrer1',
-        kpi: '300',
         rewardAmount: new BigNumber(rewardAmountInEther)
           .times(0.3)
           .toFixed(0, BigNumber.ROUND_DOWN),
       },
       {
         referrerId: '0xreferrer2',
-        kpi: '700',
         rewardAmount: new BigNumber(rewardAmountInEther)
           .times(0.7)
           .toFixed(0, BigNumber.ROUND_DOWN),
@@ -74,7 +72,6 @@ describe('calculateRewardsCeloPG', () => {
     expect(rewards).toEqual([
       {
         referrerId: '0xreferrer1',
-        kpi: '100',
         rewardAmount: new BigNumber(rewardAmountInEther).toFixed(
           0,
           BigNumber.ROUND_DOWN,

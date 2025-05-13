@@ -36,7 +36,6 @@ export function calculateRewardsCeloPG({
   const rewards = Object.entries(referrerKpis).map(([referrerId, kpi]) => {
     return {
       referrerId,
-      kpi: kpi,
       rewardAmount: totalRewardsForPeriod
         .times(kpi)
         .div(total)
