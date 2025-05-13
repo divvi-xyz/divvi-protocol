@@ -1,4 +1,4 @@
-import { Address } from "viem"
+import { Address } from 'viem'
 
 export const protocols = [
   'beefy',
@@ -14,7 +14,7 @@ export const protocols = [
 export type Protocol = (typeof protocols)[number]
 export type FilterFunction = (
   events: ReferralEvent[],
-  referrerAllowList?: Address[],
+  builderAllowList?: Address[],
 ) => Promise<ReferralEvent[]>
 
 export enum NetworkId {

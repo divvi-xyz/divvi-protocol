@@ -25,9 +25,9 @@ async function getArgs() {
       type: 'boolean',
       default: false,
     })
-    .option('allowlist-file', {
+    .option('builder-allowlist-file', {
       alias: 'a',
-      description: 'allowlist file',
+      description: 'a csv file of allowlisted builders ',
       type: 'string',
     }).argv
 
@@ -36,7 +36,7 @@ async function getArgs() {
     protocolFilter: protocolFilters[argv['protocol'] as Protocol],
     output: argv['output-file'] ?? `${argv['protocol']}-referrals.csv`,
     useStaging: argv['use-staging'],
-    referrerAllowList: argv['allowlist-file'],
+    builderAllowList: argv['builder-allowlist-file'],
   }
 }
 
@@ -49,15 +49,18 @@ async function main() {
     args.useStaging,
   )
   const uniqueEvents = removeDuplicates(referralEvents)
-  const referrerAllowList = args.referrerAllowList
-    ? (parse(readFileSync(args.referrerAllowList, 'utf-8').toString(), {
+  const builderAllowList = args.builderAllowList
+    ? (parse(readFileSync(args.builderAllowList, 'utf-8').toString(), {
         skip_empty_lines: true,
         delimiter: ',',
         columns: true,
       }) as Address[])
     : undefined
 
-  const filteredEvents = await args.protocolFilter(uniqueEvents, referrerAllowList)
+  const filteredEvents = await args.protocolFilter(
+    uniqueEvents,
+    builderAllowList,
+  )
   const outputEvents = filteredEvents.map((event) => ({
     referrerId: event.referrerId,
     userAddress: event.userAddress,

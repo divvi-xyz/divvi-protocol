@@ -3,9 +3,9 @@ import { ReferralEvent } from '../types'
 
 export async function filter(
   event: ReferralEvent,
-  referrerAllowList?: Address[],
+  builderAllowList?: Address[],
 ): Promise<boolean> {
-  return referrerAllowList
-    ? referrerAllowList.some((address) => address === event.referrerId)
+  return builderAllowList
+    ? builderAllowList.some((address) => address === event.referrerId)
     : true
 }
