@@ -91,8 +91,7 @@ interface KpiRow {
 
 async function main(args: ReturnType<typeof parseArgs>) {
   const inputPath = args['input-file']
-  const outputPath =
-    args['output-file'] ?? 'celo-pg-safe-transactions.json'
+  const outputPath = args['output-file'] ?? 'celo-pg-safe-transactions.json'
   const rewardAmount = args['reward-amount']
 
   const kpiData = parse(readFileSync(inputPath, 'utf-8').toString(), {
