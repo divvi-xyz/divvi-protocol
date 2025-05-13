@@ -14,6 +14,7 @@ const REGISTRY_START_BLOCK = 134945942 // Block where the registry contract was 
 
 const REWARDS_PROVIDERS: Partial<Record<Protocol, Address>> = {
   'celo-transactions': '0x5f0a55FaD9424ac99429f635dfb9bF20c3360Ab8', // celo proof of impact
+  'celo-pg': '0x0423189886D7966f0DD7E7d256898DAeEE625dca',
 }
 
 // Remove duplicate events, keeping only the earliest event for each user
