@@ -64,7 +64,7 @@ export const createAddRewardSafeTransactionJSON = ({
 
   // Create directory if it doesn't exist
   mkdirSync(dirname(filePath), { recursive: true })
-  writeFileSync(filePath, JSON.stringify(transactionsBatch, null, 2), {
+  writeFileSync(filePath, JSON.stringify(transactionsBatch, null, 2) + '\n', {
     encoding: 'utf-8',
   })
 }
