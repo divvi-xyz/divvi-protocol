@@ -21,6 +21,6 @@ export async function calculateRevenue({
     networkId: NetworkId['arbitrum-one'],
     users: [address],
     startBlock,
-    endBlockExclusive: endBlockExclusive,
+    endBlockExclusive,
   })
 }
