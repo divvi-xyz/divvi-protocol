@@ -53,10 +53,7 @@ export async function getATokenScaledBalanceHistory({
           }
         }
         aTokenBalanceHistory(
-          where: {
-            timestamp_gte: $startTimestamp
-            timestamp_lte: $endTimestamp
-          }
+          where: { timestamp_gte: $startTimestamp, timestamp_lt: $endTimestamp }
           orderBy: timestamp
           orderDirection: asc
         ) {

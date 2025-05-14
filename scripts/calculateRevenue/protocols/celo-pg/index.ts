@@ -1,5 +1,5 @@
 import { NetworkId } from '../../../types'
-import { getNearestBlock } from '../utils/events'
+import { getBlockRange } from '../utils/events'
 import { fetchTotalTransactionFees } from '../utils/networks'
 
 export async function calculateRevenue({
@@ -11,19 +11,16 @@ export async function calculateRevenue({
   startTimestamp: Date
   endTimestamp: Date
 }): Promise<number> {
-  const startBlock = await getNearestBlock(
-    NetworkId['celo-mainnet'],
+  const { startBlock, endBlockExclusive } = await getBlockRange({
+    networkId: NetworkId['celo-mainnet'],
     startTimestamp,
-  )
-  const endBlock = await getNearestBlock(
-    NetworkId['celo-mainnet'],
     endTimestamp,
-  )
+  })
 
   return await fetchTotalTransactionFees({
     networkId: NetworkId['celo-mainnet'],
     users: [address],
     startBlock,
-    endBlock,
+    endBlockExclusive,
   })
 }

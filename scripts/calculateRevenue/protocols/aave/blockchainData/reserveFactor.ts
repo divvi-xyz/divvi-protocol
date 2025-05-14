@@ -17,18 +17,18 @@ export async function _getReserveFactorHistory({
   networkId,
   poolConfiguratorAddress,
   startBlock,
-  endBlock,
+  endBlockExclusive,
 }: {
   networkId: NetworkId
   poolConfiguratorAddress: Address
-  startBlock: number
-  endBlock: number
+  startBlock: number // inclusive
+  endBlockExclusive: number
 }): Promise<Map<Address, ReserveFactor[]>> {
   const client = getHyperSyncClient(networkId)
 
   const query = {
     fromBlock: startBlock,
-    toBlock: endBlock,
+    toBlock: endBlockExclusive,
     logs: [
       {
         address: [poolConfiguratorAddress],

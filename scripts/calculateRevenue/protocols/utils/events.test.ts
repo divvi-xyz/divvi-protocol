@@ -1,16 +1,31 @@
-import { _fetchEvents, _getNearestBlock } from './events'
+import {
+  fetchEvents,
+  getBlockRange,
+  _getNearestBlockForTesting as getNearestBlock,
+} from './events'
 import nock from 'nock'
 import { NetworkId } from '../../../types'
 import { BlockTimestampData } from '../types'
 import { getViemPublicClient } from '../../../utils'
 import { erc20Abi, GetContractReturnType } from 'viem'
 
-jest.mock('../utils/viem')
+// This makes memoize(fn) return fn, effectively disabling memoization
+// so it doesn't interfere with the tests.
+jest.mock('@github/memoize', () => ({
+  __esModule: true,
+  default: (fn: any) => fn,
+}))
+
 jest.mock('../../../utils')
 
 describe('On-chain event helpers', () => {
+  beforeEach(() => {
+    nock.cleanAll()
+    jest.clearAllMocks()
+  })
+
   describe('getNearestBlock', () => {
-    it('should correctly fetch the nearest block to a given timestamp', async () => {
+    it('should correctly fetch the nearest block data to a given timestamp', async () => {
       const mockBlockTimestamp: BlockTimestampData = {
         timestamp: 1234,
         height: 345,
@@ -21,53 +36,132 @@ describe('On-chain event helpers', () => {
 
       const networkId = NetworkId['arbitrum-one']
       const timestamp = new Date(1736525692000)
-      const result = await _getNearestBlock(networkId, timestamp)
+      const result = await getNearestBlock(networkId, timestamp)
 
-      expect(result).toEqual(345)
+      expect(result).toEqual(mockBlockTimestamp)
     })
   })
+
+  describe('getBlockRange', () => {
+    const networkId = NetworkId['arbitrum-one']
+
+    it('should return correct start and end blocks for a valid range', async () => {
+      nock('https://coins.llama.fi')
+        .get('/block/arbitrum/1000')
+        .reply(200, { height: 10, timestamp: 1000 })
+      nock('https://coins.llama.fi')
+        .get('/block/arbitrum/2000')
+        .reply(200, { height: 20, timestamp: 2000 })
+
+      const startTimestamp = new Date(1000000)
+      const endTimestamp = new Date(2000000)
+      const result = await getBlockRange({
+        networkId,
+        startTimestamp,
+        endTimestamp,
+      })
+      expect(result).toEqual({ startBlock: 10, endBlockExclusive: 20 })
+    })
+
+    it('should exercise the +1 logic in getFirstBlockAtOrAfterTimestamp for startBlock', async () => {
+      nock('https://coins.llama.fi')
+        .get('/block/arbitrum/1005')
+        .reply(200, { height: 100, timestamp: 1000 })
+      nock('https://coins.llama.fi')
+        .get('/block/arbitrum/2000')
+        .reply(200, { height: 200, timestamp: 2000 })
+
+      const startTimestamp = new Date(1005000)
+      const endTimestamp = new Date(2000000)
+      const result = await getBlockRange({
+        networkId,
+        startTimestamp,
+        endTimestamp,
+      })
+      expect(result).toEqual({ startBlock: 101, endBlockExclusive: 200 })
+    })
+
+    it('should exercise the +1 logic in getFirstBlockAtOrAfterTimestamp for endBlock', async () => {
+      nock('https://coins.llama.fi')
+        .get('/block/arbitrum/1000')
+        .reply(200, { height: 100, timestamp: 1000 })
+      nock('https://coins.llama.fi')
+        .get('/block/arbitrum/2005')
+        .reply(200, { height: 200, timestamp: 2000 })
+
+      const startTimestamp = new Date(1000000)
+      const endTimestamp = new Date(2005000)
+      const result = await getBlockRange({
+        networkId,
+        startTimestamp,
+        endTimestamp,
+      })
+      expect(result).toEqual({ startBlock: 100, endBlockExclusive: 201 })
+    })
+
+    it('should throw if startTimestamp is not before endTimestamp', async () => {
+      const startTimestamp = new Date(2000000)
+      const endTimestamp = new Date(1000000)
+      await expect(
+        getBlockRange({ networkId, startTimestamp, endTimestamp }),
+      ).rejects.toThrow('Start timestamp must be before end timestamp.')
+    })
+
+    it('should throw if startTimestamp is equal to endTimestamp', async () => {
+      const startTimestamp = new Date(1000000)
+      const endTimestamp = new Date(1000000)
+      await expect(
+        getBlockRange({ networkId, startTimestamp, endTimestamp }),
+      ).rejects.toThrow('Start timestamp must be before end timestamp.')
+    })
+
+    it('should throw if calculated startBlock is equal to endBlockExclusive', async () => {
+      nock('https://coins.llama.fi')
+        .get('/block/arbitrum/1000') // For startTimestamp = new Date(1000000)
+        .reply(200, { height: 9, timestamp: 990 }) // Results in startBlock = 10
+
+      nock('https://coins.llama.fi')
+        .get('/block/arbitrum/1001') // For endTimestamp = new Date(1001000)
+        .reply(200, { height: 9, timestamp: 990 }) // Results in endBlock = 10
+
+      const startTimestamp = new Date(1000000)
+      const endTimestamp = new Date(1001000) // et > st, so first validation passes
+
+      await expect(
+        getBlockRange({ networkId, startTimestamp, endTimestamp }),
+      ).rejects.toThrow(
+        `Calculated startBlock (height: 10) is not strictly less than calculated endBlockExclusive (height: 10).`,
+      )
+    })
+  })
+
   describe('fetchEvents', () => {
-    it('should fetch all events over multiple requests', async () => {
+    const mockContract: GetContractReturnType = {
+      address: '0x123',
+      abi: erc20Abi,
+    }
+    const networkId = NetworkId['arbitrum-one']
+
+    it('should fetch all events over multiple requests based on getBlockRange result', async () => {
       const mockGetContractEvents = jest
         .fn()
         .mockImplementation(({ fromBlock }: { fromBlock: bigint }) => {
-          return [
-            {
-              blockNumber: fromBlock,
-              args: {},
-              eventName: 'Swap',
-            },
-          ]
+          return [{ blockNumber: fromBlock, args: {}, eventName: 'Swap' }]
         })
       jest.mocked(getViemPublicClient).mockReturnValue({
         getContractEvents: mockGetContractEvents,
       } as unknown as ReturnType<typeof getViemPublicClient>)
 
-      const mockContract: GetContractReturnType = {
-        address: '0x123',
-        abi: erc20Abi,
-      }
+      nock('https://coins.llama.fi')
+        .get('/block/arbitrum/0')
+        .reply(200, { height: 0, timestamp: 0 })
+      nock('https://coins.llama.fi')
+        .get('/block/arbitrum/1')
+        .reply(200, { height: 15000, timestamp: 1 })
 
-      const mockStartBlockTimestamp: BlockTimestampData = {
-        timestamp: 0,
-        height: 0,
-      }
-      const mockEndBlockTimestamp: BlockTimestampData = {
-        timestamp: 1000,
-        height: 15000,
-      }
-
-      nock(`https://coins.llama.fi`)
-        .get(`/block/arbitrum/0`)
-        .reply(200, mockStartBlockTimestamp)
-      nock(`https://coins.llama.fi`)
-        .get(`/block/arbitrum/1`)
-        .reply(200, mockEndBlockTimestamp)
-
-      const networkId = NetworkId['arbitrum-one']
       const startTimestamp = new Date(0)
       const endTimestamp = new Date(1000)
-      const result = await _fetchEvents({
+      const result = await fetchEvents({
         contract: mockContract,
         eventName: 'Swap',
         networkId,
@@ -81,25 +175,52 @@ describe('On-chain event helpers', () => {
         abi: mockContract.abi,
         eventName: 'Swap',
         fromBlock: 0n,
-        toBlock: 10000n,
+        toBlock: 9999n,
       })
       expect(mockGetContractEvents).toHaveBeenNthCalledWith(2, {
         address: mockContract.address,
         abi: mockContract.abi,
         eventName: 'Swap',
-        fromBlock: 10001n,
-        toBlock: 15000n,
+        fromBlock: 10000n,
+        toBlock: 14999n,
       })
 
       expect(result).toHaveLength(2)
-
-      // Using toHaveProperty instead of toEqual because the blockNumber is a bigint
-      // and Jest doesn't handle bigint comparisons well
-
       expect(result[0]).toHaveProperty('blockNumber', 0n)
-      expect(result[0]).toHaveProperty('eventName', 'Swap')
-      expect(result[1]).toHaveProperty('blockNumber', 10001n)
-      expect(result[1]).toHaveProperty('eventName', 'Swap')
+      expect(result[1]).toHaveProperty('blockNumber', 10000n)
+    })
+
+    it('should propagate error if getBlockRange determines an empty/invalid range', async () => {
+      const mockGetContractEvents = jest.fn()
+      jest.mocked(getViemPublicClient).mockReturnValue({
+        getContractEvents: mockGetContractEvents,
+      } as unknown as ReturnType<typeof getViemPublicClient>)
+
+      // Setup nock for getBlockRange to throw an error.
+      // This scenario makes startBlock = 10 and endBlock = 10.
+      nock('https://coins.llama.fi')
+        .get('/block/arbitrum/1000') // For startTimestamp = new Date(1000000)
+        .reply(200, { height: 9, timestamp: 990 }) // Results in startBlock = 10
+      nock('https://coins.llama.fi')
+        .get('/block/arbitrum/1001') // For endTimestamp = new Date(1001000)
+        .reply(200, { height: 9, timestamp: 990 }) // Results in endBlock = 10
+
+      const startTimestamp = new Date(1000000)
+      const endTimestamp = new Date(1001000) // startTimestamp < endTimestamp is true
+
+      // We expect _fetchEvents to propagate the error thrown by getBlockRange.
+      await expect(
+        fetchEvents({
+          contract: mockContract,
+          eventName: 'Swap',
+          networkId,
+          startTimestamp: startTimestamp,
+          endTimestamp: endTimestamp,
+        }),
+      ).rejects.toThrow(
+        `Calculated startBlock (height: 10) is not strictly less than calculated endBlockExclusive (height: 10).`,
+      )
+      expect(mockGetContractEvents).not.toHaveBeenCalled()
     })
   })
 })

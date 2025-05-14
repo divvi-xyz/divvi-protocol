@@ -56,7 +56,7 @@ describe('fetchTotalTransactionFees', () => {
       networkId,
       users,
       startBlock: 0,
-      endBlock: 100,
+      endBlockExclusive: 100,
     })
 
     expect(result).toBe(
