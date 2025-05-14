@@ -1,4 +1,5 @@
-import { writeFileSync } from 'fs'
+import { writeFileSync, mkdirSync } from 'fs'
+import { dirname } from 'path'
 
 export const createAddRewardSafeTransactionJSON = ({
   filePath,
@@ -61,7 +62,9 @@ export const createAddRewardSafeTransactionJSON = ({
     ],
   }
 
-  writeFileSync(filePath, JSON.stringify(transactionsBatch, null, 2), {
+  // Create directory if it doesn't exist
+  mkdirSync(dirname(filePath), { recursive: true })
+  writeFileSync(filePath, JSON.stringify(transactionsBatch, null, 2) + '\n', {
     encoding: 'utf-8',
   })
 }
