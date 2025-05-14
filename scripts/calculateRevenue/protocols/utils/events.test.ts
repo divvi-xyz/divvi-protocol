@@ -13,6 +13,7 @@ import { erc20Abi, GetContractReturnType } from 'viem'
 // so it doesn't interfere with the tests.
 jest.mock('@github/memoize', () => ({
   __esModule: true,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   default: (fn: any) => fn,
 }))
 
