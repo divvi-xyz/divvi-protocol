@@ -7,8 +7,11 @@ export async function filter(
   event: ReferralEvent,
   builderAllowList?: Address[],
 ): Promise<boolean> {
-  const allAllowlistedBuilders = KNOWN_BUILDERS.concat(builderAllowList ?? [])
-  return allAllowlistedBuilders.some(
+  // If no allow list is provided, default to accept all referrals
+  if (!builderAllowList) {
+    return true
+  }
+  return KNOWN_BUILDERS.concat(builderAllowList).some(
     (address) => address.toLowerCase() === event.referrerId.toLowerCase(),
   )
 }
