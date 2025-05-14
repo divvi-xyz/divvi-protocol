@@ -24,7 +24,7 @@ const DIVVI_INTEGRATION_REWARDS_ENTITY =
 
 // TODO(sbw): hardcoded for now, but if we launch more campaings we can address TODOs
 // to take this as a CLI argument.
-const DIVVI_REWARD_POOL_ADDRESS = '0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'
+const DIVVI_REWARD_POOL_ADDRESS = '0x326161d68c05bE55367a0041b9C8f68082C04863'
 // TODO(sbw): hardcoded for 200 USDT for now. We should look at the RewardPool,
 // look at the reward token, and get the correct decimals.
 const DIVVI_REWARD_AMOUNT = parseUnits('200', 6)
