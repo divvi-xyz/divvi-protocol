@@ -10,6 +10,7 @@ export const protocols = [
   'fonbnk',
   'aave',
   'celo-transactions',
+  'rhino',
 ] as const
 export type Protocol = (typeof protocols)[number]
 export type FilterFunction = (
