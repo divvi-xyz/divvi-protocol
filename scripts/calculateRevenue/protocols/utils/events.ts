@@ -86,7 +86,7 @@ async function getFirstBlockAtOrAfterTimestamp(
  *                `for (let i = startBlock; i < endBlockExclusive; i++)`, or as an exclusive
  *                upper bound in queries, it correctly defines the desired time window.
  * @throws Will throw an error if startTimestamp is not before endTimestamp, or if a valid
- *         block range cannot be determined (e.g., startBlock ends up >= endBlock).
+ *         block range cannot be determined (e.g., startBlock ends up >= endBlockExclusive).
  */
 export async function getBlockRange({
   networkId,
