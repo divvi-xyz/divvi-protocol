@@ -35,7 +35,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     const endTimestamp = new Date(args['end-timestamp'])
     if (referralDate.getTime() > endTimestamp.getTime()) {
       console.log(
-        `Referral date is after end date, skipping ${userAddress} (referral date: ${timestamp})`,
+        `Referral date is after end date, skipping ${userAddress} (referral date: ${new Date(timestamp).toISOString()})`,
       )
       continue
     }
