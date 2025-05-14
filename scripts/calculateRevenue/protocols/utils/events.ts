@@ -81,9 +81,9 @@ async function getFirstBlockAtOrAfterTimestamp(
  * @param endTimestamp The exclusive end date of the time range.
  * @returns A promise that resolves to an object containing:
  *    `startBlock`: The first block whose timestamp is >= startTimestamp (inclusive).
- *    `endBlock`: The first block whose timestamp is >= endTimestamp. This block itself
+ *    `endBlockExclusive`: The first block whose timestamp is >= endTimestamp. This block itself
  *                is *exclusive* from the desired range. When used in loops like
- *                `for (let i = startBlock; i < endBlock; i++)`, or as an exclusive
+ *                `for (let i = startBlock; i < endBlockExclusive; i++)`, or as an exclusive
  *                upper bound in queries, it correctly defines the desired time window.
  * @throws Will throw an error if startTimestamp is not before endTimestamp, or if a valid
  *         block range cannot be determined (e.g., startBlock ends up >= endBlock).
