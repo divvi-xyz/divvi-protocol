@@ -1,9 +1,15 @@
-import { writeFileSync } from 'fs'
+import { writeFileSync, mkdirSync } from 'fs'
+import { dirname } from 'path'
 import { createAddRewardSafeTransactionJSON } from './createSafeTransactionsBatch'
 
-// Mock fs module
+// Mock fs and path modules
 jest.mock('fs', () => ({
   writeFileSync: jest.fn(),
+  mkdirSync: jest.fn(),
+}))
+
+jest.mock('path', () => ({
+  dirname: jest.fn().mockReturnValue('test-directory'),
 }))
 
 describe('createAddRewardSafeTransactionJSON', () => {
@@ -26,13 +32,19 @@ describe('createAddRewardSafeTransactionJSON', () => {
     jest.clearAllMocks()
   })
 
-  it('should create correct transaction batch JSON and write to file', () => {
+  it('should create directory and write transaction batch JSON to file', () => {
     createAddRewardSafeTransactionJSON({
       filePath: mockFilePath,
       rewardPoolAddress: mockRewardPoolAddress,
       rewards: mockRewards,
       startTimestamp: mockStartTimestamp,
       endTimestamp: mockEndTimestamp,
+    })
+
+    // Verify directory creation
+    expect(dirname).toHaveBeenCalledWith(mockFilePath)
+    expect(mkdirSync).toHaveBeenCalledWith('test-directory', {
+      recursive: true,
     })
 
     // Verify writeFileSync was called with correct arguments
@@ -85,6 +97,12 @@ describe('createAddRewardSafeTransactionJSON', () => {
       rewards: [],
       startTimestamp: mockStartTimestamp,
       endTimestamp: mockEndTimestamp,
+    })
+
+    // Verify directory creation
+    expect(dirname).toHaveBeenCalledWith(mockFilePath)
+    expect(mkdirSync).toHaveBeenCalledWith('test-directory', {
+      recursive: true,
     })
 
     const writtenJSON = JSON.parse(

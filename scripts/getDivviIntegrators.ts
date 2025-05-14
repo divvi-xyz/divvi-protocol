@@ -1,6 +1,13 @@
 import { writeFileSync } from 'fs'
 import yargs from 'yargs'
-import { Address, encodeEventTopics, pad } from 'viem'
+import {
+  Address,
+  encodeEventTopics,
+  pad,
+  sliceHex,
+  isAddress,
+  parseUnits,
+} from 'viem'
 import { LogField } from '@envio-dev/hypersync-client'
 import { paginateQuery } from './utils/hypersyncPagination'
 import { getHyperSyncClient } from './utils'
@@ -9,11 +16,18 @@ import { divviRegistryAbi } from '../abis/DivviRegistry'
 import { rewardPoolAbi } from '../abis/RewardPool'
 import { fetchWithTimeout } from './utils/fetchWithTimeout'
 import { getNearestBlock } from './calculateRevenue/protocols/utils/events'
-
+import { createAddRewardSafeTransactionJSON } from './utils/createSafeTransactionsBatch'
 const DIVVI_REGISTRY_CONTRACT_ADDRESS =
   '0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'
 const DIVVI_INTEGRATION_REWARDS_ENTITY =
   '0x6226ddE08402642964f9A6de844ea3116F0dFc7e'
+
+// TODO(sbw): hardcoded for now, but if we launch more campaings we can address TODOs
+// to take this as a CLI argument.
+const DIVVI_REWARD_POOL_ADDRESS = '0x326161d68c05bE55367a0041b9C8f68082C04863'
+// TODO(sbw): hardcoded for 200 USDT for now. We should look at the RewardPool,
+// look at the reward token, and get the correct decimals.
+const DIVVI_REWARD_AMOUNT = parseUnits('200', 6)
 
 const ALLOWLIST_URL =
   'https://raw.githubusercontent.com/divvi-xyz/integration-list/main/src/integration-list.json'
@@ -30,13 +44,8 @@ async function getArgs() {
       description: 'output file',
       type: 'string',
     })
-    .option('reward-pool', {
-      description: 'RewardPool contract address',
-      type: 'string',
-      demandOption: true,
-    })
-    .option('reward-amount', {
-      description: 'reward amount for integration',
+    .option('safe-transactions-file', {
+      description: 'safe transactions file',
       type: 'string',
     })
     .option('start-timestamp', {
@@ -56,8 +65,7 @@ async function getArgs() {
 
   return {
     output: argv['output-file'] ?? 'divvi-integrator-rewards.csv',
-    rewardPoolContractAddress: argv['reward-pool'],
-    rewardAmount: argv['reward-amount'],
+    safeTransactionsFile: argv['safe-transactions-file'],
     startTimestamp: new Date(argv['start-timestamp']),
     endTimestamp: new Date(argv['end-timestamp']),
   }
@@ -227,14 +235,20 @@ async function getDivviIntegrators({
         allowlistedConsumers.has(consumer),
     )
 
-  return consumerToReceiveRewards
+  return consumerToReceiveRewards.map((address) => {
+    const stripped = sliceHex(address, -20)
+    if (isAddress(stripped)) {
+      return stripped
+    }
+    throw new Error(`Unexpected address value: ${stripped}`)
+  })
 }
 
 async function main() {
   const args = await getArgs()
 
-  const integratorAddresses = await getDivviIntegrators({
-    rewardPoolContractAddress: args.rewardPoolContractAddress,
+  const integratorAddresses: Address[] = await getDivviIntegrators({
+    rewardPoolContractAddress: DIVVI_REWARD_POOL_ADDRESS,
     startTimestamp: args.startTimestamp,
     endTimestamp: args.endTimestamp,
   })
@@ -242,10 +256,23 @@ async function main() {
   writeFileSync(
     args.output,
     integratorAddresses
-      .map((address) => `${address},${args.rewardAmount}`)
+      .map((address) => `${address},${DIVVI_REWARD_AMOUNT.toString()}`)
       .join('\n'),
   )
   console.log(`Wrote results to ${args.output}`)
+
+  if (args.safeTransactionsFile) {
+    createAddRewardSafeTransactionJSON({
+      filePath: args.safeTransactionsFile,
+      rewardPoolAddress: DIVVI_REWARD_POOL_ADDRESS,
+      rewards: integratorAddresses.map((address) => ({
+        referrerId: address,
+        rewardAmount: DIVVI_REWARD_AMOUNT.toString(),
+      })),
+      startTimestamp: args.startTimestamp.getTime().toString(),
+      endTimestamp: args.endTimestamp.getTime().toString(),
+    })
+  }
 }
 
 main().catch((error) => {
