@@ -110,8 +110,8 @@ export async function getBlockRange({
     getFirstBlockAtOrAfterTimestamp(networkId, startTimestamp),
     // Determine the exclusive endBlock:
     // This is the first block whose timestamp is greater than or equal to the endTimestamp.
-    // Using this block's height as `endBlock` means that loops iterating up to `endBlock - 1`
-    // will process all blocks strictly before this `endBlock`.
+    // Using this block's height as `endBlockExclusive` means that loops iterating up to `endBlockExclusive - 1`
+    // will process all blocks strictly before this `endBlockExclusive`.
     // Thus, the last processed block will have a timestamp < endTimestamp.
     getFirstBlockAtOrAfterTimestamp(networkId, endTimestamp),
   ])
