@@ -156,7 +156,7 @@ describe('On-chain event helpers', () => {
         .reply(200, { height: 0, timestamp: 0 })
       nock('https://coins.llama.fi')
         .get('/block/arbitrum/1')
-        .reply(200, { height: 15000, timestamp: 1 })
+        .reply(200, { height: 15000, timestamp: 1000 })
 
       const startTimestamp = new Date(0)
       const endTimestamp = new Date(1000)
