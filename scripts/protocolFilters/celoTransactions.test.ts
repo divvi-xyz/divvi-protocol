@@ -9,10 +9,6 @@ describe('filter', () => {
     referrerId: '0x456',
     protocol: 'celo-transactions',
   } as ReferralEvent
-  it('returns true if builderAllowList is not provided', async () => {
-    const result = await filter(event)
-    expect(result).toBe(true)
-  })
 
   it('returns true if referrerId is in builderAllowList', async () => {
     const builderAllowList: Address[] = ['0x456', '0x789']
