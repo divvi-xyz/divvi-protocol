@@ -18,6 +18,8 @@ jest.mock('@github/memoize', () => ({
 
 jest.mock('../../../utils')
 
+const networkId = NetworkId['arbitrum-one']
+
 describe('On-chain event helpers', () => {
   beforeEach(() => {
     nock.cleanAll()
@@ -34,7 +36,6 @@ describe('On-chain event helpers', () => {
         .get(`/block/arbitrum/1736525692`)
         .reply(200, mockBlockTimestamp)
 
-      const networkId = NetworkId['arbitrum-one']
       const timestamp = new Date(1736525692000)
       const result = await getNearestBlock(networkId, timestamp)
 
@@ -43,8 +44,6 @@ describe('On-chain event helpers', () => {
   })
 
   describe('getBlockRange', () => {
-    const networkId = NetworkId['arbitrum-one']
-
     it('should return correct start and end blocks for a valid range', async () => {
       nock('https://coins.llama.fi')
         .get('/block/arbitrum/1000')
@@ -125,7 +124,7 @@ describe('On-chain event helpers', () => {
         .reply(200, { height: 9, timestamp: 990 }) // Results in endBlock = 10
 
       const startTimestamp = new Date(1000000)
-      const endTimestamp = new Date(1001000) // et > st, so first validation passes
+      const endTimestamp = new Date(1001000) // endTimestamp > startTimestamp, so first validation passes
 
       await expect(
         getBlockRange({ networkId, startTimestamp, endTimestamp }),
@@ -140,7 +139,6 @@ describe('On-chain event helpers', () => {
       address: '0x123',
       abi: erc20Abi,
     }
-    const networkId = NetworkId['arbitrum-one']
 
     it('should fetch all events over multiple requests based on getBlockRange result', async () => {
       const mockGetContractEvents = jest
@@ -208,7 +206,7 @@ describe('On-chain event helpers', () => {
       const startTimestamp = new Date(1000000)
       const endTimestamp = new Date(1001000) // startTimestamp < endTimestamp is true
 
-      // We expect _fetchEvents to propagate the error thrown by getBlockRange.
+      // We expect fetchEvents to propagate the error thrown by getBlockRange.
       await expect(
         fetchEvents({
           contract: mockContract,
