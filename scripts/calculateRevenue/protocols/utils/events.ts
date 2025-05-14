@@ -117,9 +117,9 @@ export async function getBlockRange({
   ])
 
   // Validate the calculated block range.
-  // The startBlock must be strictly less than the endBlock for a valid, non-empty range.
-  // If startBlock == endBlock, the range is empty (e.g., startTimestamp and endTimestamp map to the same block for their >= condition).
-  // If startBlock > endBlock, it implies an issue, possibly with startTimestamp mapping to a block after endTimestamp's mapped block,
+  // The startBlock must be strictly less than the endBlockExclusive for a valid, non-empty range.
+  // If startBlock == endBlockExclusive, the range is empty (e.g., startTimestamp and endTimestamp map to the same block for their >= condition).
+  // If startBlock > endBlockExclusive, it implies an issue, possibly with startTimestamp mapping to a block after endTimestamp's mapped block,
   // though the initial timestamp check should largely prevent this specific sequence.
   if (startBlock >= endBlockExclusive) {
     throw new Error(
