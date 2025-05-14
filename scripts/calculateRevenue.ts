@@ -32,16 +32,26 @@ async function main(args: ReturnType<typeof parseArgs>) {
     )
 
     const referralDate = new Date(timestamp - REFERRAL_TIME_BUFFER_IN_SECONDS)
-    const periodStartDate = new Date(args['start-timestamp'])
+    const endTimestamp = new Date(args['end-timestamp'])
+    const rewardPeriodStartDate = new Date(args['start-timestamp'])
+
+    // if the referral happened after the start of the period, only calculate revenue from the referral block onwards so that we exclude user activity before the referral
+    const startTimestamp =
+      referralDate.getTime() > rewardPeriodStartDate.getTime()
+        ? referralDate
+        : rewardPeriodStartDate
+
+    if (startTimestamp.getTime() > endTimestamp.getTime()) {
+      console.log(
+        `Referral date is after end date, skipping ${userAddress} (referral date: ${timestamp})`,
+      )
+      continue
+    }
 
     const revenue = await handler({
       address: userAddress,
-      // if the referral happened after the start of the period, only calculate revenue from the referral block onwards so that we exclude user activity before the referral
-      startTimestamp:
-        referralDate.getTime() > periodStartDate.getTime()
-          ? referralDate
-          : periodStartDate,
-      endTimestamp: new Date(args['end-timestamp']),
+      startTimestamp,
+      endTimestamp,
     })
     allResults.push({
       referrerId,
