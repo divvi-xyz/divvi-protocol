@@ -8,7 +8,7 @@ export async function filter(
   builderAllowList?: Address[],
 ): Promise<boolean> {
   return builderAllowList
-    ? KNOWN_BUILDERS.concat(builderAllowList ?? []).some(
+    ? KNOWN_BUILDERS.concat(builderAllowList).some(
         (address) => address.toLowerCase() === event.referrerId.toLowerCase(),
       )
     : true
