@@ -271,8 +271,8 @@ async function main() {
         referrerId: address,
         rewardAmount: DIVVI_REWARD_AMOUNT.toString(),
       })),
-      startTimestamp: args.startTimestamp.getTime().toString(),
-      endTimestamp: args.endTimestamp.getTime().toString(),
+      startTimestamp: args.startTimestamp,
+      endTimestamp: args.endTimestamp,
     })
   }
 }

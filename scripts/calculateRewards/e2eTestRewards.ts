@@ -84,8 +84,8 @@ async function main(args: ReturnType<typeof parseArgs>) {
     filePath: outputPath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
     rewards,
-    startTimestamp: args['start-timestamp'],
-    endTimestamp: args['end-timestamp'],
+    startTimestamp: new Date(args['start-timestamp']),
+    endTimestamp: new Date(args['end-timestamp']),
   })
 }
 
