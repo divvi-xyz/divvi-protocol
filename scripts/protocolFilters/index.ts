@@ -8,6 +8,7 @@ import { filter as filterVelodrome } from './velodrome'
 import { filter as filterFonbnk } from './fonbnk'
 import { filter as filterAave } from './aave'
 import { filter as filterCeloTransactions } from './celoTransactions'
+import { Address } from 'viem'
 
 export const protocolFilters: Record<Protocol, FilterFunction> = {
   beefy: _createFilter(filterBeefy),
@@ -21,11 +22,19 @@ export const protocolFilters: Record<Protocol, FilterFunction> = {
   'celo-transactions': _createFilter(filterCeloTransactions),
 }
 
-function _createFilter(filter: (event: ReferralEvent) => Promise<boolean>) {
-  return async function (events: ReferralEvent[]): Promise<ReferralEvent[]> {
+function _createFilter(
+  filter: (
+    event: ReferralEvent,
+    builderAllowList?: Address[],
+  ) => Promise<boolean>,
+) {
+  return async function (
+    events: ReferralEvent[],
+    builderAllowList?: Address[],
+  ): Promise<ReferralEvent[]> {
     const filteredEvents = []
     for (const event of events) {
-      if (await filter(event)) {
+      if (await filter(event, builderAllowList)) {
         filteredEvents.push(event)
       }
     }
