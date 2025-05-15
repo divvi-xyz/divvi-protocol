@@ -1,4 +1,4 @@
-import { writeFileSync, readFileSync } from 'fs'
+import { writeFileSync, readFileSync, mkdirSync } from 'fs'
 import yargs from 'yargs'
 import { protocolFilters } from './protocolFilters'
 import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
@@ -6,6 +6,8 @@ import { Protocol, protocols } from './types'
 import { stringify } from 'csv-stringify/sync'
 import { Address } from 'viem'
 import { parse } from 'csv-parse/sync'
+import { toPeriodFolderName } from './utils/dateFormatting'
+import { dirname } from 'path'
 
 async function getArgs() {
   const argv = await yargs
@@ -15,10 +17,19 @@ async function getArgs() {
       demandOption: true,
       choices: protocols,
     })
-    .option('output-file', {
-      alias: 'o',
-      description: 'output file',
+    .option('start-timestamp', {
+      alias: 's',
+      description:
+        'Start timestamp (inclusive) (new Date() compatible epoch milliseconds or string)',
       type: 'string',
+      demandOption: true,
+    })
+    .option('end-timestamp', {
+      alias: 'e',
+      description:
+        'End timestamp (exclusive) (new Date() compatible epoch milliseconds or string)',
+      type: 'string',
+      demandOption: true,
     })
     .option('use-staging', {
       description: 'use staging registry contract',
@@ -37,6 +48,8 @@ async function getArgs() {
     output: argv['output-file'] ?? `${argv['protocol']}-referrals.csv`,
     useStaging: argv['use-staging'],
     builderAllowList: argv['builder-allowlist-file'],
+    startTimestamp: argv['start-timestamp'],
+    endTimestamp: argv['end-timestamp'],
   }
 }
 
@@ -66,10 +79,18 @@ async function main() {
     userAddress: event.userAddress,
     timestamp: event.timestamp,
   }))
-  writeFileSync(args.output, stringify(outputEvents, { header: true }), {
+
+  const outputFile = `rewards/${args.protocol}/${toPeriodFolderName({
+    startTimestamp: new Date(args.startTimestamp),
+    endTimestamp: new Date(args.endTimestamp),
+  })}/referrals.csv`
+
+  // Create directory if it doesn't exist
+  mkdirSync(dirname(outputFile), { recursive: true })
+  writeFileSync(outputFile, stringify(outputEvents, { header: true }), {
     encoding: 'utf-8',
   })
-  console.log(`Wrote results to ${args.output}`)
+  console.log(`Wrote results to ${outputFile}`)
 }
 
 main().catch((error) => {

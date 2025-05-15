@@ -25,8 +25,8 @@ describe('createAddRewardSafeTransactionJSON', () => {
       rewardAmount: '2000000000000000000', // 2 ETH in wei
     },
   ]
-  const mockStartTimestamp = '1677649200' // March 1, 2023
-  const mockEndTimestamp = '1680327600' // April 1, 2023
+  const mockStartTimestamp = new Date('2023-03-01')
+  const mockEndTimestamp = new Date('2023-04-01')
 
   beforeEach(() => {
     jest.clearAllMocks()

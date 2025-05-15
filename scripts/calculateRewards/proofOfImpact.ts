@@ -4,6 +4,7 @@ import { readFileSync } from 'fs'
 import { parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
+import { toPeriodFolderName } from '../utils/dateFormatting'
 
 // proof-of-impact campaign parameters
 // May 8 2025 12:00:00 AM UTC
@@ -27,25 +28,28 @@ export function calculateRewardsProofOfImpact({
   endTimestamp,
 }: {
   kpiData: KpiRow[]
-  startTimestamp: string
-  endTimestamp: string
+  startTimestamp: Date
+  endTimestamp: Date
 }) {
-  const timeDiff = new BigNumber(endTimestamp).minus(
-    new BigNumber(startTimestamp),
+  const timeDiff = new BigNumber(endTimestamp.getTime()).minus(
+    new BigNumber(startTimestamp.getTime()),
   )
   const totalRewardsForPeriod = timeDiff.times(rewardsPerMillisecond)
 
-  const referrerKpis = kpiData.reduce(
-    (acc, row) => {
-      if (!(row.referrerId in acc)) {
-        acc[row.referrerId] = BigInt(row.revenue)
-      } else {
-        acc[row.referrerId] += BigInt(row.revenue)
-      }
-      return acc
-    },
-    {} as Record<string, bigint>,
-  )
+  const referrerKpis = kpiData
+    // filter out rows with no revenue, which is possible for users who were referred between the reward period end date and the time of the reward distribution
+    .filter((row) => BigInt(row.revenue) > 0)
+    .reduce(
+      (acc, row) => {
+        if (!(row.referrerId in acc)) {
+          acc[row.referrerId] = BigInt(row.revenue)
+        } else {
+          acc[row.referrerId] += BigInt(row.revenue)
+        }
+        return acc
+      },
+      {} as Record<string, bigint>,
+    )
 
   const total = Object.values(referrerKpis).reduce(
     (sum, value) => sum + value,
@@ -68,27 +72,17 @@ export function calculateRewardsProofOfImpact({
 
 function parseArgs() {
   return yargs
-    .option('input-file', {
-      alias: 'i',
-      description: 'input file path containing revenue data',
-      type: 'string',
-      demandOption: false,
-    })
-    .option('output-file', {
-      alias: 'o',
-      description: 'output file path to write reward allocations',
-      type: 'string',
-      demandOption: false,
-    })
     .option('start-timestamp', {
       alias: 's',
-      description: 'start timestamp (inclusive)',
+      description:
+        'Start timestamp (inclusive) (new Date() compatible epoch milliseconds or string)',
       type: 'string',
       demandOption: true,
     })
     .option('end-timestamp', {
       alias: 'e',
-      description: 'end timestamp (exclusive)',
+      description:
+        'End timestamp (exclusive) (new Date() compatible epoch milliseconds or string)',
       type: 'string',
       demandOption: true,
     })
@@ -103,9 +97,15 @@ interface KpiRow {
 }
 
 async function main(args: ReturnType<typeof parseArgs>) {
-  const inputPath = args['input-file'] ?? 'celo-transactions-revenue.csv'
-  const outputPath =
-    args['output-file'] ?? 'celo-transactions-safe-transactions.json'
+  const startTimestamp = new Date(args['start-timestamp'])
+  const endTimestamp = new Date(args['end-timestamp'])
+
+  const folderPath = `rewards/celo-transactions/${toPeriodFolderName({
+    startTimestamp,
+    endTimestamp,
+  })}`
+  const inputPath = `${folderPath}/revenue.csv`
+  const outputPath = `${folderPath}/safe-transactions.json`
 
   const kpiData = parse(readFileSync(inputPath, 'utf-8').toString(), {
     skip_empty_lines: true,
@@ -115,16 +115,16 @@ async function main(args: ReturnType<typeof parseArgs>) {
 
   const rewards = calculateRewardsProofOfImpact({
     kpiData,
-    startTimestamp: args['start-timestamp'],
-    endTimestamp: args['end-timestamp'],
+    startTimestamp,
+    endTimestamp,
   })
 
   createAddRewardSafeTransactionJSON({
     filePath: outputPath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
     rewards,
-    startTimestamp: args['start-timestamp'],
-    endTimestamp: args['end-timestamp'],
+    startTimestamp,
+    endTimestamp,
   })
 }
 
