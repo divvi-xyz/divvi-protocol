@@ -15,8 +15,9 @@ import { NetworkId } from './types'
 import { divviRegistryAbi } from '../abis/DivviRegistry'
 import { rewardPoolAbi } from '../abis/RewardPool'
 import { fetchWithTimeout } from './utils/fetchWithTimeout'
-import { getNearestBlock } from './calculateRevenue/protocols/utils/events'
+import { getBlockRange } from './calculateRevenue/protocols/utils/events'
 import { createAddRewardSafeTransactionJSON } from './utils/createSafeTransactionsBatch'
+
 const DIVVI_REGISTRY_CONTRACT_ADDRESS =
   '0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'
 const DIVVI_INTEGRATION_REWARDS_ENTITY =
@@ -122,14 +123,15 @@ async function getDivviIntegrators({
     eventName: 'ReferralRegistered',
   })[0]
 
-  const [startBlock, endBlock] = await Promise.all([
-    getNearestBlock(NetworkId['op-mainnet'], startTimestamp),
-    getNearestBlock(NetworkId['op-mainnet'], endTimestamp),
-  ])
+  const { startBlock, endBlockExclusive } = await getBlockRange({
+    networkId: NetworkId['op-mainnet'],
+    startTimestamp,
+    endTimestamp,
+  })
 
   const queryForIntegrators = {
     fromBlock: startBlock,
-    toBlock: endBlock,
+    toBlock: endBlockExclusive,
     logs: [
       {
         address: [DIVVI_REGISTRY_CONTRACT_ADDRESS],

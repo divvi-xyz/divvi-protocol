@@ -82,13 +82,13 @@ function parseArgs() {
     })
     .option('start-timestamp', {
       alias: 's',
-      description: 'start timestamp',
+      description: 'start timestamp (inclusive)',
       type: 'string',
       demandOption: true,
     })
     .option('end-timestamp', {
       alias: 'e',
-      description: 'end timestamp',
+      description: 'end timestamp (exclusive)',
       type: 'string',
       demandOption: true,
     })
