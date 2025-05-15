@@ -5,6 +5,7 @@ import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
 import { Protocol, protocols } from './types'
 import { stringify } from 'csv-stringify/sync'
 import { Address } from 'viem'
+import { parse } from 'csv-parse/sync'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { dirname } from 'path'
 
@@ -62,10 +63,10 @@ async function main() {
   )
   const uniqueEvents = removeDuplicates(referralEvents)
   const builderAllowList = args.builderAllowList
-    ? readFileSync(args.builderAllowList, 'utf-8')
-        .split('\n')
-        .map((line) => line.trim() as Address)
-        .filter((line) => line.length > 0) // Remove empty lines
+    ? parse(readFileSync(args.builderAllowList, 'utf-8').toString(), {
+        skip_empty_lines: true,
+        columns: true,
+      }).map(({ referrerId }: { referrerId: Address }) => referrerId)
     : undefined
 
   const filteredEvents = await args.protocolFilter(
