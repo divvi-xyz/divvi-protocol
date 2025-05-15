@@ -1,4 +1,4 @@
-import { writeFileSync, readFileSync, mkdirSync } from 'fs'
+import { writeFileSync, readFileSync, mkdirSync, copyFileSync } from 'fs'
 import yargs from 'yargs'
 import { protocolFilters } from './protocolFilters'
 import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
@@ -63,11 +63,10 @@ async function main() {
   )
   const uniqueEvents = removeDuplicates(referralEvents)
   const builderAllowList = args.builderAllowList
-    ? (parse(readFileSync(args.builderAllowList, 'utf-8').toString(), {
+    ? parse(readFileSync(args.builderAllowList, 'utf-8').toString(), {
         skip_empty_lines: true,
-        delimiter: ',',
         columns: true,
-      }) as Address[])
+      }).map(({ referrerId }: { referrerId: Address }) => referrerId)
     : undefined
 
   const filteredEvents = await args.protocolFilter(
@@ -80,10 +79,11 @@ async function main() {
     timestamp: event.timestamp,
   }))
 
-  const outputFile = `rewards/${args.protocol}/${toPeriodFolderName({
+  const outputDir = `rewards/${args.protocol}/${toPeriodFolderName({
     startTimestamp: new Date(args.startTimestamp),
     endTimestamp: new Date(args.endTimestamp),
-  })}/referrals.csv`
+  })}`
+  const outputFile = `${outputDir}/referrals.csv`
 
   // Create directory if it doesn't exist
   mkdirSync(dirname(outputFile), { recursive: true })
@@ -91,6 +91,12 @@ async function main() {
     encoding: 'utf-8',
   })
   console.log(`Wrote results to ${outputFile}`)
+
+  if (args.builderAllowList) {
+    const allowListOutputFile = `${outputDir}/builder-allowlist.csv`
+    copyFileSync(args.builderAllowList, allowListOutputFile)
+    console.log(`Copied builder allowlist to ${allowListOutputFile}`)
+  }
 }
 
 main().catch((error) => {
