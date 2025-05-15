@@ -1,9 +1,11 @@
-import { writeFileSync } from 'fs'
+import { writeFileSync, readFileSync } from 'fs'
 import yargs from 'yargs'
 import { protocolFilters } from './protocolFilters'
 import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
 import { Protocol, protocols } from './types'
 import { stringify } from 'csv-stringify/sync'
+import { Address } from 'viem'
+import { parse } from 'csv-parse/sync'
 
 async function getArgs() {
   const argv = await yargs
@@ -22,6 +24,11 @@ async function getArgs() {
       description: 'use staging registry contract',
       type: 'boolean',
       default: false,
+    })
+    .option('builder-allowlist-file', {
+      alias: 'a',
+      description: 'a csv file of allowlisted builders ',
+      type: 'string',
     }).argv
 
   return {
@@ -29,6 +36,7 @@ async function getArgs() {
     protocolFilter: protocolFilters[argv['protocol'] as Protocol],
     output: argv['output-file'] ?? `${argv['protocol']}-referrals.csv`,
     useStaging: argv['use-staging'],
+    builderAllowList: argv['builder-allowlist-file'],
   }
 }
 
@@ -41,8 +49,18 @@ async function main() {
     args.useStaging,
   )
   const uniqueEvents = removeDuplicates(referralEvents)
+  const builderAllowList = args.builderAllowList
+    ? (parse(readFileSync(args.builderAllowList, 'utf-8').toString(), {
+        skip_empty_lines: true,
+        delimiter: ',',
+        columns: true,
+      }) as Address[])
+    : undefined
 
-  const filteredEvents = await args.protocolFilter(uniqueEvents)
+  const filteredEvents = await args.protocolFilter(
+    uniqueEvents,
+    builderAllowList,
+  )
   const outputEvents = filteredEvents.map((event) => ({
     referrerId: event.referrerId,
     userAddress: event.userAddress,
