@@ -9,14 +9,14 @@ import {
   parseUnits,
 } from 'viem'
 import { LogField } from '@envio-dev/hypersync-client'
-import { paginateQuery } from './utils/hypersyncPagination'
-import { getHyperSyncClient } from './utils'
-import { NetworkId } from './types'
-import { divviRegistryAbi } from '../abis/DivviRegistry'
-import { rewardPoolAbi } from '../abis/RewardPool'
-import { fetchWithTimeout } from './utils/fetchWithTimeout'
-import { getBlockRange } from './calculateRevenue/protocols/utils/events'
-import { createAddRewardSafeTransactionJSON } from './utils/createSafeTransactionsBatch'
+import { paginateQuery } from '../utils/hypersyncPagination'
+import { getHyperSyncClient } from '../utils'
+import { NetworkId } from '../types'
+import { divviRegistryAbi } from '../../abis/DivviRegistry'
+import { rewardPoolAbi } from '../../abis/RewardPool'
+import { fetchWithTimeout } from '../utils/fetchWithTimeout'
+import { getBlockRange } from '../calculateRevenue/protocols/utils/events'
+import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 
 const DIVVI_REGISTRY_CONTRACT_ADDRESS =
   '0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'
