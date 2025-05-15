@@ -8,7 +8,6 @@ import { filter as filterVelodrome } from './velodrome'
 import { filter as filterFonbnk } from './fonbnk'
 import { filter as filterAave } from './aave'
 import { filter as filterCeloTransactions } from './celoTransactions'
-import { Address } from 'viem'
 
 export const protocolFilters: Record<Protocol, FilterFunction> = {
   beefy: _createFilter(filterBeefy),
@@ -23,18 +22,17 @@ export const protocolFilters: Record<Protocol, FilterFunction> = {
 }
 
 function _createFilter(
-  filter: (
-    event: ReferralEvent,
-    builderAllowList?: Address[],
-  ) => Promise<boolean>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  filter: (event: ReferralEvent, ...args: any[]) => Promise<boolean>,
 ) {
   return async function (
     events: ReferralEvent[],
-    builderAllowList?: Address[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ...args: any[]
   ): Promise<ReferralEvent[]> {
     const filteredEvents = []
     for (const event of events) {
-      if (await filter(event, builderAllowList)) {
+      if (await filter(event, ...args)) {
         filteredEvents.push(event)
       }
     }
