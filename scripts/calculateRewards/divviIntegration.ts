@@ -53,14 +53,14 @@ async function getArgs() {
       alias: 's',
       description:
         'inclusive timestamp at which to start checking for integrators (new Date() compatible)',
-      type: 'number',
+      type: 'string',
       demandOption: true,
     })
     .option('end-timestamp', {
       alias: 'e',
       description:
         'exclusive timestamp at which to stop checking for integrators (new Date() compatible)',
-      type: 'number',
+      type: 'string',
       demandOption: true,
     }).argv
 
