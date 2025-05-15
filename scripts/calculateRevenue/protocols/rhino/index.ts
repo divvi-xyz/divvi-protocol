@@ -10,7 +10,7 @@ import { BridgeTransaction } from './types'
 import { fetchTokenPrices } from '../utils/tokenPrices'
 import { getTokenPrice } from '../beefy'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
-import { Address, fromHex } from 'viem'
+import { fromHex } from 'viem'
 
 async function getUserBridges({
   address,
@@ -48,8 +48,8 @@ async function getUserBridges({
           blockTimestampDate <= endTimestamp
         ) {
           transactions.push({
-            amount: fromHex(transaction.data as Address, 'bigint'), // TODO: Get from data
-            tokenAddress: transaction.address as Address, // TODO: Get from data
+            amount: fromHex(`0x${transaction.data.slice(192, 256)}`, 'bigint'),
+            tokenAddress: `0x${transaction.data.slice(152, 192)}`,
             timestamp: blockTimestampDate,
           })
         }
@@ -79,7 +79,7 @@ export async function getTotalRevenueUsdFromTransactions({
   let totalUsdContribution = 0
 
   // Get the token decimals
-  const tokenId = `${networkId}:${userBridges[0].tokenAddress}`
+  const tokenId = `${networkId}:${userBridges[0].tokenAddress}` // TODO: If this is all 0 make it native token
   const tokenContract = await getErc20Contract(
     userBridges[0].tokenAddress,
     networkId,
