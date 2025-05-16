@@ -119,6 +119,15 @@ async function main(args: ReturnType<typeof parseArgs>) {
     endTimestamp,
   })
 
+  console.log(
+    'rewards:',
+    rewards.map((r) => ({
+      referrerId: r.referrerId,
+      kpi: r.kpi,
+      rewardAmount: BigNumber(r.rewardAmount).shiftedBy(-18).toFixed(0),
+    })),
+  )
+
   createAddRewardSafeTransactionJSON({
     filePath: outputPath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
