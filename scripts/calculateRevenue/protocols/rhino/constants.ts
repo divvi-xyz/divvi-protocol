@@ -5,6 +5,7 @@ import { rhinoFiBridgeAbi } from '../../../abis/RhinoFiBridge'
 export const BRIDGE_VOLUME_USD_PRECISION = 8
 
 export const ALL_ZEROES_ADDRESS = '0x0000000000000000000000000000000000000000'
+export const NATIVE_TOKEN_DECIMALS = 18n
 
 // Contract addresses on different chains
 export const NETWORK_ID_TO_BRIDGE_CONTRACT_ADDRESS: Partial<

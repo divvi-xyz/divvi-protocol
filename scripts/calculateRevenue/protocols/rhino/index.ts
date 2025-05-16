@@ -14,6 +14,7 @@ import {
   NETWORK_ID_TO_BRIDGE_CONTRACT_ADDRESS,
   BRIDGE_VOLUME_USD_PRECISION,
   ALL_ZEROES_ADDRESS,
+  NATIVE_TOKEN_DECIMALS,
 } from './constants'
 import { NetworkId } from '../../../types'
 import { BridgeTransaction } from './types'
@@ -108,9 +109,14 @@ export async function getTotalRevenueUsdFromBridges({
   // For each bridge compute the USD contribution and add to the total
   for (const bridge of userBridges) {
     // Get the token decimals
-    const tokenId = `${networkId}:${bridge.tokenAddress === ALL_ZEROES_ADDRESS ? 'native' : bridge.tokenAddress}`
-    const tokenContract = await getErc20Contract(bridge.tokenAddress, networkId) // TODO: Update to work with native token
-    const tokenDecimals = BigInt(await tokenContract.read.decimals())
+    const isNative = bridge.tokenAddress === ALL_ZEROES_ADDRESS
+    const tokenId = `${networkId}:${isNative ? 'native' : bridge.tokenAddress}`
+    const tokenContract = isNative
+      ? undefined
+      : await getErc20Contract(bridge.tokenAddress, networkId)
+    const tokenDecimals = tokenContract
+      ? BigInt(await tokenContract.read.decimals())
+      : NATIVE_TOKEN_DECIMALS
 
     // Get the historical token prices
     const tokenPrices = await fetchTokenPrices({
