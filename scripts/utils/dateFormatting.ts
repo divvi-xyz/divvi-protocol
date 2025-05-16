@@ -6,11 +6,5 @@ export function toPeriodFolderName({
   startTimestamp: Date
   endTimestamp: Date
 }) {
-  const formatDate = (date: Date): string =>
-    date.toISOString().substring(0, 19).replace(/:/g, '-') + 'Z'
-
-  const safeStart = formatDate(startTimestamp)
-  const safeEnd = formatDate(endTimestamp)
-
-  return `${safeStart}_${safeEnd}`
+  return `${startTimestamp.toISOString()}_${endTimestamp.toISOString()}`
 }
