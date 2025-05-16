@@ -19,8 +19,9 @@ import { getTokenPrice } from '../beefy'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { Address, fromHex, isAddress } from 'viem'
 
-async function getUserBridges({
+export async function getUserBridges({
   address,
+  contractAddress,
   startTimestamp,
   endTimestamp,
   client,
@@ -38,11 +39,13 @@ async function getUserBridges({
     startTimestamp.getTime() / 1000,
   )
   const query = {
-    logs: [{ topics: [[BRIDGED_DEPOSIT_WITH_ID_TOPIC]] }],
+    logs: [
+      { address: [contractAddress], topics: [[BRIDGED_DEPOSIT_WITH_ID_TOPIC]] },
+    ],
     fieldSelection: {
       log: [LogField.BlockNumber, LogField.Data],
     },
-    fromBlock: fromBlock,
+    fromBlock,
   }
 
   const bridges: BridgeTransaction[] = []
