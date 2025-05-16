@@ -28,7 +28,7 @@ export async function getUserBridges({
   networkId,
 }: {
   address: Address
-  contractAddress: string
+  contractAddress: Address
   startTimestamp: Date
   endTimestamp: Date
   client: HypersyncClient
@@ -36,7 +36,7 @@ export async function getUserBridges({
 }): Promise<BridgeTransaction[]> {
   const fromBlock = await getBlockNumber(
     networkId,
-    startTimestamp.getTime() / 1000,
+    startTimestamp.getTime() / 1000, // Unix timestamp in seconds
   )
   const query = {
     logs: [
@@ -53,10 +53,10 @@ export async function getUserBridges({
     for (const bridge of response.data.logs) {
       // Check that the logs contain all necessary fields
       if (bridge.blockNumber && bridge.data) {
-        // Check that the bridge is from the provided address (first block of data is sender)
         const hexData = bridge.data.startsWith('0x')
           ? bridge.data.slice(2)
           : bridge.data
+        // Check that the bridge is from the provided address (first block of data is sender)
         if (
           `0x${hexData.slice(24, 64)}`.toLowerCase() === address.toLowerCase()
         ) {
@@ -68,8 +68,8 @@ export async function getUserBridges({
             blockTimestampDate <= endTimestamp
           ) {
             bridges.push({
-              amount: fromHex(`0x${hexData.slice(192, 256)}`, 'bigint'), // Amount is 4th block of 64 digits
-              tokenAddress: `0x${hexData.slice(152, 192)}`, // Token address is 3rd block of 64 digits, skip first 24 to get address
+              amount: fromHex(`0x${hexData.slice(192, 256)}`, 'bigint'), // Amount is 4th block of 32 bytes
+              tokenAddress: `0x${hexData.slice(152, 192)}`, // Token address is 3rd block of 32 bytes, skip first 12 to get 20 byte address
               timestamp: blockTimestampDate,
             })
           }
@@ -155,7 +155,7 @@ export async function calculateRevenue({
   let totalRevenue = 0
   for (const [networkId, contractAddress] of Object.entries(
     NETWORK_ID_TO_BRIDGE_CONTRACT_ADDRESS,
-  ) as [NetworkId, string][]) {
+  ) as [NetworkId, Address][]) {
     const client = getHyperSyncClient(networkId)
     const userBridges = await getUserBridges({
       address,
