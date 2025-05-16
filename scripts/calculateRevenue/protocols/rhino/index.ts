@@ -1,16 +1,26 @@
-import { HypersyncClient, LogField } from '@envio-dev/hypersync-client'
-import { getBlock, getErc20Contract, getHyperSyncClient } from '../../../utils'
+import {
+  HypersyncClient,
+  LogField,
+  TransactionField,
+} from '@envio-dev/hypersync-client'
+import {
+  getBlock,
+  getBlockNumber,
+  getErc20Contract,
+  getHyperSyncClient,
+} from '../../../utils'
 import {
   BRIDGED_DEPOSIT_WITH_ID_TOPIC,
   NETWORK_ID_TO_BRIDGE_CONTRACT_ADDRESS,
-  TRANSACTION_VOLUME_USD_PRECISION,
+  BRIDGE_VOLUME_USD_PRECISION,
+  ALL_ZEROES_ADDRESS,
 } from './constants'
 import { NetworkId } from '../../../types'
 import { BridgeTransaction } from './types'
 import { fetchTokenPrices } from '../utils/tokenPrices'
 import { getTokenPrice } from '../beefy'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
-import { fromHex } from 'viem'
+import { Address, fromHex, isAddress } from 'viem'
 
 async function getUserBridges({
   address,
@@ -19,20 +29,24 @@ async function getUserBridges({
   client,
   networkId,
 }: {
-  address: string
+  address: Address
   contractAddress: string
   startTimestamp: Date
   endTimestamp: Date
   client: HypersyncClient
   networkId: NetworkId
 }): Promise<BridgeTransaction[]> {
+  const fromBlock = await getBlockNumber(
+    networkId,
+    startTimestamp.getTime() / 1000,
+  )
   const query = {
-    logs: [{ topics: [[BRIDGED_DEPOSIT_WITH_ID_TOPIC]]}],
-    transactions: [{ from: [address] }],
+    logs: [{ topics: [[BRIDGED_DEPOSIT_WITH_ID_TOPIC]] }],
     fieldSelection: {
+      transactions: [TransactionField.From],
       log: [LogField.BlockNumber, LogField.Data],
     },
-    fromBlock: 0,
+    fromBlock: fromBlock,
   }
 
   const transactions: BridgeTransaction[] = []
@@ -40,28 +54,41 @@ async function getUserBridges({
     for (const transaction of response.data.logs) {
       // Check that the logs contain all necessary fields
       if (transaction.blockNumber && transaction.data) {
-        const block = await getBlock(networkId, BigInt(transaction.blockNumber))
-        const blockTimestampDate = new Date(Number(block.timestamp) * 1000)
-        // And that the transfer happened within the time window
+        // Check that the transaction is from the provided address (first block of data is sender)
+        const hexData = transaction.data.startsWith('0x')
+          ? transaction.data.slice(2)
+          : transaction.data
         if (
-          blockTimestampDate >= startTimestamp &&
-          blockTimestampDate <= endTimestamp
+          `0x${hexData.slice(24, 64)}`.toLowerCase() === address.toLowerCase()
         ) {
-          transactions.push({
-            amount: fromHex(`0x${transaction.data.slice(192, 256)}`, 'bigint'),
-            tokenAddress: `0x${transaction.data.slice(152, 192)}`,
-            timestamp: blockTimestampDate,
-          })
+          const block = await getBlock(
+            networkId,
+            BigInt(transaction.blockNumber),
+          )
+          const blockTimestampDate = new Date(Number(block.timestamp) * 1000)
+          // And that the transfer happened within the time window
+          if (
+            blockTimestampDate >= startTimestamp &&
+            blockTimestampDate <= endTimestamp
+          ) {
+            transactions.push({
+              amount: fromHex(`0x${hexData.slice(192, 256)}`, 'bigint'), // Amount is 4th block of 64 digits
+              tokenAddress: `0x${hexData.slice(152, 192)}`, // Token address is 3rd block of 64 digits, skip first 24 to get address
+              timestamp: blockTimestampDate,
+            })
+          }
         }
       } else {
-        console.log('error message')
+        console.log(
+          `Rhino bridge transaction missing required field, blockNumber: ${transaction.blockNumber}, data: ${transaction.data}`,
+        )
       }
     }
   })
   return transactions
 }
 
-export async function getTotalRevenueUsdFromTransactions({
+export async function getTotalRevenueUsdFromBridges({
   userBridges,
   networkId,
   startTimestamp,
@@ -78,34 +105,27 @@ export async function getTotalRevenueUsdFromTransactions({
 
   let totalUsdContribution = 0
 
-  // Get the token decimals
-  const tokenId = `${networkId}:${userBridges[0].tokenAddress}` // TODO: If this is all 0 make it native token
-  const tokenContract = await getErc20Contract(
-    userBridges[0].tokenAddress,
-    networkId,
-  )
-  const tokenDecimals = BigInt(await tokenContract.read.decimals())
+  // For each bridge compute the USD contribution and add to the total
+  for (const bridge of userBridges) {
+    // Get the token decimals
+    const tokenId = `${networkId}:${bridge.tokenAddress === ALL_ZEROES_ADDRESS ? 'native' : bridge.tokenAddress}`
+    const tokenContract = await getErc20Contract(bridge.tokenAddress, networkId) // TODO: Update to work with native token
+    const tokenDecimals = BigInt(await tokenContract.read.decimals())
 
-  // Get the historical token prices
-  const tokenPrices = await fetchTokenPrices({
-    tokenId,
-    startTimestamp,
-    endTimestamp,
-  })
-
-  // For each transaction compute the USD contribution and add to the total
-  for (const transaction of userBridges) {
-    const tokenPriceUsd = getTokenPrice(
-      tokenPrices,
-      new Date(transaction.timestamp),
-    )
+    // Get the historical token prices
+    const tokenPrices = await fetchTokenPrices({
+      tokenId,
+      startTimestamp,
+      endTimestamp,
+    })
+    const tokenPriceUsd = getTokenPrice(tokenPrices, new Date(bridge.timestamp))
     const partialUsdContribution =
       Number(
-        (transaction.amount *
-          BigInt(tokenPriceUsd * 10 ** TRANSACTION_VOLUME_USD_PRECISION)) /
+        (bridge.amount *
+          BigInt(tokenPriceUsd * 10 ** BRIDGE_VOLUME_USD_PRECISION)) /
           10n ** tokenDecimals,
       ) /
-      10 ** TRANSACTION_VOLUME_USD_PRECISION
+      10 ** BRIDGE_VOLUME_USD_PRECISION
     totalUsdContribution += partialUsdContribution
   }
 
@@ -121,6 +141,9 @@ export async function calculateRevenue({
   startTimestamp: Date
   endTimestamp: Date
 }): Promise<number> {
+  if (!isAddress(address)) {
+    throw new Error('Invalid address')
+  }
   let totalRevenue = 0
   // Use hypersync to get all of the relevant events
   for (const [networkId, contractAddress] of Object.entries(
@@ -135,7 +158,7 @@ export async function calculateRevenue({
       client,
       networkId,
     })
-    const revenue = await getTotalRevenueUsdFromTransactions({
+    const revenue = await getTotalRevenueUsdFromBridges({
       userBridges,
       networkId,
       startTimestamp,

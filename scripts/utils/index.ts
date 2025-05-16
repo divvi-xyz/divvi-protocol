@@ -148,6 +148,35 @@ export const getBlock = memoize(_getBlock, {
   hash: (...params: Parameters<typeof _getBlock>) => params.join(','),
 })
 
+async function _getBlockNumber(
+  networkId: NetworkId,
+  timestamp: number,
+): Promise<number> {
+  const client = getViemPublicClient(networkId)
+  let low = 0n
+  let high = await client.getBlockNumber()
+  let closest = 0n
+
+  while (low <= high) {
+    const mid = (low + high) / 2n
+    const block = await client.getBlock({ blockNumber: mid })
+
+    const blockTime = Number(block.timestamp)
+    if (blockTime > timestamp) {
+      high = mid - 1n
+    } else {
+      closest = mid
+      low = mid + 1n
+    }
+  }
+
+  return Number(closest)
+}
+
+export const getBlockNumber = memoize(_getBlockNumber, {
+  hash: (...params: Parameters<typeof _getBlockNumber>) => params.join(','),
+})
+
 /**
  * Returns a contract object representing the registry
  */
