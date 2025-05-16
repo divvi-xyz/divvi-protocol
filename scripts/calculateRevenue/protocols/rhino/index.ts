@@ -1,8 +1,4 @@
-import {
-  HypersyncClient,
-  LogField,
-  TransactionField,
-} from '@envio-dev/hypersync-client'
+import { HypersyncClient, LogField } from '@envio-dev/hypersync-client'
 import {
   getBlock,
   getBlockNumber,
@@ -44,35 +40,31 @@ async function getUserBridges({
   const query = {
     logs: [{ topics: [[BRIDGED_DEPOSIT_WITH_ID_TOPIC]] }],
     fieldSelection: {
-      transactions: [TransactionField.From],
       log: [LogField.BlockNumber, LogField.Data],
     },
     fromBlock: fromBlock,
   }
 
-  const transactions: BridgeTransaction[] = []
+  const bridges: BridgeTransaction[] = []
   await paginateQuery(client, query, async (response) => {
-    for (const transaction of response.data.logs) {
+    for (const bridge of response.data.logs) {
       // Check that the logs contain all necessary fields
-      if (transaction.blockNumber && transaction.data) {
-        // Check that the transaction is from the provided address (first block of data is sender)
-        const hexData = transaction.data.startsWith('0x')
-          ? transaction.data.slice(2)
-          : transaction.data
+      if (bridge.blockNumber && bridge.data) {
+        // Check that the bridge is from the provided address (first block of data is sender)
+        const hexData = bridge.data.startsWith('0x')
+          ? bridge.data.slice(2)
+          : bridge.data
         if (
           `0x${hexData.slice(24, 64)}`.toLowerCase() === address.toLowerCase()
         ) {
-          const block = await getBlock(
-            networkId,
-            BigInt(transaction.blockNumber),
-          )
+          const block = await getBlock(networkId, BigInt(bridge.blockNumber))
           const blockTimestampDate = new Date(Number(block.timestamp) * 1000)
-          // And that the transfer happened within the time window
+          // And that the bridge happened within the time window
           if (
             blockTimestampDate >= startTimestamp &&
             blockTimestampDate <= endTimestamp
           ) {
-            transactions.push({
+            bridges.push({
               amount: fromHex(`0x${hexData.slice(192, 256)}`, 'bigint'), // Amount is 4th block of 64 digits
               tokenAddress: `0x${hexData.slice(152, 192)}`, // Token address is 3rd block of 64 digits, skip first 24 to get address
               timestamp: blockTimestampDate,
@@ -81,12 +73,12 @@ async function getUserBridges({
         }
       } else {
         console.log(
-          `Rhino bridge transaction missing required field, blockNumber: ${transaction.blockNumber}, data: ${transaction.data}`,
+          `Rhino bridge transaction missing required field, blockNumber: ${bridge.blockNumber}, data: ${bridge.data}`,
         )
       }
     }
   })
-  return transactions
+  return bridges
 }
 
 export async function getTotalRevenueUsdFromBridges({
@@ -118,8 +110,8 @@ export async function getTotalRevenueUsdFromBridges({
       ? BigInt(await tokenContract.read.decimals())
       : NATIVE_TOKEN_DECIMALS
 
-    // Get the historical token prices
     try {
+      // Get the historical token prices
       const tokenPrices = await fetchTokenPrices({
         tokenId,
         startTimestamp,
@@ -158,7 +150,6 @@ export async function calculateRevenue({
     throw new Error('Invalid address')
   }
   let totalRevenue = 0
-  // Use hypersync to get all of the relevant events
   for (const [networkId, contractAddress] of Object.entries(
     NETWORK_ID_TO_BRIDGE_CONTRACT_ADDRESS,
   ) as [NetworkId, string][]) {
