@@ -119,20 +119,27 @@ export async function getTotalRevenueUsdFromBridges({
       : NATIVE_TOKEN_DECIMALS
 
     // Get the historical token prices
-    const tokenPrices = await fetchTokenPrices({
-      tokenId,
-      startTimestamp,
-      endTimestamp,
-    })
-    const tokenPriceUsd = getTokenPrice(tokenPrices, new Date(bridge.timestamp))
-    const partialUsdContribution =
-      Number(
-        (bridge.amount *
-          BigInt(tokenPriceUsd * 10 ** BRIDGE_VOLUME_USD_PRECISION)) /
-          10n ** tokenDecimals,
-      ) /
-      10 ** BRIDGE_VOLUME_USD_PRECISION
-    totalUsdContribution += partialUsdContribution
+    try {
+      const tokenPrices = await fetchTokenPrices({
+        tokenId,
+        startTimestamp,
+        endTimestamp,
+      })
+      const tokenPriceUsd = getTokenPrice(tokenPrices, bridge.timestamp)
+      const partialUsdContribution =
+        Number(
+          (bridge.amount *
+            BigInt(tokenPriceUsd * 10 ** BRIDGE_VOLUME_USD_PRECISION)) /
+            10n ** tokenDecimals,
+        ) /
+        10 ** BRIDGE_VOLUME_USD_PRECISION
+      totalUsdContribution += partialUsdContribution
+    } catch (error) {
+      console.error(
+        `Error fetching token prices for ${tokenId} at ${bridge.timestamp}:`,
+        error,
+      )
+    }
   }
 
   return totalUsdContribution
