@@ -7,6 +7,9 @@ import { protocols } from './types'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { dirname } from 'path'
 
+// Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
+const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
+
 async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args['start-timestamp'])
   const endTimestamp = new Date(args['end-timestamp'])
@@ -38,10 +41,11 @@ async function main(args: ReturnType<typeof parseArgs>) {
       `Calculating revenue for ${userAddress} (${i + 1}/${eligibleUsers.length})`,
     )
 
-    const referralTimestamp = new Date(timestamp)
-    if (referralTimestamp.getTime() > endTimestamp.getTime()) {
+    const referralTimestamp =
+      new Date(timestamp).getTime() - REFERRAL_TIME_BUFFER_IN_MS
+    if (referralTimestamp > endTimestamp.getTime()) {
       console.log(
-        `Referral date is after end date, skipping ${userAddress} (registration tx date: ${timestamp})`,
+        `Referral date is after end date, skipping ${userAddress} (referral date: ${timestamp})`,
       )
       continue
     }
@@ -50,8 +54,8 @@ async function main(args: ReturnType<typeof parseArgs>) {
       address: userAddress,
       // if the referral happened after the start of the period, only calculate revenue from the referral block onwards so that we exclude user activity before the referral
       startTimestamp:
-        referralTimestamp.getTime() > startTimestamp.getTime()
-          ? referralTimestamp
+        referralTimestamp > startTimestamp.getTime()
+          ? new Date(referralTimestamp)
           : startTimestamp,
       endTimestamp,
     })
