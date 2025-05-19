@@ -85,7 +85,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     rewardPoolAddress: REWARD_POOL_ADDRESS,
     rewards,
     startTimestamp: new Date(args['start-timestamp']),
-    endTimestamp: new Date(args['end-timestamp']),
+    endTimestampExclusive: new Date(args['end-timestamp']),
   })
 }
 

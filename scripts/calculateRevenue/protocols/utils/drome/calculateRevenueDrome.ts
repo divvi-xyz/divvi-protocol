@@ -16,12 +16,12 @@ export async function calculateSwapRevenue(swapEvents: SwapEvent[]) {
 
   if (swapEvents.length > 0) {
     const startTimestamp = swapEvents[0].timestamp
-    const endTimestamp = swapEvents[swapEvents.length - 1].timestamp
+    const endTimestampExclusive = swapEvents[swapEvents.length - 1].timestamp
     const tokenId = swapEvents[0].tokenId
     const tokenPrices = await fetchTokenPrices({
       tokenId,
       startTimestamp,
-      endTimestamp,
+      endTimestampExclusive,
     })
     for (const swapEvent of swapEvents) {
       const tokenPriceUsd = getTokenPrice(
@@ -44,13 +44,13 @@ export async function calculateSwapRevenue(swapEvents: SwapEvent[]) {
 export async function calculateRevenueDrome({
   address,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
   supportedLiquidityPoolAddresses,
   networkId,
 }: {
   address: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
   supportedLiquidityPoolAddresses: Address[]
   networkId: NetworkId
 }): Promise<number> {
@@ -61,7 +61,7 @@ export async function calculateRevenueDrome({
       address,
       liquidityPoolAddress,
       startTimestamp,
-      endTimestamp,
+      endTimestampExclusive,
       networkId,
     )
     const swapAmount = await calculateSwapRevenue(swapEvents)

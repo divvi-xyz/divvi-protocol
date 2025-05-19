@@ -11,16 +11,16 @@ const GET_TOKENS_PRICE_HISTORY_API_URL =
 async function _fetchTokenPrices({
   tokenId,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   tokenId: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<TokenPriceData[]> {
   const queryParams = new URLSearchParams({
     tokenId,
     startTimestamp: startTimestamp.getTime().toString(),
-    endTimestamp: endTimestamp.getTime().toString(),
+    endTimestamp: endTimestampExclusive.getTime().toString(),
   })
   const response = await fetchWithTimeout(
     `${GET_TOKENS_PRICE_HISTORY_API_URL}?${queryParams}`,

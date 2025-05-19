@@ -79,11 +79,11 @@ interface KpiRow {
 
 async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args['start-timestamp'])
-  const endTimestamp = new Date(args['end-timestamp'])
+  const endTimestampExclusive = new Date(args['end-timestamp'])
 
   const folderPath = `rewards/celo-pg/${toPeriodFolderName({
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })}`
   const inputPath = `${folderPath}/revenue.csv`
   const outputPath = `${folderPath}/safe-transactions.json`
@@ -105,7 +105,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     rewardPoolAddress: REWARD_POOL_ADDRESS,
     rewards,
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })
 }
 

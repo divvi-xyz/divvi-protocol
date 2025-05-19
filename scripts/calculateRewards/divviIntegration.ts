@@ -68,7 +68,7 @@ async function getArgs() {
     output: argv['output-file'] ?? 'divvi-integrator-rewards.csv',
     safeTransactionsFile: argv['safe-transactions-file'],
     startTimestamp: new Date(argv['start-timestamp']),
-    endTimestamp: new Date(argv['end-timestamp']),
+    endTimestampExclusive: new Date(argv['end-timestamp']),
   }
 }
 
@@ -108,11 +108,11 @@ function removeDuplicates<T>(arr: T[]): T[] {
 async function getDivviIntegrators({
   rewardPoolContractAddress,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   rewardPoolContractAddress: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<Address[]> {
   const consumersThatHaveIntegrated: Address[] = []
   const consumersThatHaveReceivedRewards = new Set<Address>()
@@ -126,7 +126,7 @@ async function getDivviIntegrators({
   const { startBlock, endBlockExclusive } = await getBlockRange({
     networkId: NetworkId['op-mainnet'],
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })
 
   const queryForIntegrators = {
@@ -252,7 +252,7 @@ async function main() {
   const integratorAddresses: Address[] = await getDivviIntegrators({
     rewardPoolContractAddress: DIVVI_REWARD_POOL_ADDRESS,
     startTimestamp: args.startTimestamp,
-    endTimestamp: args.endTimestamp,
+    endTimestampExclusive: args.endTimestampExclusive,
   })
 
   writeFileSync(
@@ -272,7 +272,7 @@ async function main() {
         rewardAmount: DIVVI_REWARD_AMOUNT.toString(),
       })),
       startTimestamp: args.startTimestamp,
-      endTimestamp: args.endTimestamp,
+      endTimestampExclusive: args.endTimestampExclusive,
     })
   }
 }

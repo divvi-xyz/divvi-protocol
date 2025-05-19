@@ -9,7 +9,7 @@ export async function getSwapEvents(
   address: string,
   liquidityPoolAddress: Address,
   startTimestamp: Date,
-  endTimestamp: Date,
+  endTimestampExclusive: Date,
   networkId: NetworkId,
 ): Promise<SwapEvent[]> {
   const swapContract = await getAerodromeLiquidityPoolContract(
@@ -21,7 +21,7 @@ export async function getSwapEvents(
     networkId: networkId,
     eventName: 'Swap',
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })
   const filteredSwapEvents = allSwapEvents.filter(
     (swapEvent) =>

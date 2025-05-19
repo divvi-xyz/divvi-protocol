@@ -49,7 +49,7 @@ async function getArgs() {
     useStaging: argv['use-staging'],
     builderAllowList: argv['builder-allowlist-file'],
     startTimestamp: argv['start-timestamp'],
-    endTimestamp: argv['end-timestamp'],
+    endTimestampExclusive: argv['end-timestamp'],
   }
 }
 
@@ -83,7 +83,7 @@ async function main() {
 
   const outputDir = `rewards/${args.protocol}/${toPeriodFolderName({
     startTimestamp: new Date(args.startTimestamp),
-    endTimestamp: new Date(args.endTimestamp),
+    endTimestampExclusive: new Date(args.endTimestampExclusive),
   })}`
   const outputFile = `${outputDir}/referrals.csv`
 

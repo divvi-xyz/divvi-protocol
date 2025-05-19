@@ -22,7 +22,7 @@ const BEEFY_CHAIN_TO_NETWORK_ID: Record<string, NetworkId> = {
 export async function getVaults(
   address: string,
   startTimestamp: Date,
-  endTimestamp: Date,
+  endTimestampExclusive: Date,
 ): Promise<VaultsInfo> {
   const portfolioData = (await fetchInvestorTimeline(address)).filter(
     (tx) => tx.usd_balance !== null,
@@ -60,13 +60,13 @@ export async function getVaults(
         vaultAddress,
         beefyChain,
         startTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
       }),
       feeEvents: await fetchFeeEvents({
         vaultAddress,
         networkId,
         startTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
       }),
     }
   }
