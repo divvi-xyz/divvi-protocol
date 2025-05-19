@@ -7,7 +7,7 @@ import { stringify } from 'csv-stringify/sync'
 import { Address } from 'viem'
 import { parse } from 'csv-parse/sync'
 import { toPeriodFolderName } from './utils/dateFormatting'
-import { dirname } from 'path'
+import { dirname, join } from 'path'
 
 async function getArgs() {
   const argv = await yargs
@@ -16,6 +16,10 @@ async function getArgs() {
       description: 'protocol that the referrals are for',
       demandOption: true,
       choices: protocols,
+    })
+    .option('datadir', {
+      description: 'Directory to save data',
+      default: 'rewards',
     })
     .option('start-timestamp', {
       alias: 's',
@@ -43,6 +47,7 @@ async function getArgs() {
     }).argv
 
   return {
+    datadir: argv['datadir'],
     protocol: argv['protocol'] as Protocol,
     protocolFilter: protocolFilters[argv['protocol'] as Protocol],
     output: argv['output-file'] ?? `${argv['protocol']}-referrals.csv`,
@@ -79,10 +84,14 @@ async function main() {
     timestamp: event.timestamp,
   }))
 
-  const outputDir = `rewards/${args.protocol}/${toPeriodFolderName({
-    startTimestamp: new Date(args.startTimestamp),
-    endTimestampExclusive: new Date(args.endTimestampExclusive),
-  })}`
+  const outputDir = join(
+    args.datadir,
+    args.protocol,
+    toPeriodFolderName({
+      startTimestamp: new Date(args.startTimestamp),
+      endTimestampExclusive: new Date(args.endTimestampExclusive),
+    }),
+  )
   const outputFile = `${outputDir}/referrals.csv`
 
   // Create directory if it doesn't exist
