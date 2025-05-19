@@ -54,7 +54,7 @@ function createData({
   tokenAddress: Address
   amount: string
 }) {
-  return `0x${address.slice(2).padStart(64, '0')}${address.slice(2).padStart(64, '0')}${tokenAddress.slice(2).padStart(64, '0')}${amount.padStart(64, '0')}${'0'.padStart(64, '0')}`
+  return `0x${address.slice(2).padStart(64, '0')}${tokenAddress.slice(2).padStart(64, '0')}${amount.padStart(64, '0')}${'0'.padStart(64, '0')}`
 }
 
 const MOCK_ADDRESS = '0x1234567890123456789012345678901234567890' as Address

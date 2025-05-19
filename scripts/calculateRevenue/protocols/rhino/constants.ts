@@ -17,7 +17,8 @@ export const NETWORK_ID_TO_BRIDGE_CONTRACT_ADDRESS: Partial<
 }
 
 // Event topic to detect user bridges
-export const BRIDGED_DEPOSIT_WITH_ID_TOPIC = encodeEventTopics({
+export const BRIDGED_WITHDRAWAL_TOPIC = encodeEventTopics({
   abi: rhinoFiBridgeAbi,
-  eventName: 'BridgedDepositWithId',
+  eventName: 'BridgedWithdrawal',
 })[0]
+

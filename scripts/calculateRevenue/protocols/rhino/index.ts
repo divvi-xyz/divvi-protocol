@@ -1,10 +1,10 @@
 import { HypersyncClient, LogField } from '@envio-dev/hypersync-client'
 import { getBlock, getErc20Contract, getHyperSyncClient } from '../../../utils'
 import {
-  BRIDGED_DEPOSIT_WITH_ID_TOPIC,
   NETWORK_ID_TO_BRIDGE_CONTRACT_ADDRESS,
   BRIDGE_VOLUME_USD_PRECISION,
   NATIVE_TOKEN_DECIMALS,
+  BRIDGED_WITHDRAWAL_TOPIC,
 } from './constants'
 import { NetworkId } from '../../../types'
 import { BridgeTransaction } from './types'
@@ -39,7 +39,7 @@ export async function getUserBridges({
   )
   const query = {
     logs: [
-      { address: [contractAddress], topics: [[BRIDGED_DEPOSIT_WITH_ID_TOPIC]] },
+      { address: [contractAddress], topics: [[BRIDGED_WITHDRAWAL_TOPIC]] },
     ],
     fieldSelection: {
       log: [LogField.BlockNumber, LogField.Data],
@@ -50,6 +50,7 @@ export async function getUserBridges({
 
   const bridges: BridgeTransaction[] = []
   await paginateQuery(client, query, async (response) => {
+    console.log(`Found ${response.data.logs.length} logs`)
     for (const bridge of response.data.logs) {
       // Check that the logs contain all necessary fields
       if (bridge.blockNumber && bridge.data) {
@@ -63,8 +64,8 @@ export async function getUserBridges({
           const block = await getBlock(networkId, BigInt(bridge.blockNumber))
           const blockTimestampDate = new Date(Number(block.timestamp) * 1000)
           bridges.push({
-            amount: fromHex(`0x${hexData.slice(192, 256)}`, 'bigint'), // Amount is 4th block of 32 bytes
-            tokenAddress: `0x${hexData.slice(152, 192)}`, // Token address is 3rd block of 32 bytes, skip first 12 to get 20 byte address
+            amount: fromHex(`0x${hexData.slice(128, 192)}`, 'bigint'), // Amount is 3rd block of 32 bytes
+            tokenAddress: `0x${hexData.slice(88, 128)}`, // Token address is 2nd block of 32 bytes, skip first 12 to get 20 byte address
             timestamp: blockTimestampDate,
           })
         }
