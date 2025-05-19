@@ -22,12 +22,10 @@ describe('calculateProportionalPrizeContest', () => {
     expect(result).to.deep.equal([
       {
         referrerId: 'ref1',
-        kpi: BigInt(300),
         rewardAmount: '500',
       },
       {
         referrerId: 'ref2',
-        kpi: BigInt(300),
         rewardAmount: '500',
       },
     ])
@@ -49,7 +47,6 @@ describe('calculateProportionalPrizeContest', () => {
     expect(result).to.deep.equal([
       {
         referrerId: 'ref2',
-        kpi: BigInt(100),
         rewardAmount: '1000', // All rewards go to ref2
       },
     ])
