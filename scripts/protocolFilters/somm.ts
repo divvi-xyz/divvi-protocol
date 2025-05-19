@@ -31,7 +31,7 @@ export async function filter(event: ReferralEvent): Promise<boolean> {
       address,
       vaultInfo,
       startTimestamp: eventDate,
-      endTimestamp: nowDate,
+      endTimestampExclusive: nowDate,
     })
     numTvlEvents += tvlEvents.length
     const tvlAtReferral =

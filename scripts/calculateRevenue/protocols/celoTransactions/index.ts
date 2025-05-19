@@ -5,16 +5,16 @@ import { fetchTotalTransactions } from '../utils/networks'
 export async function calculateRevenue({
   address,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   address: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<number> {
   const { startBlock, endBlockExclusive } = await getBlockRange({
     networkId: NetworkId['celo-mainnet'],
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })
 
   return await fetchTotalTransactions({

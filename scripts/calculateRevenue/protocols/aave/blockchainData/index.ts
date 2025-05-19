@@ -11,7 +11,7 @@ export async function fetchBlockchainData(
   network: SupportedNetwork,
   userAddress: Address,
   startTimestamp: Date,
-  endTimestamp: Date,
+  endTimestampExclusive: Date,
 ) {
   const {
     networkId,
@@ -24,7 +24,7 @@ export async function fetchBlockchainData(
   const { startBlock, endBlockExclusive } = await getBlockRange({
     networkId,
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })
   // For state at the end of the period, use the last inclusive block
   const endBlockInclusive = endBlockExclusive - 1
@@ -58,7 +58,7 @@ export async function fetchBlockchainData(
       subgraphId,
       userAddress,
       startTimestamp,
-      endTimestamp,
+      endTimestampExclusive,
     }),
     getUSDPrices({
       networkId,

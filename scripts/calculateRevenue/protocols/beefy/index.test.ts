@@ -235,7 +235,7 @@ describe('Beefy revenue calculation', () => {
       const result = await calculateRevenue({
         address: '0x123',
         startTimestamp: new Date(0),
-        endTimestamp: new Date(100),
+        endTimestampExclusive: new Date(100),
       })
 
       // 160 USD from Arbitrum, 5 from Ethereum

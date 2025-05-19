@@ -10,12 +10,12 @@ import { toPeriodFolderName } from '../utils/dateFormatting'
 // May 8 2025 12:00:00 AM UTC
 const proofOfImpactStartTimestamp = '1746687600000'
 // May 29 2025 12:00:00 AM UTC
-const proofOfImpactEndTimestamp = '1748502000000'
+const proofOfImpactendTimestampExclusive = '1748502000000'
 const totalRewards = parseEther('14839')
 const REWARD_POOL_ADDRESS = '0xE2bEdafB063e0B7f12607ebcf4636e2690A427a3' // on Celo mainnet
 
 const rewardsPerMillisecond = new BigNumber(totalRewards).div(
-  new BigNumber(proofOfImpactEndTimestamp).minus(
+  new BigNumber(proofOfImpactendTimestampExclusive).minus(
     new BigNumber(proofOfImpactStartTimestamp),
   ),
 )
@@ -25,13 +25,13 @@ export const _rewardsPerMillisecond = rewardsPerMillisecond // for testing
 export function calculateRewardsProofOfImpact({
   kpiData,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   kpiData: KpiRow[]
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }) {
-  const timeDiff = new BigNumber(endTimestamp.getTime()).minus(
+  const timeDiff = new BigNumber(endTimestampExclusive.getTime()).minus(
     new BigNumber(startTimestamp.getTime()),
   )
   const totalRewardsForPeriod = timeDiff.times(rewardsPerMillisecond)
@@ -98,11 +98,11 @@ interface KpiRow {
 
 async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args['start-timestamp'])
-  const endTimestamp = new Date(args['end-timestamp'])
+  const endTimestampExclusive = new Date(args['end-timestamp'])
 
   const folderPath = `rewards/celo-transactions/${toPeriodFolderName({
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })}`
   const inputPath = `${folderPath}/revenue.csv`
   const outputPath = `${folderPath}/safe-transactions.json`
@@ -116,7 +116,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
   const rewards = calculateRewardsProofOfImpact({
     kpiData,
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })
 
   console.log(
@@ -133,7 +133,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     rewardPoolAddress: REWARD_POOL_ADDRESS,
     rewards,
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })
 }
 

@@ -19,18 +19,18 @@ export async function getDailySnapshots({
   networkId,
   vaultAddress,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   networkId: NetworkId
   vaultAddress: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<DailySnapshot[]> {
   // Subtract 24 hours from the start time to ensure we get the snapshot for the start time
   const startUnixTimestamp = Math.floor(
     (startTimestamp.getTime() - TWENTY_FOUR_HOURS) / 1000,
   )
-  const endUnixTimestamp = Math.floor(endTimestamp.getTime() / 1000)
+  const endUnixTimestamp = Math.floor(endTimestampExclusive.getTime() / 1000)
   const url = `https://api.sommelier.finance/dailyData/${NETWORK_ID_TO_CHAIN_ID[networkId]}/${vaultAddress}/${startUnixTimestamp}/${endUnixTimestamp}`
 
   const response = await fetchWithTimeout(url)
@@ -51,7 +51,7 @@ export async function getDailySnapshots({
   if (startTimestamp.getTime() < firstSnapshotTime) {
     throw new Error('Start time is before the first snapshot')
   }
-  if (endTimestamp.getTime() > lastSnapshotTime + TWENTY_FOUR_HOURS) {
+  if (endTimestampExclusive.getTime() > lastSnapshotTime + TWENTY_FOUR_HOURS) {
     throw new Error('End time is after the last snapshot')
   }
   if (
@@ -71,14 +71,14 @@ export async function getDailySnapshots({
 export function calculateWeightedAveragePrice({
   snapshots,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   snapshots: DailySnapshot[]
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): number {
   const startTime = startTimestamp.getTime()
-  const endTime = endTimestamp.getTime()
+  const endTime = endTimestampExclusive.getTime()
 
   if (isNaN(startTime) || isNaN(endTime) || startTime > endTime) {
     throw new Error('Invalid timestamps provided')

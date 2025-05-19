@@ -17,14 +17,14 @@ export async function getUserTransactions({
   address,
   payoutWallet,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
   client,
   networkId,
 }: {
   address: Address
   payoutWallet: Address
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
   client: HypersyncClient
   networkId: NetworkId
 }): Promise<FonbnkTransaction[]> {
@@ -48,7 +48,7 @@ export async function getUserTransactions({
         // And that the transfer happened within the time window
         if (
           blockTimestampDate >= startTimestamp &&
-          blockTimestampDate <= endTimestamp
+          blockTimestampDate <= endTimestampExclusive
         ) {
           transactions.push({
             amount: fromHex(transaction.data as Address, 'bigint'),
@@ -70,12 +70,12 @@ export async function getTotalRevenueUsdFromTransactions({
   transactions,
   networkId,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   transactions: FonbnkTransaction[]
   networkId: NetworkId
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<number> {
   if (transactions.length === 0) {
     return 0
@@ -95,7 +95,7 @@ export async function getTotalRevenueUsdFromTransactions({
   const tokenPrices = await fetchTokenPrices({
     tokenId,
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })
 
   // For each transaction compute the USD contribution and add to the total
@@ -120,11 +120,11 @@ export async function getTotalRevenueUsdFromTransactions({
 export async function calculateRevenue({
   address,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   address: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<number> {
   if (!isAddress(address)) {
     throw new Error('Invalid address')
@@ -154,7 +154,7 @@ export async function calculateRevenue({
         address,
         payoutWallet,
         startTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
         client,
         networkId: fonbnkNetworkToNetworkId[supportedNetwork],
       })
@@ -162,7 +162,7 @@ export async function calculateRevenue({
         transactions,
         networkId: fonbnkNetworkToNetworkId[supportedNetwork],
         startTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
       })
       totalRevenue += revenue
     }
