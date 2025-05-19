@@ -18,14 +18,14 @@ export async function getUserBridges({
   address,
   contractAddress,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
   client,
   networkId,
 }: {
   address: Address
   contractAddress: Address
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
   client: HypersyncClient
   networkId: NetworkId
 }): Promise<BridgeTransaction[]> {
@@ -33,7 +33,10 @@ export async function getUserBridges({
     networkId,
     startTimestamp,
   )
-  const toBlock = await getFirstBlockAtOrAfterTimestamp(networkId, endTimestamp)
+  const toBlock = await getFirstBlockAtOrAfterTimestamp(
+    networkId,
+    endTimestampExclusive,
+  )
   const query = {
     logs: [
       { address: [contractAddress], topics: [[BRIDGED_DEPOSIT_WITH_ID_TOPIC]] },
@@ -79,12 +82,12 @@ export async function getTotalRevenueUsdFromBridges({
   userBridges,
   networkId,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   userBridges: BridgeTransaction[]
   networkId: NetworkId
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<number> {
   if (userBridges.length === 0) {
     return 0
@@ -109,7 +112,7 @@ export async function getTotalRevenueUsdFromBridges({
       const tokenPrices = await fetchTokenPrices({
         tokenId,
         startTimestamp,
-        endTimestampExclusive: endTimestamp,
+        endTimestampExclusive: endTimestampExclusive,
       })
       const tokenPriceUsd = getTokenPrice(tokenPrices, bridge.timestamp)
       const partialUsdContribution =
@@ -134,11 +137,11 @@ export async function getTotalRevenueUsdFromBridges({
 export async function calculateRevenue({
   address,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   address: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<number> {
   if (!isAddress(address)) {
     throw new Error('Invalid address')
@@ -152,7 +155,7 @@ export async function calculateRevenue({
   //     address,
   //     contractAddress,
   //     startTimestamp,
-  //     endTimestamp,
+  //     endTimestampExclusive,
   //     client,
   //     networkId,
   //   })
@@ -160,7 +163,7 @@ export async function calculateRevenue({
   //     userBridges,
   //     networkId,
   //     startTimestamp,
-  //     endTimestamp,
+  //     endTimestampExclusive,
   //   })
   //   totalRevenue += revenue
   // }
@@ -177,7 +180,7 @@ export async function calculateRevenue({
           address,
           contractAddress,
           startTimestamp,
-          endTimestamp,
+          endTimestampExclusive,
           client: getHyperSyncClient(networkId),
           networkId: networkId,
         })
@@ -185,7 +188,7 @@ export async function calculateRevenue({
           userBridges,
           networkId: networkId,
           startTimestamp,
-          endTimestamp,
+          endTimestampExclusive,
         })
         return revenue
       }),

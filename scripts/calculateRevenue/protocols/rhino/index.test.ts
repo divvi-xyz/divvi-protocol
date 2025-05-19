@@ -127,7 +127,7 @@ describe('getUserBridges', () => {
       address: MOCK_ADDRESS,
       contractAddress: '0x456',
       startTimestamp: new Date('2025-01-01T00:00:00Z'),
-      endTimestamp: new Date('2025-01-03T00:00:00Z'),
+      endTimestampExclusive: new Date('2025-01-03T00:00:00Z'),
       client: mockClient as unknown as HypersyncClient,
       networkId: NetworkId['celo-mainnet'],
     })
@@ -158,7 +158,7 @@ describe('getTotalRevenueUsdFromBridges', () => {
       userBridges: MOCK_BRIDGE_TRANSACTIONS,
       networkId: NetworkId['celo-mainnet'],
       startTimestamp: new Date('2025-01-01T00:00:00Z'),
-      endTimestamp: new Date('2025-01-03T00:00:00Z'),
+      endTimestampExclusive: new Date('2025-01-03T00:00:00Z'),
     })
 
     // The first transaction has value of 10000 with 4 decimals which is 1, with a price of 3 that is 3 USD
@@ -203,7 +203,7 @@ describe('calculateRevenue', () => {
     const result = await calculateRevenue({
       address: MOCK_ADDRESS,
       startTimestamp: new Date('2025-01-01T00:00:00Z'),
-      endTimestamp: new Date('2025-01-03T00:00:00Z'),
+      endTimestampExclusive: new Date('2025-01-03T00:00:00Z'),
     })
 
     expect(mockClient.get).toHaveBeenCalledTimes(3)
