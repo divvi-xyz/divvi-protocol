@@ -5,6 +5,7 @@ import { parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { toPeriodFolderName } from '../utils/dateFormatting'
+import { join } from 'path'
 
 const REWARD_POOL_ADDRESS = '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3' // on Celo mainnet
 
@@ -49,6 +50,11 @@ export function calculateRewardsCeloPG({
 
 function parseArgs() {
   return yargs
+    .option('datadir', {
+      description: 'the directory to store the results',
+      type: 'string',
+      default: 'rewards',
+    })
     .option('start-timestamp', {
       alias: 's',
       description: 'start timestamp',
@@ -81,12 +87,16 @@ async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args['start-timestamp'])
   const endTimestampExclusive = new Date(args['end-timestamp'])
 
-  const folderPath = `rewards/celo-pg/${toPeriodFolderName({
-    startTimestamp,
-    endTimestampExclusive,
-  })}`
-  const inputPath = `${folderPath}/revenue.csv`
-  const outputPath = `${folderPath}/safe-transactions.json`
+  const folderPath = join(
+    args.datadir,
+    'celo-pg',
+    toPeriodFolderName({
+      startTimestamp,
+      endTimestampExclusive,
+    }),
+  )
+  const inputPath = join(folderPath, 'revenue.csv')
+  const outputPath = join(folderPath, 'safe-transactions.json')
   const rewardAmount = args['reward-amount']
 
   const kpiData = parse(readFileSync(inputPath, 'utf-8').toString(), {

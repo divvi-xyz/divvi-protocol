@@ -5,6 +5,7 @@ import { parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { toPeriodFolderName } from '../utils/dateFormatting'
+import { join } from 'path'
 
 // proof-of-impact campaign parameters
 // May 8 2025 12:00:00 AM UTC
@@ -72,6 +73,11 @@ export function calculateRewardsProofOfImpact({
 
 function parseArgs() {
   return yargs
+    .option('datadir', {
+      description: 'the directory to store the results',
+      type: 'string',
+      default: 'rewards',
+    })
     .option('start-timestamp', {
       alias: 's',
       description:
@@ -100,12 +106,16 @@ async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args['start-timestamp'])
   const endTimestampExclusive = new Date(args['end-timestamp'])
 
-  const folderPath = `rewards/celo-transactions/${toPeriodFolderName({
-    startTimestamp,
-    endTimestampExclusive,
-  })}`
-  const inputPath = `${folderPath}/revenue.csv`
-  const outputPath = `${folderPath}/safe-transactions.json`
+  const folderPath = join(
+    args.datadir,
+    'celo-transactions',
+    toPeriodFolderName({
+      startTimestamp,
+      endTimestampExclusive,
+    }),
+  )
+  const inputPath = join(folderPath, 'revenue.csv')
+  const outputPath = join(folderPath, 'safe-transactions.json')
 
   const kpiData = parse(readFileSync(inputPath, 'utf-8').toString(), {
     skip_empty_lines: true,
