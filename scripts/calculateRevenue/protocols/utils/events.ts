@@ -73,34 +73,34 @@ async function getFirstBlockAtOrAfterTimestamp(
 
 /**
  * Calculates the start and end block numbers for a given time range.
- * The time range is defined as [startTimestamp, endTimestamp),
- * meaning it's inclusive of the startTimestamp and exclusive of the endTimestamp.
+ * The time range is defined as [startTimestamp, endTimestampExclusive),
+ * meaning it's inclusive of the startTimestamp and exclusive of the endTimestampExclusive.
  *
  * @param networkId The ID of the network.
  * @param startTimestamp The inclusive start date of the time range.
- * @param endTimestamp The exclusive end date of the time range.
+ * @param endTimestampExclusive The exclusive end date of the time range.
  * @returns A promise that resolves to an object containing:
  *    `startBlock`: The first block whose timestamp is >= startTimestamp (inclusive).
- *    `endBlockExclusive`: The first block whose timestamp is >= endTimestamp. This block itself
+ *    `endBlockExclusive`: The first block whose timestamp is >= endTimestampExclusive. This block itself
  *                is *exclusive* from the desired range. When used in loops like
  *                `for (let i = startBlock; i < endBlockExclusive; i++)`, or as an exclusive
  *                upper bound in queries, it correctly defines the desired time window.
- * @throws Will throw an error if startTimestamp is not before endTimestamp, or if a valid
+ * @throws Will throw an error if startTimestamp is not before endTimestampExclusive, or if a valid
  *         block range cannot be determined (e.g., startBlock ends up >= endBlockExclusive).
  */
 export async function getBlockRange({
   networkId,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   networkId: NetworkId
   startTimestamp: Date // inclusive
-  endTimestamp: Date // exclusive
+  endTimestampExclusive: Date // exclusive
 }): Promise<{
   startBlock: number // inclusive
   endBlockExclusive: number
 }> {
-  if (startTimestamp.getTime() >= endTimestamp.getTime()) {
+  if (startTimestamp.getTime() >= endTimestampExclusive.getTime()) {
     throw new Error('Start timestamp must be before end timestamp.')
   }
 
@@ -109,21 +109,21 @@ export async function getBlockRange({
     // This is the first block whose timestamp is greater than or equal to the startTimestamp.
     getFirstBlockAtOrAfterTimestamp(networkId, startTimestamp),
     // Determine the exclusive endBlock:
-    // This is the first block whose timestamp is greater than or equal to the endTimestamp.
+    // This is the first block whose timestamp is greater than or equal to the endTimestampExclusive.
     // Using this block's height as `endBlockExclusive` means that loops iterating up to `endBlockExclusive - 1`
     // will process all blocks strictly before this `endBlockExclusive`.
-    // Thus, the last processed block will have a timestamp < endTimestamp.
-    getFirstBlockAtOrAfterTimestamp(networkId, endTimestamp),
+    // Thus, the last processed block will have a timestamp < endTimestampExclusive.
+    getFirstBlockAtOrAfterTimestamp(networkId, endTimestampExclusive),
   ])
 
   // Validate the calculated block range.
   // The startBlock must be strictly less than the endBlockExclusive for a valid, non-empty range.
-  // If startBlock == endBlockExclusive, the range is empty (e.g., startTimestamp and endTimestamp map to the same block for their >= condition).
-  // If startBlock > endBlockExclusive, it implies an issue, possibly with startTimestamp mapping to a block after endTimestamp's mapped block,
+  // If startBlock == endBlockExclusive, the range is empty (e.g., startTimestamp and endTimestampExclusive map to the same block for their >= condition).
+  // If startBlock > endBlockExclusive, it implies an issue, possibly with startTimestamp mapping to a block after endTimestampExclusive's mapped block,
   // though the initial timestamp check should largely prevent this specific sequence.
   if (startBlock >= endBlockExclusive) {
     throw new Error(
-      `Calculated startBlock (height: ${startBlock}) is not strictly less than calculated endBlockExclusive (height: ${endBlockExclusive}). This results in an empty or invalid range. Ensure startTimestamp and endTimestamp define a valid, non-empty interval. It's possible the startTimestamp maps to a block that is at or after the endTimestamp's mapped block.`,
+      `Calculated startBlock (height: ${startBlock}) is not strictly less than calculated endBlockExclusive (height: ${endBlockExclusive}). This results in an empty or invalid range. Ensure startTimestamp and endTimestampExclusive define a valid, non-empty interval. It's possible the startTimestamp maps to a block that is at or after the endTimestampExclusive's mapped block.`,
     )
   }
 
@@ -138,7 +138,7 @@ export async function getBlockRange({
  * @param {NetworkId} params.networkId - The network ID where the contract is deployed.
  * @param {string} params.eventName - The name of the event to fetch.
  * @param {Date} params.startTimestamp - The start timestamp for the event search.
- * @param {Date} params.endTimestamp - The end timestamp for the event search.
+ * @param {Date} params.endTimestampExclusive - The end timestamp for the event search.
  * @returns {Promise<Log[]>} A promise that resolves to an array of event logs.
  */
 async function _fetchEvents({
@@ -146,20 +146,20 @@ async function _fetchEvents({
   networkId,
   eventName,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   contract: GetContractReturnType
   eventName: string
   networkId: NetworkId
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }) {
   const client = getViemPublicClient(networkId)
 
   const { startBlock, endBlockExclusive } = await getBlockRange({
     networkId,
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })
   const blocksPerQuery = 10000
   let currentBlock = startBlock

@@ -26,7 +26,7 @@ describe('createAddRewardSafeTransactionJSON', () => {
     },
   ]
   const mockStartTimestamp = new Date('2023-03-01T00:00:00Z')
-  const mockEndTimestamp = new Date('2023-04-01T00:00:00Z')
+  const mockendTimestampExclusive = new Date('2023-04-01T00:00:00Z')
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -38,7 +38,7 @@ describe('createAddRewardSafeTransactionJSON', () => {
       rewardPoolAddress: mockRewardPoolAddress,
       rewards: mockRewards,
       startTimestamp: mockStartTimestamp,
-      endTimestamp: mockEndTimestamp,
+      endTimestampExclusive: mockendTimestampExclusive,
     })
 
     // Verify directory creation
@@ -96,7 +96,7 @@ describe('createAddRewardSafeTransactionJSON', () => {
       rewardPoolAddress: mockRewardPoolAddress,
       rewards: [],
       startTimestamp: mockStartTimestamp,
-      endTimestamp: mockEndTimestamp,
+      endTimestampExclusive: mockendTimestampExclusive,
     })
 
     // Verify directory creation

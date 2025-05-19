@@ -6,9 +6,11 @@ import BigNumber from 'bignumber.js'
 
 describe('calculateRewardsProofOfImpact', () => {
   const startTimestamp = new Date('2025-05-08')
-  const endTimestamp = new Date('2025-05-15')
+  const endTimestampExclusive = new Date('2025-05-15')
   const expectedTotalRewardsForPeriod = _rewardsPerMillisecond.times(
-    new BigNumber(endTimestamp.getTime()).minus(startTimestamp.getTime()),
+    new BigNumber(endTimestampExclusive.getTime()).minus(
+      startTimestamp.getTime(),
+    ),
   )
 
   it('should calculate rewards proportionally based on revenue', () => {
@@ -33,7 +35,7 @@ describe('calculateRewardsProofOfImpact', () => {
     const rewards = calculateRewardsProofOfImpact({
       kpiData,
       startTimestamp,
-      endTimestamp,
+      endTimestampExclusive,
     })
 
     expect(rewards).toEqual([
@@ -58,7 +60,7 @@ describe('calculateRewardsProofOfImpact', () => {
     const rewards = calculateRewardsProofOfImpact({
       kpiData: [],
       startTimestamp,
-      endTimestamp,
+      endTimestampExclusive,
     })
 
     expect(rewards).toHaveLength(0)
@@ -76,7 +78,7 @@ describe('calculateRewardsProofOfImpact', () => {
     const rewards = calculateRewardsProofOfImpact({
       kpiData,
       startTimestamp,
-      endTimestamp,
+      endTimestampExclusive,
     })
 
     expect(rewards).toEqual([

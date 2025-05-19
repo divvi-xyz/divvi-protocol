@@ -18,12 +18,12 @@ export async function getEvents({
   address,
   vaultInfo,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   address: Address
   vaultInfo: VaultInfo
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }) {
   const client = getViemPublicClient(vaultInfo.networkId)
   const vaultContract = getContract({
@@ -41,7 +41,7 @@ export async function getEvents({
       networkId: vaultInfo.networkId,
       eventName: 'Deposit',
       startTimestamp,
-      endTimestamp,
+      endTimestampExclusive,
     })
   ).filter((event) => {
     return isAddressEqual((event.args as { sender: Address }).sender, address)
@@ -63,7 +63,7 @@ export async function getEvents({
       networkId: vaultInfo.networkId,
       eventName: 'Withdraw',
       startTimestamp,
-      endTimestamp,
+      endTimestampExclusive,
     })
   ).filter((event) => {
     return isAddressEqual((event.args as { sender: Address }).sender, address)

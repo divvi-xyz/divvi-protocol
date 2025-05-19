@@ -53,7 +53,7 @@ describe('getEvents', () => {
         vaultAddress: '0x1234567890123456789012345678901234567890',
       },
       startTimestamp: new Date('2021-01-01'),
-      endTimestamp: new Date('2021-01-10'),
+      endTimestampExclusive: new Date('2021-01-10'),
     })
     expect(result).toEqual([
       { amount: -5, timestamp: new Date(3 * 100 * 1000) },
@@ -65,14 +65,14 @@ describe('getEvents', () => {
       networkId: NetworkId['arbitrum-one'],
       eventName: 'Deposit',
       startTimestamp: new Date('2021-01-01'),
-      endTimestamp: new Date('2021-01-10'),
+      endTimestampExclusive: new Date('2021-01-10'),
     })
     expect(fetchEvents).toHaveBeenNthCalledWith(2, {
       contract: expect.any(Object),
       networkId: NetworkId['arbitrum-one'],
       eventName: 'Withdraw',
       startTimestamp: new Date('2021-01-01'),
-      endTimestamp: new Date('2021-01-10'),
+      endTimestampExclusive: new Date('2021-01-10'),
     })
     expect(getBlock).toHaveBeenCalledTimes(2)
   })

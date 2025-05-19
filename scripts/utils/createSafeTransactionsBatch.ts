@@ -6,7 +6,7 @@ export const createAddRewardSafeTransactionJSON = ({
   rewardPoolAddress,
   rewards,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   filePath: string
   rewardPoolAddress: string
@@ -15,7 +15,7 @@ export const createAddRewardSafeTransactionJSON = ({
     rewardAmount: string // in smallest unit of reward token
   }[]
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }) => {
   const users: string[] = []
   const amounts: string[] = []
@@ -58,7 +58,7 @@ export const createAddRewardSafeTransactionJSON = ({
           amounts: `[${amounts.join(', ')}]`,
           // Convert timestamps to seconds
           rewardFunctionArgs: `[${BigInt(startTimestamp.getTime() / 1000)}, ${BigInt(
-            endTimestamp.getTime() / 1000,
+            endTimestampExclusive.getTime() / 1000,
           )}]`,
         },
       },

@@ -29,13 +29,13 @@ describe('Beefy revenue calculation helpers', () => {
       const vaultAddress = '0x123'
       const beefyChain = 'celo'
       const startTimestamp = new Date('2025-01-10T16:14:52+00:00')
-      const endTimestamp = new Date('2025-01-13T16:14:52+00:00')
+      const endTimestampExclusive = new Date('2025-01-13T16:14:52+00:00')
 
       const result = await _fetchVaultTvlHistory({
         vaultAddress,
         beefyChain,
         startTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
       })
       expect(result).toEqual(mockVaultTvlData)
     })
@@ -55,13 +55,13 @@ describe('Beefy revenue calculation helpers', () => {
       const vaultAddress = '0x123'
       const beefyChain = 'celo'
       const startTimestamp = new Date('2025-01-10T16:14:52+00:00')
-      const endTimestamp = new Date('2025-01-17T16:14:52+00:00')
+      const endTimestampExclusive = new Date('2025-01-17T16:14:52+00:00')
 
       const result = await _fetchVaultTvlHistory({
         vaultAddress,
         beefyChain,
         startTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
       })
       expect(result).toEqual(mockVaultTvlData)
     })
@@ -100,13 +100,13 @@ describe('Beefy revenue calculation helpers', () => {
       const vaultAddress = '0x123'
       const beefyChain = 'celo'
       const startTimestamp = new Date('2025-01-10T16:14:52+00:00')
-      const endTimestamp = new Date('2025-01-20T16:14:52+00:00')
+      const endTimestampExclusive = new Date('2025-01-20T16:14:52+00:00')
 
       const result = await _fetchVaultTvlHistory({
         vaultAddress,
         beefyChain,
         startTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
       })
       expect(result).toEqual(mockVaultTvlData)
     })
@@ -132,12 +132,12 @@ describe('Beefy revenue calculation helpers', () => {
       const vaultAddress = '0x123'
       const networkId = NetworkId['arbitrum-one']
       const startTimestamp = new Date(0)
-      const endTimestamp = new Date(1000)
+      const endTimestampExclusive = new Date(1000)
       const result = await _fetchFeeEvents({
         vaultAddress,
         networkId,
         startTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
       })
 
       const expected = [

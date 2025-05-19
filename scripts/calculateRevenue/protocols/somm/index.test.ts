@@ -24,23 +24,23 @@ const vaultInfo = {
 const address = '0x1234567890123456789012345678901234567890'
 
 describe('getTvlProratedPerYear', () => {
-  it('should throw an error if endTimestamp is in the future', async () => {
+  it('should throw an error if endTimestampExclusive is in the future', async () => {
     const startTimestamp = new Date('2021-01-0')
-    const endTimestamp = new Date('2022-01-01')
+    const endTimestampExclusive = new Date('2022-01-01')
     const nowTimestamp = new Date('2021-01-01')
     await expect(
       getTvlProratedPerYear({
         vaultInfo,
         address,
         startTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
         nowTimestamp,
       }),
-    ).rejects.toThrow('Cannot have an endTimestamp in the future')
+    ).rejects.toThrow('Cannot have an endTimestampExclusive in the future')
   })
   it('should return the correct mean TVL', async () => {
     const startTimestamp = new Date('2021-01-05')
-    const endTimestamp = new Date('2021-01-20')
+    const endTimestampExclusive = new Date('2021-01-20')
     const nowTimestamp = new Date('2021-01-30')
     jest.mocked(calculateWeightedAveragePrice).mockReturnValue(2)
     jest.mocked(getEvents).mockResolvedValueOnce([
@@ -52,7 +52,7 @@ describe('getTvlProratedPerYear', () => {
       vaultInfo,
       address,
       startTimestamp,
-      endTimestamp,
+      endTimestampExclusive,
       nowTimestamp,
     })
     // first chuck of time is 5 days with 100 TVL, the current balance. All outside of the range so it isn't counted
@@ -66,8 +66,8 @@ describe('getTvlProratedPerYear', () => {
   })
   it('should return the correct mean TVL when there are multiple events on the same day', async () => {
     const startTimestamp = new Date('2025-01-10T16:14:52+00:00')
-    const endTimestamp = new Date('2025-01-10T20:14:52+00:00')
-    const nowTimestamp = endTimestamp
+    const endTimestampExclusive = new Date('2025-01-10T20:14:52+00:00')
+    const nowTimestamp = endTimestampExclusive
 
     // first chunk of time is 2 hours with 100 TVL, all inside the range so 100 * 2 = 200 TVL hours
     // second chunk of time is 1 hour with 50 TVL, all inside the range so 50 * 1 = 50 TVL hours
@@ -83,7 +83,7 @@ describe('getTvlProratedPerYear', () => {
       vaultInfo,
       address,
       startTimestamp,
-      endTimestamp,
+      endTimestampExclusive,
       nowTimestamp,
     })
     expect(result).toBeCloseTo(0.03767)

@@ -54,11 +54,11 @@ describe('On-chain event helpers', () => {
         .reply(200, { height: 20, timestamp: 2000 })
 
       const startTimestamp = new Date(1000000)
-      const endTimestamp = new Date(2000000)
+      const endTimestampExclusive = new Date(2000000)
       const result = await getBlockRange({
         networkId,
         startTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
       })
       expect(result).toEqual({ startBlock: 10, endBlockExclusive: 20 })
     })
@@ -72,11 +72,11 @@ describe('On-chain event helpers', () => {
         .reply(200, { height: 200, timestamp: 2000 })
 
       const startTimestamp = new Date(1005000)
-      const endTimestamp = new Date(2000000)
+      const endTimestampExclusive = new Date(2000000)
       const result = await getBlockRange({
         networkId,
         startTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
       })
       expect(result).toEqual({ startBlock: 101, endBlockExclusive: 200 })
     })
@@ -90,28 +90,28 @@ describe('On-chain event helpers', () => {
         .reply(200, { height: 200, timestamp: 2000 })
 
       const startTimestamp = new Date(1000000)
-      const endTimestamp = new Date(2005000)
+      const endTimestampExclusive = new Date(2005000)
       const result = await getBlockRange({
         networkId,
         startTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
       })
       expect(result).toEqual({ startBlock: 100, endBlockExclusive: 201 })
     })
 
-    it('should throw if startTimestamp is not before endTimestamp', async () => {
+    it('should throw if startTimestamp is not before endTimestampExclusive', async () => {
       const startTimestamp = new Date(2000000)
-      const endTimestamp = new Date(1000000)
+      const endTimestampExclusive = new Date(1000000)
       await expect(
-        getBlockRange({ networkId, startTimestamp, endTimestamp }),
+        getBlockRange({ networkId, startTimestamp, endTimestampExclusive }),
       ).rejects.toThrow('Start timestamp must be before end timestamp.')
     })
 
-    it('should throw if startTimestamp is equal to endTimestamp', async () => {
+    it('should throw if startTimestamp is equal to endTimestampExclusive', async () => {
       const startTimestamp = new Date(1000000)
-      const endTimestamp = new Date(1000000)
+      const endTimestampExclusive = new Date(1000000)
       await expect(
-        getBlockRange({ networkId, startTimestamp, endTimestamp }),
+        getBlockRange({ networkId, startTimestamp, endTimestampExclusive }),
       ).rejects.toThrow('Start timestamp must be before end timestamp.')
     })
 
@@ -121,14 +121,14 @@ describe('On-chain event helpers', () => {
         .reply(200, { height: 9, timestamp: 990 }) // Results in startBlock = 10
 
       nock('https://coins.llama.fi')
-        .get('/block/arbitrum/1001') // For endTimestamp = new Date(1001000)
+        .get('/block/arbitrum/1001') // For endTimestampExclusive = new Date(1001000)
         .reply(200, { height: 9, timestamp: 990 }) // Results in endBlock = 10
 
       const startTimestamp = new Date(1000000)
-      const endTimestamp = new Date(1001000) // endTimestamp > startTimestamp, so first validation passes
+      const endTimestampExclusive = new Date(1001000) // endTimestampExclusive > startTimestamp, so first validation passes
 
       await expect(
-        getBlockRange({ networkId, startTimestamp, endTimestamp }),
+        getBlockRange({ networkId, startTimestamp, endTimestampExclusive }),
       ).rejects.toThrow(
         `Calculated startBlock (height: 10) is not strictly less than calculated endBlockExclusive (height: 10).`,
       )
@@ -159,13 +159,13 @@ describe('On-chain event helpers', () => {
         .reply(200, { height: 15000, timestamp: 1000 })
 
       const startTimestamp = new Date(0)
-      const endTimestamp = new Date(1000)
+      const endTimestampExclusive = new Date(1000)
       const result = await fetchEvents({
         contract: mockContract,
         eventName: 'Swap',
         networkId,
         startTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
       })
 
       expect(mockGetContractEvents).toHaveBeenCalledTimes(2)
@@ -201,11 +201,11 @@ describe('On-chain event helpers', () => {
         .get('/block/arbitrum/1000') // For startTimestamp = new Date(1000000)
         .reply(200, { height: 9, timestamp: 990 }) // Results in startBlock = 10
       nock('https://coins.llama.fi')
-        .get('/block/arbitrum/1001') // For endTimestamp = new Date(1001000)
+        .get('/block/arbitrum/1001') // For endTimestampExclusive = new Date(1001000)
         .reply(200, { height: 9, timestamp: 990 }) // Results in endBlock = 10
 
       const startTimestamp = new Date(1000000)
-      const endTimestamp = new Date(1001000) // startTimestamp < endTimestamp is true
+      const endTimestampExclusive = new Date(1001000) // startTimestamp < endTimestampExclusive is true
 
       // We expect fetchEvents to propagate the error thrown by getBlockRange.
       await expect(
@@ -214,7 +214,7 @@ describe('On-chain event helpers', () => {
           eventName: 'Swap',
           networkId,
           startTimestamp: startTimestamp,
-          endTimestamp: endTimestamp,
+          endTimestampExclusive: endTimestampExclusive,
         }),
       ).rejects.toThrow(
         `Calculated startBlock (height: 10) is not strictly less than calculated endBlockExclusive (height: 10).`,
