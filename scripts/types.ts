@@ -41,7 +41,7 @@ export interface TokenPriceData {
 export type CalculateRevenueFn = (params: {
   address: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }) => Promise<number>
 
 export interface ReferralEvent {

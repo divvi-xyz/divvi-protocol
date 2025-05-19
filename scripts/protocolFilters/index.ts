@@ -23,11 +23,18 @@ export const protocolFilters: Record<Protocol, FilterFunction> = {
   rhino: _createFilter(filterRhino),
 }
 
-function _createFilter(filter: (event: ReferralEvent) => Promise<boolean>) {
-  return async function (events: ReferralEvent[]): Promise<ReferralEvent[]> {
+function _createFilter(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  filter: (event: ReferralEvent, ...args: any[]) => Promise<boolean>,
+) {
+  return async function (
+    events: ReferralEvent[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ...args: any[]
+  ): Promise<ReferralEvent[]> {
     const filteredEvents = []
     for (const event of events) {
-      if (await filter(event)) {
+      if (await filter(event, ...args)) {
         filteredEvents.push(event)
       }
     }

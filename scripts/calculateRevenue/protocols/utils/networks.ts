@@ -7,12 +7,12 @@ export async function fetchTotalTransactionFees({
   networkId,
   users,
   startBlock,
-  endBlock,
+  endBlockExclusive,
 }: {
   networkId: NetworkId
   users: string[]
-  startBlock?: number
-  endBlock?: number
+  startBlock?: number // inclusive
+  endBlockExclusive?: number
 }): Promise<number> {
   let totalTransactionFees = 0
 
@@ -24,7 +24,7 @@ export async function fetchTotalTransactionFees({
       transaction: [TransactionField.GasUsed, TransactionField.GasPrice],
     },
     fromBlock: startBlock ?? 0,
-    ...(endBlock && { toBlock: endBlock }),
+    ...(endBlockExclusive && { toBlock: endBlockExclusive }),
   }
 
   await paginateQuery(client, query, async (response) => {
@@ -40,12 +40,12 @@ export async function fetchTotalTransactions({
   networkId,
   users,
   startBlock,
-  endBlock,
+  endBlockExclusive,
 }: {
   networkId: NetworkId
   users: string[]
-  startBlock?: number
-  endBlock?: number
+  startBlock?: number // inclusive
+  endBlockExclusive?: number
 }): Promise<number> {
   let totalTransactions = 0
 
@@ -57,7 +57,7 @@ export async function fetchTotalTransactions({
       transaction: [TransactionField.Hash],
     },
     fromBlock: startBlock ?? 0,
-    ...(endBlock && { toBlock: endBlock }),
+    ...(endBlockExclusive && { toBlock: endBlockExclusive }),
   }
 
   await paginateQuery(client, query, async (response) => {

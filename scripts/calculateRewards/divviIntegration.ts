@@ -9,14 +9,15 @@ import {
   parseUnits,
 } from 'viem'
 import { LogField } from '@envio-dev/hypersync-client'
-import { paginateQuery } from './utils/hypersyncPagination'
-import { getHyperSyncClient } from './utils'
-import { NetworkId } from './types'
-import { divviRegistryAbi } from '../abis/DivviRegistry'
-import { rewardPoolAbi } from '../abis/RewardPool'
-import { fetchWithTimeout } from './utils/fetchWithTimeout'
-import { getNearestBlock } from './calculateRevenue/protocols/utils/events'
-import { createAddRewardSafeTransactionJSON } from './utils/createSafeTransactionsBatch'
+import { paginateQuery } from '../utils/hypersyncPagination'
+import { getHyperSyncClient } from '../utils'
+import { NetworkId } from '../types'
+import { divviRegistryAbi } from '../../abis/DivviRegistry'
+import { rewardPoolAbi } from '../../abis/RewardPool'
+import { fetchWithTimeout } from '../utils/fetchWithTimeout'
+import { getBlockRange } from '../calculateRevenue/protocols/utils/events'
+import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
+
 const DIVVI_REGISTRY_CONTRACT_ADDRESS =
   '0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'
 const DIVVI_INTEGRATION_REWARDS_ENTITY =
@@ -52,14 +53,14 @@ async function getArgs() {
       alias: 's',
       description:
         'inclusive timestamp at which to start checking for integrators (new Date() compatible)',
-      type: 'number',
+      type: 'string',
       demandOption: true,
     })
     .option('end-timestamp', {
       alias: 'e',
       description:
         'exclusive timestamp at which to stop checking for integrators (new Date() compatible)',
-      type: 'number',
+      type: 'string',
       demandOption: true,
     }).argv
 
@@ -67,7 +68,7 @@ async function getArgs() {
     output: argv['output-file'] ?? 'divvi-integrator-rewards.csv',
     safeTransactionsFile: argv['safe-transactions-file'],
     startTimestamp: new Date(argv['start-timestamp']),
-    endTimestamp: new Date(argv['end-timestamp']),
+    endTimestampExclusive: new Date(argv['end-timestamp']),
   }
 }
 
@@ -107,11 +108,11 @@ function removeDuplicates<T>(arr: T[]): T[] {
 async function getDivviIntegrators({
   rewardPoolContractAddress,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   rewardPoolContractAddress: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<Address[]> {
   const consumersThatHaveIntegrated: Address[] = []
   const consumersThatHaveReceivedRewards = new Set<Address>()
@@ -122,14 +123,15 @@ async function getDivviIntegrators({
     eventName: 'ReferralRegistered',
   })[0]
 
-  const [startBlock, endBlock] = await Promise.all([
-    getNearestBlock(NetworkId['op-mainnet'], startTimestamp),
-    getNearestBlock(NetworkId['op-mainnet'], endTimestamp),
-  ])
+  const { startBlock, endBlockExclusive } = await getBlockRange({
+    networkId: NetworkId['op-mainnet'],
+    startTimestamp,
+    endTimestampExclusive,
+  })
 
   const queryForIntegrators = {
     fromBlock: startBlock,
-    toBlock: endBlock,
+    toBlock: endBlockExclusive,
     logs: [
       {
         address: [DIVVI_REGISTRY_CONTRACT_ADDRESS],
@@ -250,7 +252,7 @@ async function main() {
   const integratorAddresses: Address[] = await getDivviIntegrators({
     rewardPoolContractAddress: DIVVI_REWARD_POOL_ADDRESS,
     startTimestamp: args.startTimestamp,
-    endTimestamp: args.endTimestamp,
+    endTimestampExclusive: args.endTimestampExclusive,
   })
 
   writeFileSync(
@@ -269,8 +271,8 @@ async function main() {
         referrerId: address,
         rewardAmount: DIVVI_REWARD_AMOUNT.toString(),
       })),
-      startTimestamp: args.startTimestamp.getTime().toString(),
-      endTimestamp: args.endTimestamp.getTime().toString(),
+      startTimestamp: args.startTimestamp,
+      endTimestampExclusive: args.endTimestampExclusive,
     })
   }
 }

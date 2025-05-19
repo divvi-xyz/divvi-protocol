@@ -1,6 +1,6 @@
 import { Address } from 'viem'
 import { SupportedNetwork } from '../config'
-import { getNearestBlock } from '../../utils/events'
+import { getBlockRange } from '../../utils/events'
 import { getReserveData } from './pool'
 import { getReserveFactorHistory } from './reserveFactor'
 import { getATokenScaledBalances } from './aToken'
@@ -11,7 +11,7 @@ export async function fetchBlockchainData(
   network: SupportedNetwork,
   userAddress: Address,
   startTimestamp: Date,
-  endTimestamp: Date,
+  endTimestampExclusive: Date,
 ) {
   const {
     networkId,
@@ -21,20 +21,23 @@ export async function fetchBlockchainData(
     subgraphId,
   } = network
 
-  const [startBlock, endBlock] = await Promise.all([
-    getNearestBlock(networkId, startTimestamp),
-    getNearestBlock(networkId, endTimestamp),
-  ])
+  const { startBlock, endBlockExclusive } = await getBlockRange({
+    networkId,
+    startTimestamp,
+    endTimestampExclusive,
+  })
+  // For state at the end of the period, use the last inclusive block
+  const endBlockInclusive = endBlockExclusive - 1
 
   const [startReserveData, endReserveData, reserveFactorHistory] =
     await Promise.all([
       getReserveData(networkId, poolAddress, startBlock),
-      getReserveData(networkId, poolAddress, endBlock),
+      getReserveData(networkId, poolAddress, endBlockInclusive),
       getReserveFactorHistory({
         networkId,
         poolConfiguratorAddress,
         startBlock,
-        endBlock,
+        endBlockExclusive,
       }),
     ])
 
@@ -55,13 +58,13 @@ export async function fetchBlockchainData(
       subgraphId,
       userAddress,
       startTimestamp,
-      endTimestamp,
+      endTimestampExclusive,
     }),
     getUSDPrices({
       networkId,
       oracleAddress,
       tokenAddresses: allReserveTokenAddresses,
-      blockNumber: endBlock,
+      blockNumber: endBlockInclusive,
     }),
   ])
 

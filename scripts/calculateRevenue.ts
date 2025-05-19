@@ -1,23 +1,33 @@
 import calculateRevenueHandlers from './calculateRevenue/protocols'
 import { parse } from 'csv-parse/sync'
 import { stringify } from 'csv-stringify/sync'
-import { readFileSync, writeFileSync } from 'fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import yargs from 'yargs'
-import { protocols, Protocol } from './types'
+import { protocols } from './types'
+import { toPeriodFolderName } from './utils/dateFormatting'
+import { dirname } from 'path'
 
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_SECONDS = 30 * 60 // 30 minutes
 
 async function main(args: ReturnType<typeof parseArgs>) {
-  const inputFile = args['input-file'] ?? `${args['protocol']}-referrals.csv`
-  const outputFile = args['output-file'] ?? `${args['protocol']}-revenue.csv`
+  const startTimestamp = new Date(args['start-timestamp'])
+  const endTimestampExclusive = new Date(args['end-timestamp'])
+  const protocol = args.protocol
+
+  const folderPath = `rewards/${protocol}/${toPeriodFolderName({
+    startTimestamp,
+    endTimestampExclusive,
+  })}`
+  const inputFile = `${folderPath}/referrals.csv`
+  const outputFile = `${folderPath}/revenue.csv`
 
   const eligibleUsers = parse(readFileSync(inputFile, 'utf-8').toString(), {
     skip_empty_lines: true,
     delimiter: ',',
     columns: true,
   })
-  const handler = calculateRevenueHandlers[args['protocol'] as Protocol]
+  const handler = calculateRevenueHandlers[protocol]
 
   const allResults: Array<{
     referrerId: string
@@ -34,15 +44,13 @@ async function main(args: ReturnType<typeof parseArgs>) {
     const referralTimestamp = new Date(
       timestamp - REFERRAL_TIME_BUFFER_IN_SECONDS,
     )
-    const endTimestamp = new Date(args['end-timestamp'])
-    if (referralTimestamp.getTime() > endTimestamp.getTime()) {
+    if (referralTimestamp.getTime() > endTimestampExclusive.getTime()) {
       console.log(
         `Referral date is after end date, skipping ${userAddress} (referral date: ${new Date(timestamp).toISOString()})`,
       )
       continue
     }
 
-    const startTimestamp = new Date(args['start-timestamp'])
     const revenue = await handler({
       address: userAddress,
       // if the referral happened after the start of the period, only calculate revenue from the referral block onwards so that we exclude user activity before the referral
@@ -50,7 +58,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
         referralTimestamp.getTime() > startTimestamp.getTime()
           ? referralTimestamp
           : startTimestamp,
-      endTimestamp,
+      endTimestampExclusive,
     })
     allResults.push({
       referrerId,
@@ -59,6 +67,8 @@ async function main(args: ReturnType<typeof parseArgs>) {
     })
   }
 
+  // Create directory if it doesn't exist
+  mkdirSync(dirname(outputFile), { recursive: true })
   writeFileSync(outputFile, stringify(allResults, { header: true }), {
     encoding: 'utf-8',
   })
@@ -68,18 +78,6 @@ async function main(args: ReturnType<typeof parseArgs>) {
 
 function parseArgs() {
   return yargs
-    .option('input-file', {
-      alias: 'i',
-      description: 'input file path of referrals, newline separated',
-      type: 'string',
-      demandOption: false,
-    })
-    .option('output-file', {
-      alias: 'o',
-      description: 'output file path to write csv results',
-      type: 'string',
-      demandOption: false,
-    })
     .option('protocol', {
       alias: 'p',
       description: 'ID of protocol to check against',
@@ -89,15 +87,15 @@ function parseArgs() {
     .option('start-timestamp', {
       alias: 's',
       description:
-        'timestamp at which to start checking for revenue (new Date() compatible)',
-      type: 'number',
+        'Start timestamp (inclusive) for revenue calculation (new Date() compatible epoch milliseconds or string)',
+      type: 'string',
       demandOption: true,
     })
     .option('end-timestamp', {
       alias: 'e',
       description:
-        'timestamp at which to stop checking for revenue (new Date() compatible)',
-      type: 'number',
+        'End timestamp (exclusive) for revenue calculation (new Date() compatible epoch milliseconds or string)',
+      type: 'string',
       demandOption: true,
     })
     .strict()

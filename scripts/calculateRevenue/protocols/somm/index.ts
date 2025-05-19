@@ -36,17 +36,17 @@ export async function getTvlProratedPerYear({
   vaultInfo,
   address,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
   nowTimestamp,
 }: {
   vaultInfo: VaultInfo
   address: Address
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
   nowTimestamp: Date
 }) {
-  if (endTimestamp.getTime() > nowTimestamp.getTime()) {
-    throw new Error('Cannot have an endTimestamp in the future')
+  if (endTimestampExclusive.getTime() > nowTimestamp.getTime()) {
+    throw new Error('Cannot have an endTimestampExclusive in the future')
   }
   const client = getViemPublicClient(vaultInfo.networkId)
   const vaultContract = getContract({
@@ -61,14 +61,14 @@ export async function getTvlProratedPerYear({
     networkId: vaultInfo.networkId,
     vaultAddress: vaultInfo.vaultAddress,
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })
 
   const tvlEvents = await getEvents({
     address,
     vaultInfo,
     startTimestamp,
-    endTimestamp: nowTimestamp,
+    endTimestampExclusive: nowTimestamp,
   })
 
   let prevTimestamp = nowTimestamp
@@ -84,23 +84,23 @@ export async function getTvlProratedPerYear({
 
     // if the previous event is outside of the time range and the current event is inside the time range
     if (
-      prevTimestamp.getTime() >= endTimestamp.getTime() &&
-      tvlEvent.timestamp.getTime() < endTimestamp.getTime()
+      prevTimestamp.getTime() >= endTimestampExclusive.getTime() &&
+      tvlEvent.timestamp.getTime() < endTimestampExclusive.getTime()
     ) {
-      timeInRange = getTimeInRange(tvlEvent.timestamp, endTimestamp)
+      timeInRange = getTimeInRange(tvlEvent.timestamp, endTimestampExclusive)
       priceInRange = calculateWeightedAveragePrice({
         snapshots: dailySnapshots,
         startTimestamp: prevTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
       })
     }
     // else the events are both inside the time range
-    else if (tvlEvent.timestamp.getTime() < endTimestamp.getTime()) {
+    else if (tvlEvent.timestamp.getTime() < endTimestampExclusive.getTime()) {
       timeInRange = getTimeInRange(tvlEvent.timestamp, prevTimestamp)
       priceInRange = calculateWeightedAveragePrice({
         snapshots: dailySnapshots,
         startTimestamp: tvlEvent.timestamp,
-        endTimestamp: prevTimestamp,
+        endTimestampExclusive: prevTimestamp,
       })
     }
     tvlMilliseconds += timeInRange * currentTvl * priceInRange
@@ -113,23 +113,23 @@ export async function getTvlProratedPerYear({
     calculateWeightedAveragePrice({
       snapshots: dailySnapshots,
       startTimestamp,
-      endTimestamp: prevTimestamp,
+      endTimestampExclusive: prevTimestamp,
     })
   return tvlMilliseconds / ONE_YEAR
 }
 
-function getTimeInRange(startTimestamp: Date, endTimestamp: Date) {
-  return endTimestamp.getTime() - startTimestamp.getTime()
+function getTimeInRange(startTimestamp: Date, endTimestampExclusive: Date) {
+  return endTimestampExclusive.getTime() - startTimestamp.getTime()
 }
 
 export async function calculateRevenue({
   address,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   address: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<number> {
   if (!isAddress(address)) {
     throw new Error('Invalid address')
@@ -143,7 +143,7 @@ export async function calculateRevenue({
       vaultInfo,
       address,
       startTimestamp,
-      endTimestamp,
+      endTimestampExclusive,
       nowTimestamp,
     })
     totalRevenue += vaultRevenue

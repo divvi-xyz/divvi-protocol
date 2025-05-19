@@ -1,4 +1,4 @@
-import { writeFileSync, readFileSync } from 'fs'
+import { writeFileSync, readFileSync, mkdirSync, copyFileSync } from 'fs'
 import yargs from 'yargs'
 import { protocolFilters } from './protocolFilters'
 import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
@@ -6,6 +6,8 @@ import { Protocol, protocols } from './types'
 import { stringify } from 'csv-stringify/sync'
 import { Address } from 'viem'
 import { parse } from 'csv-parse/sync'
+import { toPeriodFolderName } from './utils/dateFormatting'
+import { dirname } from 'path'
 
 async function getArgs() {
   const argv = await yargs
@@ -15,10 +17,19 @@ async function getArgs() {
       demandOption: true,
       choices: protocols,
     })
-    .option('output-file', {
-      alias: 'o',
-      description: 'output file',
+    .option('start-timestamp', {
+      alias: 's',
+      description:
+        'Start timestamp (inclusive) (new Date() compatible epoch milliseconds or string)',
       type: 'string',
+      demandOption: true,
+    })
+    .option('end-timestamp', {
+      alias: 'e',
+      description:
+        'End timestamp (exclusive) (new Date() compatible epoch milliseconds or string)',
+      type: 'string',
+      demandOption: true,
     })
     .option('use-staging', {
       description: 'use staging registry contract',
@@ -37,6 +48,8 @@ async function getArgs() {
     output: argv['output-file'] ?? `${argv['protocol']}-referrals.csv`,
     useStaging: argv['use-staging'],
     builderAllowList: argv['builder-allowlist-file'],
+    startTimestamp: argv['start-timestamp'],
+    endTimestampExclusive: argv['end-timestamp'],
   }
 }
 
@@ -50,11 +63,10 @@ async function main() {
   )
   const uniqueEvents = removeDuplicates(referralEvents)
   const builderAllowList = args.builderAllowList
-    ? (parse(readFileSync(args.builderAllowList, 'utf-8').toString(), {
+    ? parse(readFileSync(args.builderAllowList, 'utf-8').toString(), {
         skip_empty_lines: true,
-        delimiter: ',',
         columns: true,
-      }) as Address[])
+      }).map(({ referrerId }: { referrerId: Address }) => referrerId)
     : undefined
 
   const filteredEvents = await args.protocolFilter(
@@ -66,10 +78,25 @@ async function main() {
     userAddress: event.userAddress,
     timestamp: event.timestamp,
   }))
-  writeFileSync(args.output, stringify(outputEvents, { header: true }), {
+
+  const outputDir = `rewards/${args.protocol}/${toPeriodFolderName({
+    startTimestamp: new Date(args.startTimestamp),
+    endTimestampExclusive: new Date(args.endTimestampExclusive),
+  })}`
+  const outputFile = `${outputDir}/referrals.csv`
+
+  // Create directory if it doesn't exist
+  mkdirSync(dirname(outputFile), { recursive: true })
+  writeFileSync(outputFile, stringify(outputEvents, { header: true }), {
     encoding: 'utf-8',
   })
-  console.log(`Wrote results to ${args.output}`)
+  console.log(`Wrote results to ${outputFile}`)
+
+  if (args.builderAllowList) {
+    const allowListOutputFile = `${outputDir}/builder-allowlist.csv`
+    copyFileSync(args.builderAllowList, allowListOutputFile)
+    console.log(`Copied builder allowlist to ${allowListOutputFile}`)
+  }
 }
 
 main().catch((error) => {

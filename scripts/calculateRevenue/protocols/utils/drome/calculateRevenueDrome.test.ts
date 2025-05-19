@@ -103,7 +103,7 @@ describe('Aerodrome revenue calculation', () => {
       const result = await calculateRevenueDrome({
         address: 'mockAddress',
         startTimestamp: new Date(),
-        endTimestamp: new Date(),
+        endTimestampExclusive: new Date(),
         supportedLiquidityPoolAddresses:
           AERODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
         networkId: AERODROME_NETWORK_ID,

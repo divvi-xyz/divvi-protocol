@@ -1,29 +1,26 @@
 import { NetworkId } from '../../../types'
-import { getNearestBlock } from '../utils/events'
+import { getBlockRange } from '../utils/events'
 import { fetchTotalTransactionFees } from '../utils/networks'
 
 export async function calculateRevenue({
   address,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   address: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<number> {
-  const startBlock = await getNearestBlock(
-    NetworkId['arbitrum-one'],
+  const { startBlock, endBlockExclusive } = await getBlockRange({
+    networkId: NetworkId['arbitrum-one'],
     startTimestamp,
-  )
-  const endBlock = await getNearestBlock(
-    NetworkId['arbitrum-one'],
-    endTimestamp,
-  )
+    endTimestampExclusive,
+  })
 
   return await fetchTotalTransactionFees({
     networkId: NetworkId['arbitrum-one'],
     users: [address],
     startBlock,
-    endBlock,
+    endBlockExclusive,
   })
 }

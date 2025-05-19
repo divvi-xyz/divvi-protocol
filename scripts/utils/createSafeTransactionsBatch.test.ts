@@ -25,8 +25,8 @@ describe('createAddRewardSafeTransactionJSON', () => {
       rewardAmount: '2000000000000000000', // 2 ETH in wei
     },
   ]
-  const mockStartTimestamp = '1677649200' // March 1, 2023
-  const mockEndTimestamp = '1680327600' // April 1, 2023
+  const mockStartTimestamp = new Date('2023-03-01T00:00:00Z')
+  const mockendTimestampExclusive = new Date('2023-04-01T00:00:00Z')
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -38,7 +38,7 @@ describe('createAddRewardSafeTransactionJSON', () => {
       rewardPoolAddress: mockRewardPoolAddress,
       rewards: mockRewards,
       startTimestamp: mockStartTimestamp,
-      endTimestamp: mockEndTimestamp,
+      endTimestampExclusive: mockendTimestampExclusive,
     })
 
     // Verify directory creation
@@ -83,7 +83,7 @@ describe('createAddRewardSafeTransactionJSON', () => {
             users:
               '[0x1111111111111111111111111111111111111111, 0x2222222222222222222222222222222222222222]',
             amounts: '[1000000000000000000, 2000000000000000000]',
-            rewardFunctionArgs: '[1677649200, 1680327600]',
+            rewardFunctionArgs: '[1677628800, 1680307200]',
           },
         },
       ],
@@ -96,7 +96,7 @@ describe('createAddRewardSafeTransactionJSON', () => {
       rewardPoolAddress: mockRewardPoolAddress,
       rewards: [],
       startTimestamp: mockStartTimestamp,
-      endTimestamp: mockEndTimestamp,
+      endTimestampExclusive: mockendTimestampExclusive,
     })
 
     // Verify directory creation

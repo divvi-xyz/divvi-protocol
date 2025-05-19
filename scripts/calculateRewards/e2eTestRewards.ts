@@ -45,13 +45,13 @@ function parseArgs() {
     })
     .option('start-timestamp', {
       alias: 's',
-      description: 'start timestamp',
+      description: 'start timestamp (inclusive)',
       type: 'string',
       demandOption: true,
     })
     .option('end-timestamp', {
       alias: 'e',
-      description: 'end timestamp',
+      description: 'end timestamp (exclusive)',
       type: 'string',
       demandOption: true,
     })
@@ -84,8 +84,8 @@ async function main(args: ReturnType<typeof parseArgs>) {
     filePath: outputPath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
     rewards,
-    startTimestamp: args['start-timestamp'],
-    endTimestamp: args['end-timestamp'],
+    startTimestamp: new Date(args['start-timestamp']),
+    endTimestampExclusive: new Date(args['end-timestamp']),
   })
 }
 

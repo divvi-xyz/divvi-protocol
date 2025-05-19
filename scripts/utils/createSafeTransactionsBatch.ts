@@ -6,7 +6,7 @@ export const createAddRewardSafeTransactionJSON = ({
   rewardPoolAddress,
   rewards,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   filePath: string
   rewardPoolAddress: string
@@ -14,8 +14,8 @@ export const createAddRewardSafeTransactionJSON = ({
     referrerId: string
     rewardAmount: string // in smallest unit of reward token
   }[]
-  startTimestamp: string
-  endTimestamp: string
+  startTimestamp: Date
+  endTimestampExclusive: Date
 }) => {
   const users: string[] = []
   const amounts: string[] = []
@@ -56,7 +56,10 @@ export const createAddRewardSafeTransactionJSON = ({
         contractInputsValues: {
           users: `[${users.join(', ')}]`,
           amounts: `[${amounts.join(', ')}]`,
-          rewardFunctionArgs: `[${BigInt(startTimestamp)}, ${BigInt(endTimestamp)}]`,
+          // Convert timestamps to seconds
+          rewardFunctionArgs: `[${BigInt(startTimestamp.getTime() / 1000)}, ${BigInt(
+            endTimestampExclusive.getTime() / 1000,
+          )}]`,
         },
       },
     ],
