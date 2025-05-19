@@ -41,9 +41,12 @@ async function main(args: ReturnType<typeof parseArgs>) {
       `Calculating revenue for ${userAddress} (${i + 1}/${eligibleUsers.length})`,
     )
 
-    const referralTimestamp =
-      new Date(timestamp).getTime() - REFERRAL_TIME_BUFFER_IN_MS
-    if (referralTimestamp > endTimestampExclusive.getTime()) {
+    const referralTimestamp = new Date(
+      Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
+    )
+    console.log('referralTimestamp', referralTimestamp)
+
+    if (referralTimestamp.getTime() > endTimestampExclusive.getTime()) {
       // this shouldn't happen if we only fetch and pass in referrals up to endTimestampExclusive
       console.log(
         `Referral date is after end date, skipping ${userAddress} (registration tx date: ${timestamp})`,
@@ -55,8 +58,8 @@ async function main(args: ReturnType<typeof parseArgs>) {
       address: userAddress,
       // if the referral happened after the start of the period, only calculate revenue from the referral block onwards so that we exclude user activity before the referral
       startTimestamp:
-        referralTimestamp > startTimestamp.getTime()
-          ? new Date(referralTimestamp)
+        referralTimestamp.getTime() > startTimestamp.getTime()
+          ? referralTimestamp
           : startTimestamp,
       endTimestampExclusive,
     })
