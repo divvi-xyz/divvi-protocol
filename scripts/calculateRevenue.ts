@@ -44,6 +44,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     const referralTimestamp =
       new Date(timestamp).getTime() - REFERRAL_TIME_BUFFER_IN_MS
     if (referralTimestamp > endTimestampExclusive.getTime()) {
+      // this shouldn't happen if we only fetch and pass in referrals up to endTimestampExclusive
       console.log(
         `Referral date is after end date, skipping ${userAddress} (registration tx date: ${timestamp})`,
       )
