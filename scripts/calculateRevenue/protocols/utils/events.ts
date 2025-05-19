@@ -54,7 +54,7 @@ const getNearestBlock = memoize(_getNearestBlock, {
 
 export const _getNearestBlockForTesting = getNearestBlock
 
-async function getFirstBlockAtOrAfterTimestamp(
+export async function getFirstBlockAtOrAfterTimestamp(
   networkId: NetworkId,
   targetDate: Date,
 ): Promise<number> {

@@ -1,7 +1,10 @@
 import { fetchReferralEvents, removeDuplicates } from './referrals'
 import { ReferralEvent } from '../types'
 import { getHyperSyncClient } from './index'
+import { getFirstBlockAtOrAfterTimestamp } from '../calculateRevenue/protocols/utils/events'
+
 jest.mock('./index')
+jest.mock('../calculateRevenue/protocols/utils/events')
 
 describe('fetchReferralEvents', () => {
   it('should fetch all referral events', async () => {
@@ -42,21 +45,6 @@ describe('fetchReferralEvents', () => {
             ],
           },
         },
-        {
-          block: { number: 135226238, timestamp: 1746054321 },
-          log: {
-            transactionHash:
-              '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-            blockNumber: 135226238,
-            data: '0x0000000000000000000000000000000000000000000000000000000000000040a3ad4718b6448e2f491fb44d9c1872ab9b57b9ded869a18394bb30fb5821447500000000000000000000000000000000000000000000000000000000000000053432323230000000000000000000000000000000000000000000000000000000',
-            topics: [
-              '0xfddf272d6cdce612f7757626eff4fda5e235d0da62a22cc77ebe3e295b1479d0',
-              '0x000000000000000000000000fedcba9876543210fedcba9876543210fedcba98',
-              '0x0000000000000000000000005f0a55fad9424ac99429f635dfb9bf20c3360ab8',
-              '0x0000000000000000000000007890abcdef1234567890abcdef1234567890abcd',
-            ],
-          },
-        },
       ],
       nextBlock: 135226239,
     }
@@ -79,7 +67,18 @@ describe('fetchReferralEvents', () => {
       getEvents: mockGetEvents,
     } as unknown as ReturnType<typeof getHyperSyncClient>)
 
-    const events = await fetchReferralEvents('celo-transactions')
+    const endTimestamp = new Date('2024-01-01')
+    const mockFirstBlockAfterTimestamp = 135226240
+    jest
+      .mocked(getFirstBlockAtOrAfterTimestamp)
+      .mockResolvedValue(mockFirstBlockAfterTimestamp)
+
+    const events = await fetchReferralEvents(
+      'celo-transactions',
+      undefined,
+      false,
+      endTimestamp,
+    )
     expect(events).toEqual([
       {
         userAddress: '0x1234567890abcdef1234567890abcdef12345678',
@@ -93,13 +92,16 @@ describe('fetchReferralEvents', () => {
         referrerId: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
         protocol: 'celo-transactions',
       },
-      {
-        userAddress: '0xfedcba9876543210fedcba9876543210fedcba98',
-        timestamp: 1746054321,
-        referrerId: '0x7890abcdef1234567890abcdef1234567890abcd',
-        protocol: 'celo-transactions',
-      },
     ])
+    expect(getFirstBlockAtOrAfterTimestamp).toHaveBeenCalledWith(
+      'op-mainnet',
+      endTimestamp,
+    )
+    expect(mockGetEvents).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toBlock: mockFirstBlockAfterTimestamp,
+      }),
+    )
   })
 })
 

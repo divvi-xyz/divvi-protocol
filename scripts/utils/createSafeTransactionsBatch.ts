@@ -20,8 +20,10 @@ export const createAddRewardSafeTransactionJSON = ({
   const users: string[] = []
   const amounts: string[] = []
   for (const reward of rewards) {
-    users.push(reward.referrerId)
-    amounts.push(reward.rewardAmount)
+    if (BigInt(reward.rewardAmount) > 0n) {
+      users.push(reward.referrerId)
+      amounts.push(reward.rewardAmount)
+    }
   }
 
   const transactionsBatch = {

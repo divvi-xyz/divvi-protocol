@@ -36,20 +36,17 @@ export function calculateRewardsProofOfImpact({
   )
   const totalRewardsForPeriod = timeDiff.times(rewardsPerMillisecond)
 
-  const referrerKpis = kpiData
-    // filter out rows with no revenue, which is possible for users who were referred between the reward period end date and the time of the reward distribution
-    .filter((row) => BigInt(row.revenue) > 0)
-    .reduce(
-      (acc, row) => {
-        if (!(row.referrerId in acc)) {
-          acc[row.referrerId] = BigInt(row.revenue)
-        } else {
-          acc[row.referrerId] += BigInt(row.revenue)
-        }
-        return acc
-      },
-      {} as Record<string, bigint>,
-    )
+  const referrerKpis = kpiData.reduce(
+    (acc, row) => {
+      if (!(row.referrerId in acc)) {
+        acc[row.referrerId] = BigInt(row.revenue)
+      } else {
+        acc[row.referrerId] += BigInt(row.revenue)
+      }
+      return acc
+    },
+    {} as Record<string, bigint>,
+  )
 
   const total = Object.values(referrerKpis).reduce(
     (sum, value) => sum + value,
