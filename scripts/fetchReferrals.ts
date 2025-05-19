@@ -56,12 +56,12 @@ async function getArgs() {
 async function main() {
   const args = await getArgs()
 
-  const endTimestamp = new Date(args.endTimestamp)
+  const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const referralEvents = await fetchReferralEvents(
     args.protocol,
     undefined,
     args.useStaging,
-    endTimestamp,
+    endTimestampExclusive,
   )
   const uniqueEvents = removeDuplicates(referralEvents)
   const builderAllowList = args.builderAllowList

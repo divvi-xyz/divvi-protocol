@@ -38,7 +38,7 @@ export async function fetchReferralEvents(
   protocol: Protocol,
   referrerIds?: Address[],
   useStaging = false,
-  endTimestamp?: Date,
+  endTimestampExclusive?: Date,
 ): Promise<ReferralEvent[]> {
   const referralEvents: ReferralEvent[] = []
   console.log('Fetching referral events for protocol:', protocol)
@@ -59,8 +59,11 @@ export async function fetchReferralEvents(
     eventName: 'ReferralRegistered',
   })
 
-  const endBlockExclusive = endTimestamp
-    ? await getFirstBlockAtOrAfterTimestamp(REGISTRY_NETWORK_ID, endTimestamp)
+  const endBlockExclusive = endTimestampExclusive
+    ? await getFirstBlockAtOrAfterTimestamp(
+        REGISTRY_NETWORK_ID,
+        endTimestampExclusive,
+      )
     : undefined
 
   const hypersyncClient = getHyperSyncClient(REGISTRY_NETWORK_ID)
