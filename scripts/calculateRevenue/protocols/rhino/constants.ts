@@ -21,4 +21,3 @@ export const BRIDGED_WITHDRAWAL_TOPIC = encodeEventTopics({
   abi: rhinoFiBridgeAbi,
   eventName: 'BridgedWithdrawal',
 })[0]
-
