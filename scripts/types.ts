@@ -11,6 +11,7 @@ export const protocols = [
   'aave',
   'celo-transactions',
   'rhino',
+  'scout-game-v0',
 ] as const
 export type Protocol = (typeof protocols)[number]
 export type FilterFunction = (
