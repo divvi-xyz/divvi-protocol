@@ -50,7 +50,6 @@ export async function getUserBridges({
 
   const bridges: BridgeTransaction[] = []
   await paginateQuery(client, query, async (response) => {
-    console.log(`Found ${response.data.logs.length} logs`)
     for (const bridge of response.data.logs) {
       // Check that the logs contain all necessary fields
       if (bridge.blockNumber && bridge.data) {
