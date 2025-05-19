@@ -73,7 +73,6 @@ async function _getTokenHistoricalPrice({
       'x-cg-pro-api-key': process.env.COIN_GECKO_API_KEY || '',
     },
   }
-  console.log('url:', url)
   const response = await fetchWithTimeout(url, options)
   if (!response.ok) {
     throw new Error(`Error while fetching token price history: ${response}`)

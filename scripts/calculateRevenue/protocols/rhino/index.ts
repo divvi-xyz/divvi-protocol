@@ -8,12 +8,10 @@ import {
 } from './constants'
 import { NetworkId } from '../../../types'
 import { BridgeTransaction } from './types'
-import { fetchTokenPrices } from '../utils/tokenPrices'
-import { getTokenPrice } from '../beefy'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { Address, fromHex, isAddress, zeroAddress } from 'viem'
 import { getFirstBlockAtOrAfterTimestamp } from '../utils/events'
-import { getTokenHistoricalPrice } from '../utils/fetchHistoricalTokenPrice'
+import { getTokenHistoricalPrice } from '../utils/getHistoricalTokenPrice'
 
 export async function getUserBridges({
   address,
@@ -82,13 +80,9 @@ export async function getUserBridges({
 export async function getTotalRevenueUsdFromBridges({
   userBridges,
   networkId,
-  startTimestamp,
-  endTimestampExclusive,
 }: {
   userBridges: BridgeTransaction[]
   networkId: NetworkId
-  startTimestamp: Date
-  endTimestampExclusive: Date
 }): Promise<number> {
   if (userBridges.length === 0) {
     return 0
@@ -100,47 +94,32 @@ export async function getTotalRevenueUsdFromBridges({
   for (const bridge of userBridges) {
     // Get the token decimals
     const isNative = bridge.tokenAddress === zeroAddress
-    const tokenId = `${networkId}:${isNative ? 'native' : bridge.tokenAddress}`
     const tokenContract = isNative
       ? undefined
       : await getErc20Contract(bridge.tokenAddress, networkId)
     const tokenDecimals = tokenContract
       ? BigInt(await tokenContract.read.decimals())
       : NATIVE_TOKEN_DECIMALS
-    let tokenPriceUsd = 0
     try {
-      // Get the historical token prices
-      const tokenPrices = await fetchTokenPrices({
-        tokenId,
-        startTimestamp,
-        endTimestampExclusive: endTimestampExclusive,
+      const tokenPriceUsd = await getTokenHistoricalPrice({
+        networkId,
+        address: isNative ? undefined : bridge.tokenAddress,
+        timestamp: bridge.timestamp,
       })
-      tokenPriceUsd = getTokenPrice(tokenPrices, bridge.timestamp)
+      const partialUsdContribution =
+        Number(
+          (bridge.amount *
+            BigInt(tokenPriceUsd * 10 ** BRIDGE_VOLUME_USD_PRECISION)) /
+            10n ** tokenDecimals,
+        ) /
+        10 ** BRIDGE_VOLUME_USD_PRECISION
+      totalUsdContribution += partialUsdContribution
     } catch (error) {
-      try {
-        // If failed to get price from blockchain-api (probably because token is not supported)
-        // Try to get the historical price directly from coingecko
-        // Doing this second because it is less accurate (only daily snapshot at midnight UTC)
-        tokenPriceUsd = await getTokenHistoricalPrice({
-          networkId,
-          address: isNative ? undefined : bridge.tokenAddress,
-          timestamp: bridge.timestamp,
-        })
-      } catch (error) {
-        console.error(
-          `Error fetching token price for ${tokenId} at ${bridge.timestamp}:`,
-          error,
-        )
-      }
+      console.error(
+        `Error fetching token price for ${networkId}:${isNative ? 'native' : bridge.tokenAddress} at ${bridge.timestamp}:`,
+        error,
+      )
     }
-    const partialUsdContribution =
-      Number(
-        (bridge.amount *
-          BigInt(tokenPriceUsd * 10 ** BRIDGE_VOLUME_USD_PRECISION)) /
-          10n ** tokenDecimals,
-      ) /
-      10 ** BRIDGE_VOLUME_USD_PRECISION
-    totalUsdContribution += partialUsdContribution
   }
 
   return totalUsdContribution
@@ -179,8 +158,6 @@ export async function calculateRevenue({
         const revenue = await getTotalRevenueUsdFromBridges({
           userBridges,
           networkId: networkId,
-          startTimestamp,
-          endTimestampExclusive,
         })
         return revenue
       }),
