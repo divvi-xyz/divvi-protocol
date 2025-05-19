@@ -13,6 +13,7 @@ import { getTokenPrice } from '../beefy'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { Address, fromHex, isAddress, zeroAddress } from 'viem'
 import { getFirstBlockAtOrAfterTimestamp } from '../utils/events'
+import { getTokenHistoricalPrice } from '../utils/fetchHistoricalTokenPrice'
 
 export async function getUserBridges({
   address,
@@ -106,7 +107,7 @@ export async function getTotalRevenueUsdFromBridges({
     const tokenDecimals = tokenContract
       ? BigInt(await tokenContract.read.decimals())
       : NATIVE_TOKEN_DECIMALS
-
+    let tokenPriceUsd = 0
     try {
       // Get the historical token prices
       const tokenPrices = await fetchTokenPrices({
@@ -114,21 +115,32 @@ export async function getTotalRevenueUsdFromBridges({
         startTimestamp,
         endTimestampExclusive: endTimestampExclusive,
       })
-      const tokenPriceUsd = getTokenPrice(tokenPrices, bridge.timestamp)
-      const partialUsdContribution =
-        Number(
-          (bridge.amount *
-            BigInt(tokenPriceUsd * 10 ** BRIDGE_VOLUME_USD_PRECISION)) /
-            10n ** tokenDecimals,
-        ) /
-        10 ** BRIDGE_VOLUME_USD_PRECISION
-      totalUsdContribution += partialUsdContribution
+      tokenPriceUsd = getTokenPrice(tokenPrices, bridge.timestamp)
     } catch (error) {
-      console.error(
-        `Error fetching token prices for ${tokenId} at ${bridge.timestamp}:`,
-        error,
-      )
+      try {
+        // If failed to get price from blockchain-api (probably because token is not supported)
+        // Try to get the historical price directly from coingecko
+        // Doing this second because it is less accurate (only daily snapshot at midnight UTC)
+        tokenPriceUsd = await getTokenHistoricalPrice({
+          networkId,
+          address: isNative ? undefined : bridge.tokenAddress,
+          timestamp: bridge.timestamp,
+        })
+      } catch (error) {
+        console.error(
+          `Error fetching token price for ${tokenId} at ${bridge.timestamp}:`,
+          error,
+        )
+      }
     }
+    const partialUsdContribution =
+      Number(
+        (bridge.amount *
+          BigInt(tokenPriceUsd * 10 ** BRIDGE_VOLUME_USD_PRECISION)) /
+          10n ** tokenDecimals,
+      ) /
+      10 ** BRIDGE_VOLUME_USD_PRECISION
+    totalUsdContribution += partialUsdContribution
   }
 
   return totalUsdContribution
