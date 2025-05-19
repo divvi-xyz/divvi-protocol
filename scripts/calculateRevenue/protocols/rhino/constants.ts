@@ -4,18 +4,16 @@ import { rhinoFiBridgeAbi } from '../../../abis/RhinoFiBridge'
 
 export const BRIDGE_VOLUME_USD_PRECISION = 8
 
-// This is what Rhino.fi uses in their event data to indicate the native token
-export const ALL_ZEROES_ADDRESS = '0x0000000000000000000000000000000000000000'
 export const NATIVE_TOKEN_DECIMALS = 18n
 
 // Contract addresses on different chains
 export const NETWORK_ID_TO_BRIDGE_CONTRACT_ADDRESS: Partial<
   Record<NetworkId, Address>
 > = {
-  [NetworkId['base-mainnet']]: '0x2f59E9086ec8130E21BD052065a9E6B2497bb102',
+  [NetworkId['base-mainnet']]: '0x2f59e9086ec8130e21bd052065a9e6b2497bb102',
   [NetworkId['polygon-pos-mainnet']]:
-    '0xBA4EEE20F434bC3908A0B18DA496348657133A7E',
-  [NetworkId['celo-mainnet']]: '0x5e023c31E1d3dCd08a1B3e8c96f6EF8Aa8FcaCd1',
+    '0xba4eee20f434bc3908a0b18da496348657133a7e',
+  [NetworkId['celo-mainnet']]: '0x5e023c31e1d3dcd08a1b3e8c96f6ef8aa8fcacd1',
 }
 
 // Event topic to detect user bridges
