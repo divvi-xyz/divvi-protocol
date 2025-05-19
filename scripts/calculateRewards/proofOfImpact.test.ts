@@ -41,14 +41,12 @@ describe('calculateRewardsProofOfImpact', () => {
     expect(rewards).toEqual([
       {
         referrerId: '0xreferrer1',
-        kpi: BigInt(300),
         rewardAmount: expectedTotalRewardsForPeriod
           .times(0.3)
           .toFixed(0, BigNumber.ROUND_DOWN),
       },
       {
         referrerId: '0xreferrer2',
-        kpi: BigInt(700),
         rewardAmount: expectedTotalRewardsForPeriod
           .times(0.7)
           .toFixed(0, BigNumber.ROUND_DOWN),
@@ -84,7 +82,6 @@ describe('calculateRewardsProofOfImpact', () => {
     expect(rewards).toEqual([
       {
         referrerId: '0xreferrer1',
-        kpi: BigInt(100),
         rewardAmount: expectedTotalRewardsForPeriod.toFixed(
           0,
           BigNumber.ROUND_DOWN,

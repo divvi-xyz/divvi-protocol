@@ -6,6 +6,7 @@ import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { toPeriodFolderName } from '../utils/dateFormatting'
 import { join } from 'path'
+import { calculateProportionalPrizeContest } from './proportionalPrizeContest'
 
 // proof-of-impact campaign parameters
 // May 8 2025 12:00:00 AM UTC
@@ -37,38 +38,10 @@ export function calculateRewardsProofOfImpact({
   )
   const totalRewardsForPeriod = timeDiff.times(rewardsPerMillisecond)
 
-  const referrerKpis = kpiData
-    // filter out rows with no revenue, which is possible for users who were referred between the reward period end date and the time of the reward distribution
-    .filter((row) => BigInt(row.revenue) > 0)
-    .reduce(
-      (acc, row) => {
-        if (!(row.referrerId in acc)) {
-          acc[row.referrerId] = BigInt(row.revenue)
-        } else {
-          acc[row.referrerId] += BigInt(row.revenue)
-        }
-        return acc
-      },
-      {} as Record<string, bigint>,
-    )
-
-  const total = Object.values(referrerKpis).reduce(
-    (sum, value) => sum + value,
-    BigInt(0),
-  )
-
-  const rewards = Object.entries(referrerKpis).map(([referrerId, kpi]) => {
-    return {
-      referrerId,
-      kpi,
-      rewardAmount: totalRewardsForPeriod
-        .times(kpi)
-        .div(total)
-        .toFixed(0, BigNumber.ROUND_DOWN),
-    }
+  return calculateProportionalPrizeContest({
+    kpiData,
+    rewards: totalRewardsForPeriod,
   })
-
-  return rewards
 }
 
 function parseArgs() {
@@ -133,7 +106,6 @@ async function main(args: ReturnType<typeof parseArgs>) {
     'rewards:',
     rewards.map((r) => ({
       referrerId: r.referrerId,
-      kpi: r.kpi,
       rewardAmount: BigNumber(r.rewardAmount).shiftedBy(-18).toFixed(0),
     })),
   )
