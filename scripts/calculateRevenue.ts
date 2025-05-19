@@ -12,12 +12,12 @@ const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
 
 async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args['start-timestamp'])
-  const endTimestamp = new Date(args['end-timestamp'])
+  const endTimestampExclusive = new Date(args['end-timestamp'])
   const protocol = args.protocol
 
   const folderPath = `rewards/${protocol}/${toPeriodFolderName({
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })}`
   const inputFile = `${folderPath}/referrals.csv`
   const outputFile = `${folderPath}/revenue.csv`
@@ -43,7 +43,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
 
     const referralTimestamp =
       new Date(timestamp).getTime() - REFERRAL_TIME_BUFFER_IN_MS
-    if (referralTimestamp > endTimestamp.getTime()) {
+    if (referralTimestamp > endTimestampExclusive.getTime()) {
       console.log(
         `Referral date is after end date, skipping ${userAddress} (registration tx date: ${timestamp})`,
       )
@@ -57,7 +57,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
         referralTimestamp > startTimestamp.getTime()
           ? new Date(referralTimestamp)
           : startTimestamp,
-      endTimestamp,
+      endTimestampExclusive,
     })
     allResults.push({
       referrerId,

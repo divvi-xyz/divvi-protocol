@@ -7,16 +7,16 @@ import { calculateRevenueDrome } from '../utils/drome/calculateRevenueDrome'
 export async function calculateRevenue({
   address,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   address: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<number> {
   return calculateRevenueDrome({
     address,
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
     supportedLiquidityPoolAddresses:
       VELODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
     networkId: VELODROME_NETWORK_ID,

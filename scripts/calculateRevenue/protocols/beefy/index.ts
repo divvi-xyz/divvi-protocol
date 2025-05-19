@@ -93,12 +93,12 @@ export async function calculateVaultRevenue(
 
   // Fetch the historical prices of the chain's native token
   const startTimestamp = vaultInfo.feeEvents[0].timestamp
-  const endTimestamp =
+  const endTimestampExclusive =
     vaultInfo.feeEvents[vaultInfo.feeEvents.length - 1].timestamp
   const tokenPrices = await fetchTokenPrices({
     tokenId,
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })
 
   let totalUsdContribution = 0
@@ -129,13 +129,17 @@ export async function calculateVaultRevenue(
 export async function calculateRevenue({
   address,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   address: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<number> {
-  const vaultsInfo = await getVaults(address, startTimestamp, endTimestamp)
+  const vaultsInfo = await getVaults(
+    address,
+    startTimestamp,
+    endTimestampExclusive,
+  )
 
   let totalRevenue = 0
   for (const vaultInfo of Object.values(vaultsInfo)) {

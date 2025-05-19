@@ -18,12 +18,12 @@ export async function _fetchFeeEvents({
   vaultAddress,
   networkId,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   vaultAddress: Address
   networkId: NetworkId
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<FeeEvent[]> {
   const strategyContract = await getStrategyContract(vaultAddress, networkId)
 
@@ -32,7 +32,7 @@ export async function _fetchFeeEvents({
     networkId,
     eventName: 'ChargedFees',
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   })
 
   const feeEvents: FeeEvent[] = []
@@ -60,26 +60,26 @@ export async function _fetchVaultTvlHistory({
   vaultAddress,
   beefyChain,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   vaultAddress: string
   beefyChain: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<BeefyVaultTvlData[]> {
   console.log(`Fetching TVL data for Vault ${vaultAddress} on ${beefyChain}`)
   // This endpoint accepts a maximum of one-week long spans.
   // We need to break down the provided date range into week-long durations.
   const timestamps = []
   let startSectionTimestamp = startTimestamp
-  while (startSectionTimestamp < endTimestamp) {
+  while (startSectionTimestamp < endTimestampExclusive) {
     const startPlusOneWeekTimestamp = new Date(
       startSectionTimestamp.getTime() + ONE_WEEK,
     )
     const endSectionTimestamp =
-      startPlusOneWeekTimestamp < endTimestamp
+      startPlusOneWeekTimestamp < endTimestampExclusive
         ? startPlusOneWeekTimestamp
-        : endTimestamp
+        : endTimestampExclusive
     timestamps.push([startSectionTimestamp, endSectionTimestamp])
     startSectionTimestamp = endSectionTimestamp
   }

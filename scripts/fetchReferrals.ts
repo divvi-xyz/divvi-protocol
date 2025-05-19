@@ -49,17 +49,19 @@ async function getArgs() {
     useStaging: argv['use-staging'],
     builderAllowList: argv['builder-allowlist-file'],
     startTimestamp: argv['start-timestamp'],
-    endTimestamp: argv['end-timestamp'],
+    endTimestampExclusive: argv['end-timestamp'],
   }
 }
 
 async function main() {
   const args = await getArgs()
 
+  const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const referralEvents = await fetchReferralEvents(
     args.protocol,
     undefined,
     args.useStaging,
+    endTimestampExclusive,
   )
   const uniqueEvents = removeDuplicates(referralEvents)
   const builderAllowList = args.builderAllowList
@@ -76,12 +78,12 @@ async function main() {
   const outputEvents = filteredEvents.map((event) => ({
     referrerId: event.referrerId,
     userAddress: event.userAddress,
-    timestamp: event.timestamp,
+    timestamp: new Date(event.timestamp * 1000).toISOString(),
   }))
 
   const outputDir = `rewards/${args.protocol}/${toPeriodFolderName({
     startTimestamp: new Date(args.startTimestamp),
-    endTimestamp: new Date(args.endTimestamp),
+    endTimestampExclusive: new Date(args.endTimestampExclusive),
   })}`
   const outputFile = `${outputDir}/referrals.csv`
 

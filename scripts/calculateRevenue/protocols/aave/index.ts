@@ -6,11 +6,11 @@ import { fetchBlockchainData } from './blockchainData'
 export async function calculateRevenue({
   address,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   address: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<number> {
   let revenue = new BigNumber(0)
 
@@ -20,7 +20,7 @@ export async function calculateRevenue({
         network,
         address as Address,
         startTimestamp,
-        endTimestamp,
+        endTimestampExclusive,
       ),
     )
   }
@@ -32,13 +32,13 @@ export async function revenueInNetwork(
   network: SupportedNetwork,
   userAddress: Address,
   startTimestamp: Date,
-  endTimestamp: Date,
+  endTimestampExclusive: Date,
 ): Promise<BigNumber> {
   const chainData = await fetchBlockchainData(
     network,
     userAddress,
     startTimestamp,
-    endTimestamp,
+    endTimestampExclusive,
   )
 
   // TODO: Implement revenue calculation logic

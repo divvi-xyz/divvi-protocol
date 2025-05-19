@@ -25,12 +25,12 @@ export async function getATokenScaledBalanceHistory({
   subgraphId,
   userAddress,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   subgraphId: string
   userAddress: Address
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }): Promise<Map<Address, BalanceSnapshot[]>> {
   const subgraphUrl = new URL(subgraphId, SUBGRAPH_BASE_URL).toString()
 
@@ -44,7 +44,7 @@ export async function getATokenScaledBalanceHistory({
     query getUserReservesHistory(
       $userAddress: String!
       $startTimestamp: Int!
-      $endTimestamp: Int!
+      $endTimestampExclusive: Int!
     ) {
       userReserves(where: { user: $userAddress }) {
         reserve {
@@ -53,7 +53,10 @@ export async function getATokenScaledBalanceHistory({
           }
         }
         aTokenBalanceHistory(
-          where: { timestamp_gte: $startTimestamp, timestamp_lt: $endTimestamp }
+          where: {
+            timestamp_gte: $startTimestamp
+            timestamp_lt: $endTimestampExclusive
+          }
           orderBy: timestamp
           orderDirection: asc
         ) {
@@ -68,7 +71,7 @@ export async function getATokenScaledBalanceHistory({
   const data = await client.request<AaveUserReservesResponse>(query, {
     userAddress: userAddress.toLowerCase(),
     startTimestamp: Math.floor(startTimestamp.getTime() / 1000),
-    endTimestamp: Math.floor(endTimestamp.getTime() / 1000),
+    endTimestampExclusive: Math.floor(endTimestampExclusive.getTime() / 1000),
   })
 
   const result = new Map(

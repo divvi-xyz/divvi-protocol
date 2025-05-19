@@ -122,8 +122,12 @@ describe('getVaults', () => {
 
     const address = '0x123'
     const startTimestamp = new Date(100)
-    const endTimestamp = new Date(200)
-    const result = await getVaults(address, startTimestamp, endTimestamp)
+    const endTimestampExclusive = new Date(200)
+    const result = await getVaults(
+      address,
+      startTimestamp,
+      endTimestampExclusive,
+    )
 
     const expected: VaultsInfo = {
       'beefy:vault:arbitrum:0x0000000000000000000000000000000000000000': {

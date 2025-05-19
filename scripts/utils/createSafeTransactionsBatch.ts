@@ -6,7 +6,7 @@ export const createAddRewardSafeTransactionJSON = ({
   rewardPoolAddress,
   rewards,
   startTimestamp,
-  endTimestamp,
+  endTimestampExclusive,
 }: {
   filePath: string
   rewardPoolAddress: string
@@ -15,13 +15,15 @@ export const createAddRewardSafeTransactionJSON = ({
     rewardAmount: string // in smallest unit of reward token
   }[]
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }) => {
   const users: string[] = []
   const amounts: string[] = []
   for (const reward of rewards) {
-    users.push(reward.referrerId)
-    amounts.push(reward.rewardAmount)
+    if (BigInt(reward.rewardAmount) > 0n) {
+      users.push(reward.referrerId)
+      amounts.push(reward.rewardAmount)
+    }
   }
 
   const transactionsBatch = {
@@ -58,7 +60,7 @@ export const createAddRewardSafeTransactionJSON = ({
           amounts: `[${amounts.join(', ')}]`,
           // Convert timestamps to seconds
           rewardFunctionArgs: `[${BigInt(startTimestamp.getTime() / 1000)}, ${BigInt(
-            endTimestamp.getTime() / 1000,
+            endTimestampExclusive.getTime() / 1000,
           )}]`,
         },
       },
