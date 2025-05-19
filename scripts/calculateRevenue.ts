@@ -45,7 +45,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
       new Date(timestamp).getTime() - REFERRAL_TIME_BUFFER_IN_MS
     if (referralTimestamp > endTimestamp.getTime()) {
       console.log(
-        `Referral date is after end date, skipping ${userAddress} (referral date: ${timestamp})`,
+        `Referral date is after end date, skipping ${userAddress} (registration tx date: ${timestamp})`,
       )
       continue
     }
