@@ -146,27 +146,7 @@ export async function calculateRevenue({
   if (!isAddress(address)) {
     throw new Error('Invalid address')
   }
-  // let totalRevenue = 0
-  // for (const [networkId, contractAddress] of Object.entries(
-  //   NETWORK_ID_TO_BRIDGE_CONTRACT_ADDRESS,
-  // ) as [NetworkId, Address][]) {
-  //   const client = getHyperSyncClient(networkId)
-  //   const userBridges = await getUserBridges({
-  //     address,
-  //     contractAddress,
-  //     startTimestamp,
-  //     endTimestampExclusive,
-  //     client,
-  //     networkId,
-  //   })
-  //   const revenue = await getTotalRevenueUsdFromBridges({
-  //     userBridges,
-  //     networkId,
-  //     startTimestamp,
-  //     endTimestampExclusive,
-  //   })
-  //   totalRevenue += revenue
-  // }
+
   const totalRevenue = (
     await Promise.all(
       (
