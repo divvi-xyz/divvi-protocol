@@ -44,7 +44,6 @@ async function main(args: ReturnType<typeof parseArgs>) {
     const referralTimestamp = new Date(
       Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
     )
-    console.log('referralTimestamp', referralTimestamp)
 
     if (referralTimestamp.getTime() > endTimestampExclusive.getTime()) {
       // this shouldn't happen if we only fetch and pass in referrals up to endTimestampExclusive
