@@ -10,6 +10,7 @@ export const protocols = [
   'fonbnk',
   'aave',
   'celo-transactions',
+  'rhino',
   'scout-game-v0',
 ] as const
 export type Protocol = (typeof protocols)[number]

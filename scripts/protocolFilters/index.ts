@@ -8,6 +8,7 @@ import { filter as filterVelodrome } from './velodrome'
 import { filter as filterFonbnk } from './fonbnk'
 import { filter as filterAave } from './aave'
 import { filter as filterCeloTransactions } from './celoTransactions'
+import { filter as filterRhino } from './rhino'
 import { filter as filterScoutGameV0 } from './scoutGameV0'
 
 export const protocolFilters: Record<Protocol, FilterFunction> = {
@@ -20,6 +21,7 @@ export const protocolFilters: Record<Protocol, FilterFunction> = {
   fonbnk: _createFilter(filterFonbnk),
   aave: _createFilter(filterAave),
   'celo-transactions': _createFilter(filterCeloTransactions),
+  rhino: _createFilter(filterRhino),
   'scout-game-v0': _createFilter(filterScoutGameV0),
 }
 
