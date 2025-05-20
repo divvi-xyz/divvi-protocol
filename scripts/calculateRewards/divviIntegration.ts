@@ -1,4 +1,4 @@
-import { writeFileSync } from 'fs'
+import { mkdirSync } from 'fs'
 import yargs from 'yargs'
 import {
   Address,
@@ -17,6 +17,8 @@ import { rewardPoolAbi } from '../../abis/RewardPool'
 import { fetchWithTimeout } from '../utils/fetchWithTimeout'
 import { getBlockRange } from '../calculateRevenue/protocols/utils/events'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
+import { toPeriodFolderName } from '../utils/dateFormatting'
+import { dirname, join } from 'path'
 
 const DIVVI_REGISTRY_CONTRACT_ADDRESS =
   '0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'
@@ -40,14 +42,10 @@ type AllowlistedConsumer = {
 async function getArgs() {
   const argv = await yargs
     .env('')
-    .option('output-file', {
-      alias: 'o',
-      description: 'output file',
+    .option('datadir', {
+      description: 'data directory',
       type: 'string',
-    })
-    .option('safe-transactions-file', {
-      description: 'safe transactions file',
-      type: 'string',
+      default: 'rewards',
     })
     .option('start-timestamp', {
       alias: 's',
@@ -65,6 +63,7 @@ async function getArgs() {
     }).argv
 
   return {
+    datadir: argv['datadir'],
     output: argv['output-file'] ?? 'divvi-integrator-rewards.csv',
     safeTransactionsFile: argv['safe-transactions-file'],
     startTimestamp: new Date(argv['start-timestamp']),
@@ -255,26 +254,28 @@ async function main() {
     endTimestampExclusive: args.endTimestampExclusive,
   })
 
-  writeFileSync(
-    args.output,
-    integratorAddresses
-      .map((address) => `${address},${DIVVI_REWARD_AMOUNT.toString()}`)
-      .join('\n'),
-  )
-  console.log(`Wrote results to ${args.output}`)
-
-  if (args.safeTransactionsFile) {
-    createAddRewardSafeTransactionJSON({
-      filePath: args.safeTransactionsFile,
-      rewardPoolAddress: DIVVI_REWARD_POOL_ADDRESS,
-      rewards: integratorAddresses.map((address) => ({
-        referrerId: address,
-        rewardAmount: DIVVI_REWARD_AMOUNT.toString(),
-      })),
+  const datadirPath = join(
+    args.datadir,
+    'divvi-integrators',
+    toPeriodFolderName({
       startTimestamp: args.startTimestamp,
       endTimestampExclusive: args.endTimestampExclusive,
-    })
-  }
+    }),
+  )
+  const outputPath = join(datadirPath, 'safe-transactions.json')
+  mkdirSync(dirname(outputPath), { recursive: true })
+
+  console.log(`Results:`, integratorAddresses)
+  createAddRewardSafeTransactionJSON({
+    filePath: outputPath,
+    rewardPoolAddress: DIVVI_REWARD_POOL_ADDRESS,
+    rewards: integratorAddresses.map((address) => ({
+      referrerId: address,
+      rewardAmount: DIVVI_REWARD_AMOUNT.toString(),
+    })),
+    startTimestamp: args.startTimestamp,
+    endTimestampExclusive: args.endTimestampExclusive,
+  })
 }
 
 main().catch((error) => {
