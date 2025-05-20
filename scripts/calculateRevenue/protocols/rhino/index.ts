@@ -63,7 +63,7 @@ export async function getUserBridges({
           const blockTimestampDate = new Date(Number(block.timestamp) * 1000)
           bridges.push({
             amount: args.amount,
-            tokenAddress: args.token,
+            tokenAddress: args.token.toLowerCase() as Address,
             timestamp: blockTimestampDate,
           })
         }
@@ -106,6 +106,8 @@ export async function getTotalRevenueUsdFromBridges({
     const tokenDecimals = tokenContract
       ? BigInt(await tokenContract.read.decimals())
       : NATIVE_TOKEN_DECIMALS
+
+    console.log(bridge)
 
     try {
       // Get the historical token prices
