@@ -1,11 +1,11 @@
 import { HypersyncClient, LogField } from '@envio-dev/hypersync-client'
 import { getBlock, getErc20Contract, getHyperSyncClient } from '../../../utils'
 import {
-import { getTokenHistoricalPrice } from '../utils/getHistoricalTokenPrice'
   NETWORK_ID_TO_BRIDGE_CONTRACT_ADDRESS,
   NATIVE_TOKEN_DECIMALS,
   BRIDGED_WITHDRAWAL_TOPIC,
 } from './constants'
+import { getTokenHistoricalPrice } from '../utils/getHistoricalTokenPrice'
 import { NetworkId } from '../../../types'
 import { BridgeTransaction } from './types'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
