@@ -4,8 +4,7 @@ import {
   QueryResponse,
 } from '@envio-dev/hypersync-client'
 import { getBlock, getErc20Contract, getHyperSyncClient } from '../../../utils'
-import { NetworkId, TokenPriceData } from '../../../types'
-import { fetchTokenPrices } from '../utils/tokenPrices'
+import { NetworkId } from '../../../types'
 import { BridgeTransaction } from './types'
 import {
   calculateRevenue,
@@ -13,6 +12,7 @@ import {
   getUserBridges,
 } from '.'
 import { Address } from 'viem'
+import { getTokenHistoricalPrice } from '../utils/getHistoricalTokenPrice'
 import { getBlockRange } from '../utils/events'
 
 jest.mock('../../../utils', () => ({
@@ -20,19 +20,8 @@ jest.mock('../../../utils', () => ({
   getBlock: jest.fn(),
   getErc20Contract: jest.fn(),
 }))
-jest.mock('../utils/tokenPrices')
 jest.mock('../utils/events')
-
-const mockTokenPrices: TokenPriceData[] = [
-  {
-    priceUsd: '3',
-    priceFetchedAt: new Date('2025-01-01T20:29:55.868Z').getTime(), // Just before the first transaction
-  },
-  {
-    priceUsd: '5',
-    priceFetchedAt: new Date('2025-01-02T20:29:55.868Z').getTime(), // Just before the second transaction
-  },
-]
+jest.mock('../utils/getHistoricalTokenPrice')
 
 const makeQueryResponse = (logs: Log[], nextBlock = 100): QueryResponse => ({
   data: {
@@ -159,13 +148,14 @@ describe('getTotalRevenueUsdFromBridges', () => {
         decimals: jest.fn().mockResolvedValue(4n),
       },
     } as unknown as ReturnType<typeof getErc20Contract>)
-    jest.mocked(fetchTokenPrices).mockResolvedValue(mockTokenPrices)
+    jest
+      .mocked(getTokenHistoricalPrice)
+      .mockResolvedValueOnce(3)
+      .mockResolvedValueOnce(5)
 
     const result = await getTotalRevenueUsdFromBridges({
       userBridges: MOCK_BRIDGE_TRANSACTIONS,
       networkId: NetworkId['celo-mainnet'],
-      startTimestamp: new Date('2025-01-01T00:00:00Z'),
-      endTimestampExclusive: new Date('2025-01-03T00:00:00Z'),
     })
 
     // The first transaction has value of 10000 with 4 decimals which is 1, with a price of 3 that is 3 USD
@@ -191,7 +181,7 @@ describe('calculateRevenue', () => {
         decimals: jest.fn().mockResolvedValue(4n),
       },
     } as unknown as ReturnType<typeof getErc20Contract>)
-    jest.mocked(fetchTokenPrices).mockResolvedValue(mockTokenPrices)
+    jest.mocked(getTokenHistoricalPrice).mockResolvedValue(3)
     jest.mocked(getBlock).mockImplementation(
       (_networkId: NetworkId, blockNumber: bigint) =>
         Promise.resolve({
@@ -219,8 +209,8 @@ describe('calculateRevenue', () => {
     expect(mockClient.get).toHaveBeenCalledTimes(3)
 
     // The first included transaction has hex value 0x2710 with 4 decimals which is 1, with a price of 3 that is 3 USD
-    // The second included transaction has hex value 0x88B8 with 4 decimals which is 3.5, with a price of 5 that is 17.5 USD
+    // The second included transaction has hex value 0x88B8 with 4 decimals which is 3.5, with a price of 3 that is 10.5 USD
     // Then each transaction is included three times, once for each supported network (since the mocked hypersync returns the same for each)
-    expect(result).toEqual(61.5)
+    expect(result).toEqual(40.5)
   })
 })
