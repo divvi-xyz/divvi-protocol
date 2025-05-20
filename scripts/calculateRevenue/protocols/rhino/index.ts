@@ -1,17 +1,18 @@
 import { HypersyncClient, LogField } from '@envio-dev/hypersync-client'
 import { getBlock, getErc20Contract, getHyperSyncClient } from '../../../utils'
 import {
-  BRIDGED_DEPOSIT_WITH_ID_TOPIC,
+import { getTokenHistoricalPrice } from '../utils/getHistoricalTokenPrice'
   NETWORK_ID_TO_BRIDGE_CONTRACT_ADDRESS,
-  BRIDGE_VOLUME_USD_PRECISION,
   NATIVE_TOKEN_DECIMALS,
+  BRIDGED_WITHDRAWAL_TOPIC,
 } from './constants'
 import { NetworkId } from '../../../types'
 import { BridgeTransaction } from './types'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
-import { Address, fromHex, isAddress, zeroAddress } from 'viem'
-import { getFirstBlockAtOrAfterTimestamp } from '../utils/events'
-import { getTokenHistoricalPrice } from '../utils/getHistoricalTokenPrice'
+import { Address, decodeEventLog, Hex, isAddress, zeroAddress } from 'viem'
+import { getBlockRange } from '../utils/events'
+import BigNumber from 'bignumber.js'
+import { rhinoFiBridgeAbi } from '../../../abis/RhinoFiBridge'
 
 export async function getUserBridges({
   address,
@@ -28,23 +29,20 @@ export async function getUserBridges({
   client: HypersyncClient
   networkId: NetworkId
 }): Promise<BridgeTransaction[]> {
-  const fromBlock = await getFirstBlockAtOrAfterTimestamp(
+  const { startBlock, endBlockExclusive } = await getBlockRange({
     networkId,
     startTimestamp,
-  )
-  const toBlock = await getFirstBlockAtOrAfterTimestamp(
-    networkId,
     endTimestampExclusive,
-  )
+  })
   const query = {
     logs: [
-      { address: [contractAddress], topics: [[BRIDGED_DEPOSIT_WITH_ID_TOPIC]] },
+      { address: [contractAddress], topics: [[BRIDGED_WITHDRAWAL_TOPIC]] },
     ],
     fieldSelection: {
-      log: [LogField.BlockNumber, LogField.Data],
+      log: [LogField.BlockNumber, LogField.Data, LogField.Topic0],
     },
-    fromBlock,
-    toBlock,
+    fromBlock: startBlock,
+    toBlock: endBlockExclusive,
   }
 
   const bridges: BridgeTransaction[] = []
@@ -52,18 +50,19 @@ export async function getUserBridges({
     for (const bridge of response.data.logs) {
       // Check that the logs contain all necessary fields
       if (bridge.blockNumber && bridge.data) {
-        const hexData = bridge.data.startsWith('0x')
-          ? bridge.data.slice(2)
-          : bridge.data
+        const { args } = decodeEventLog({
+          abi: rhinoFiBridgeAbi,
+          eventName: 'BridgedWithdrawal',
+          topics: bridge.topics as [],
+          data: bridge.data as Hex,
+        })
         // Check that the bridge is from the provided address (first block of data is sender)
-        if (
-          `0x${hexData.slice(24, 64)}`.toLowerCase() === address.toLowerCase()
-        ) {
+        if (args.user.toLowerCase() === address.toLowerCase()) {
           const block = await getBlock(networkId, BigInt(bridge.blockNumber))
           const blockTimestampDate = new Date(Number(block.timestamp) * 1000)
           bridges.push({
-            amount: fromHex(`0x${hexData.slice(192, 256)}`, 'bigint'), // Amount is 4th block of 32 bytes
-            tokenAddress: `0x${hexData.slice(152, 192)}`, // Token address is 3rd block of 32 bytes, skip first 12 to get 20 byte address
+            amount: args.amount,
+            tokenAddress: args.token.toLowerCase() as Address,
             timestamp: blockTimestampDate,
           })
         }
@@ -88,7 +87,7 @@ export async function getTotalRevenueUsdFromBridges({
     return 0
   }
 
-  let totalUsdContribution = 0
+  let totalUsdContribution = new BigNumber(0)
 
   // For each bridge compute the USD contribution and add to the total
   for (const bridge of userBridges) {
@@ -106,14 +105,10 @@ export async function getTotalRevenueUsdFromBridges({
         address: isNative ? undefined : bridge.tokenAddress,
         timestamp: bridge.timestamp,
       })
-      const partialUsdContribution =
-        Number(
-          (bridge.amount *
-            BigInt(tokenPriceUsd * 10 ** BRIDGE_VOLUME_USD_PRECISION)) /
-            10n ** tokenDecimals,
-        ) /
-        10 ** BRIDGE_VOLUME_USD_PRECISION
-      totalUsdContribution += partialUsdContribution
+      const partialUsdContribution = new BigNumber(bridge.amount)
+        .times(tokenPriceUsd)
+        .dividedBy(10n ** tokenDecimals)
+      totalUsdContribution = totalUsdContribution.plus(partialUsdContribution)
     } catch (error) {
       console.error(
         `Error fetching token price for ${networkId}:${isNative ? 'native' : bridge.tokenAddress} at ${bridge.timestamp}:`,
@@ -122,7 +117,7 @@ export async function getTotalRevenueUsdFromBridges({
     }
   }
 
-  return totalUsdContribution
+  return totalUsdContribution.toNumber()
 }
 
 export async function calculateRevenue({
@@ -138,7 +133,7 @@ export async function calculateRevenue({
     throw new Error('Invalid address')
   }
 
-  const totalRevenue = (
+  const totalRevenueUsd = (
     await Promise.all(
       (
         Object.entries(NETWORK_ID_TO_BRIDGE_CONTRACT_ADDRESS) as [
@@ -164,5 +159,5 @@ export async function calculateRevenue({
     )
   ).reduce((acc, curr) => acc + curr, 0) // Then sum across all networks
 
-  return totalRevenue
+  return totalRevenueUsd
 }

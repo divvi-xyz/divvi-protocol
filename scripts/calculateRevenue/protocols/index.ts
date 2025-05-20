@@ -9,6 +9,7 @@ import { calculateRevenue as calculateRevenueFonbnk } from './fonbnk'
 import { calculateRevenue as calculateRevenueAave } from './aave'
 import { calculateRevenue as calculateRevenueCeloTransactions } from './celoTransactions'
 import { calculateRevenue as calculateRevenueRhino } from './rhino'
+import { calculateRevenue as calculateRevenueScoutGameV0 } from './scoutGameV0'
 
 const calculateRevenueHandlers: Record<Protocol, CalculateRevenueFn> = {
   beefy: calculateRevenueBeefy,
@@ -21,6 +22,7 @@ const calculateRevenueHandlers: Record<Protocol, CalculateRevenueFn> = {
   aave: calculateRevenueAave,
   'celo-transactions': calculateRevenueCeloTransactions,
   rhino: calculateRevenueRhino,
+  'scout-game-v0': calculateRevenueScoutGameV0,
 }
 
 export default calculateRevenueHandlers

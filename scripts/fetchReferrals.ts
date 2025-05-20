@@ -61,10 +61,12 @@ async function getArgs() {
 async function main() {
   const args = await getArgs()
 
+  const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const referralEvents = await fetchReferralEvents(
     args.protocol,
     undefined,
     args.useStaging,
+    endTimestampExclusive,
   )
   const uniqueEvents = removeDuplicates(referralEvents)
   const builderAllowList = args.builderAllowList
@@ -81,7 +83,7 @@ async function main() {
   const outputEvents = filteredEvents.map((event) => ({
     referrerId: event.referrerId,
     userAddress: event.userAddress,
-    timestamp: event.timestamp,
+    timestamp: new Date(event.timestamp * 1000).toISOString(),
   }))
 
   const outputDir = join(

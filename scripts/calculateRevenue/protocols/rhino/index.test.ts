@@ -12,8 +12,8 @@ import {
   getUserBridges,
 } from '.'
 import { Address } from 'viem'
-import { getFirstBlockAtOrAfterTimestamp } from '../utils/events'
 import { getTokenHistoricalPrice } from '../utils/getHistoricalTokenPrice'
+import { getBlockRange } from '../utils/events'
 
 jest.mock('../../../utils', () => ({
   getHyperSyncClient: jest.fn(),
@@ -43,7 +43,7 @@ function createData({
   tokenAddress: Address
   amount: string
 }) {
-  return `0x${address.slice(2).padStart(64, '0')}${address.slice(2).padStart(64, '0')}${tokenAddress.slice(2).padStart(64, '0')}${amount.padStart(64, '0')}${'0'.padStart(64, '0')}`
+  return `0x${address.slice(2).padStart(64, '0')}${tokenAddress.slice(2).padStart(64, '0')}${amount.padStart(64, '0')}${'80'.padStart(64, '0')}${'0'.padStart(64, '0')}`
 }
 
 const MOCK_ADDRESS = '0x1234567890123456789012345678901234567890' as Address
@@ -58,7 +58,9 @@ const MOCK_HYPERSYNC_LOGS: Log[] = [
       tokenAddress: MOCK_TOKEN_ADDRESS,
       amount: '2710',
     }),
-    topics: [],
+    topics: [
+      '0xe4f4f1fb3534fe80225d336f6e5a73007dc992e5f6740152bf13ed2a08f3851a',
+    ],
   },
   {
     blockNumber: 17358606,
@@ -67,7 +69,9 @@ const MOCK_HYPERSYNC_LOGS: Log[] = [
       tokenAddress: MOCK_TOKEN_ADDRESS,
       amount: '88B8',
     }),
-    topics: [],
+    topics: [
+      '0xe4f4f1fb3534fe80225d336f6e5a73007dc992e5f6740152bf13ed2a08f3851a',
+    ],
   },
 ]
 
@@ -103,14 +107,17 @@ describe('getUserBridges', () => {
           timestamp: blockNumber * 100n,
         }) as unknown as ReturnType<typeof getBlock>,
     )
-    jest
-      .mocked(getFirstBlockAtOrAfterTimestamp)
-      .mockImplementation(
-        (_networkId: NetworkId, _timestamp: Date) =>
-          Promise.resolve(0) as unknown as ReturnType<
-            typeof getFirstBlockAtOrAfterTimestamp
-          >,
-      )
+    jest.mocked(getBlockRange).mockImplementation(
+      (_args: {
+        networkId: NetworkId
+        startTimestamp: Date
+        endTimestampExclusive: Date
+      }) =>
+        Promise.resolve({
+          startBlock: 0,
+          endBlock: 0,
+        }) as unknown as ReturnType<typeof getBlockRange>,
+    )
 
     const result = await getUserBridges({
       address: MOCK_ADDRESS,
@@ -181,14 +188,17 @@ describe('calculateRevenue', () => {
           timestamp: blockNumber * 100n,
         }) as unknown as ReturnType<typeof getBlock>,
     )
-    jest
-      .mocked(getFirstBlockAtOrAfterTimestamp)
-      .mockImplementation(
-        (_networkId: NetworkId, _timestamp: Date) =>
-          Promise.resolve(0) as unknown as ReturnType<
-            typeof getFirstBlockAtOrAfterTimestamp
-          >,
-      )
+    jest.mocked(getBlockRange).mockImplementation(
+      (_args: {
+        networkId: NetworkId
+        startTimestamp: Date
+        endTimestampExclusive: Date
+      }) =>
+        Promise.resolve({
+          startBlock: 0,
+          endBlock: 0,
+        }) as unknown as ReturnType<typeof getBlockRange>,
+    )
 
     const result = await calculateRevenue({
       address: MOCK_ADDRESS,
