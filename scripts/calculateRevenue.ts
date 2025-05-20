@@ -5,7 +5,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import yargs from 'yargs'
 import { protocols } from './types'
 import { toPeriodFolderName } from './utils/dateFormatting'
-import { dirname } from 'path'
+import { dirname, join } from 'path'
 
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_SECONDS = 30 * 60 // 30 minutes
@@ -15,12 +15,16 @@ async function main(args: ReturnType<typeof parseArgs>) {
   const endTimestampExclusive = new Date(args['end-timestamp'])
   const protocol = args.protocol
 
-  const folderPath = `rewards/${protocol}/${toPeriodFolderName({
-    startTimestamp,
-    endTimestampExclusive,
-  })}`
-  const inputFile = `${folderPath}/referrals.csv`
-  const outputFile = `${folderPath}/revenue.csv`
+  const folderPath = join(
+    args.datadir,
+    protocol,
+    toPeriodFolderName({
+      startTimestamp,
+      endTimestampExclusive,
+    }),
+  )
+  const inputFile = join(folderPath, 'referrals.csv')
+  const outputFile = join(folderPath, 'revenue.csv')
 
   const eligibleUsers = parse(readFileSync(inputFile, 'utf-8').toString(), {
     skip_empty_lines: true,
@@ -97,6 +101,10 @@ function parseArgs() {
         'End timestamp (exclusive) for revenue calculation (new Date() compatible epoch milliseconds or string)',
       type: 'string',
       demandOption: true,
+    })
+    .option('datadir', {
+      description: 'Directory to save data',
+      default: 'rewards',
     })
     .strict()
     .parseSync()

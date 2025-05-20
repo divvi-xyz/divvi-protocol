@@ -1,30 +1,28 @@
 import yargs from 'yargs'
 import { parse } from 'csv-parse/sync'
 import { readFileSync } from 'fs'
-import { parseEther } from 'viem'
+import { formatEther, parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { toPeriodFolderName } from '../utils/dateFormatting'
 import { join } from 'path'
 import { calculateProportionalPrizeContest } from './proportionalPrizeContest'
 
-// proof-of-impact campaign parameters
-// May 8 2025 12:00:00 AM UTC
-const proofOfImpactStartTimestamp = '1746687600000'
-// May 29 2025 12:00:00 AM UTC
-const proofOfImpactendTimestampExclusive = '1748502000000'
-const totalRewards = parseEther('14839')
-const REWARD_POOL_ADDRESS = '0xE2bEdafB063e0B7f12607ebcf4636e2690A427a3' // on Celo mainnet
+const scoutGameStartTimestamp = new Date('Tue Jun 03 2025 07:00:00 GMT+0000')
+const scoutGameEndTimestampExclusive = new Date(
+  'Fri Jul 02 2025 07:00:00 GMT+0000',
+)
+// TODO(sbw): update this after we deposit total rewards on Base
+const totalRewards = parseEther('1000')
+const REWARD_POOL_ADDRESS = '0x6F599b879541d289e344e325f4D9badf8c5bB49E' // on Base
 
 const rewardsPerMillisecond = new BigNumber(totalRewards).div(
-  new BigNumber(proofOfImpactendTimestampExclusive).minus(
-    new BigNumber(proofOfImpactStartTimestamp),
+  new BigNumber(scoutGameStartTimestamp.getTime()).minus(
+    new BigNumber(scoutGameEndTimestampExclusive.getTime()),
   ),
 )
 
-export const _rewardsPerMillisecond = rewardsPerMillisecond // for testing
-
-export function calculateRewardsProofOfImpact({
+export function calculateRewards({
   kpiData,
   startTimestamp,
   endTimestampExclusive,
@@ -81,7 +79,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
 
   const folderPath = join(
     args.datadir,
-    'celo-transactions',
+    'scout-game-v0',
     toPeriodFolderName({
       startTimestamp,
       endTimestampExclusive,
@@ -96,7 +94,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     columns: true,
   }) as KpiRow[]
 
-  const rewards = calculateRewardsProofOfImpact({
+  const rewards = calculateRewards({
     kpiData,
     startTimestamp,
     endTimestampExclusive,
@@ -106,7 +104,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     'rewards:',
     rewards.map((r) => ({
       referrerId: r.referrerId,
-      rewardAmount: BigNumber(r.rewardAmount).shiftedBy(-18).toFixed(0),
+      rewardAmount: formatEther(BigInt(r.rewardAmount)),
     })),
   )
 

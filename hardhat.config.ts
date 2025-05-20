@@ -52,7 +52,7 @@ const config: HardhatUserConfig = {
       chainId: 10,
     },
     base: {
-      url: 'https://rpc.ankr.com/base',
+      url: 'https://base-rpc.publicnode.com',
       accounts,
       chainId: 8453,
     },
