@@ -119,7 +119,7 @@ describe('getUserBridges', () => {
         }) as unknown as ReturnType<typeof getBlock>,
     )
     jest.mocked(getBlockRange).mockImplementation(
-      ({}: {
+      (_args: {
         networkId: NetworkId
         startTimestamp: Date
         endTimestampExclusive: Date
@@ -199,7 +199,7 @@ describe('calculateRevenue', () => {
         }) as unknown as ReturnType<typeof getBlock>,
     )
     jest.mocked(getBlockRange).mockImplementation(
-      ({}: {
+      (_args: {
         networkId: NetworkId
         startTimestamp: Date
         endTimestampExclusive: Date
