@@ -1,7 +1,10 @@
 import { fetchReferralEvents, removeDuplicates } from './referrals'
 import { ReferralEvent } from '../types'
 import { getHyperSyncClient } from './index'
+import { getFirstBlockAtOrAfterTimestamp } from '../calculateRevenue/protocols/utils/events'
+
 jest.mock('./index')
+jest.mock('../calculateRevenue/protocols/utils/events')
 
 describe('fetchReferralEvents', () => {
   it('should fetch all referral events', async () => {
@@ -79,7 +82,18 @@ describe('fetchReferralEvents', () => {
       getEvents: mockGetEvents,
     } as unknown as ReturnType<typeof getHyperSyncClient>)
 
-    const events = await fetchReferralEvents('celo-transactions')
+    const endTimestamp = new Date('2024-01-01')
+    const mockFirstBlockAfterTimestamp = 135226240
+    jest
+      .mocked(getFirstBlockAtOrAfterTimestamp)
+      .mockResolvedValue(mockFirstBlockAfterTimestamp)
+
+    const events = await fetchReferralEvents(
+      'celo-transactions',
+      undefined,
+      false,
+      endTimestamp,
+    )
     expect(events).toEqual([
       {
         userAddress: '0x1234567890abcdef1234567890abcdef12345678',
@@ -100,6 +114,15 @@ describe('fetchReferralEvents', () => {
         protocol: 'celo-transactions',
       },
     ])
+    expect(getFirstBlockAtOrAfterTimestamp).toHaveBeenCalledWith(
+      'op-mainnet',
+      endTimestamp,
+    )
+    expect(mockGetEvents).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toBlock: mockFirstBlockAfterTimestamp,
+      }),
+    )
   })
 })
 
