@@ -64,8 +64,6 @@ async function getArgs() {
 
   return {
     datadir: argv['datadir'],
-    output: argv['output-file'] ?? 'divvi-integrator-rewards.csv',
-    safeTransactionsFile: argv['safe-transactions-file'],
     startTimestamp: new Date(argv['start-timestamp']),
     endTimestampExclusive: new Date(argv['end-timestamp']),
   }
