@@ -58,9 +58,7 @@ export async function getUserBridges({
           data: bridge.data as Hex,
         })
         // Check that the bridge is from the provided address (first block of data is sender)
-        if (
-          args.user.toLowerCase() === address.toLowerCase()
-        ) {
+        if (args.user.toLowerCase() === address.toLowerCase()) {
           const block = await getBlock(networkId, BigInt(bridge.blockNumber))
           const blockTimestampDate = new Date(Number(block.timestamp) * 1000)
           bridges.push({

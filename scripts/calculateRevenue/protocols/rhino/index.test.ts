@@ -69,7 +69,9 @@ const MOCK_HYPERSYNC_LOGS: Log[] = [
       tokenAddress: MOCK_TOKEN_ADDRESS,
       amount: '2710',
     }),
-    topics: ['0xe4f4f1fb3534fe80225d336f6e5a73007dc992e5f6740152bf13ed2a08f3851a'],
+    topics: [
+      '0xe4f4f1fb3534fe80225d336f6e5a73007dc992e5f6740152bf13ed2a08f3851a',
+    ],
   },
   {
     blockNumber: 17358606,
@@ -78,7 +80,9 @@ const MOCK_HYPERSYNC_LOGS: Log[] = [
       tokenAddress: MOCK_TOKEN_ADDRESS,
       amount: '88B8',
     }),
-    topics: ['0xe4f4f1fb3534fe80225d336f6e5a73007dc992e5f6740152bf13ed2a08f3851a'],
+    topics: [
+      '0xe4f4f1fb3534fe80225d336f6e5a73007dc992e5f6740152bf13ed2a08f3851a',
+    ],
   },
 ]
 
@@ -114,19 +118,17 @@ describe('getUserBridges', () => {
           timestamp: blockNumber * 100n,
         }) as unknown as ReturnType<typeof getBlock>,
     )
-    jest
-      .mocked(getBlockRange)
-      .mockImplementation(
-        ({}: {
-          networkId: NetworkId
-          startTimestamp: Date
-          endTimestampExclusive: Date
-        }) =>
-          Promise.resolve({
-            startBlock: 0,
-            endBlock: 0,
-          }) as unknown as ReturnType<typeof getBlockRange>,
-      )
+    jest.mocked(getBlockRange).mockImplementation(
+      ({}: {
+        networkId: NetworkId
+        startTimestamp: Date
+        endTimestampExclusive: Date
+      }) =>
+        Promise.resolve({
+          startBlock: 0,
+          endBlock: 0,
+        }) as unknown as ReturnType<typeof getBlockRange>,
+    )
 
     const result = await getUserBridges({
       address: MOCK_ADDRESS,
@@ -196,19 +198,17 @@ describe('calculateRevenue', () => {
           timestamp: blockNumber * 100n,
         }) as unknown as ReturnType<typeof getBlock>,
     )
-    jest
-      .mocked(getBlockRange)
-      .mockImplementation(
-        ({}: {
-          networkId: NetworkId
-          startTimestamp: Date
-          endTimestampExclusive: Date
-        }) =>
-          Promise.resolve({
-            startBlock: 0,
-            endBlock: 0,
-          }) as unknown as ReturnType<typeof getBlockRange>,
-      )
+    jest.mocked(getBlockRange).mockImplementation(
+      ({}: {
+        networkId: NetworkId
+        startTimestamp: Date
+        endTimestampExclusive: Date
+      }) =>
+        Promise.resolve({
+          startBlock: 0,
+          endBlock: 0,
+        }) as unknown as ReturnType<typeof getBlockRange>,
+    )
 
     const result = await calculateRevenue({
       address: MOCK_ADDRESS,
