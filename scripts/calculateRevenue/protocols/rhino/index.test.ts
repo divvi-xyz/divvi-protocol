@@ -13,7 +13,7 @@ import {
   getUserBridges,
 } from '.'
 import { Address } from 'viem'
-import { getFirstBlockAtOrAfterTimestamp } from '../utils/events'
+import { getBlockRange } from '../utils/events'
 
 jest.mock('../../../utils', () => ({
   getHyperSyncClient: jest.fn(),
@@ -115,12 +115,17 @@ describe('getUserBridges', () => {
         }) as unknown as ReturnType<typeof getBlock>,
     )
     jest
-      .mocked(getFirstBlockAtOrAfterTimestamp)
+      .mocked(getBlockRange)
       .mockImplementation(
-        (_networkId: NetworkId, _timestamp: Date) =>
-          Promise.resolve(0) as unknown as ReturnType<
-            typeof getFirstBlockAtOrAfterTimestamp
-          >,
+        ({}: {
+          networkId: NetworkId
+          startTimestamp: Date
+          endTimestampExclusive: Date
+        }) =>
+          Promise.resolve({
+            startBlock: 0,
+            endBlock: 0,
+          }) as unknown as ReturnType<typeof getBlockRange>,
       )
 
     const result = await getUserBridges({
@@ -192,12 +197,17 @@ describe('calculateRevenue', () => {
         }) as unknown as ReturnType<typeof getBlock>,
     )
     jest
-      .mocked(getFirstBlockAtOrAfterTimestamp)
+      .mocked(getBlockRange)
       .mockImplementation(
-        (_networkId: NetworkId, _timestamp: Date) =>
-          Promise.resolve(0) as unknown as ReturnType<
-            typeof getFirstBlockAtOrAfterTimestamp
-          >,
+        ({}: {
+          networkId: NetworkId
+          startTimestamp: Date
+          endTimestampExclusive: Date
+        }) =>
+          Promise.resolve({
+            startBlock: 0,
+            endBlock: 0,
+          }) as unknown as ReturnType<typeof getBlockRange>,
       )
 
     const result = await calculateRevenue({

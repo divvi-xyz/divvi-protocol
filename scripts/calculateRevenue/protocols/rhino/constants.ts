@@ -2,8 +2,6 @@ import { Address, encodeEventTopics } from 'viem'
 import { NetworkId } from '../../../types'
 import { rhinoFiBridgeAbi } from '../../../abis/RhinoFiBridge'
 
-export const BRIDGE_VOLUME_USD_PRECISION = 8
-
 export const NATIVE_TOKEN_DECIMALS = 18n
 
 // Contract addresses on different chains
