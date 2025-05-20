@@ -4,6 +4,7 @@ import { Address, decodeEventLog, encodeEventTopics, Hex, pad } from 'viem'
 import { BlockField, LogField, Query } from '@envio-dev/hypersync-client'
 import { paginateEventsQuery } from './hypersyncPagination'
 import { divviRegistryAbi } from '../../abis/DivviRegistry'
+import { getFirstBlockAtOrAfterTimestamp } from '../calculateRevenue/protocols/utils/events'
 
 const REGISTRY_CONTRACT_ADDRESS = '0xedb51a8c390fc84b1c2a40e0ae9c9882fa7b7277'
 const STAGING_REGISTRY_CONTRACT_ADDRESS =
@@ -38,6 +39,7 @@ export async function fetchReferralEvents(
   protocol: Protocol,
   referrerIds?: Address[],
   useStaging = false,
+  endTimestampExclusive?: Date,
 ): Promise<ReferralEvent[]> {
   const referralEvents: ReferralEvent[] = []
   console.log('Fetching referral events for protocol:', protocol)
@@ -58,10 +60,18 @@ export async function fetchReferralEvents(
     eventName: 'ReferralRegistered',
   })
 
+  const endBlockExclusive = endTimestampExclusive
+    ? await getFirstBlockAtOrAfterTimestamp(
+        REGISTRY_NETWORK_ID,
+        endTimestampExclusive,
+      )
+    : undefined
+
   const hypersyncClient = getHyperSyncClient(REGISTRY_NETWORK_ID)
 
   const hypersyncQuery: Query = {
     fromBlock: REGISTRY_START_BLOCK,
+    ...(endBlockExclusive && { toBlock: endBlockExclusive }),
     logs: [
       {
         address: [registryContractAddress],
