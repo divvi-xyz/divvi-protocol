@@ -91,7 +91,7 @@ export async function getTotalRevenueUsdFromBridges({
 
   // For each bridge compute the USD contribution and add to the total
   for (const bridge of userBridges) {
-    // Get the token decimals
+    // Rhino.fi uses 0 address for native https://github.com/rhinofi/contracts_public/blob/master/bridge-deposit/DVFDepositContract.sol#L176-L182
     const isNative = bridge.tokenAddress === zeroAddress
     const tokenContract = isNative
       ? undefined
