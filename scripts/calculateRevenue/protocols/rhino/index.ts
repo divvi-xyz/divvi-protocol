@@ -10,9 +10,10 @@ import { BridgeTransaction } from './types'
 import { fetchTokenPrices } from '../utils/tokenPrices'
 import { getTokenPrice } from '../beefy'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
-import { Address, fromHex, isAddress, zeroAddress } from 'viem'
+import { Address, decodeEventLog, Hex, isAddress, zeroAddress } from 'viem'
 import { getBlockRange } from '../utils/events'
 import BigNumber from 'bignumber.js'
+import { rhinoFiBridgeAbi } from '../../../abis/RhinoFiBridge'
 
 export async function getUserBridges({
   address,
@@ -39,7 +40,7 @@ export async function getUserBridges({
       { address: [contractAddress], topics: [[BRIDGED_WITHDRAWAL_TOPIC]] },
     ],
     fieldSelection: {
-      log: [LogField.BlockNumber, LogField.Data],
+      log: [LogField.BlockNumber, LogField.Data, LogField.Topic0],
     },
     fromBlock: startBlock,
     toBlock: endBlockExclusive,
@@ -50,18 +51,21 @@ export async function getUserBridges({
     for (const bridge of response.data.logs) {
       // Check that the logs contain all necessary fields
       if (bridge.blockNumber && bridge.data) {
-        const hexData = bridge.data.startsWith('0x')
-          ? bridge.data.slice(2)
-          : bridge.data
+        const { args } = decodeEventLog({
+          abi: rhinoFiBridgeAbi,
+          eventName: 'BridgedWithdrawal',
+          topics: bridge.topics as [],
+          data: bridge.data as Hex,
+        })
         // Check that the bridge is from the provided address (first block of data is sender)
         if (
-          `0x${hexData.slice(24, 64)}`.toLowerCase() === address.toLowerCase()
+          args.user.toLowerCase() === address.toLowerCase()
         ) {
           const block = await getBlock(networkId, BigInt(bridge.blockNumber))
           const blockTimestampDate = new Date(Number(block.timestamp) * 1000)
           bridges.push({
-            amount: fromHex(`0x${hexData.slice(128, 192)}`, 'bigint'), // Amount is 3rd block of 32 bytes
-            tokenAddress: `0x${hexData.slice(88, 128)}`, // Token address is 2nd block of 32 bytes, skip first 12 to get 20 byte address
+            amount: args.amount,
+            tokenAddress: args.token,
             timestamp: blockTimestampDate,
           })
         }

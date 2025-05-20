@@ -54,7 +54,7 @@ function createData({
   tokenAddress: Address
   amount: string
 }) {
-  return `0x${address.slice(2).padStart(64, '0')}${tokenAddress.slice(2).padStart(64, '0')}${amount.padStart(64, '0')}${'0'.padStart(64, '0')}`
+  return `0x${address.slice(2).padStart(64, '0')}${tokenAddress.slice(2).padStart(64, '0')}${amount.padStart(64, '0')}${'80'.padStart(64, '0')}${'0'.padStart(64, '0')}`
 }
 
 const MOCK_ADDRESS = '0x1234567890123456789012345678901234567890' as Address
@@ -69,7 +69,7 @@ const MOCK_HYPERSYNC_LOGS: Log[] = [
       tokenAddress: MOCK_TOKEN_ADDRESS,
       amount: '2710',
     }),
-    topics: [],
+    topics: ['0xe4f4f1fb3534fe80225d336f6e5a73007dc992e5f6740152bf13ed2a08f3851a'],
   },
   {
     blockNumber: 17358606,
@@ -78,7 +78,7 @@ const MOCK_HYPERSYNC_LOGS: Log[] = [
       tokenAddress: MOCK_TOKEN_ADDRESS,
       amount: '88B8',
     }),
-    topics: [],
+    topics: ['0xe4f4f1fb3534fe80225d336f6e5a73007dc992e5f6740152bf13ed2a08f3851a'],
   },
 ]
 
