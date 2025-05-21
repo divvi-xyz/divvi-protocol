@@ -53,7 +53,7 @@ const campaigns: Campaign[] = [
 ]
 
 // Some buffer for the current time in case the latest block is not yet available from DeFiLlama
-const NOW_BUFFER_IN_MS = 1000 * 60 * 1 // 1 minute
+const NOW_BUFFER_IN_MS = 1000 * 60 * 5 // 5 minutes
 
 const executionStartTime = Date.now()
 const endTimestampExclusive = new Date(
