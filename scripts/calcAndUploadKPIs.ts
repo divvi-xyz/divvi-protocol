@@ -1,7 +1,7 @@
 import { Protocol } from './types'
 import { fetchReferrals } from './fetchReferrals'
 import { protocolFilters } from './protocolFilters'
-import { calculateRevenue } from './calculateRevenue'
+import { calculateKpi } from './calculateKpi'
 import { join } from 'path'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
@@ -112,21 +112,21 @@ async function main() {
       protocolFilter: protocolFilters[campaign.protocol],
     })
     console.log(
-      `Processed campaign ${campaign.protocol} in ${Date.now() - fetchReferralsStartTime}ms`,
+      `Fetched referrals for campaign ${campaign.protocol} in ${Date.now() - fetchReferralsStartTime}ms`,
     )
 
     const calculateRevenueStartTime = Date.now()
-    await calculateRevenue({
+    await calculateKpi({
       protocol: campaign.protocol,
       startTimestamp: currentPeriod.startTimestamp,
       endTimestampExclusive,
       outputDir,
     })
     console.log(
-      `Calculated revenue for campaign ${campaign.protocol} in ${Date.now() - calculateRevenueStartTime}ms`,
+      `Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateRevenueStartTime}ms`,
     )
 
-    const outputFilePath = join(outputDir, 'revenue.csv') // this is the output file of calculateRevenue
+    const outputFilePath = join(outputDir, 'kpi.csv') // this is the output file of calculateKpi
     return outputFilePath
   })
 

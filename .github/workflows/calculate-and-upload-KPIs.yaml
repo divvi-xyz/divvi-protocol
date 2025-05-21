@@ -5,7 +5,7 @@ on:
   #   - cron: '*/10 * * * *' # Runs every 10 minutes
   pull_request:
     branches:
-      - main
+      - kathy/scripts-reuse
 
 jobs:
   calculate-and-upload-KPIs:
