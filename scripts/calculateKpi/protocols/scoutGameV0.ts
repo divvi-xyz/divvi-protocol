@@ -7,33 +7,36 @@ export const calculateKpi: CalculateKpiFn = async ({
   startTimestamp,
   endTimestampExclusive,
 }) => {
-  const { startBlock, endBlockExclusive } = await getBlockRange({
-    networkId: NetworkId['celo-mainnet'],
-    startTimestamp,
-    endTimestampExclusive,
-  })
+  const networkIds = [
+    NetworkId['base-mainnet'],
+    NetworkId['celo-mainnet'],
+    NetworkId['polygon-pos-mainnet'],
+  ]
 
-  const [baseTransactions, celoTransactions, polygonTransactions] =
-    await Promise.all([
-      fetchTotalTransactions({
-        networkId: NetworkId['base-mainnet'],
-        users: [address],
-        startBlock,
-        endBlockExclusive,
+  const blockRanges = await Promise.all(
+    networkIds.map((networkId) =>
+      getBlockRange({
+        networkId,
+        startTimestamp,
+        endTimestampExclusive,
       }),
-      fetchTotalTransactions({
-        networkId: NetworkId['celo-mainnet'],
-        users: [address],
-        startBlock,
-        endBlockExclusive,
-      }),
-      fetchTotalTransactions({
-        networkId: NetworkId['polygon-pos-mainnet'],
-        users: [address],
-        startBlock,
-        endBlockExclusive,
-      }),
-    ])
+    ),
+  )
 
-  return baseTransactions + celoTransactions + polygonTransactions
+  const transactions = await Promise.all(
+    networkIds.map((networkId, index) =>
+      fetchTotalTransactions({
+        networkId,
+        users: [address],
+        startBlock: blockRanges[index].startBlock,
+        endBlockExclusive: blockRanges[index].endBlockExclusive,
+      }),
+    ),
+  )
+
+  let totalTransactions = 0
+  for (const count of transactions) {
+    totalTransactions += count
+  }
+  return totalTransactions
 }
