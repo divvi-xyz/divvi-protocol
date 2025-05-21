@@ -21,9 +21,9 @@ export function calculateRewardsCeloPG({
   const referrerKpis = kpiData.reduce(
     (acc, row) => {
       if (!(row.referrerId in acc)) {
-        acc[row.referrerId] = BigInt(row.revenue)
+        acc[row.referrerId] = BigInt(row.kpi)
       } else {
-        acc[row.referrerId] += BigInt(row.revenue)
+        acc[row.referrerId] += BigInt(row.kpi)
       }
       return acc
     },
@@ -80,7 +80,7 @@ function parseArgs() {
 interface KpiRow {
   referrerId: string
   userAddress: string
-  revenue: string
+  kpi: string
 }
 
 async function main(args: ReturnType<typeof parseArgs>) {
@@ -95,7 +95,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
       endTimestampExclusive,
     }),
   )
-  const inputPath = join(folderPath, 'revenue.csv')
+  const inputPath = join(folderPath, 'kpi.csv')
   const outputPath = join(folderPath, 'safe-transactions.json')
   const rewardAmount = args['reward-amount']
 

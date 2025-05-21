@@ -126,7 +126,7 @@ export async function calculateVaultRevenue(
   return totalUsdContribution
 }
 
-export async function calculateRevenue({
+export async function calculateKpi({
   address,
   startTimestamp,
   endTimestampExclusive,
