@@ -5,6 +5,7 @@ import { calculateKpi } from './calculateKpi'
 import { join } from 'path'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
+import yargs from 'yargs'
 
 interface Campaign {
   protocol: Protocol
@@ -32,23 +33,23 @@ const campaigns: Campaign[] = [
       },
     ],
   },
-  // {
-  //   protocol: 'celo-pg',
-  //   rewardsPeriods: [
-  //     {
-  //       startTimestamp: '2025-05-15T00:00:00Z',
-  //       endTimestampExclusive: '2025-06-1T00:00:00Z',
-  //     },
-  //     {
-  //       startTimestamp: '2025-06-01T00:00:00Z',
-  //       endTimestampExclusive: '2025-07-01T00:00:00Z',
-  //     },
-  //     {
-  //       startTimestamp: '2025-07-01T00:00:00Z',
-  //       endTimestampExclusive: '2025-08-01T00:00:00Z',
-  //     },
-  //   ],
-  // },
+  {
+    protocol: 'celo-pg',
+    rewardsPeriods: [
+      {
+        startTimestamp: '2025-05-15T00:00:00Z',
+        endTimestampExclusive: '2025-06-1T00:00:00Z',
+      },
+      {
+        startTimestamp: '2025-06-01T00:00:00Z',
+        endTimestampExclusive: '2025-07-01T00:00:00Z',
+      },
+      {
+        startTimestamp: '2025-07-01T00:00:00Z',
+        endTimestampExclusive: '2025-08-01T00:00:00Z',
+      },
+    ],
+  },
 ]
 
 // Some buffer for the current time in case the latest block is not yet available from DeFiLlama
@@ -59,7 +60,19 @@ const endTimestampExclusive = new Date(
   executionStartTime - NOW_BUFFER_IN_MS,
 ).toISOString()
 
-async function main() {
+async function getArgs() {
+  const argv = await yargs.env('').option('dry-run', {
+    description: 'Only show what would be uploaded without actually uploading',
+    type: 'boolean',
+    default: false,
+  }).argv
+
+  return {
+    dryRun: argv['dry-run'],
+  }
+}
+
+async function calcAndUploadKPIs(args: Awaited<ReturnType<typeof getArgs>>) {
   const kpiResults = campaigns.map(async (campaign) => {
     const campaignStartTimestamp = Date.parse(
       campaign.rewardsPeriods[0].startTimestamp,
@@ -115,7 +128,7 @@ async function main() {
       `Fetched referrals for campaign ${campaign.protocol} in ${Date.now() - fetchReferralsStartTime}ms`,
     )
 
-    const calculateRevenueStartTime = Date.now()
+    const calculateKpiStartTime = Date.now()
     await calculateKpi({
       protocol: campaign.protocol,
       startTimestamp: currentPeriod.startTimestamp,
@@ -123,21 +136,24 @@ async function main() {
       outputDir,
     })
     console.log(
-      `Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateRevenueStartTime}ms`,
+      `Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,
     )
 
     const outputFilePath = join(outputDir, 'kpi.csv') // this is the output file of calculateKpi
     return outputFilePath
   })
 
-  const revenueFilePaths = await Promise.all(kpiResults)
-  await uploadFilesToGCS(
-    revenueFilePaths.filter((path) => path !== null),
-    'divvi-campaign-data',
-  )
+  const kpiFilePaths = await Promise.all(kpiResults)
+  const validPaths = kpiFilePaths.filter((path) => path !== null)
+  await uploadFilesToGCS(validPaths, 'divvi-campaign-data', args.dryRun)
 }
 
-main().catch((error) => {
-  console.error(error)
-  process.exitCode = 1
-})
+// Only run if this file is being run directly
+if (require.main === module) {
+  getArgs()
+    .then(calcAndUploadKPIs)
+    .catch((error) => {
+      console.error(error)
+      process.exitCode = 1
+    })
+}
