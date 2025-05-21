@@ -1,8 +1,8 @@
 import { NetworkId } from '../../../types'
 import { getBlockRange } from '../utils/events'
-import { fetchTotalTransactions } from '../utils/networks'
+import { fetchTotalTransactionFees } from '../utils/networks'
 
-export async function calculateRevenue({
+export async function calculateKpi({
   address,
   startTimestamp,
   endTimestampExclusive,
@@ -17,7 +17,7 @@ export async function calculateRevenue({
     endTimestampExclusive,
   })
 
-  return await fetchTotalTransactions({
+  return await fetchTotalTransactionFees({
     networkId: NetworkId['celo-mainnet'],
     users: [address],
     startBlock,

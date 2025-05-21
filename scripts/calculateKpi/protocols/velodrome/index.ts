@@ -1,10 +1,10 @@
 import {
-  AERODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
-  AERODROME_NETWORK_ID,
+  VELODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
+  VELODROME_NETWORK_ID,
 } from './constants'
 import { calculateRevenueDrome } from '../utils/drome/calculateRevenueDrome'
 
-export async function calculateRevenue({
+export async function calculateKpi({
   address,
   startTimestamp,
   endTimestampExclusive,
@@ -18,7 +18,7 @@ export async function calculateRevenue({
     startTimestamp,
     endTimestampExclusive,
     supportedLiquidityPoolAddresses:
-      AERODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
-    networkId: AERODROME_NETWORK_ID,
+      VELODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
+    networkId: VELODROME_NETWORK_ID,
   })
 }

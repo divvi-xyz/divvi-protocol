@@ -120,7 +120,7 @@ export async function getTotalRevenueUsdFromBridges({
   return totalUsdContribution.toNumber()
 }
 
-export async function calculateRevenue({
+export async function calculateKpi({
   address,
   startTimestamp,
   endTimestampExclusive,

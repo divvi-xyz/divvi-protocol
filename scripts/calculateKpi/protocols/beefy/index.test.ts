@@ -6,7 +6,7 @@ import {
 import { getStrategyContract } from '../utils/viem'
 import { NetworkId, TokenPriceData } from '../../../types'
 import { Address } from 'viem'
-import { calculateVaultRevenue, calculateRevenue } from './index'
+import { calculateVaultRevenue, calculateKpi } from './index'
 import { getVaults } from './getVaults'
 import { getErc20Contract } from '../../../utils'
 import { fetchTokenPrices } from '../utils/tokenPrices'
@@ -180,7 +180,7 @@ describe('Beefy revenue calculation', () => {
     })
   })
 
-  describe('calculateRevenue', () => {
+  describe('calculateKpi', () => {
     it('should return results for multiple native tokens across multiple chains', async () => {
       const mockVaultsInfo: VaultsInfo = {
         'beefy:vault:arbitrum:0x0000000000000000000000000000000000000000':
@@ -232,7 +232,7 @@ describe('Beefy revenue calculation', () => {
           }
         })
 
-      const result = await calculateRevenue({
+      const result = await calculateKpi({
         address: '0x123',
         startTimestamp: new Date(0),
         endTimestampExclusive: new Date(100),

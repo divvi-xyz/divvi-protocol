@@ -39,7 +39,7 @@ export interface TokenPriceData {
   priceFetchedAt: number
 }
 
-export type CalculateRevenueFn = (params: {
+export type CalculateKpiFn = (params: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date

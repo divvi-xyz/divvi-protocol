@@ -1,10 +1,10 @@
 import { fetchReferralEvents, removeDuplicates } from './referrals'
 import { ReferralEvent } from '../types'
 import { getHyperSyncClient } from './index'
-import { getFirstBlockAtOrAfterTimestamp } from '../calculateRevenue/protocols/utils/events'
+import { getFirstBlockAtOrAfterTimestamp } from '../calculateKpi/protocols/utils/events'
 
 jest.mock('./index')
-jest.mock('../calculateRevenue/protocols/utils/events')
+jest.mock('../calculateKpi/protocols/utils/events')
 
 describe('fetchReferralEvents', () => {
   it('should fetch all referral events', async () => {

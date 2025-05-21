@@ -10,9 +10,9 @@ export function calculateTestRewards({ kpiData }: { kpiData: KpiRow[] }) {
   const referrerKpis = kpiData.reduce(
     (acc, row) => {
       if (!(row.referrerId in acc)) {
-        acc[row.referrerId] = BigInt(row.revenue)
+        acc[row.referrerId] = BigInt(row.kpi)
       } else {
-        acc[row.referrerId] += BigInt(row.revenue)
+        acc[row.referrerId] += BigInt(row.kpi)
       }
       return acc
     },
@@ -62,7 +62,7 @@ function parseArgs() {
 interface KpiRow {
   referrerId: string
   userAddress: string
-  revenue: string
+  kpi: string
 }
 
 async function main(args: ReturnType<typeof parseArgs>) {

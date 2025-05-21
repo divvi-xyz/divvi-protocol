@@ -3,7 +3,7 @@ import BigNumber from 'bignumber.js'
 import { SUPPORTED_NETWORKS, SupportedNetwork } from './config'
 import { fetchBlockchainData } from './blockchainData'
 
-export async function calculateRevenue({
+export async function calculateKpi({
   address,
   startTimestamp,
   endTimestampExclusive,
