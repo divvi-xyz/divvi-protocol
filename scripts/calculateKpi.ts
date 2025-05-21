@@ -10,9 +10,7 @@ import { dirname, join } from 'path'
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
 
-export async function calculateRevenue(
-  args: Awaited<ReturnType<typeof getArgs>>,
-) {
+export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
   const startTimestamp = new Date(args.startTimestamp)
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const protocol = args.protocol
@@ -122,7 +120,7 @@ async function getArgs() {
 
 if (require.main === module) {
   getArgs()
-    .then(calculateRevenue)
+    .then(calculateKpi)
     .catch((err) => {
       console.log(err)
       process.exit(1)
