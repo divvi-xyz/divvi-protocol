@@ -80,7 +80,10 @@ describe('DataAvailability', () => {
       const { dataAvailability, owner } = await deployDataAvailabilityContract()
       await expect(
         dataAvailability.revokeUploaderRole(owner.address),
-      ).to.be.revertedWith('Cannot revoke uploader role from owner')
+      ).to.be.revertedWithCustomError(
+        dataAvailability,
+        'CannotRemoveUploaderFromOwner'
+      ).withArgs(owner.address)
     })
   })
 
@@ -159,7 +162,10 @@ describe('DataAvailability', () => {
         (
           dataAvailability.connect(uploader) as typeof dataAvailability
         ).uploadData(timestamp, users, values2),
-      ).to.be.revertedWith('User already has data at this timestamp')
+      ).to.be.revertedWithCustomError(
+        dataAvailability,
+        'UserHasDataAtTimestamp'
+      ).withArgs(extraUser.address, timestamp)
 
       // Verify the user's last timestamp is still correct
       expect(
@@ -203,9 +209,10 @@ describe('DataAvailability', () => {
         (
           dataAvailability.connect(uploader) as typeof dataAvailability
         ).uploadData(timestamp2, users, values),
-      ).to.be.revertedWith(
-        'Timestamp must be greater than or equal to most recent timestamp',
-      )
+      ).to.be.revertedWithCustomError(
+        dataAvailability,
+        'TimestampTooEarly'
+      ).withArgs(timestamp2, timestamp1)
     })
 
     it('should calculate correct rolling hash', async () => {

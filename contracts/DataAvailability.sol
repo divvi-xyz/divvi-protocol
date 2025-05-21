@@ -5,33 +5,37 @@ import {AccessControlDefaultAdminRules} from '@openzeppelin/contracts/access/ext
 
 contract DataAvailability is AccessControlDefaultAdminRules {
   /**
-     * @dev DataAvailability stores information about the objective function value for users
-     * across timestamps.
-     * 
-     * The contract owner and any permitted uploaders may upload user objective function data
-     * at a given timestamp. The objective function data that are uploaded represent the delta
-     * between the objective function value at the current timestamp and the value at the
-     * previous timestamp that data was uploaded. The data is not actually stored in the contract,
-     * but events are emitted for each upload, which can be used to reconstruct the full data history.
-     *
-     * Instead of storing all data in the contract, a rolling hash of the data is calculated and stored
-     * for each timestamp. When verifying the data, the submitted proof will contain a hash of the data
-     * computed in a trusted zkVM; if the hash contained in the proof matches the hash stored in the contract,
-     * the data is considered valid.
-
-     * The rolling hash is calculated by summing the existing hash for a given timestamp with the hash of each
-     * user:value pair modulo 2^256 as they are received by the contract. Since modular addition is both commutative and associative, this
-     * results in a hash that is invariant to the order of uploads. Since we cannot "remove" information about
-     * a data entry from the hash, we require that information about a user:value pair is only submitted once
-     * per timestamp, to ensure that the hash is correct.
-     *
-     * The intended usage pattern of this contract is as follows:
-     * - For a given timestamp t_1, changes in objective function values since the last timestamp t_0 are calculated.
-     * - These data are submitted to the contract, and a rolling hash is calculated.
-     * - The contract emits events for each upload, which can be used to reconstruct the full data history.
-     * - These data are used by an off-chain reward distribution service to calculate rewards owed for the
-     *   period between t_0 and t_1.
-     */
+   * @dev DataAvailability stores information about the objective function value for users
+   * across timestamps.
+   *
+   * The contract owner and any permitted uploaders may upload user objective function data
+   * at a given timestamp. The objective function data that are uploaded represent the delta
+   * between the objective function value at the current timestamp and the value at the
+   * previous timestamp that data was uploaded. The data is not actually stored in the contract,
+   * but events are emitted for each upload, which can be used to reconstruct the full data history.
+   *
+   * Instead of storing all data in the contract, a rolling hash of the data is calculated and stored
+   * for each timestamp. When verifying the data, the submitted proof will contain a hash of the data
+   * computed in a trusted zkVM; if the hash contained in the proof matches the hash stored in the contract,
+   * the data is considered valid.
+   *
+   * The rolling hash is calculated by summing the existing hash for a given timestamp with the hash of each
+   * user:value pair modulo 2^256 as they are received by the contract. Since modular addition is both commutative and associative, this
+   * results in a hash that is invariant to the order of uploads. Since we cannot "remove" information about
+   * a data entry from the hash, we require that information about a user:value pair is only submitted once
+   * per timestamp, to ensure that the hash is correct.
+   *
+   * The intended usage pattern of this contract is as follows:
+   * - For a given timestamp t_1, changes in objective function values since the last timestamp t_0 are calculated.
+   * - These data are submitted to the contract, and a rolling hash is calculated.
+   * - The contract emits events for each upload, which can be used to reconstruct the full data history.
+   * - These data are used by an off-chain reward distribution service to calculate rewards owed for the
+   *   period between t_0 and t_1.
+   *
+   * Reward Providers are expected to deploy one instance of this contract per KPI they wish to track, from
+   * which data will be fetched in order to calculate rewards; these rewards will then be distributed among
+   * the appropriate Reward Consumers in a related RewardPool contract.
+   */
 
   // Role for authorized uploaders
   bytes32 public constant UPLOADER_ROLE = keccak256('UPLOADER_ROLE');
@@ -53,6 +57,12 @@ contract DataAvailability is AccessControlDefaultAdminRules {
     uint256 value
   );
 
+  // Errors
+  error CannotRemoveUploaderFromOwner(address account);
+  error ArrayLengthMismatch(uint256 userLength, uint256 valueLength);
+  error TimestampTooEarly(uint256 timestamp, uint256 mostRecentTimestamp);
+  error UserHasDataAtTimestamp(address user, uint256 timestamp);
+
   constructor(address _owner) AccessControlDefaultAdminRules(0, _owner) {
     // Grant the deployer the uploader role
     _grantRole(UPLOADER_ROLE, _owner);
@@ -62,10 +72,9 @@ contract DataAvailability is AccessControlDefaultAdminRules {
    * @dev Override to prevent the owner from losing their uploader role
    */
   function revokeRole(bytes32 role, address account) public virtual override {
-    require(
-      !(role == UPLOADER_ROLE && hasRole(DEFAULT_ADMIN_ROLE, account)),
-      'Cannot revoke uploader role from owner'
-    );
+    if (role == UPLOADER_ROLE && hasRole(DEFAULT_ADMIN_ROLE, account)) {
+      revert CannotRemoveUploaderFromOwner(account);
+    }
     super.revokeRole(role, account);
   }
 
@@ -73,10 +82,9 @@ contract DataAvailability is AccessControlDefaultAdminRules {
    * @dev Override to prevent the owner from losing their uploader role
    */
   function renounceRole(bytes32 role, address account) public virtual override {
-    require(
-      !(role == UPLOADER_ROLE && hasRole(DEFAULT_ADMIN_ROLE, account)),
-      'owner cannot renounce uploader role'
-    );
+    if (role == UPLOADER_ROLE && hasRole(DEFAULT_ADMIN_ROLE, account)) {
+      revert CannotRemoveUploaderFromOwner(account);
+    }
     super.renounceRole(role, account);
   }
 
@@ -110,24 +118,24 @@ contract DataAvailability is AccessControlDefaultAdminRules {
     address[] calldata users,
     uint256[] calldata values
   ) external onlyRole(UPLOADER_ROLE) {
-    require(users.length == values.length, 'Arrays length mismatch');
+    if (users.length != values.length) {
+      revert ArrayLengthMismatch(users.length, values.length);
+    }
 
     // Ensure the timestamp is greater than the most recent timestamp
-    if (timestamps.length > 0) {
-      require(
-        timestamp >= timestamps[timestamps.length - 1],
-        'Timestamp must be greater than or equal to most recent timestamp'
-      );
+    if (
+      timestamps.length > 0 && timestamp < timestamps[timestamps.length - 1]
+    ) {
+      revert TimestampTooEarly(timestamp, timestamps[timestamps.length - 1]);
     }
 
     bytes32 currentHash = this.getHash(timestamp);
 
     for (uint256 i = 0; i < users.length; i++) {
       // Check if this user already has data at this timestamp
-      require(
-        userLastTimestamp[users[i]] != timestamp,
-        'User already has data at this timestamp'
-      );
+      if (userLastTimestamp[users[i]] == timestamp) {
+        revert UserHasDataAtTimestamp(users[i], timestamp);
+      }
 
       // Calculate the hash for this user:value pair
       bytes32 pairHash = keccak256(abi.encodePacked(users[i], values[i]));
@@ -205,10 +213,9 @@ contract DataAvailability is AccessControlDefaultAdminRules {
   function revokeUploaderRole(
     address uploader
   ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    require(
-      !hasRole(DEFAULT_ADMIN_ROLE, uploader),
-      'Cannot revoke uploader role from owner'
-    );
+    if (hasRole(DEFAULT_ADMIN_ROLE, uploader)) {
+      revert CannotRemoveUploaderFromOwner(uploader);
+    }
     _revokeRole(UPLOADER_ROLE, uploader);
   }
 
