@@ -3,12 +3,12 @@ import { isAddress, pad } from 'viem'
 import {
   fonbnkNetworkToNetworkId,
   TRANSFER_TOPIC,
-} from '../calculateRevenue/protocols/fonbnk/constants'
+} from '../calculateKpi/protocols/fonbnk/constants'
 import {
   getFonbnkAssets,
   getPayoutWallets,
-} from '../calculateRevenue/protocols/fonbnk/helpers'
-import { SUPPORTED_FONBNK_NETWORKS } from '../calculateRevenue/protocols/fonbnk/types'
+} from '../calculateKpi/protocols/fonbnk/helpers'
+import { SUPPORTED_FONBNK_NETWORKS } from '../calculateKpi/protocols/fonbnk/types'
 import { ReferralEvent } from '../types'
 import { getBlock, getHyperSyncClient } from '../utils'
 import { paginateQuery } from '../utils/hypersyncPagination'

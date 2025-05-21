@@ -76,20 +76,6 @@ const rewardPool = await RewardPool.attach('0x9fE46736679d2D9a65F0992F2272dE9f3c
 await rewardPool.rewardFunctionId()
 ```
 
-## Creating Safe Transactions Batches
-
-You need to create one batch of transactions per registry contract
-address. For example, if Berachain and Vana have different contract
-addresses and all other chains share a contract address you would do:
-
-```
-yarn ts-node scripts/createSafeTransactionsBatch.ts --input-csv=crm.csv --output-json=others.json --contract-address=0x000...
-yarn ts-node scripts/createSafeTransactionsBatch.ts --input-csv=crm.csv --output-json=vana.json --contract-address=0x111...
-yarn ts-node scripts/createSafeTransactionsBatch.ts --input-csv=crm.csv --output-json=berachain.json --contract-address=0x222...
-```
-
-See [Contracts](#contracts) for Registry contract addresses.
-
 ## Scripts
 
 You may want to set the `ALCHEMY_KEY` in .env to avoid getting rate limited by RPC nodes.
@@ -104,14 +90,14 @@ Fetching referral events for protocol: beefy
 Wrote results to beefy-referrals.csv
 ```
 
-### Calculate Revenue
+### Calculate KPI
 
-Calculates revenue for a list of referrals. By default it directly reads from the output script of fetchReferrals.ts. By default the output file is `<protocol>-revenue.csv`
+Calculates KPI for a list of referrals. By default it directly reads from the output script of fetchReferrals.ts. By default the output file is `rewards/<protocol>/<startTimestampISO>_<endTimestampISO>/kpi.csv`
 
 ```bash
-$ yarn ts-node ./scripts/calculateRevenue.ts --protocol beefy --startTimestamp 1740013389000 --endTimestamp 1741899467000
-Calculating revenue for 0x15B5f5FE55704140ce5057d85c28f8b237c1Bc53 (1/1)
-Wrote results to beefy-revenue.csv
+$ yarn ts-node ./scripts/calculateKpi.ts --protocol beefy --startTimestamp 2025-05-08T00:00:00Z --endTimestamp 2025-05-16T00:00:00Z
+Calculating KPI for 0x15B5f5FE55704140ce5057d85c28f8b237c1Bc53 (1/1)
+Wrote results to rewards/beefy/2025-05-08T00:00:00.000Z_2025-05-16T00:00:00.000Z/kpi.csv
 ```
 
 ### Referrer User Count
