@@ -10,7 +10,7 @@ import { dirname, join } from 'path'
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
 // Calculate KPIs for end users in batches to speed things up
-const BATCH_SIZE = 20
+const BATCH_SIZE = 10
 
 interface KpiResult {
   referrerId: string
