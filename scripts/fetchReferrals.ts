@@ -50,7 +50,7 @@ async function getArgs() {
     datadir: argv['datadir'],
     protocol: argv['protocol'] as Protocol,
     protocolFilter: protocolFilters[argv['protocol'] as Protocol],
-    output: argv['output-file'] ?? `${argv['protocol']}-referrals.csv`,
+    output: `${argv['protocol']}-referrals.csv`,
     useStaging: argv['use-staging'],
     builderAllowList: argv['builder-allowlist-file'],
     startTimestamp: argv['start-timestamp'],
@@ -58,9 +58,9 @@ async function getArgs() {
   }
 }
 
-async function main() {
-  const args = await getArgs()
-
+export async function fetchReferrals(
+  args: Awaited<ReturnType<typeof getArgs>>,
+) {
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const referralEvents = await fetchReferralEvents(
     args.protocol,
@@ -110,7 +110,11 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error)
-  process.exitCode = 1
-})
+if (require.main === module) {
+  getArgs()
+    .then(fetchReferrals)
+    .catch((error) => {
+      console.error(error)
+      process.exitCode = 1
+    })
+}
