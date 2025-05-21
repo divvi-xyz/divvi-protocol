@@ -542,8 +542,8 @@
           ]
         }
       }
-    }
-  "6fbbd073083eff34177debaca7d5df8107eca44538016c77063ffc0471b5c484": {
+    },
+    "6fbbd073083eff34177debaca7d5df8107eca44538016c77063ffc0471b5c484": {
       "address": "0x8E08ABF6d3244A13cFa7BB35907a8a175ECaA68C",
       "txHash": "0x50999d39fa8eb264711569bb1397e60c42a1bb553770a7f3ff42da055a11a6e3",
       "remoteDeploymentId": "f6412320-a047-4207-9813-9a737efaa3e6",
