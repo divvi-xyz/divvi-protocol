@@ -38,7 +38,7 @@ async function _getNearestBlock(
   )
   if (!response.ok) {
     throw new Error(
-      `Error while fetching block timestamp from DefiLlama: ${response}`,
+      `Error while fetching block timestamp from DefiLlama: ${JSON.stringify(response)}`,
     )
   }
   const blockTimestampData = (await response.json()) as BlockTimestampData
