@@ -10,9 +10,11 @@ import { dirname, join } from 'path'
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
 
-async function main(args: ReturnType<typeof parseArgs>) {
-  const startTimestamp = new Date(args['start-timestamp'])
-  const endTimestampExclusive = new Date(args['end-timestamp'])
+export async function calculateRevenue(
+  args: Awaited<ReturnType<typeof getArgs>>,
+) {
+  const startTimestamp = new Date(args.startTimestamp)
+  const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const protocol = args.protocol
 
   const folderPath = join(
@@ -23,6 +25,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
       endTimestampExclusive,
     }),
   )
+
   const inputFile = join(folderPath, 'referrals.csv')
   const outputFile = join(folderPath, 'revenue.csv')
 
@@ -82,8 +85,8 @@ async function main(args: ReturnType<typeof parseArgs>) {
   console.log(`Wrote results to ${outputFile}`)
 }
 
-function parseArgs() {
-  return yargs
+async function getArgs() {
+  const argv = await yargs
     .option('protocol', {
       alias: 'p',
       description: 'ID of protocol to check against',
@@ -107,16 +110,19 @@ function parseArgs() {
     .option('datadir', {
       description: 'Directory to save data',
       default: 'rewards',
-    })
-    .strict()
-    .parseSync()
+    }).argv
+
+  return {
+    datadir: argv['datadir'],
+    protocol: argv['protocol'],
+    startTimestamp: argv['start-timestamp'],
+    endTimestampExclusive: argv['end-timestamp'],
+  }
 }
 
 if (require.main === module) {
-  main(parseArgs())
-    .then(() => {
-      process.exit(0)
-    })
+  getArgs()
+    .then(calculateRevenue)
     .catch((err) => {
       console.log(err)
       process.exit(1)
