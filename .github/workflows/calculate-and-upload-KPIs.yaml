@@ -1,11 +1,11 @@
 name: Calculate and Upload KPIs
 
-# on:
-#   schedule:
-#     - cron: '*/10 * * * *' # Runs every 10 minutes
-#   pull_request:
-#     branches:
-#       - kathy/scripts-reuse
+on:
+  #   schedule:
+  #     - cron: '*/10 * * * *' # Runs every 10 minutes
+  pull_request:
+    branches:
+      - main
 
 jobs:
   calculate-and-upload-KPIs:
@@ -23,7 +23,7 @@ jobs:
           check-latest: true
       - run: yarn
       - name: Calculate and upload KPIs
-        run: yarn ts-node scripts/calcAndUploadKPIs.ts
+        run: yarn ts-node scripts/calculateAndUploadKpis.ts
 
       # TODO(kathy)
       # - name: Notify Slack on Failure

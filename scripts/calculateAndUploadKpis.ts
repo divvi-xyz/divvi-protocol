@@ -72,7 +72,9 @@ async function getArgs() {
   }
 }
 
-async function calcAndUploadKPIs(args: Awaited<ReturnType<typeof getArgs>>) {
+async function calculateAndUploadKpis(
+  args: Awaited<ReturnType<typeof getArgs>>,
+) {
   const kpiResults = campaigns.map(async (campaign) => {
     const campaignStartTimestamp = Date.parse(
       campaign.rewardsPeriods[0].startTimestamp,
@@ -151,7 +153,7 @@ async function calcAndUploadKPIs(args: Awaited<ReturnType<typeof getArgs>>) {
 // Only run if this file is being run directly
 if (require.main === module) {
   getArgs()
-    .then(calcAndUploadKPIs)
+    .then(calculateAndUploadKpis)
     .catch((error) => {
       console.error(error)
       process.exitCode = 1
