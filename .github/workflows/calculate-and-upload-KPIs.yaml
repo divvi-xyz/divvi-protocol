@@ -1,11 +1,11 @@
 name: Calculate and Upload KPIs
 
-on:
-  # schedule:
-  #   - cron: '*/10 * * * *' # Runs every 10 minutes
-  pull_request:
-    branches:
-      - kathy/scripts-reuse
+# on:
+#   schedule:
+#     - cron: '*/10 * * * *' # Runs every 10 minutes
+#   pull_request:
+#     branches:
+#       - kathy/scripts-reuse
 
 jobs:
   calculate-and-upload-KPIs:

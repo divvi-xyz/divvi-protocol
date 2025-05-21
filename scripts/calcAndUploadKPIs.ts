@@ -38,7 +38,7 @@ const campaigns: Campaign[] = [
     rewardsPeriods: [
       {
         startTimestamp: '2025-05-15T00:00:00Z',
-        endTimestampExclusive: '2025-06-1T00:00:00Z',
+        endTimestampExclusive: '2025-06-01T00:00:00Z',
       },
       {
         startTimestamp: '2025-06-01T00:00:00Z',
