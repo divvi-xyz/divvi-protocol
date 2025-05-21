@@ -1,4 +1,4 @@
-import calculateRevenueHandlers from './calculateRevenue/protocols'
+import calculateKpiHandlers from './calculateKpi/protocols'
 import { parse } from 'csv-parse/sync'
 import { stringify } from 'csv-stringify/sync'
 import { mkdirSync, readFileSync, writeFileSync } from 'fs'
@@ -10,33 +10,31 @@ import { dirname, join } from 'path'
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
 
-export async function calculateRevenue(
-  args: Awaited<ReturnType<typeof getArgs>>,
-) {
+export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
   const startTimestamp = new Date(args.startTimestamp)
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const protocol = args.protocol
 
   const inputFile = join(args.outputDir, 'referrals.csv')
-  const outputFile = join(args.outputDir, 'revenue.csv')
+  const outputFile = join(args.outputDir, 'kpi.csv')
 
   const eligibleUsers = parse(readFileSync(inputFile, 'utf-8').toString(), {
     skip_empty_lines: true,
     delimiter: ',',
     columns: true,
   })
-  const handler = calculateRevenueHandlers[protocol]
+  const handler = calculateKpiHandlers[protocol]
 
   const allResults: Array<{
     referrerId: string
     userAddress: string
-    revenue: number
+    kpi: number
   }> = []
 
   for (let i = 0; i < eligibleUsers.length; i++) {
     const { referrerId, userAddress, timestamp } = eligibleUsers[i]
     console.log(
-      `Calculating revenue for ${userAddress} (${i + 1}/${eligibleUsers.length})`,
+      `Calculating KPI for ${userAddress} (${i + 1}/${eligibleUsers.length})`,
     )
 
     const referralTimestamp = new Date(
@@ -51,9 +49,9 @@ export async function calculateRevenue(
       continue
     }
 
-    const revenue = await handler({
+    const kpi = await handler({
       address: userAddress,
-      // if the referral happened after the start of the period, only calculate revenue from the referral block onwards so that we exclude user activity before the referral
+      // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
       startTimestamp:
         referralTimestamp.getTime() > startTimestamp.getTime()
           ? referralTimestamp
@@ -63,7 +61,7 @@ export async function calculateRevenue(
     allResults.push({
       referrerId,
       userAddress,
-      revenue,
+      kpi,
     })
   }
 
@@ -87,14 +85,14 @@ async function getArgs() {
     .option('start-timestamp', {
       alias: 's',
       description:
-        'Start timestamp (inclusive) for revenue calculation (new Date() compatible epoch milliseconds or string)',
+        'Start timestamp (inclusive) for KPI calculation (new Date() compatible epoch milliseconds or string)',
       type: 'string',
       demandOption: true,
     })
     .option('end-timestamp', {
       alias: 'e',
       description:
-        'End timestamp (exclusive) for revenue calculation (new Date() compatible epoch milliseconds or string)',
+        'End timestamp (exclusive) for KPI calculation (new Date() compatible epoch milliseconds or string)',
       type: 'string',
       demandOption: true,
     })
@@ -122,7 +120,7 @@ async function getArgs() {
 
 if (require.main === module) {
   getArgs()
-    .then(calculateRevenue)
+    .then(calculateKpi)
     .catch((err) => {
       console.log(err)
       process.exit(1)

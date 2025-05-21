@@ -1,8 +1,8 @@
-import { CalculateRevenueFn, NetworkId } from '../../types'
+import { CalculateKpiFn, NetworkId } from '../../types'
 import { getBlockRange } from './utils/events'
 import { fetchTotalTransactions } from './utils/networks'
 
-export const calculateRevenue: CalculateRevenueFn = async ({
+export const calculateKpi: CalculateKpiFn = async ({
   address,
   startTimestamp,
   endTimestampExclusive,

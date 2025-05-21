@@ -72,7 +72,7 @@ function parseArgs() {
 interface KpiRow {
   referrerId: string
   userAddress: string
-  revenue: string
+  kpi: string
 }
 
 async function main(args: ReturnType<typeof parseArgs>) {
@@ -87,7 +87,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
       endTimestampExclusive,
     }),
   )
-  const inputPath = join(folderPath, 'revenue.csv')
+  const inputPath = join(folderPath, 'kpi.csv')
   const outputPath = join(folderPath, 'safe-transactions.json')
 
   const kpiData = parse(readFileSync(inputPath, 'utf-8').toString(), {

@@ -90,14 +90,14 @@ Fetching referral events for protocol: beefy
 Wrote results to beefy-referrals.csv
 ```
 
-### Calculate Revenue
+### Calculate KPI
 
-Calculates revenue for a list of referrals. By default it directly reads from the output script of fetchReferrals.ts. By default the output file is `<protocol>-revenue.csv`
+Calculates KPI for a list of referrals. By default it directly reads from the output script of fetchReferrals.ts. By default the output file is `rewards/<protocol>/<startTimestampISO>_<endTimestampISO>/kpi.csv`
 
 ```bash
-$ yarn ts-node ./scripts/calculateRevenue.ts --protocol beefy --startTimestamp 1740013389000 --endTimestamp 1741899467000
-Calculating revenue for 0x15B5f5FE55704140ce5057d85c28f8b237c1Bc53 (1/1)
-Wrote results to beefy-revenue.csv
+$ yarn ts-node ./scripts/calculateKpi.ts --protocol beefy --startTimestamp 2025-05-08T00:00:00Z --endTimestamp 2025-05-16T00:00:00Z
+Calculating KPI for 0x15B5f5FE55704140ce5057d85c28f8b237c1Bc53 (1/1)
+Wrote results to rewards/beefy/2025-05-08T00:00:00.000Z_2025-05-16T00:00:00.000Z/kpi.csv
 ```
 
 ### Referrer User Count

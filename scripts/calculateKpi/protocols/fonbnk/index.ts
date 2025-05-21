@@ -117,7 +117,7 @@ export async function getTotalRevenueUsdFromTransactions({
   return totalUsdContribution
 }
 
-export async function calculateRevenue({
+export async function calculateKpi({
   address,
   startTimestamp,
   endTimestampExclusive,

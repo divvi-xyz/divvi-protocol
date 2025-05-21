@@ -13,22 +13,22 @@ describe('calculateRewardsProofOfImpact', () => {
     ),
   )
 
-  it('should calculate rewards proportionally based on revenue', () => {
+  it('should calculate rewards proportionally based on KPI', () => {
     const kpiData = [
       {
         referrerId: '0xreferrer1',
         userAddress: '0xuser1',
-        revenue: '100',
+        kpi: '100',
       },
       {
         referrerId: '0xreferrer1',
         userAddress: '0xuser2',
-        revenue: '200',
+        kpi: '200',
       },
       {
         referrerId: '0xreferrer2',
         userAddress: '0xuser3',
-        revenue: '700',
+        kpi: '700',
       },
     ]
 
@@ -69,7 +69,7 @@ describe('calculateRewardsProofOfImpact', () => {
       {
         referrerId: '0xreferrer1',
         userAddress: '0xuser1',
-        revenue: '100',
+        kpi: '100',
       },
     ]
 
