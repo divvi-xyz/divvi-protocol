@@ -5,14 +5,14 @@ import { filter } from './fonbnk'
 import {
   getFonbnkAssets,
   getPayoutWallets,
-} from '../calculateRevenue/protocols/fonbnk/helpers'
+} from '../calculateKpi/protocols/fonbnk/helpers'
 import { Address } from 'viem'
 
 jest.mock('../utils', () => ({
   getHyperSyncClient: jest.fn(),
   getBlock: jest.fn(),
 }))
-jest.mock('../calculateRevenue/protocols/fonbnk/helpers')
+jest.mock('../calculateKpi/protocols/fonbnk/helpers')
 
 const MOCK_ADDRESS = '0x1234567890123456789012345678901234567890' as Address
 

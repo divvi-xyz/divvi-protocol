@@ -3,7 +3,7 @@ import BigNumber from 'bignumber.js'
 interface KpiRow {
   referrerId: string
   userAddress: string
-  revenue: string
+  kpi: string
 }
 
 export function calculateProportionalPrizeContest({
@@ -14,14 +14,14 @@ export function calculateProportionalPrizeContest({
   rewards: BigNumber
 }) {
   const referrerKpis = kpiData
-    // filter out rows with no revenue, which is possible for users who were referred between the reward period end date and the time of the reward distribution
-    .filter((row) => BigInt(row.revenue) > 0)
+    // filter out rows with no KPI, which is possible for users who were referred between the reward period end date and the time of the reward distribution
+    .filter((row) => BigInt(row.kpi) > 0)
     .reduce(
       (acc, row) => {
         if (!(row.referrerId in acc)) {
-          acc[row.referrerId] = BigInt(row.revenue)
+          acc[row.referrerId] = BigInt(row.kpi)
         } else {
-          acc[row.referrerId] += BigInt(row.revenue)
+          acc[row.referrerId] += BigInt(row.kpi)
         }
         return acc
       },

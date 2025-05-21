@@ -6,9 +6,9 @@ describe('calculateProportionalPrizeContest', () => {
   it('should calculate rewards proportionally based on KPI', () => {
     const rewards = new BigNumber('1000')
     const kpiData = [
-      { referrerId: 'ref1', userAddress: 'user1', revenue: '100' },
-      { referrerId: 'ref1', userAddress: 'user2', revenue: '200' },
-      { referrerId: 'ref2', userAddress: 'user3', revenue: '300' },
+      { referrerId: 'ref1', userAddress: 'user1', kpi: '100' },
+      { referrerId: 'ref1', userAddress: 'user2', kpi: '200' },
+      { referrerId: 'ref2', userAddress: 'user3', kpi: '300' },
     ]
 
     const result = calculateProportionalPrizeContest({
@@ -34,8 +34,8 @@ describe('calculateProportionalPrizeContest', () => {
   it('should handle zero KPI values', () => {
     const rewards = new BigNumber('1000')
     const kpiData = [
-      { referrerId: 'ref1', userAddress: 'user1', revenue: '0' },
-      { referrerId: 'ref2', userAddress: 'user2', revenue: '100' },
+      { referrerId: 'ref1', userAddress: 'user1', kpi: '0' },
+      { referrerId: 'ref2', userAddress: 'user2', kpi: '100' },
     ]
 
     const result = calculateProportionalPrizeContest({
@@ -57,7 +57,7 @@ describe('calculateProportionalPrizeContest', () => {
     const kpiData: {
       referrerId: string
       userAddress: string
-      revenue: string
+      kpi: string
     }[] = []
 
     const result = calculateProportionalPrizeContest({
@@ -71,8 +71,8 @@ describe('calculateProportionalPrizeContest', () => {
   it('should handle all zero KPI values', () => {
     const rewards = new BigNumber('1000')
     const kpiData = [
-      { referrerId: 'ref1', userAddress: 'user1', revenue: '0' },
-      { referrerId: 'ref2', userAddress: 'user2', revenue: '0' },
+      { referrerId: 'ref1', userAddress: 'user1', kpi: '0' },
+      { referrerId: 'ref2', userAddress: 'user2', kpi: '0' },
     ]
 
     const result = calculateProportionalPrizeContest({

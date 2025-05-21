@@ -122,7 +122,7 @@ function getTimeInRange(startTimestamp: Date, endTimestampExclusive: Date) {
   return endTimestampExclusive.getTime() - startTimestamp.getTime()
 }
 
-export async function calculateRevenue({
+export async function calculateKpi({
   address,
   startTimestamp,
   endTimestampExclusive,

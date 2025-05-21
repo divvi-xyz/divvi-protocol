@@ -1,8 +1,8 @@
 import { NetworkId } from '../../../types'
 import { getBlockRange } from '../utils/events'
-import { fetchTotalTransactionFees } from '../utils/networks'
+import { fetchTotalTransactions } from '../utils/networks'
 
-export async function calculateRevenue({
+export async function calculateKpi({
   address,
   startTimestamp,
   endTimestampExclusive,
@@ -12,13 +12,13 @@ export async function calculateRevenue({
   endTimestampExclusive: Date
 }): Promise<number> {
   const { startBlock, endBlockExclusive } = await getBlockRange({
-    networkId: NetworkId['arbitrum-one'],
+    networkId: NetworkId['celo-mainnet'],
     startTimestamp,
     endTimestampExclusive,
   })
 
-  return await fetchTotalTransactionFees({
-    networkId: NetworkId['arbitrum-one'],
+  return await fetchTotalTransactions({
+    networkId: NetworkId['celo-mainnet'],
     users: [address],
     startBlock,
     endBlockExclusive,

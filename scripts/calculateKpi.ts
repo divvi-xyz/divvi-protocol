@@ -1,4 +1,4 @@
-import calculateRevenueHandlers from './calculateRevenue/protocols'
+import calculateKpiHandlers from './calculateKpi/protocols'
 import { parse } from 'csv-parse/sync'
 import { stringify } from 'csv-stringify/sync'
 import { mkdirSync, readFileSync, writeFileSync } from 'fs'
@@ -24,25 +24,25 @@ async function main(args: ReturnType<typeof parseArgs>) {
     }),
   )
   const inputFile = join(folderPath, 'referrals.csv')
-  const outputFile = join(folderPath, 'revenue.csv')
+  const outputFile = join(folderPath, 'kpi.csv')
 
   const eligibleUsers = parse(readFileSync(inputFile, 'utf-8').toString(), {
     skip_empty_lines: true,
     delimiter: ',',
     columns: true,
   })
-  const handler = calculateRevenueHandlers[protocol]
+  const handler = calculateKpiHandlers[protocol]
 
   const allResults: Array<{
     referrerId: string
     userAddress: string
-    revenue: number
+    kpi: number
   }> = []
 
   for (let i = 0; i < eligibleUsers.length; i++) {
     const { referrerId, userAddress, timestamp } = eligibleUsers[i]
     console.log(
-      `Calculating revenue for ${userAddress} (${i + 1}/${eligibleUsers.length})`,
+      `Calculating KPI for ${userAddress} (${i + 1}/${eligibleUsers.length})`,
     )
 
     const referralTimestamp = new Date(
@@ -57,9 +57,9 @@ async function main(args: ReturnType<typeof parseArgs>) {
       continue
     }
 
-    const revenue = await handler({
+    const kpi = await handler({
       address: userAddress,
-      // if the referral happened after the start of the period, only calculate revenue from the referral block onwards so that we exclude user activity before the referral
+      // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
       startTimestamp:
         referralTimestamp.getTime() > startTimestamp.getTime()
           ? referralTimestamp
@@ -69,7 +69,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     allResults.push({
       referrerId,
       userAddress,
-      revenue,
+      kpi,
     })
   }
 
@@ -93,14 +93,14 @@ function parseArgs() {
     .option('start-timestamp', {
       alias: 's',
       description:
-        'Start timestamp (inclusive) for revenue calculation (new Date() compatible epoch milliseconds or string)',
+        'Start timestamp (inclusive) for KPI calculation (new Date() compatible epoch milliseconds or string)',
       type: 'string',
       demandOption: true,
     })
     .option('end-timestamp', {
       alias: 'e',
       description:
-        'End timestamp (exclusive) for revenue calculation (new Date() compatible epoch milliseconds or string)',
+        'End timestamp (exclusive) for KPI calculation (new Date() compatible epoch milliseconds or string)',
       type: 'string',
       demandOption: true,
     })
