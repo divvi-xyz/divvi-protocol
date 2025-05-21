@@ -17,17 +17,8 @@ export async function calculateRevenue(
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const protocol = args.protocol
 
-  const folderPath = join(
-    args.datadir,
-    protocol,
-    toPeriodFolderName({
-      startTimestamp,
-      endTimestampExclusive,
-    }),
-  )
-
-  const inputFile = join(folderPath, 'referrals.csv')
-  const outputFile = join(folderPath, 'revenue.csv')
+  const inputFile = join(args.outputDir, 'referrals.csv')
+  const outputFile = join(args.outputDir, 'revenue.csv')
 
   const eligibleUsers = parse(readFileSync(inputFile, 'utf-8').toString(), {
     skip_empty_lines: true,
@@ -112,8 +103,17 @@ async function getArgs() {
       default: 'rewards',
     }).argv
 
+  const outputDir = join(
+    argv['datadir'],
+    argv['protocol'],
+    toPeriodFolderName({
+      startTimestamp: new Date(argv['start-timestamp']),
+      endTimestampExclusive: new Date(argv['end-timestamp']),
+    }),
+  )
+
   return {
-    datadir: argv['datadir'],
+    outputDir,
     protocol: argv['protocol'],
     startTimestamp: argv['start-timestamp'],
     endTimestampExclusive: argv['end-timestamp'],

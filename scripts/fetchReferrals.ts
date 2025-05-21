@@ -46,11 +46,19 @@ async function getArgs() {
       type: 'string',
     }).argv
 
+  const outputDir = join(
+    argv['datadir'],
+    argv['protocol'],
+    toPeriodFolderName({
+      startTimestamp: new Date(argv['start-timestamp']),
+      endTimestampExclusive: new Date(argv['end-timestamp']),
+    }),
+  )
+
   return {
-    datadir: argv['datadir'],
     protocol: argv['protocol'] as Protocol,
     protocolFilter: protocolFilters[argv['protocol'] as Protocol],
-    output: `${argv['protocol']}-referrals.csv`,
+    outputDir,
     useStaging: argv['use-staging'],
     builderAllowList: argv['builder-allowlist-file'],
     startTimestamp: argv['start-timestamp'],
@@ -86,15 +94,7 @@ export async function fetchReferrals(
     timestamp: new Date(event.timestamp * 1000).toISOString(),
   }))
 
-  const outputDir = join(
-    args.datadir,
-    args.protocol,
-    toPeriodFolderName({
-      startTimestamp: new Date(args.startTimestamp),
-      endTimestampExclusive: new Date(args.endTimestampExclusive),
-    }),
-  )
-  const outputFile = `${outputDir}/referrals.csv`
+  const outputFile = `${args.outputDir}/referrals.csv`
 
   // Create directory if it doesn't exist
   mkdirSync(dirname(outputFile), { recursive: true })
@@ -104,7 +104,7 @@ export async function fetchReferrals(
   console.log(`Wrote results to ${outputFile}`)
 
   if (args.builderAllowList) {
-    const allowListOutputFile = `${outputDir}/builder-allowlist.csv`
+    const allowListOutputFile = `${args.outputDir}/builder-allowlist.csv`
     copyFileSync(args.builderAllowList, allowListOutputFile)
     console.log(`Copied builder allowlist to ${allowListOutputFile}`)
   }
