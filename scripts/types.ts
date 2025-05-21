@@ -1,16 +1,22 @@
+import { Address } from 'viem'
+
 export const protocols = [
   'beefy',
   'aerodrome',
   'somm',
-  'celo',
+  'celo-pg',
   'arbitrum',
   'velodrome',
   'fonbnk',
   'aave',
+  'celo-transactions',
+  'rhino',
+  'scout-game-v0',
 ] as const
 export type Protocol = (typeof protocols)[number]
 export type FilterFunction = (
   events: ReferralEvent[],
+  builderAllowList?: Address[],
 ) => Promise<ReferralEvent[]>
 
 export enum NetworkId {
@@ -33,10 +39,10 @@ export interface TokenPriceData {
   priceFetchedAt: number
 }
 
-export type CalculateRevenueFn = (params: {
+export type CalculateKpiFn = (params: {
   address: string
   startTimestamp: Date
-  endTimestamp: Date
+  endTimestampExclusive: Date
 }) => Promise<number>
 
 export interface ReferralEvent {

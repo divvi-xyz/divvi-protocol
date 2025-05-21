@@ -5,7 +5,7 @@ import { filterDrome } from './filterDrome'
 import {
   AERODROME_NETWORK_ID,
   AERODROME_UNIVERSAL_ROUTER_ADDRESS,
-} from '../calculateRevenue/protocols/aerodrome/constants'
+} from '../calculateKpi/protocols/aerodrome/constants'
 
 jest.mock('../utils', () => ({
   getHyperSyncClient: jest.fn(),

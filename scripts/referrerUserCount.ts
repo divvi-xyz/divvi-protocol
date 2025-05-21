@@ -52,11 +52,7 @@ async function main() {
   const referrerArray =
     args.referrers && !!args.referrers.length ? args.referrers : undefined
 
-  const referralEvents = await fetchReferralEvents(
-    args.networkIds,
-    args.protocol,
-    referrerArray,
-  )
+  const referralEvents = await fetchReferralEvents(args.protocol, referrerArray)
   const uniqueEvents = removeDuplicates(referralEvents)
   const protocolFilteredEvents = await args.protocolFilter(uniqueEvents)
 

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.24;
 
 import {AccessControlDefaultAdminRules} from '@openzeppelin/contracts/access/extensions/AccessControlDefaultAdminRules.sol';
-
 import {IRiscZeroVerifier} from './risc0/IRiscZeroVerifier.sol';
 import {Steel} from './risc0/steel/Steel.sol';
 
@@ -34,6 +33,10 @@ contract DataAvailability is AccessControlDefaultAdminRules {
    * - The contract emits events for each upload, which can be used to reconstruct the full data history.
    * - These data are used by an off-chain reward distribution service to calculate rewards owed for the
    *   period between t_0 and t_1.
+   *
+   * Reward Providers are expected to deploy one instance of this contract per KPI they wish to track, from
+   * which data will be fetched in order to calculate rewards; these rewards will then be distributed among
+   * the appropriate Reward Consumers in a related RewardPool contract.
    */
 
   uint256 private constant PRIME_MODULUS = 2 ** 256 - 189;
@@ -65,6 +68,16 @@ contract DataAvailability is AccessControlDefaultAdminRules {
   // Mapping to track the most recent timestamp for each user
   mapping(address => uint256) private userLastTimestamp;
 
+  // Errors
+  error CannotRemoveUploaderFromOwner(address account);
+  error ArrayLengthMismatch(uint256 userLength, uint256 valueLength);
+  error TimestampTooEarly(uint256 timestamp, uint256 mostRecentTimestamp);
+  error UserHasDataAtTimestamp(address user, uint256 timestamp);
+  error CannotUploadAfterVerification(uint256 timestamp);
+  error NoDataForTimestamp(uint256 timestamp);
+  error HashMismatch(bytes32 providedHash, bytes32 storedHash);
+  error DataAlreadyVerified(uint256 timestamp);
+
   // Events
   event DataUploaded(
     uint256 timestamp,
@@ -95,10 +108,9 @@ contract DataAvailability is AccessControlDefaultAdminRules {
    * @dev Override to prevent the owner from losing their uploader role
    */
   function revokeRole(bytes32 role, address account) public virtual override {
-    require(
-      !(role == UPLOADER_ROLE && hasRole(DEFAULT_ADMIN_ROLE, account)),
-      'Cannot revoke uploader role from owner'
-    );
+    if (role == UPLOADER_ROLE && hasRole(DEFAULT_ADMIN_ROLE, account)) {
+      revert CannotRemoveUploaderFromOwner(account);
+    }
     super.revokeRole(role, account);
   }
 
@@ -106,10 +118,9 @@ contract DataAvailability is AccessControlDefaultAdminRules {
    * @dev Override to prevent the owner from losing their uploader role
    */
   function renounceRole(bytes32 role, address account) public virtual override {
-    require(
-      !(role == UPLOADER_ROLE && hasRole(DEFAULT_ADMIN_ROLE, account)),
-      'owner cannot renounce uploader role'
-    );
+    if (role == UPLOADER_ROLE && hasRole(DEFAULT_ADMIN_ROLE, account)) {
+      revert CannotRemoveUploaderFromOwner(account);
+    }
     super.renounceRole(role, account);
   }
 
@@ -121,18 +132,18 @@ contract DataAvailability is AccessControlDefaultAdminRules {
   function verify(bytes calldata journalData, bytes calldata seal) external {
     // Decode and validate journal data
     Journal memory journal = abi.decode(journalData, (Journal));
-    require(
-      timestampHashes[journal.timestamp] != bytes32(0),
-      'No data for provided timestamp'
-    );
-    require(
-      timestampHashes[journal.timestamp] == bytes32(journal.hash),
-      'Journal hash does not match on-chain hash'
-    );
-    require(
-      !verifiedTimestamps[journal.timestamp],
-      'Data for timestamp already verified'
-    );
+    if (timestampHashes[journal.timestamp] == bytes32(0)) {
+      revert NoDataForTimestamp(journal.timestamp);
+    }
+    if (timestampHashes[journal.timestamp] != bytes32(journal.hash)) {
+      revert HashMismatch(
+        bytes32(journal.hash),
+        timestampHashes[journal.timestamp]
+      );
+    }
+    if (verifiedTimestamps[journal.timestamp]) {
+      revert DataAlreadyVerified(journal.timestamp);
+    }
 
     // Verify the proof
     bytes32 journalHash = sha256(journalData);
@@ -174,28 +185,27 @@ contract DataAvailability is AccessControlDefaultAdminRules {
     address[] calldata users,
     uint256[] calldata values
   ) external onlyRole(UPLOADER_ROLE) {
-    require(users.length == values.length, 'Arrays length mismatch');
-    require(
-      !verifiedTimestamps[timestamp],
-      'Data cannot be updated for timestamp after verification'
-    );
+    if (users.length != values.length) {
+      revert ArrayLengthMismatch(users.length, values.length);
+    }
+    if (verifiedTimestamps[timestamp]) {
+      revert CannotUploadAfterVerification(timestamp);
+    }
 
     // Ensure the timestamp is greater than the most recent timestamp
-    if (timestamps.length > 0) {
-      require(
-        timestamp >= timestamps[timestamps.length - 1],
-        'Timestamp must be greater than or equal to most recent timestamp'
-      );
+    if (
+      timestamps.length > 0 && timestamp < timestamps[timestamps.length - 1]
+    ) {
+      revert TimestampTooEarly(timestamp, timestamps[timestamps.length - 1]);
     }
 
     bytes32 currentHash = this.getHash(timestamp);
 
     for (uint256 i = 0; i < users.length; i++) {
       // Check if this user already has data at this timestamp
-      require(
-        userLastTimestamp[users[i]] != timestamp,
-        'User already has data at this timestamp'
-      );
+      if (userLastTimestamp[users[i]] == timestamp) {
+        revert UserHasDataAtTimestamp(users[i], timestamp);
+      }
 
       // Calculate the hash for this user:value pair
       bytes32 pairHash = keccak256(abi.encodePacked(users[i], values[i]));
@@ -282,10 +292,9 @@ contract DataAvailability is AccessControlDefaultAdminRules {
   function revokeUploaderRole(
     address uploader
   ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    require(
-      !hasRole(DEFAULT_ADMIN_ROLE, uploader),
-      'Cannot revoke uploader role from owner'
-    );
+    if (hasRole(DEFAULT_ADMIN_ROLE, uploader)) {
+      revert CannotRemoveUploaderFromOwner(uploader);
+    }
     _revokeRole(UPLOADER_ROLE, uploader);
   }
 
