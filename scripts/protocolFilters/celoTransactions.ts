@@ -1,5 +1,17 @@
+import { Address } from 'viem'
 import { ReferralEvent } from '../types'
 
-export async function filter(event: ReferralEvent): Promise<boolean> {
-  return !!event
+const KNOWN_BUILDERS: Address[] = ['0x22886C71a4C1Fa2824BD86210ead1C310B3d7cf5']
+
+export async function filter(
+  event: ReferralEvent,
+  builderAllowList?: Address[],
+): Promise<boolean> {
+  // If no allow list is provided, default to accept all referrals
+  if (!builderAllowList) {
+    return true
+  }
+  return KNOWN_BUILDERS.concat(builderAllowList).some(
+    (address) => address.toLowerCase() === event.referrerId.toLowerCase(),
+  )
 }

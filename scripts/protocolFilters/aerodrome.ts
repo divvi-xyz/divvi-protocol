@@ -1,7 +1,7 @@
 import {
   AERODROME_NETWORK_ID,
   AERODROME_UNIVERSAL_ROUTER_ADDRESS,
-} from '../calculateRevenue/protocols/aerodrome/constants'
+} from '../calculateKpi/protocols/aerodrome/constants'
 import { ReferralEvent } from '../types'
 import { filterDrome } from '../utils/filterDrome'
 

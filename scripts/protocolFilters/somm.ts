@@ -1,6 +1,6 @@
 import { erc20Abi, formatUnits, getContract, isAddress } from 'viem'
-import { getEvents } from '../calculateRevenue/protocols/somm/getEvents'
-import { getVaults } from '../calculateRevenue/protocols/somm/getVaults'
+import { getEvents } from '../calculateKpi/protocols/somm/getEvents'
+import { getVaults } from '../calculateKpi/protocols/somm/getVaults'
 import { ReferralEvent } from '../types'
 import { getViemPublicClient } from '../utils'
 
@@ -31,7 +31,7 @@ export async function filter(event: ReferralEvent): Promise<boolean> {
       address,
       vaultInfo,
       startTimestamp: eventDate,
-      endTimestamp: nowDate,
+      endTimestampExclusive: nowDate,
     })
     numTvlEvents += tvlEvents.length
     const tvlAtReferral =

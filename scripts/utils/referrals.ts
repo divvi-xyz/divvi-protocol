@@ -1,9 +1,10 @@
 import { NetworkId, Protocol, ReferralEvent } from '../types'
 import { getHyperSyncClient } from './index'
 import { Address, decodeEventLog, encodeEventTopics, Hex, pad } from 'viem'
-import { registryContractAbi } from '../../abis/Registry'
 import { BlockField, LogField, Query } from '@envio-dev/hypersync-client'
 import { paginateEventsQuery } from './hypersyncPagination'
+import { divviRegistryAbi } from '../../abis/DivviRegistry'
+import { getFirstBlockAtOrAfterTimestamp } from '../calculateKpi/protocols/utils/events'
 
 const REGISTRY_CONTRACT_ADDRESS = '0xedb51a8c390fc84b1c2a40e0ae9c9882fa7b7277'
 const STAGING_REGISTRY_CONTRACT_ADDRESS =
@@ -14,6 +15,8 @@ const REGISTRY_START_BLOCK = 134945942 // Block where the registry contract was 
 
 const REWARDS_PROVIDERS: Partial<Record<Protocol, Address>> = {
   'celo-transactions': '0x5f0a55FaD9424ac99429f635dfb9bF20c3360Ab8', // celo proof of impact
+  'celo-pg': '0x0423189886D7966f0DD7E7d256898DAeEE625dca',
+  'scout-game-v0': '0xC95876688026BE9d6fA7a7c33328bD013efFa2Bb',
 }
 
 // Remove duplicate events, keeping only the earliest event for each user
@@ -36,6 +39,7 @@ export async function fetchReferralEvents(
   protocol: Protocol,
   referrerIds?: Address[],
   useStaging = false,
+  endTimestampExclusive?: Date,
 ): Promise<ReferralEvent[]> {
   const referralEvents: ReferralEvent[] = []
   console.log('Fetching referral events for protocol:', protocol)
@@ -52,14 +56,22 @@ export async function fetchReferralEvents(
     : REGISTRY_CONTRACT_ADDRESS
 
   const topics = encodeEventTopics({
-    abi: registryContractAbi,
+    abi: divviRegistryAbi,
     eventName: 'ReferralRegistered',
   })
+
+  const endBlockExclusive = endTimestampExclusive
+    ? await getFirstBlockAtOrAfterTimestamp(
+        REGISTRY_NETWORK_ID,
+        endTimestampExclusive,
+      )
+    : undefined
 
   const hypersyncClient = getHyperSyncClient(REGISTRY_NETWORK_ID)
 
   const hypersyncQuery: Query = {
     fromBlock: REGISTRY_START_BLOCK,
+    ...(endBlockExclusive && { toBlock: endBlockExclusive }),
     logs: [
       {
         address: [registryContractAddress],
@@ -94,7 +106,7 @@ export async function fetchReferralEvents(
         }
 
         const decodedEvent = decodeEventLog({
-          abi: registryContractAbi,
+          abi: divviRegistryAbi,
           eventName: 'ReferralRegistered',
           topics: event.log.topics as [Hex, ...Hex[]],
           data: event.log.data as Hex,

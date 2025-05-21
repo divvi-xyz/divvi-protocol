@@ -1,6 +1,6 @@
 import { Address } from 'viem'
-import { getEvents } from '../calculateRevenue/protocols/somm/getEvents'
-import { getVaults } from '../calculateRevenue/protocols/somm/getVaults'
+import { getEvents } from '../calculateKpi/protocols/somm/getEvents'
+import { getVaults } from '../calculateKpi/protocols/somm/getVaults'
 import { NetworkId, ReferralEvent } from '../types'
 import { filter } from './somm'
 
@@ -14,8 +14,8 @@ jest.mock('viem', () => ({
   }),
 }))
 
-jest.mock('../calculateRevenue/protocols/somm/getEvents')
-jest.mock('../calculateRevenue/protocols/somm/getVaults')
+jest.mock('../calculateKpi/protocols/somm/getEvents')
+jest.mock('../calculateKpi/protocols/somm/getVaults')
 
 const MOCK_VAULTS = [
   {
