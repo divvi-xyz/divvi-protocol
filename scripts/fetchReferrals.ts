@@ -44,6 +44,23 @@ async function getArgs() {
       alias: 'a',
       description: 'a csv file of allowlisted builders ',
       type: 'string',
+    })
+    .option('excludelist-files', {
+      description:
+        'Comma-separated list of CSV files with excluded addresses (e.g., file1.csv,file2.csv)',
+      type: 'array',
+      default: [],
+      coerce: (arg: string[]) => {
+        return arg
+          .flatMap((s) => s.split(',').map((item) => item.trim()))
+          .filter(Boolean)
+      },
+    })
+    .option('fail-on-exclude', {
+      description:
+        'Fail if any of the excluded addresses are found in the referral events',
+      type: 'boolean',
+      default: false,
     }).argv
 
   const outputDir = join(
@@ -63,6 +80,8 @@ async function getArgs() {
     builderAllowList: argv['builder-allowlist-file'],
     startTimestamp: argv['start-timestamp'],
     endTimestampExclusive: argv['end-timestamp'],
+    excludeListFiles: argv['excludelist-files'],
+    failOnExclude: argv['fail-on-exclude'],
   }
 }
 
@@ -86,8 +105,19 @@ export async function fetchReferrals(
       ) as Address[])
     : undefined
 
+  const excludeList = args.excludeListFiles
+    ? (args.excludeListFiles.flatMap((file) =>
+        parse(readFileSync(file, 'utf-8').toString(), {
+          skip_empty_lines: true,
+          columns: true,
+        }).map(({ referrerId }: { referrerId: Address }) => referrerId),
+      ) as Address[])
+    : undefined
+
   const filteredEvents = await args.protocolFilter(uniqueEvents, {
     allowList,
+    excludeList,
+    failOnExclude: args.failOnExclude,
   })
   const outputEvents = filteredEvents.map((event) => ({
     referrerId: event.referrerId,
@@ -108,6 +138,12 @@ export async function fetchReferrals(
     const allowListOutputFile = join(args.outputDir, 'builder-allowlist.csv')
     copyFileSync(args.builderAllowList, allowListOutputFile)
     console.log(`Copied builder allowlist to ${allowListOutputFile}`)
+  }
+
+  for (const file of args.excludeListFiles) {
+    const excludeListOutputFile = `${outputDir}/exclude-${file}`
+    copyFileSync(file, excludeListOutputFile)
+    console.log(`Copied exclude list file ${file} to ${excludeListOutputFile}`)
   }
 }
 
