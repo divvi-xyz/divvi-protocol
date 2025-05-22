@@ -121,7 +121,7 @@ async function uploadCurrentPeriodKpis(
       startTimestamp: currentPeriod.startTimestamp,
       endTimestampExclusive,
       outputDir,
-      builderAllowList: undefined, // TODO
+      builderAllowList: undefined, // TODO: not really sure how to get an up to date builder allowlist for CI...
       useStaging: false,
       protocolFilter: protocolFilters[campaign.protocol],
     })
