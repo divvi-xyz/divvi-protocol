@@ -3,7 +3,7 @@ import { parse } from 'csv-parse/sync'
 import { stringify } from 'csv-stringify/sync'
 import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import yargs from 'yargs'
-import { protocols } from './types'
+import { Protocol, protocols } from './types'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { dirname, join } from 'path'
 
@@ -30,31 +30,29 @@ export const _calculateKpiBatch = calculateKpiBatch
 async function calculateKpiBatch({
   eligibleUsers,
   batchSize,
-  handler,
   startTimestamp,
   endTimestampExclusive,
+  protocol,
 }: {
   eligibleUsers: ReferralData[]
   batchSize: number
-  handler: (params: {
-    address: string
-    startTimestamp: Date
-    endTimestampExclusive: Date
-  }) => Promise<number>
   startTimestamp: Date
   endTimestampExclusive: Date
+  protocol: Protocol
 }): Promise<KpiResult[]> {
   const results: KpiResult[] = []
 
   for (let i = 0; i < eligibleUsers.length; i += batchSize) {
     const batch = eligibleUsers.slice(i, i + batchSize)
     console.log(
-      `Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)}`,
+      `Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)} for campaign ${protocol}`,
     )
 
     const batchPromises = batch.map(
       async ({ referrerId, userAddress, timestamp }) => {
-        console.log(`Calculating KPI for ${userAddress}`)
+        console.log(
+          `Calculating KPI for ${userAddress} for campaign ${protocol}`,
+        )
 
         const referralTimestamp = new Date(
           Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
@@ -62,12 +60,12 @@ async function calculateKpiBatch({
 
         if (referralTimestamp.getTime() > endTimestampExclusive.getTime()) {
           console.log(
-            `Referral date is after end date, skipping ${userAddress} (registration tx date: ${timestamp})`,
+            `Referral date is after end date, skipping ${userAddress} (registration tx date: ${timestamp}) for campaign ${protocol}`,
           )
           return null
         }
 
-        const kpi = await handler({
+        const kpi = await calculateKpiHandlers[protocol]({
           address: userAddress,
           // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
           startTimestamp:
@@ -121,12 +119,11 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
       columns: true,
     },
   )
-  const handler = calculateKpiHandlers[protocol]
 
   const allResults = await calculateKpiBatch({
     eligibleUsers,
     batchSize: BATCH_SIZE,
-    handler,
+    protocol,
     startTimestamp,
     endTimestampExclusive,
   })
