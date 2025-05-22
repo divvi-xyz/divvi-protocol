@@ -1,0 +1,33 @@
+name: Calculate and Upload KPIs
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Runs at minute 0 of every hour
+
+jobs:
+  calculate-and-upload-KPIs:
+    name: Calculate and Upload KPIs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        with:
+          project_id: divvi-production
+          credentials_json: ${{ secrets.DIVVI_PRODUCTION_UPLOADER_SERVICE_ACCOUNT_KEY }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: 'package.json'
+          check-latest: true
+      - run: yarn
+      - name: Calculate and upload KPIs for the current reward period
+        run: yarn ts-node scripts/uploadCurrentPeriodKpis.ts
+
+      # TODO(kathy)
+      # - name: Notify Slack on Failure
+      #   if: failure()
+      #   uses: slackapi/slack-github-action@v1.25.0
+      #   with:
+      #     channel-id: 'alerts'
+      #     slack-message: '❌ KPI calculation and upload workflow failed! Check the run details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+      #   env:
+      #     SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
