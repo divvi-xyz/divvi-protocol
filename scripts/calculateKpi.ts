@@ -94,7 +94,7 @@ async function calculateKpiBatch({
       ),
     )
 
-    // for every 200 calculations, add a 1 minute delay to avoid rate limits from DefiLlama
+    // Add a 1 minute delay to avoid rate limits from DefiLlama
     if (i > 0) {
       await new Promise((resolve) => setTimeout(resolve, delayMs))
     }
@@ -126,7 +126,6 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
     protocol,
     startTimestamp,
     endTimestampExclusive,
-    protocol,
   })
 
   // Create directory if it doesn't exist
