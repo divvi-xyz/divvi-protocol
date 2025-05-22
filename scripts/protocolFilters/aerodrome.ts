@@ -2,10 +2,10 @@ import {
   AERODROME_NETWORK_ID,
   AERODROME_UNIVERSAL_ROUTER_ADDRESS,
 } from '../calculateKpi/protocols/aerodrome/constants'
-import { ReferralEvent } from '../types'
+import { MatcherFn } from '../types'
 import { filterDrome } from '../utils/filterDrome'
 
-export async function filter(event: ReferralEvent): Promise<boolean> {
+export const filter: MatcherFn = async (event) => {
   return filterDrome({
     event,
     routerAddress: AERODROME_UNIVERSAL_ROUTER_ADDRESS,

@@ -77,17 +77,18 @@ export async function fetchReferrals(
     endTimestampExclusive,
   )
   const uniqueEvents = removeDuplicates(referralEvents)
-  const builderAllowList = args.builderAllowList
-    ? parse(readFileSync(args.builderAllowList, 'utf-8').toString(), {
+  const allowList = args.builderAllowList
+    ? (parse(readFileSync(args.builderAllowList, 'utf-8').toString(), {
         skip_empty_lines: true,
         columns: true,
-      }).map(({ referrerId }: { referrerId: Address }) => referrerId)
+      }).map(
+        ({ referrerId }: { referrerId: Address }) => referrerId,
+      ) as Address[])
     : undefined
 
-  const filteredEvents = await args.protocolFilter(
-    uniqueEvents,
-    builderAllowList,
-  )
+  const filteredEvents = await args.protocolFilter(uniqueEvents, {
+    allowList,
+  })
   const outputEvents = filteredEvents.map((event) => ({
     referrerId: event.referrerId,
     userAddress: event.userAddress,
