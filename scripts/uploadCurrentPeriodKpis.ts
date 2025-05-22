@@ -88,7 +88,7 @@ async function uploadCurrentPeriodKpis(
       campaignEndTimestampExclusive <= startOfCurrentHour
     ) {
       console.log(`Campaign ${campaign.protocol} is not active, skipping`)
-      return null
+      continue
     }
 
     // Find the most recent period that started before the start of the current hour
@@ -146,7 +146,6 @@ async function uploadCurrentPeriodKpis(
 
   const validPaths = kpiFilePaths.filter((path) => path !== null)
 
-  // TODO: Also add some way to check the last date that the script was run
   await uploadFilesToGCS(validPaths, 'divvi-campaign-data', args.dryRun)
 }
 
