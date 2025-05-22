@@ -3,6 +3,14 @@ name: Calculate and Upload KPIs
 on:
   schedule:
     - cron: '0 * * * *' # Runs at minute 0 of every hour
+  pull_request:
+    branches:
+      - kathy/calculate-upload-kpi
+  workflow_dispatch:
+    inputs:
+      timestamp:
+        description: 'KPIs are calculated for the reward period that includes this timestamp, from the start of the period up to this timestamp. (new Date() compatible epoch milliseconds or string)'
+        required: true
 
 jobs:
   calculate-and-upload-KPIs:
@@ -20,7 +28,9 @@ jobs:
           check-latest: true
       - run: yarn
       - name: Calculate and upload KPIs for the current reward period
-        run: yarn ts-node scripts/uploadCurrentPeriodKpis.ts
+        run: |
+          yarn ts-node scripts/uploadCurrentPeriodKpis.ts \
+            ${{ github.event.inputs.timestamp && format('--calculation-timestamp "%s"', github.event.inputs.timestamp) }}
 
       # TODO(kathy)
       # - name: Notify Slack on Failure
