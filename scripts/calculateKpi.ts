@@ -94,10 +94,8 @@ async function calculateKpiBatch({
       ),
     )
 
-    // Add a 1 minute delay to avoid rate limits from DefiLlama
-    if (i > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayPerBatchInMs))
-    }
+    // Delay to avoid rate limits from DefiLlama
+    await new Promise((resolve) => setTimeout(resolve, delayPerBatchInMs))
   }
 
   return results
