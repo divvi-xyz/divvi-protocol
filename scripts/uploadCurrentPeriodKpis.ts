@@ -146,7 +146,11 @@ async function uploadCurrentPeriodKpis(
 
   const validPaths = kpiFilePaths.filter((path) => path !== null)
 
-  await uploadFilesToGCS(validPaths, 'divvi-campaign-data', args.dryRun)
+  await uploadFilesToGCS(
+    validPaths,
+    'divvi-campaign-data-production',
+    args.dryRun,
+  )
 }
 
 // Only run if this file is being run directly

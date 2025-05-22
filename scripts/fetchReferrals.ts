@@ -88,11 +88,13 @@ export async function fetchReferrals(
     uniqueEvents,
     builderAllowList,
   )
-  const outputEvents = filteredEvents.map((event) => ({
-    referrerId: event.referrerId,
-    userAddress: event.userAddress,
-    timestamp: new Date(event.timestamp * 1000).toISOString(),
-  }))
+  const outputEvents = filteredEvents
+    .map((event) => ({
+      referrerId: event.referrerId,
+      userAddress: event.userAddress,
+      timestamp: new Date(event.timestamp * 1000).toISOString(),
+    }))
+    .slice(0, 10)
 
   const outputFile = join(args.outputDir, 'referrals.csv')
 
