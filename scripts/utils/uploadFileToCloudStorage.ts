@@ -17,11 +17,16 @@ export async function uploadFilesToGCS(
   const bucket = storage.bucket(bucketName)
   const transferManager = new TransferManager(bucket)
 
-  if (!dryRun) {
+  if (dryRun) {
+    for (const filePath of filePaths) {
+      console.log(
+        `${filePath} would be uploaded to gs://${bucketName}/${filePath}, but this is a dry run`,
+      )
+    }
+  } else {
     await transferManager.uploadManyFiles(filePaths)
-  }
-
-  for (const filePath of filePaths) {
-    console.log(`${filePath} uploaded to gs://${bucketName}/${filePath}`)
+    for (const filePath of filePaths) {
+      console.log(`${filePath} uploaded to gs://${bucketName}/${filePath}`)
+    }
   }
 }
