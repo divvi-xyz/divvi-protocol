@@ -9,6 +9,7 @@ import * as dotenv from 'dotenv'
 import './tasks/registry'
 import './tasks/rewardPool'
 import './tasks/mockToken'
+import './tasks/divviRegistry'
 
 dotenv.config()
 
@@ -51,7 +52,7 @@ const config: HardhatUserConfig = {
       chainId: 10,
     },
     base: {
-      url: 'https://rpc.ankr.com/base',
+      url: 'https://base-rpc.publicnode.com',
       accounts,
       chainId: 8453,
     },
