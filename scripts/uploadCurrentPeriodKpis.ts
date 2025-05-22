@@ -29,7 +29,7 @@ const campaigns: Campaign[] = [
       },
       {
         startTimestamp: '2025-05-23T00:00:00Z',
-        endTimestampExclusive: '2025-05-30T00:00:00Z',
+        endTimestampExclusive: '2025-05-29T07:00:00Z',
       },
     ],
   },
