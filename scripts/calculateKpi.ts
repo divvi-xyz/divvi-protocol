@@ -12,6 +12,9 @@ const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
 // Calculate KPIs for end users in batches to speed things up
 const BATCH_SIZE = 20
 
+// DefiLlama API limit, at worst we need to fetch the referral block timestamp for every user
+const MAXIMUM_THROUGHPUT_PER_MINUTE = 500
+
 interface KpiResult {
   referrerId: string
   userAddress: string
@@ -34,6 +37,7 @@ async function calculateKpiBatch({
   startTimestamp,
   endTimestampExclusive,
   protocol,
+  maxThroughputPerMinute,
 }: {
   eligibleUsers: ReferralData[]
   batchSize: number
@@ -45,8 +49,10 @@ async function calculateKpiBatch({
   startTimestamp: Date
   endTimestampExclusive: Date
   protocol: Protocol
+  maxThroughputPerMinute: number
 }): Promise<KpiResult[]> {
   const results: KpiResult[] = []
+  const delayMs = (60_000 * BATCH_SIZE) / maxThroughputPerMinute
 
   for (let i = 0; i < eligibleUsers.length; i += batchSize) {
     const batch = eligibleUsers.slice(i, i + batchSize)
@@ -97,8 +103,8 @@ async function calculateKpiBatch({
     )
 
     // for every 200 calculations, add a 1 minute delay to avoid rate limits from DefiLlama
-    if (i > 0 && i % 200 === 0) {
-      await new Promise((resolve) => setTimeout(resolve, 60 * 1000))
+    if (i > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
     }
   }
 
@@ -130,6 +136,7 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
     startTimestamp,
     endTimestampExclusive,
     protocol,
+    maxThroughputPerMinute: args.maxThroughputPerMinute,
   })
 
   // Create directory if it doesn't exist
@@ -163,6 +170,12 @@ async function getArgs() {
       type: 'string',
       demandOption: true,
     })
+    .option('max-throughput-per-minute', {
+      alias: 'm',
+      description: 'Maximum throughput per minute',
+      type: 'number',
+      default: MAXIMUM_THROUGHPUT_PER_MINUTE,
+    })
     .option('datadir', {
       description: 'Directory to save data',
       default: 'rewards',
@@ -182,6 +195,7 @@ async function getArgs() {
     protocol: argv['protocol'],
     startTimestamp: argv['start-timestamp'],
     endTimestampExclusive: argv['end-timestamp'],
+    maxThroughputPerMinute: argv['max-throughput-per-minute'],
   }
 }
 
