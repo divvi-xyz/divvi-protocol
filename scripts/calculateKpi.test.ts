@@ -12,6 +12,14 @@ describe('_calculateKpiBatch', () => {
 
   const startTimestamp = new Date('2024-01-01T00:00:00Z')
   const endTimestampExclusive = new Date('2024-01-31T23:59:59Z')
+  const defaultArgs = {
+    eligibleUsers: [],
+    handler: mockHandler,
+    batchSize: 2,
+    startTimestamp,
+    endTimestampExclusive,
+    protocol: 'celo-transactions' as const,
+  }
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -37,11 +45,9 @@ describe('_calculateKpiBatch', () => {
     ]
 
     const results = await _calculateKpiBatch({
+      ...defaultArgs,
       eligibleUsers,
-      handler: mockHandler,
       batchSize: 2, // less than the number of eligible users
-      startTimestamp,
-      endTimestampExclusive,
     })
 
     expect(results).toEqual([
@@ -67,11 +73,8 @@ describe('_calculateKpiBatch', () => {
     ]
 
     const results = await _calculateKpiBatch({
+      ...defaultArgs,
       eligibleUsers,
-      handler: mockHandler,
-      batchSize: 2,
-      startTimestamp,
-      endTimestampExclusive,
     })
 
     expect(results).toEqual([
@@ -92,11 +95,8 @@ describe('_calculateKpiBatch', () => {
     ]
 
     await _calculateKpiBatch({
+      ...defaultArgs,
       eligibleUsers,
-      handler: mockHandler,
-      batchSize: 2,
-      startTimestamp,
-      endTimestampExclusive,
     })
     expect(mockHandler).toHaveBeenCalledWith({
       address: '0x123',
@@ -116,11 +116,8 @@ describe('_calculateKpiBatch', () => {
     ]
 
     await _calculateKpiBatch({
+      ...defaultArgs,
       eligibleUsers,
-      handler: mockHandler,
-      batchSize: 2,
-      startTimestamp,
-      endTimestampExclusive,
     })
     expect(mockHandler).toHaveBeenCalledWith({
       address: '0x123',
@@ -131,11 +128,8 @@ describe('_calculateKpiBatch', () => {
 
   it('should handle empty user list', async () => {
     const results = await _calculateKpiBatch({
+      ...defaultArgs,
       eligibleUsers: [],
-      handler: mockHandler,
-      batchSize: 2,
-      startTimestamp,
-      endTimestampExclusive,
     })
 
     expect(results).toHaveLength(0)
@@ -157,6 +151,7 @@ describe('_calculateKpiBatch', () => {
 
     await expect(
       _calculateKpiBatch({
+        ...defaultArgs,
         eligibleUsers,
         handler: async ({ address }) => {
           if (address === '0x123') {
@@ -164,9 +159,6 @@ describe('_calculateKpiBatch', () => {
           }
           return 100
         },
-        batchSize: 2,
-        startTimestamp,
-        endTimestampExclusive,
       }),
     ).rejects.toThrow('Handler error')
   })
