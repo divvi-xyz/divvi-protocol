@@ -138,7 +138,7 @@ describe('_calculateKpiBatch', () => {
     expect(results).toHaveLength(0)
   })
 
-  it('should handle handler errors gracefully', async () => {
+  it('should fail the whole function if there is an error for any user', async () => {
     mockHandler.mockImplementation(async ({ address }) => {
       if (address === '0x123') {
         throw new Error('Handler error')
