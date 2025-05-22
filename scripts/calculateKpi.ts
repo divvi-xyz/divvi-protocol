@@ -44,7 +44,7 @@ async function calculateKpiBatch({
   protocol: Protocol
 }): Promise<KpiResult[]> {
   const results: KpiResult[] = []
-  const delayMs = (60_000 * BATCH_SIZE) / MAX_REQUESTS_PER_MINUTE
+  const delayPerBatchInMs = (60_000 * BATCH_SIZE) / MAX_REQUESTS_PER_MINUTE
 
   for (let i = 0; i < eligibleUsers.length; i += batchSize) {
     const batch = eligibleUsers.slice(i, i + batchSize)
@@ -96,7 +96,7 @@ async function calculateKpiBatch({
 
     // Add a 1 minute delay to avoid rate limits from DefiLlama
     if (i > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs))
+      await new Promise((resolve) => setTimeout(resolve, delayPerBatchInMs))
     }
   }
 
