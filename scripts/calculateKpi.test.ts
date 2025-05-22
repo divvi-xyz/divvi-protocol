@@ -19,7 +19,6 @@ describe('_calculateKpiBatch', () => {
     startTimestamp,
     endTimestampExclusive,
     protocol: 'celo-transactions' as const,
-    maxThroughputPerMinute: 1000,
   }
 
   beforeEach(() => {

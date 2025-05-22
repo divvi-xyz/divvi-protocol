@@ -71,7 +71,10 @@ async function uploadCurrentPeriodKpis(
   const startOfCurrentHour = new Date().setMinutes(0, 0, 0)
   const endTimestampExclusive = new Date(startOfCurrentHour).toISOString()
 
-  const kpiResults = campaigns.map(async (campaign) => {
+  const kpiFilePaths: string[] = []
+
+  // Due to the DefiLlama API rate limit, there is no point in parallelising the calculations across campaigns
+  for (const campaign of campaigns) {
     const campaignStartTimestamp = Date.parse(
       campaign.rewardsPeriods[0].startTimestamp,
     )
@@ -132,17 +135,15 @@ async function uploadCurrentPeriodKpis(
       startTimestamp: currentPeriod.startTimestamp,
       endTimestampExclusive,
       outputDir,
-      maxThroughputPerMinute: 250,
     })
     console.log(
       `Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,
     )
 
     const outputFilePath = join(outputDir, 'kpi.csv') // this is the output file of calculateKpi
-    return outputFilePath
-  })
+    kpiFilePaths.push(outputFilePath)
+  }
 
-  const kpiFilePaths = await Promise.all(kpiResults)
   const validPaths = kpiFilePaths.filter((path) => path !== null)
 
   // TODO: Also add some way to check the last date that the script was run
