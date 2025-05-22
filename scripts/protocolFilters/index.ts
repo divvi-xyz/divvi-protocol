@@ -1,4 +1,10 @@
-import { FilterFunction, Protocol, ReferralEvent } from '../types'
+import {
+  FilterFn,
+  Protocol,
+  MatcherFn,
+  ProtocolFilterParams,
+  ReferralEvent,
+} from '../types'
 import { filter as filterBeefy } from './beefy'
 import { filter as filterAerodrome } from './aerodrome'
 import { filter as filterSomm } from './somm'
@@ -11,7 +17,7 @@ import { filter as filterCeloTransactions } from './celoTransactions'
 import { filter as filterRhino } from './rhino'
 import { filter as filterScoutGameV0 } from './scoutGameV0'
 
-export const protocolFilters: Record<Protocol, FilterFunction> = {
+export const protocolFilters: Record<Protocol, FilterFn> = {
   beefy: _createFilter(filterBeefy),
   somm: _createFilter(filterSomm),
   aerodrome: _createFilter(filterAerodrome),
@@ -25,21 +31,11 @@ export const protocolFilters: Record<Protocol, FilterFunction> = {
   'scout-game-v0': _createFilter(filterScoutGameV0),
 }
 
-function _createFilter(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  filter: (event: ReferralEvent, ...args: any[]) => Promise<boolean>,
-) {
+function _createFilter(matcher: MatcherFn) {
   return async function (
     events: ReferralEvent[],
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ...args: any[]
+    filterParams: ProtocolFilterParams,
   ): Promise<ReferralEvent[]> {
-    const filteredEvents = []
-    for (const event of events) {
-      if (await filter(event, ...args)) {
-        filteredEvents.push(event)
-      }
-    }
-    return filteredEvents
+    return events.filter((event) => matcher(event, filterParams))
   }
 }

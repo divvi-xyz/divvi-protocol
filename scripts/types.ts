@@ -14,10 +14,16 @@ export const protocols = [
   'scout-game-v0',
 ] as const
 export type Protocol = (typeof protocols)[number]
-export type FilterFunction = (
+
+export type FilterFn = (
   events: ReferralEvent[],
-  builderAllowList?: Address[],
+  filterParams: ProtocolFilterParams,
 ) => Promise<ReferralEvent[]>
+
+export type MatcherFn = (
+  event: ReferralEvent,
+  filterParams?: ProtocolFilterParams,
+) => Promise<boolean>
 
 export enum NetworkId {
   'celo-mainnet' = 'celo-mainnet',
@@ -50,4 +56,9 @@ export interface ReferralEvent {
   timestamp: number
   referrerId: string
   protocol: Protocol
+}
+
+export interface ProtocolFilterParams {
+  allowlist?: Address[]
+  blacklist?: Address[]
 }

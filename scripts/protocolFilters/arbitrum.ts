@@ -1,5 +1,5 @@
-import { ReferralEvent } from '../types'
+import { MatcherFn } from '../types'
 
-export async function filter(event: ReferralEvent): Promise<boolean> {
+export const filter: MatcherFn = async (event) => {
   return !!event
 }
