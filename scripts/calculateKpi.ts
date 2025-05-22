@@ -10,7 +10,7 @@ import { dirname, join } from 'path'
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
 // Calculate KPIs for end users in batches to speed things up
-const BATCH_SIZE = 15
+const BATCH_SIZE = 20
 
 interface KpiResult {
   referrerId: string
@@ -95,6 +95,11 @@ async function calculateKpiBatch({
         (result): result is NonNullable<typeof result> => result !== null,
       ),
     )
+
+    // for every 10 batches, add a 1 minute delay to avoid rate limits from DefiLlama
+    if (i % 10 === 0) {
+      await new Promise((resolve) => setTimeout(resolve, 60 * 1000))
+    }
   }
 
   return results

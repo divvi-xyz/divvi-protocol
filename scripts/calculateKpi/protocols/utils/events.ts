@@ -30,10 +30,6 @@ async function _getNearestBlock(
   networkId: NetworkId,
   timestamp: Date,
 ): Promise<BlockTimestampData> {
-  console.log(
-    '========Querying DefiLlama for block timestamp========',
-    timestamp.toISOString(),
-  )
   const unixTimestamp = Math.floor(timestamp.getTime() / 1000)
   const defiLlamaChain = NETWORK_ID_TO_DEFI_LLAMA_CHAIN[networkId]
 
@@ -56,9 +52,7 @@ async function _getNearestBlock(
  * Intentionally not exported. We should use `getBlockRange` instead.
  */
 const getNearestBlock = memoize(_getNearestBlock, {
-  hash: (...params: Parameters<typeof _getNearestBlock>) => {
-    return params[0] + params[1].getTime()
-  },
+  hash: (...params: Parameters<typeof _getNearestBlock>) => params.join(','),
 })
 
 export const _getNearestBlockForTesting = getNearestBlock
