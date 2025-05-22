@@ -60,5 +60,4 @@ export interface ReferralEvent {
 
 export interface ProtocolFilterParams {
   allowlist?: Address[]
-  blacklist?: Address[]
 }
