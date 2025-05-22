@@ -34,7 +34,7 @@ export const protocolFilters: Record<Protocol, FilterFn> = {
 function _createFilter(matcher: MatcherFn) {
   return async function (
     events: ReferralEvent[],
-    filterParams: FilterParams,
+    filterParams?: FilterParams,
   ): Promise<ReferralEvent[]> {
     return events.filter((event) => matcher(event, filterParams))
   }

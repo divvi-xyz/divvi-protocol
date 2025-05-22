@@ -17,7 +17,7 @@ export type Protocol = (typeof protocols)[number]
 
 export type FilterFn = (
   events: ReferralEvent[],
-  filterParams: FilterParams,
+  filterParams?: FilterParams,
 ) => Promise<ReferralEvent[]>
 
 export type MatcherFn = (
