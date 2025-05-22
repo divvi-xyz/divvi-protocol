@@ -52,14 +52,6 @@ const campaigns: Campaign[] = [
   },
 ]
 
-// Some buffer for the current time in case the latest block is not yet available from DeFiLlama
-const NOW_BUFFER_IN_MS = 1000 * 60 * 5 // 5 minutes
-
-const executionStartTime = Date.now()
-const endTimestampExclusive = new Date(
-  executionStartTime - NOW_BUFFER_IN_MS,
-).toISOString()
-
 async function getArgs() {
   const argv = await yargs.env('').option('dry-run', {
     description: 'Only show what would be uploaded without actually uploading',
@@ -72,9 +64,13 @@ async function getArgs() {
   }
 }
 
-async function calculateAndUploadKpis(
+async function uploadCurrentPeriodKpis(
   args: Awaited<ReturnType<typeof getArgs>>,
 ) {
+  // This script will calculate rewards ending at the start of the current hour
+  const startOfCurrentHour = new Date().setMinutes(0, 0, 0)
+  const endTimestampExclusive = new Date(startOfCurrentHour).toISOString()
+
   const kpiResults = campaigns.map(async (campaign) => {
     const campaignStartTimestamp = Date.parse(
       campaign.rewardsPeriods[0].startTimestamp,
@@ -85,17 +81,17 @@ async function calculateAndUploadKpis(
     )
 
     if (
-      campaignStartTimestamp > executionStartTime ||
-      campaignEndTimestampExclusive <= executionStartTime
+      campaignStartTimestamp > startOfCurrentHour ||
+      campaignEndTimestampExclusive <= startOfCurrentHour
     ) {
       console.log(`Campaign ${campaign.protocol} is not active, skipping`)
       return null
     }
 
-    // Find the most recent period that started before or at the same time as now
+    // Find the most recent period that started before the start of the current hour
     const currentPeriod = campaign.rewardsPeriods
       .filter(
-        (period) => Date.parse(period.startTimestamp) <= executionStartTime,
+        (period) => Date.parse(period.startTimestamp) < startOfCurrentHour,
       )
       .sort(
         (a, b) => Date.parse(b.startTimestamp) - Date.parse(a.startTimestamp),
@@ -147,13 +143,15 @@ async function calculateAndUploadKpis(
 
   const kpiFilePaths = await Promise.all(kpiResults)
   const validPaths = kpiFilePaths.filter((path) => path !== null)
+
+  // TODO: Also add some way to check the last date that the script was run
   await uploadFilesToGCS(validPaths, 'divvi-campaign-data', args.dryRun)
 }
 
 // Only run if this file is being run directly
 if (require.main === module) {
   getArgs()
-    .then(calculateAndUploadKpis)
+    .then(uploadCurrentPeriodKpis)
     .catch((error) => {
       console.error(error)
       process.exitCode = 1

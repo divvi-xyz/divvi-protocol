@@ -3,14 +3,14 @@ import { parse } from 'csv-parse/sync'
 import { stringify } from 'csv-stringify/sync'
 import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import yargs from 'yargs'
-import { protocols } from './types'
+import { Protocol, protocols } from './types'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { dirname, join } from 'path'
 
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
 // Calculate KPIs for end users in batches to speed things up
-const BATCH_SIZE = 10
+const BATCH_SIZE = 15
 
 interface KpiResult {
   referrerId: string
@@ -33,6 +33,7 @@ async function calculateKpiBatch({
   handler,
   startTimestamp,
   endTimestampExclusive,
+  protocol,
 }: {
   eligibleUsers: ReferralData[]
   batchSize: number
@@ -43,18 +44,21 @@ async function calculateKpiBatch({
   }) => Promise<number>
   startTimestamp: Date
   endTimestampExclusive: Date
+  protocol: Protocol
 }): Promise<KpiResult[]> {
   const results: KpiResult[] = []
 
   for (let i = 0; i < eligibleUsers.length; i += batchSize) {
     const batch = eligibleUsers.slice(i, i + batchSize)
     console.log(
-      `Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)}`,
+      `Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)} for campaign ${protocol}`,
     )
 
     const batchPromises = batch.map(
       async ({ referrerId, userAddress, timestamp }) => {
-        console.log(`Calculating KPI for ${userAddress}`)
+        console.log(
+          `Calculating KPI for ${userAddress} for campaign ${protocol}`,
+        )
 
         const referralTimestamp = new Date(
           Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
@@ -120,6 +124,7 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
     handler,
     startTimestamp,
     endTimestampExclusive,
+    protocol,
   })
 
   // Create directory if it doesn't exist
