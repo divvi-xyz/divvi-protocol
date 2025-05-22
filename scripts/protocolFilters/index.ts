@@ -2,7 +2,7 @@ import {
   FilterFn,
   Protocol,
   MatcherFn,
-  ProtocolFilterParams,
+  FilterParams,
   ReferralEvent,
 } from '../types'
 import { filter as filterBeefy } from './beefy'
@@ -34,7 +34,7 @@ export const protocolFilters: Record<Protocol, FilterFn> = {
 function _createFilter(matcher: MatcherFn) {
   return async function (
     events: ReferralEvent[],
-    filterParams: ProtocolFilterParams,
+    filterParams: FilterParams,
   ): Promise<ReferralEvent[]> {
     return events.filter((event) => matcher(event, filterParams))
   }

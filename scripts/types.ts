@@ -17,12 +17,12 @@ export type Protocol = (typeof protocols)[number]
 
 export type FilterFn = (
   events: ReferralEvent[],
-  filterParams: ProtocolFilterParams,
+  filterParams: FilterParams,
 ) => Promise<ReferralEvent[]>
 
 export type MatcherFn = (
   event: ReferralEvent,
-  filterParams?: ProtocolFilterParams,
+  filterParams?: FilterParams,
 ) => Promise<boolean>
 
 export enum NetworkId {
@@ -58,6 +58,6 @@ export interface ReferralEvent {
   protocol: Protocol
 }
 
-export interface ProtocolFilterParams {
+export interface FilterParams {
   allowlist?: Address[]
 }
