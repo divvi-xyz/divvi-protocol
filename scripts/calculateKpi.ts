@@ -33,18 +33,12 @@ export const _calculateKpiBatch = calculateKpiBatch
 async function calculateKpiBatch({
   eligibleUsers,
   batchSize,
-  handler,
   startTimestamp,
   endTimestampExclusive,
   protocol,
 }: {
   eligibleUsers: ReferralData[]
   batchSize: number
-  handler: (params: {
-    address: string
-    startTimestamp: Date
-    endTimestampExclusive: Date
-  }) => Promise<number>
   startTimestamp: Date
   endTimestampExclusive: Date
   protocol: Protocol
@@ -70,12 +64,12 @@ async function calculateKpiBatch({
 
         if (referralTimestamp.getTime() > endTimestampExclusive.getTime()) {
           console.log(
-            `Referral date is after end date, skipping ${userAddress} (registration tx date: ${timestamp})`,
+            `Referral date is after end date, skipping ${userAddress} (registration tx date: ${timestamp}) for campaign ${protocol}`,
           )
           return null
         }
 
-        const kpi = await handler({
+        const kpi = await calculateKpiHandlers[protocol]({
           address: userAddress,
           // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
           startTimestamp:
@@ -125,12 +119,11 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
       columns: true,
     },
   )
-  const handler = calculateKpiHandlers[protocol]
 
   const allResults = await calculateKpiBatch({
     eligibleUsers,
     batchSize: BATCH_SIZE,
-    handler,
+    protocol,
     startTimestamp,
     endTimestampExclusive,
     protocol,

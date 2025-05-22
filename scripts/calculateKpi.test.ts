@@ -1,12 +1,15 @@
 import { _calculateKpiBatch } from './calculateKpi'
 
+const mockHandler = jest.fn()
 jest.mock('./calculateKpi/protocols', () => ({
   __esModule: true,
-  default: {},
+  default: {
+    'celo-transactions': (...args: unknown[]) => mockHandler(...args),
+  },
 }))
 
 describe('_calculateKpiBatch', () => {
-  const mockHandler = jest.fn().mockImplementation(async ({ address }) => {
+  mockHandler.mockImplementation(async ({ address }) => {
     return address === '0x123' ? 100 : 50
   })
 
@@ -135,7 +138,13 @@ describe('_calculateKpiBatch', () => {
     expect(results).toHaveLength(0)
   })
 
-  it('should handle handler errors gracefully', async () => {
+  it('should fail the whole function if there is an error for any user', async () => {
+    mockHandler.mockImplementation(async ({ address }) => {
+      if (address === '0x123') {
+        throw new Error('Handler error')
+      }
+      return 100
+    })
     const eligibleUsers = [
       {
         referrerId: 'ref1',
@@ -153,12 +162,6 @@ describe('_calculateKpiBatch', () => {
       _calculateKpiBatch({
         ...defaultArgs,
         eligibleUsers,
-        handler: async ({ address }) => {
-          if (address === '0x123') {
-            throw new Error('Handler error')
-          }
-          return 100
-        },
       }),
     ).rejects.toThrow('Handler error')
   })
