@@ -3,7 +3,7 @@ import BigNumber from 'bignumber.js'
 import { NetworkId } from '../../../types'
 import { RAY, rayMul } from './math'
 import { fetchBlockchainData } from './blockchainData'
-import { calculateRevenue } from './index'
+import { calculateKpi } from './index'
 
 jest.mock('./blockchainData', () => ({
   fetchBlockchainData: jest.fn(),
@@ -182,10 +182,10 @@ describe('Aave revenue calculation', () => {
     // - Day 2-4 (reserve factor 50%): 300 = 400 * 0.75 * (0.50 / (1 - 0.50))
     // Total: 325
 
-    const revenue = await calculateRevenue({
+    const revenue = await calculateKpi({
       address: mockUserAddress,
       startTimestamp: mockStartTimestamp,
-      endTimestamp: mockEndTimestamp,
+      endTimestampExclusive: mockEndTimestamp,
     })
 
     expect(revenue).toEqual(1750) // Total revenue in USD ((1.425 * 1000) + (325 * 1))

@@ -69,7 +69,7 @@ async function revenueInNetwork(
   const context: RevenueCalculationContext = {
     ...chainData,
     startTimestamp: Math.floor(startTimestamp.getTime() / 1000),
-    endTimestamp: Math.floor(endTimestamp.getTime() / 1000),
+    endTimestamp: Math.floor(endTimestampExclusive.getTime() / 1000),
   }
 
   const protocolRevenueByReserve = revenueByReserve(context)
