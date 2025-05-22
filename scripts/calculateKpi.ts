@@ -3,14 +3,17 @@ import { parse } from 'csv-parse/sync'
 import { stringify } from 'csv-stringify/sync'
 import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import yargs from 'yargs'
-import { protocols } from './types'
+import { Protocol, protocols } from './types'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { dirname, join } from 'path'
 
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
 // Calculate KPIs for end users in batches to speed things up
-const BATCH_SIZE = 10
+const BATCH_SIZE = 20
+
+// DefiLlama API limit, at worst we need to fetch the referral block timestamp for every user
+const MAX_REQUESTS_PER_MINUTE = 500
 
 interface KpiResult {
   referrerId: string
@@ -30,31 +33,30 @@ export const _calculateKpiBatch = calculateKpiBatch
 async function calculateKpiBatch({
   eligibleUsers,
   batchSize,
-  handler,
   startTimestamp,
   endTimestampExclusive,
+  protocol,
 }: {
   eligibleUsers: ReferralData[]
   batchSize: number
-  handler: (params: {
-    address: string
-    startTimestamp: Date
-    endTimestampExclusive: Date
-  }) => Promise<number>
   startTimestamp: Date
   endTimestampExclusive: Date
+  protocol: Protocol
 }): Promise<KpiResult[]> {
   const results: KpiResult[] = []
+  const delayPerBatchInMs = (60_000 * BATCH_SIZE) / MAX_REQUESTS_PER_MINUTE
 
   for (let i = 0; i < eligibleUsers.length; i += batchSize) {
     const batch = eligibleUsers.slice(i, i + batchSize)
     console.log(
-      `Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)}`,
+      `Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)} for campaign ${protocol}`,
     )
 
     const batchPromises = batch.map(
       async ({ referrerId, userAddress, timestamp }) => {
-        console.log(`Calculating KPI for ${userAddress}`)
+        console.log(
+          `Calculating KPI for ${userAddress} for campaign ${protocol}`,
+        )
 
         const referralTimestamp = new Date(
           Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
@@ -62,12 +64,12 @@ async function calculateKpiBatch({
 
         if (referralTimestamp.getTime() > endTimestampExclusive.getTime()) {
           console.log(
-            `Referral date is after end date, skipping ${userAddress} (registration tx date: ${timestamp})`,
+            `Referral date is after end date, skipping ${userAddress} (registration tx date: ${timestamp}) for campaign ${protocol}`,
           )
           return null
         }
 
-        const kpi = await handler({
+        const kpi = await calculateKpiHandlers[protocol]({
           address: userAddress,
           // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
           startTimestamp:
@@ -91,6 +93,9 @@ async function calculateKpiBatch({
         (result): result is NonNullable<typeof result> => result !== null,
       ),
     )
+
+    // Delay to avoid rate limits from DefiLlama
+    await new Promise((resolve) => setTimeout(resolve, delayPerBatchInMs))
   }
 
   return results
@@ -101,17 +106,8 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const protocol = args.protocol
 
-  const folderPath = join(
-    args.datadir,
-    protocol,
-    toPeriodFolderName({
-      startTimestamp,
-      endTimestampExclusive,
-    }),
-  )
-
-  const inputFile = join(folderPath, 'referrals.csv')
-  const outputFile = join(folderPath, 'kpi.csv')
+  const inputFile = join(args.outputDir, 'referrals.csv')
+  const outputFile = join(args.outputDir, 'kpi.csv')
 
   const eligibleUsers: ReferralData[] = parse(
     readFileSync(inputFile, 'utf-8').toString(),
@@ -121,12 +117,11 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
       columns: true,
     },
   )
-  const handler = calculateKpiHandlers[protocol]
 
   const allResults = await calculateKpiBatch({
     eligibleUsers,
     batchSize: BATCH_SIZE,
-    handler,
+    protocol,
     startTimestamp,
     endTimestampExclusive,
   })
@@ -167,8 +162,17 @@ async function getArgs() {
       default: 'rewards',
     }).argv
 
+  const outputDir = join(
+    argv['datadir'],
+    argv['protocol'],
+    toPeriodFolderName({
+      startTimestamp: new Date(argv['start-timestamp']),
+      endTimestampExclusive: new Date(argv['end-timestamp']),
+    }),
+  )
+
   return {
-    datadir: argv['datadir'],
+    outputDir,
     protocol: argv['protocol'],
     startTimestamp: argv['start-timestamp'],
     endTimestampExclusive: argv['end-timestamp'],
