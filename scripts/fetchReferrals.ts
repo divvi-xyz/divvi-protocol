@@ -141,7 +141,7 @@ export async function fetchReferrals(
   }
 
   for (const file of args.excludeListFiles) {
-    const excludeListOutputFile = `${outputDir}/exclude-${file}`
+    const excludeListOutputFile = join(args.outputDir, `exclude-${file}`)
     copyFileSync(file, excludeListOutputFile)
     console.log(`Copied exclude list file ${file} to ${excludeListOutputFile}`)
   }
