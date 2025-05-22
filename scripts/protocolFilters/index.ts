@@ -36,6 +36,12 @@ function _createFilter(matcher: MatcherFn) {
     events: ReferralEvent[],
     filterParams?: FilterParams,
   ): Promise<ReferralEvent[]> {
-    return events.filter((event) => matcher(event, filterParams))
+    const filteredEvents = []
+    for (const event of events) {
+      if (await matcher(event, filterParams)) {
+        filteredEvents.push(event)
+      }
+    }
+    return filteredEvents
   }
 }
