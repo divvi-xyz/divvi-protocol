@@ -30,6 +30,7 @@ async function _getNearestBlock(
   networkId: NetworkId,
   timestamp: Date,
 ): Promise<BlockTimestampData> {
+  console.log('========Querying DefiLlama for block timestamp========')
   const unixTimestamp = Math.floor(timestamp.getTime() / 1000)
   const defiLlamaChain = NETWORK_ID_TO_DEFI_LLAMA_CHAIN[networkId]
 
