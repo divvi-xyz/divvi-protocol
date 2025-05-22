@@ -59,5 +59,5 @@ export interface ReferralEvent {
 }
 
 export interface FilterParams {
-  allowlist?: Address[]
+  allowList?: Address[]
 }
