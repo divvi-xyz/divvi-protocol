@@ -132,6 +132,7 @@ async function uploadCurrentPeriodKpis(
       startTimestamp: currentPeriod.startTimestamp,
       endTimestampExclusive,
       outputDir,
+      maxThroughputPerMinute: 250,
     })
     console.log(
       `Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,
