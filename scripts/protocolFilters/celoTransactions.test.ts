@@ -15,15 +15,15 @@ describe('filter', () => {
     expect(result).toBe(true)
   })
 
-  it('returns true if referrerId is in builderAllowList', async () => {
-    const builderAllowList: Address[] = ['0x456', '0x789']
-    const result = await filter(event, builderAllowList)
+  it('returns true if referrerId is in allowlist', async () => {
+    const allowlist: Address[] = ['0x456', '0x789']
+    const result = await filter(event, { allowlist })
     expect(result).toBe(true)
   })
 
-  it('returns false if referrerId is not in builderAllowList', async () => {
-    const builderAllowList: Address[] = ['0x789', '0xabc']
-    const result = await filter(event, builderAllowList)
+  it('returns false if referrerId is not in allowlist', async () => {
+    const allowlist: Address[] = ['0x789', '0xabc']
+    const result = await filter(event, { allowlist })
     expect(result).toBe(false)
   })
 })
