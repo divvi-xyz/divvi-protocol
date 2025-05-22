@@ -94,7 +94,7 @@ export async function fetchReferrals(
     timestamp: new Date(event.timestamp * 1000).toISOString(),
   }))
 
-  const outputFile = `${args.outputDir}/referrals.csv`
+  const outputFile = join(args.outputDir, 'referrals.csv')
 
   // Create directory if it doesn't exist
   mkdirSync(dirname(outputFile), { recursive: true })
@@ -104,7 +104,7 @@ export async function fetchReferrals(
   console.log(`Wrote results to ${outputFile}`)
 
   if (args.builderAllowList) {
-    const allowListOutputFile = `${args.outputDir}/builder-allowlist.csv`
+    const allowListOutputFile = join(args.outputDir, 'builder-allowlist.csv')
     copyFileSync(args.builderAllowList, allowListOutputFile)
     console.log(`Copied builder allowlist to ${allowListOutputFile}`)
   }
