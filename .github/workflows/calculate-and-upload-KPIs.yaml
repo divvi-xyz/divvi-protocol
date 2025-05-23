@@ -3,9 +3,6 @@ name: Calculate and Upload KPIs
 on:
   schedule:
     - cron: '0 * * * *' # Runs at minute 0 of every hour
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       timestamp:

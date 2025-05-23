@@ -85,10 +85,6 @@ async function uploadCurrentPeriodKpis(
   )
   const endTimestampExclusive = new Date(startOfCalculationHour).toISOString()
 
-  console.log('====endTimestampExclusive', endTimestampExclusive)
-
-  return
-
   const kpiFilePaths: string[] = []
 
   // Due to the DefiLlama API rate limit, there is no point in parallelising the calculations across campaigns
