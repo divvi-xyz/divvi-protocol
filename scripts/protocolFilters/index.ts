@@ -31,17 +31,29 @@ export const protocolFilters: Record<Protocol, FilterFn> = {
   'scout-game-v0': _createFilter(filterScoutGameV0),
 }
 
+const BATCH_SIZE = 20
+
 function _createFilter(matcher: MatcherFn) {
   return async function (
     events: ReferralEvent[],
     filterParams?: FilterParams,
   ): Promise<ReferralEvent[]> {
     const filteredEvents = []
-    for (const event of events) {
-      if (await matcher(event, filterParams)) {
-        filteredEvents.push(event)
-      }
+
+    for (let i = 0; i < events.length; i += BATCH_SIZE) {
+      const batch = events.slice(i, i + BATCH_SIZE)
+      const batchResults = await Promise.all(
+        batch.map(async (event) => {
+          if (await matcher(event, filterParams)) {
+            return event
+          }
+          return null
+        }),
+      )
+      const filteredBatchResults = batchResults.filter((event) => !!event)
+      filteredEvents.push(...filteredBatchResults)
     }
+
     return filteredEvents
   }
 }

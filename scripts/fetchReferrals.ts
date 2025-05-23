@@ -86,9 +86,7 @@ export async function fetchReferrals(
       ) as Address[])
     : undefined
 
-  const filteredEvents = await args.protocolFilter(uniqueEvents, {
-    allowList,
-  })
+  const filteredEvents = await args.protocolFilter(uniqueEvents, { allowList })
   const outputEvents = filteredEvents.map((event) => ({
     referrerId: event.referrerId,
     userAddress: event.userAddress,

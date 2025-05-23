@@ -11,7 +11,7 @@ import { calculateProportionalPrizeContest } from './proportionalPrizeContest'
 // proof-of-impact campaign parameters
 // May 8 2025 12:00:00 AM UTC
 const proofOfImpactStartTimestamp = '1746687600000'
-// May 29 2025 12:00:00 AM UTC
+// May 29 2025 07:00:00 AM UTC
 const proofOfImpactendTimestampExclusive = '1748502000000'
 const totalRewards = parseEther('14839')
 const REWARD_POOL_ADDRESS = '0xE2bEdafB063e0B7f12607ebcf4636e2690A427a3' // on Celo mainnet
