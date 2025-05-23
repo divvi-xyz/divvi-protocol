@@ -5,7 +5,7 @@ on:
     - cron: '0 * * * *' # Runs at minute 0 of every hour
   pull_request:
     branches:
-      - kathy/calculate-upload-kpi
+      - main
   workflow_dispatch:
     inputs:
       timestamp:
