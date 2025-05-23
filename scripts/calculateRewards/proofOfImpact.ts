@@ -40,7 +40,7 @@ export function calculateRewardsProofOfImpact({
     rewards: totalRewardsForPeriod,
   }).map((row) => ({
     ...row,
-    rewardAmountUnits: formatEther(BigInt(row.rewardAmount)),
+    rewardAmountDecimal: formatEther(BigInt(row.rewardAmount)),
   }))
 }
 
