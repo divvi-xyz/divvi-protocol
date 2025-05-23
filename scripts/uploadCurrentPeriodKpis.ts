@@ -53,14 +53,24 @@ const campaigns: Campaign[] = [
 ]
 
 async function getArgs() {
-  const argv = await yargs.env('').option('dry-run', {
-    description: 'Only show what would be uploaded without actually uploading',
-    type: 'boolean',
-    default: false,
-  }).argv
+  const argv = await yargs
+    .env('')
+    .option('dry-run', {
+      description:
+        'Only show what would be uploaded without actually uploading',
+      type: 'boolean',
+      default: false,
+    })
+    .option('calculation-timestamp', {
+      description:
+        'KPIs are calculated for the reward period that includes this timestamp, from the start of the period up to this timestamp (new Date() compatible epoch milliseconds or string)',
+      type: 'string',
+      default: new Date().toISOString(),
+    }).argv
 
   return {
     dryRun: argv['dry-run'],
+    calculationTimestamp: argv['calculation-timestamp'],
   }
 }
 
@@ -68,8 +78,12 @@ async function uploadCurrentPeriodKpis(
   args: Awaited<ReturnType<typeof getArgs>>,
 ) {
   // This script will calculate rewards ending at the start of the current hour
-  const startOfCurrentHour = new Date().setMinutes(0, 0, 0)
-  const endTimestampExclusive = new Date(startOfCurrentHour).toISOString()
+  const startOfCalculationHour = new Date(args.calculationTimestamp).setMinutes(
+    0,
+    0,
+    0,
+  )
+  const endTimestampExclusive = new Date(startOfCalculationHour).toISOString()
 
   const kpiFilePaths: string[] = []
 
@@ -84,8 +98,8 @@ async function uploadCurrentPeriodKpis(
     )
 
     if (
-      campaignStartTimestamp > startOfCurrentHour ||
-      campaignEndTimestampExclusive <= startOfCurrentHour
+      campaignStartTimestamp > startOfCalculationHour ||
+      campaignEndTimestampExclusive <= startOfCalculationHour
     ) {
       console.log(`Campaign ${campaign.protocol} is not active, skipping`)
       continue
@@ -94,7 +108,7 @@ async function uploadCurrentPeriodKpis(
     // Find the most recent period that started before the start of the current hour
     const currentPeriod = campaign.rewardsPeriods
       .filter(
-        (period) => Date.parse(period.startTimestamp) < startOfCurrentHour,
+        (period) => Date.parse(period.startTimestamp) < startOfCalculationHour,
       )
       .sort(
         (a, b) => Date.parse(b.startTimestamp) - Date.parse(a.startTimestamp),
