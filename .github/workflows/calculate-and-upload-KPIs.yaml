@@ -30,7 +30,7 @@ jobs:
       - name: Calculate and upload KPIs for the current reward period
         run: |
           yarn ts-node scripts/uploadCurrentPeriodKpis.ts \
-            ${{ github.event.inputs.timestamp && format('--calculation-timestamp "%s"', github.event.inputs.timestamp) }}
+            --calculation-timestamp ${{ github.event.inputs.timestamp }}
 
       # TODO(kathy)
       # - name: Notify Slack on Failure
