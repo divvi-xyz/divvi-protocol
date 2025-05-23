@@ -60,6 +60,4 @@ export interface ReferralEvent {
 
 export interface FilterParams {
   allowList?: Address[]
-  excludeList?: Address[]
-  failOnExclude?: boolean
 }
