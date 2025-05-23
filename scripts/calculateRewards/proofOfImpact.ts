@@ -1,12 +1,9 @@
 import yargs from 'yargs'
-import { parse } from 'csv-parse/sync'
-import { readFileSync } from 'fs'
 import { parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import { toPeriodFolderName } from '../utils/dateFormatting'
-import { join } from 'path'
 import { calculateProportionalPrizeContest } from './proportionalPrizeContest'
+import { ResultDirectory, KpiRow } from '../../src/resultDirectory'
 
 // proof-of-impact campaign parameters
 // May 8 2025 12:00:00 AM UTC
@@ -69,32 +66,18 @@ function parseArgs() {
     .parseSync()
 }
 
-interface KpiRow {
-  referrerId: string
-  userAddress: string
-  kpi: string
-}
-
 async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args['start-timestamp'])
   const endTimestampExclusive = new Date(args['end-timestamp'])
 
-  const folderPath = join(
-    args.datadir,
-    'celo-transactions',
-    toPeriodFolderName({
-      startTimestamp,
-      endTimestampExclusive,
-    }),
-  )
-  const inputPath = join(folderPath, 'kpi.csv')
-  const outputPath = join(folderPath, 'safe-transactions.json')
+  const resultDirectory = new ResultDirectory({
+    datadir: args.datadir,
+    name: 'celo-transactions',
+    startTimestamp,
+    endTimestampExclusive,
+  })
 
-  const kpiData = parse(readFileSync(inputPath, 'utf-8').toString(), {
-    skip_empty_lines: true,
-    delimiter: ',',
-    columns: true,
-  }) as KpiRow[]
+  const kpiData = await resultDirectory.readKpi()
 
   const rewards = calculateRewardsProofOfImpact({
     kpiData,
@@ -111,7 +94,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
   )
 
   createAddRewardSafeTransactionJSON({
-    filePath: outputPath,
+    filePath: resultDirectory.safeTransactionsFilePath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
     rewards,
     startTimestamp,
