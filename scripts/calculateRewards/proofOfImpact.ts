@@ -1,5 +1,5 @@
 import yargs from 'yargs'
-import { parseEther } from 'viem'
+import { formatEther, parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { calculateProportionalPrizeContest } from './proportionalPrizeContest'
@@ -38,7 +38,10 @@ export function calculateRewardsProofOfImpact({
   return calculateProportionalPrizeContest({
     kpiData,
     rewards: totalRewardsForPeriod,
-  })
+  }).map((row) => ({
+    ...row,
+    rewardAmountUnits: formatEther(BigInt(row.rewardAmount)),
+  }))
 }
 
 function parseArgs() {
@@ -85,14 +88,6 @@ async function main(args: ReturnType<typeof parseArgs>) {
     endTimestampExclusive,
   })
 
-  console.log(
-    'rewards:',
-    rewards.map((r) => ({
-      referrerId: r.referrerId,
-      rewardAmount: BigNumber(r.rewardAmount).shiftedBy(-18).toFixed(0),
-    })),
-  )
-
   createAddRewardSafeTransactionJSON({
     filePath: resultDirectory.safeTransactionsFilePath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
@@ -100,6 +95,8 @@ async function main(args: ReturnType<typeof parseArgs>) {
     startTimestamp,
     endTimestampExclusive,
   })
+
+  await resultDirectory.writeRewards(rewards)
 }
 
 // Only run main if this file is being executed directly
