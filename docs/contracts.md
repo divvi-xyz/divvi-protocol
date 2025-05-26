@@ -37,6 +37,6 @@ The Reward Pool contracts can be deployed on multiple networks multiple times. E
 
 List of staging contracts:
 
-| Network | Proxy address                                                                                                          | Multisig Address (has both Owner and Manager roles)                                                                                    |
-| ------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Celo    | [`0xecd6580636d0c7c93f60892daabd96af3a17e37b`](https://celoscan.io/address/0xecd6580636d0c7c93f60892daabd96af3a17e37b) | [`0x215bde0ec16d1358139f624d522361c431413754`](https://app.safe.global/home?safe=celo:celo:0x215bde0ec16d1358139f624d522361c431413754) |
+| Network | Reward Token  | Proxy address                                                                                                          | Multisig Address (has both Owner and Manager roles)                                                                                    |
+| ------- | ------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Celo    | CELO (native) | [`0xecd6580636d0c7c93f60892daabd96af3a17e37b`](https://celoscan.io/address/0xecd6580636d0c7c93f60892daabd96af3a17e37b) | [`0x215bde0ec16d1358139f624d522361c431413754`](https://app.safe.global/home?safe=celo:celo:0x215bde0ec16d1358139f624d522361c431413754) |
