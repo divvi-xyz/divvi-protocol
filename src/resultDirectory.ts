@@ -1,5 +1,5 @@
 import path from 'path'
-import { readFile, writeFile } from 'fs/promises'
+import { copyFile, readFile, writeFile } from 'fs/promises'
 import { stringify } from 'csv-stringify/sync'
 import { toPeriodFolderName } from '../scripts/utils/dateFormatting'
 import { parse } from 'csv-parse/sync'
@@ -39,6 +39,10 @@ export class ResultDirectory {
     return path.join(this.resultsDirectory, 'rewards.csv')
   }
 
+  excludeListFilePath(fileName: string) {
+    return path.join(this.resultsDirectory, `exclude-${fileName}`)
+  }
+
   get safeTransactionsFilePath() {
     return path.join(this.resultsDirectory, 'safe-transactions.json')
   }
@@ -63,5 +67,9 @@ export class ResultDirectory {
 
   async readKpi() {
     return (await this._read(this.kpiFilePath)) as KpiRow[]
+  }
+
+  writeExcludeList(fileName: string) {
+    return copyFile(fileName, this.excludeListFilePath(fileName))
   }
 }
