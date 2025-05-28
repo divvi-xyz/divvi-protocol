@@ -1,0 +1,36 @@
+{
+  "meta": {},
+  "transactions": [
+    {
+      "to": "0x326161d68c05bE55367a0041b9C8f68082C04863",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address[]",
+            "name": "users",
+            "type": "address[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "amounts",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "rewardFunctionArgs",
+            "type": "uint256[]"
+          }
+        ],
+        "name": "addRewards",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "users": "[0x6b3bc1b55b28380193733a2fd27f2639d92f14be]",
+        "amounts": "[200000000]",
+        "rewardFunctionArgs": "[1745107200, 1748454131]"
+      }
+    }
+  ]
+}
