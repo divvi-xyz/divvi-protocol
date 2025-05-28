@@ -1,6 +1,6 @@
 import { NetworkId } from '../../../types'
 import { getBlockRange } from '../utils/events'
-import { fetchTotalTransactionFees } from '../utils/networks'
+import { fetchTotalGasUsed } from '../utils/networks'
 
 export async function calculateKpi({
   address,
@@ -17,7 +17,7 @@ export async function calculateKpi({
     endTimestampExclusive,
   })
 
-  return await fetchTotalTransactionFees({
+  return await fetchTotalGasUsed({
     networkId: NetworkId['arbitrum-one'],
     users: [address],
     startBlock,

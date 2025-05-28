@@ -3,7 +3,7 @@ import { NetworkId } from '../../../types'
 import { getHyperSyncClient } from '../../../utils'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 
-export async function fetchTotalTransactionFees({
+export async function fetchTotalGasUsed({
   networkId,
   users,
   startBlock,
@@ -14,7 +14,7 @@ export async function fetchTotalTransactionFees({
   startBlock?: number // inclusive
   endBlockExclusive?: number
 }): Promise<number> {
-  let totalTransactionFees = 0
+  let totalGasUsed = 0
 
   const client = getHyperSyncClient(networkId)
 
@@ -29,11 +29,11 @@ export async function fetchTotalTransactionFees({
 
   await paginateQuery(client, query, async (response) => {
     for (const tx of response.data.transactions) {
-      totalTransactionFees += Number(tx.gasUsed ?? 0) * Number(tx.gasPrice ?? 0)
+      totalGasUsed += Number(tx.gasUsed ?? 0)
     }
   })
 
-  return totalTransactionFees
+  return totalGasUsed
 }
 
 export async function fetchTotalTransactions({
