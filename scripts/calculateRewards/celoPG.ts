@@ -1,12 +1,11 @@
 import yargs from 'yargs'
 import { parse } from 'csv-parse/sync'
-import { copyFileSync, readFileSync } from 'fs'
+import { readFileSync } from 'fs'
 import { parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import { toPeriodFolderName } from '../utils/dateFormatting'
-import { join } from 'path'
 import filterExcludedReferrerIds from '../utils/filterExcludedReferralIds'
+import { ResultDirectory } from '../../src/resultDirectory'
 
 const REWARD_POOL_ADDRESS = '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3' // on Celo mainnet
 
@@ -105,23 +104,16 @@ async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args['start-timestamp'])
   const endTimestampExclusive = new Date(args['end-timestamp'])
 
-  const folderPath = join(
-    args.datadir,
-    'celo-pg',
-    toPeriodFolderName({
-      startTimestamp,
-      endTimestampExclusive,
-    }),
-  )
-  const inputPath = join(folderPath, 'kpi.csv')
-  const outputPath = join(folderPath, 'safe-transactions.json')
+  const resultDirectory = new ResultDirectory({
+    datadir: args.datadir,
+    name: 'celo-pg',
+    startTimestamp,
+    endTimestampExclusive,
+  })
+
   const rewardAmount = args['reward-amount']
 
-  const kpiData = parse(readFileSync(inputPath, 'utf-8').toString(), {
-    skip_empty_lines: true,
-    delimiter: ',',
-    columns: true,
-  }) as KpiRow[]
+  const kpiData = await resultDirectory.readKpi()
 
   const excludeList = args.excludelist.flatMap((file) =>
     parse(readFileSync(file, 'utf-8').toString(), {
@@ -144,18 +136,21 @@ async function main(args: ReturnType<typeof parseArgs>) {
   })
 
   createAddRewardSafeTransactionJSON({
-    filePath: outputPath,
+    filePath: resultDirectory.safeTransactionsFilePath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
     rewards,
     startTimestamp,
     endTimestampExclusive,
   })
 
-  for (const file of args.excludelist) {
-    const excludeListOutputFile = join(folderPath, `exclude-${file}`)
-    copyFileSync(file, excludeListOutputFile)
-    console.log(`Copied exclude list ${file} to ${excludeListOutputFile}`)
+  for (const fileName of args.excludelist) {
+    await resultDirectory.writeExcludeList(fileName)
+    console.log(
+      `Saved exclude list ${fileName} to ${resultDirectory.excludeListFilePath(fileName)}`,
+    )
   }
+
+  await resultDirectory.writeRewards(rewards)
 }
 
 // Only run main if this file is being executed directly
