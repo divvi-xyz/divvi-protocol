@@ -16,13 +16,8 @@ const mockResponse: QueryResponse = {
   totalExecutionTime: 50,
 }
 
-function calculateExpected(
-  transactions: { gasUsed: bigint}[],
-) {
-  return transactions.reduce(
-    (acc, tx) => acc + Number(tx.gasUsed),
-    0,
-  )
+function calculateExpected(transactions: { gasUsed: bigint }[]) {
+  return transactions.reduce((acc, tx) => acc + Number(tx.gasUsed), 0)
 }
 
 describe('fetchTotalGasUsed', () => {
@@ -45,10 +40,7 @@ describe('fetchTotalGasUsed', () => {
       ...mockResponse,
       data: {
         ...mockResponse.data,
-        transactions: [
-          { gasUsed: 64678n },
-          { gasUsed: 211128n },
-        ],
+        transactions: [{ gasUsed: 64678n }, { gasUsed: 211128n }],
       },
     } as QueryResponse)
 
@@ -60,10 +52,7 @@ describe('fetchTotalGasUsed', () => {
     })
 
     expect(result).toBe(
-      calculateExpected([
-        { gasUsed: 64678n },
-        { gasUsed: 211128n },
-      ]),
+      calculateExpected([{ gasUsed: 64678n }, { gasUsed: 211128n }]),
     )
     expect(mockClient.get).toHaveBeenCalledTimes(1)
   })
@@ -74,10 +63,7 @@ describe('fetchTotalGasUsed', () => {
         ...mockResponse,
         data: {
           ...mockResponse.data,
-          transactions: [
-            { gasUsed: 64678n },
-            { gasUsed: 211128n },
-          ],
+          transactions: [{ gasUsed: 64678n }, { gasUsed: 211128n }],
         },
       } as QueryResponse)
       .mockReturnValueOnce(mockResponse as QueryResponse)
@@ -89,10 +75,7 @@ describe('fetchTotalGasUsed', () => {
     })
 
     expect(result).toBe(
-      calculateExpected([
-        { gasUsed: 64678n },
-        { gasUsed: 211128n },
-      ]),
+      calculateExpected([{ gasUsed: 64678n }, { gasUsed: 211128n }]),
     )
     expect(mockClient.get).toHaveBeenCalledTimes(2)
   })
@@ -129,10 +112,7 @@ describe('fetchTotalGasUsed', () => {
     })
 
     expect(result).toBe(
-      calculateExpected([
-        { gasUsed: 30000n },
-        { gasUsed: 60000n },
-      ]),
+      calculateExpected([{ gasUsed: 30000n }, { gasUsed: 60000n }]),
     )
     expect(mockClient.get).toHaveBeenCalledTimes(3)
   })
