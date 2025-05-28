@@ -1,4 +1,4 @@
-import { fetchTotalTransactionFees } from './networks'
+import { fetchTotalGasUsed } from './networks'
 import { getHyperSyncClient } from '../../../utils'
 import { QueryResponse } from '@envio-dev/hypersync-client'
 import { NetworkId } from '../../../types'
@@ -17,15 +17,15 @@ const mockResponse: QueryResponse = {
 }
 
 function calculateExpected(
-  transactions: { gasUsed: bigint; gasPrice: bigint }[],
+  transactions: { gasUsed: bigint}[],
 ) {
   return transactions.reduce(
-    (acc, tx) => acc + Number(tx.gasUsed * tx.gasPrice),
+    (acc, tx) => acc + Number(tx.gasUsed),
     0,
   )
 }
 
-describe('fetchTotalTransactionFees', () => {
+describe('fetchTotalGasUsed', () => {
   const networkId: NetworkId = NetworkId['celo-mainnet']
   const users = ['0xUser1']
   let mockClient: { get: jest.Mock }
@@ -46,13 +46,13 @@ describe('fetchTotalTransactionFees', () => {
       data: {
         ...mockResponse.data,
         transactions: [
-          { gasUsed: 64678n, gasPrice: 10000000n },
-          { gasUsed: 211128n, gasPrice: 551556000n },
+          { gasUsed: 64678n },
+          { gasUsed: 211128n },
         ],
       },
     } as QueryResponse)
 
-    const result = await fetchTotalTransactionFees({
+    const result = await fetchTotalGasUsed({
       networkId,
       users,
       startBlock: 0,
@@ -61,8 +61,8 @@ describe('fetchTotalTransactionFees', () => {
 
     expect(result).toBe(
       calculateExpected([
-        { gasUsed: 64678n, gasPrice: 10000000n },
-        { gasUsed: 211128n, gasPrice: 551556000n },
+        { gasUsed: 64678n },
+        { gasUsed: 211128n },
       ]),
     )
     expect(mockClient.get).toHaveBeenCalledTimes(1)
@@ -75,14 +75,14 @@ describe('fetchTotalTransactionFees', () => {
         data: {
           ...mockResponse.data,
           transactions: [
-            { gasUsed: 64678n, gasPrice: 10000000n },
-            { gasUsed: 211128n, gasPrice: 551556000n },
+            { gasUsed: 64678n },
+            { gasUsed: 211128n },
           ],
         },
       } as QueryResponse)
       .mockReturnValueOnce(mockResponse as QueryResponse)
 
-    const result = await fetchTotalTransactionFees({
+    const result = await fetchTotalGasUsed({
       networkId,
       users,
       startBlock: 0,
@@ -90,8 +90,8 @@ describe('fetchTotalTransactionFees', () => {
 
     expect(result).toBe(
       calculateExpected([
-        { gasUsed: 64678n, gasPrice: 10000000n },
-        { gasUsed: 211128n, gasPrice: 551556000n },
+        { gasUsed: 64678n },
+        { gasUsed: 211128n },
       ]),
     )
     expect(mockClient.get).toHaveBeenCalledTimes(2)
@@ -101,7 +101,7 @@ describe('fetchTotalTransactionFees', () => {
     mockClient.get.mockRejectedValue(new Error('API failure'))
 
     await expect(
-      fetchTotalTransactionFees({ networkId, users, startBlock: 0 }),
+      fetchTotalGasUsed({ networkId, users, startBlock: 0 }),
     ).rejects.toThrow('API failure')
     expect(mockClient.get).toHaveBeenCalledTimes(1)
   })
@@ -110,19 +110,19 @@ describe('fetchTotalTransactionFees', () => {
     mockClient.get
       .mockResolvedValueOnce({
         data: {
-          transactions: [{ gasUsed: 30000n, gasPrice: 1000000n }],
+          transactions: [{ gasUsed: 30000n }],
         },
         nextBlock: 50,
       } as QueryResponse)
       .mockResolvedValueOnce({
         data: {
-          transactions: [{ gasUsed: 60000n, gasPrice: 1000000n }],
+          transactions: [{ gasUsed: 60000n }],
         },
         nextBlock: 100,
       } as QueryResponse)
       .mockResolvedValueOnce(mockResponse as QueryResponse)
 
-    const result = await fetchTotalTransactionFees({
+    const result = await fetchTotalGasUsed({
       networkId,
       users,
       startBlock: 0,
@@ -130,8 +130,8 @@ describe('fetchTotalTransactionFees', () => {
 
     expect(result).toBe(
       calculateExpected([
-        { gasUsed: 30000n, gasPrice: 1000000n },
-        { gasUsed: 60000n, gasPrice: 1000000n },
+        { gasUsed: 30000n },
+        { gasUsed: 60000n },
       ]),
     )
     expect(mockClient.get).toHaveBeenCalledTimes(3)
