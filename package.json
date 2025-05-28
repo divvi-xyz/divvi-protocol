@@ -46,6 +46,8 @@
     "@types/jest": "^29.5.14",
     "@types/mocha": "^10.0.10",
     "@types/node-fetch": "^2.6.12",
+    "@types/sax": "^1.2.7",
+    "@types/unzipper": "^0.10.11",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^8.32.1",
     "@valora/prettier-config": "^0.0.1",
@@ -67,11 +69,13 @@
     "nock": "^14.0.2",
     "prettier": "^3.5.3",
     "prettier-plugin-solidity": "^1.4.3",
+    "sax": "^1.4.1",
     "solhint": "^5.0.5",
     "solidity-coverage": "^0.8.14",
     "ts-jest": "^29.3.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
+    "unzipper": "^0.12.3",
     "viem": "^2.24.1",
     "yargs": "^17.7.2"
   }
