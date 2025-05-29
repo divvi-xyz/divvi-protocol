@@ -120,8 +120,10 @@ async function uploadCurrentPeriodKpis(
       )
     }
 
+    const datadir = 'kpi'
+
     const outputDir = join(
-      'kpi',
+      datadir,
       campaign.protocol,
       toPeriodFolderName({
         startTimestamp: new Date(currentPeriod.startTimestamp),
@@ -148,7 +150,7 @@ async function uploadCurrentPeriodKpis(
       protocol: campaign.protocol,
       startTimestamp: currentPeriod.startTimestamp,
       endTimestampExclusive,
-      outputDir,
+      datadir,
     })
     console.log(
       `Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,
