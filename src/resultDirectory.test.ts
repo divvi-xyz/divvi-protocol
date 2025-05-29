@@ -22,6 +22,9 @@ describe('ResultDirectory', () => {
     )
 
     expect(resultDir.kpiFileSuffix).toBe(path.join(expectedBasePath, 'kpi'))
+    expect(resultDir.referralsFileSuffix).toBe(
+      path.join(expectedBasePath, 'referrals'),
+    )
     expect(resultDir.rewardsFileSuffix).toBe(
       path.join(expectedBasePath, 'rewards'),
     )
