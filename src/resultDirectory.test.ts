@@ -21,9 +21,9 @@ describe('ResultDirectory', () => {
       '2024-01-01T00:00:00.000Z_2024-02-01T00:00:00.000Z',
     )
 
-    expect(resultDir.kpiFilePath).toBe(path.join(expectedBasePath, 'kpi.csv'))
-    expect(resultDir.rewardsFilePath).toBe(
-      path.join(expectedBasePath, 'rewards.csv'),
+    expect(resultDir.kpiFileSuffix).toBe(path.join(expectedBasePath, 'kpi'))
+    expect(resultDir.rewardsFileSuffix).toBe(
+      path.join(expectedBasePath, 'rewards'),
     )
     expect(resultDir.safeTransactionsFilePath).toBe(
       path.join(expectedBasePath, 'safe-transactions.json'),
