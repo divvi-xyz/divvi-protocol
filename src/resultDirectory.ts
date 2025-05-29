@@ -1,13 +1,20 @@
 import path from 'path'
-import { copyFile, readFile, writeFile } from 'fs/promises'
+import { copyFile, readFile, writeFile, mkdir } from 'fs/promises'
 import { stringify } from 'csv-stringify/sync'
 import { toPeriodFolderName } from '../scripts/utils/dateFormatting'
 import { parse } from 'csv-parse/sync'
+import { dirname } from 'path'
 
 export interface KpiRow {
   referrerId: string
   userAddress: string
   kpi: string
+}
+
+interface ReferralRow {
+  referrerId: string
+  userAddress: string
+  timestamp: string
 }
 
 export class ResultDirectory {
@@ -33,6 +40,10 @@ export class ResultDirectory {
 
   get kpiFileSuffix() {
     return path.join(this.resultsDirectory, 'kpi')
+  }
+
+  get referralsFileSuffix() {
+    return path.join(this.resultsDirectory, 'referrals')
   }
 
   get rewardsFileSuffix() {
@@ -67,15 +78,28 @@ export class ResultDirectory {
     })
   }
 
-  writeRewards(rewards: any[]) {
-    return Promise.all([
+  async writeRewards(rewards: any[]) {
+    await mkdir(dirname(this.rewardsFileSuffix), { recursive: true })
+    return await Promise.all([
       this._writeCsv(this.rewardsFileSuffix, rewards),
       this._writeJson(this.rewardsFileSuffix, rewards),
     ])
   }
 
+  async writeKpi(kpi: any[]) {
+    await mkdir(dirname(this.rewardsFileSuffix), { recursive: true })
+    return await Promise.all([
+      this._writeCsv(this.kpiFileSuffix, kpi),
+      this._writeJson(this.kpiFileSuffix, kpi),
+    ])
+  }
+
   async readKpi() {
     return (await this._readCsv(this.kpiFileSuffix)) as KpiRow[]
+  }
+
+  async readReferrals() {
+    return (await this._readCsv(this.referralsFileSuffix)) as ReferralRow[]
   }
 
   writeExcludeList(fileName: string) {
