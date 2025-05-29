@@ -31,12 +31,12 @@ export class ResultDirectory {
     )
   }
 
-  get kpiFilePath() {
-    return path.join(this.resultsDirectory, 'kpi.csv')
+  get kpiFileSuffix() {
+    return path.join(this.resultsDirectory, 'kpi')
   }
 
-  get rewardsFilePath() {
-    return path.join(this.resultsDirectory, 'rewards.csv')
+  get rewardsFileSuffix() {
+    return path.join(this.resultsDirectory, 'rewards')
   }
 
   excludeListFilePath(fileName: string) {
@@ -47,26 +47,35 @@ export class ResultDirectory {
     return path.join(this.resultsDirectory, 'safe-transactions.json')
   }
 
-  async _read(filePath: string) {
-    return parse((await readFile(filePath, 'utf-8')).toString(), {
+  async _readCsv(filePath: string) {
+    return parse((await readFile(`${filePath}.csv`, 'utf-8')).toString(), {
       skip_empty_lines: true,
       delimiter: ',',
       columns: true,
     })
   }
 
-  async _write(filePath: string, data: any[]) {
-    return writeFile(filePath, stringify(data, { header: true }), {
+  async _writeCsv(filePath: string, data: any[]) {
+    return writeFile(`${filePath}.csv`, stringify(data, { header: true }), {
+      encoding: 'utf-8',
+    })
+  }
+
+  async _writeJson(filePath: string, data: any[]) {
+    return writeFile(`${filePath}.json`, JSON.stringify(data), {
       encoding: 'utf-8',
     })
   }
 
   writeRewards(rewards: any[]) {
-    return this._write(this.rewardsFilePath, rewards)
+    return Promise.all([
+      this._writeCsv(this.rewardsFileSuffix, rewards),
+      this._writeJson(this.rewardsFileSuffix, rewards),
+    ])
   }
 
   async readKpi() {
-    return (await this._read(this.kpiFilePath)) as KpiRow[]
+    return (await this._readCsv(this.kpiFileSuffix)) as KpiRow[]
   }
 
   writeExcludeList(fileName: string) {
