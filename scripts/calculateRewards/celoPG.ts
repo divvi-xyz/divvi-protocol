@@ -49,7 +49,7 @@ export function calculateRewardsCeloPG({
 }
 
 function parseArgs() {
-  return yargs
+  const args = yargs
     .option('datadir', {
       description: 'the directory to store the results',
       type: 'string',
@@ -92,6 +92,20 @@ function parseArgs() {
     })
     .strict()
     .parseSync()
+
+  return {
+    resultDirectory: new ResultDirectory({
+      datadir: args.datadir,
+      name: 'celo-pg',
+      startTimestamp: new Date(args['start-timestamp']),
+      endTimestampExclusive: new Date(args['end-timestamp']),
+    }),
+    startTimestamp: args['start-timestamp'],
+    endTimestampExclusive: args['end-timestamp'],
+    rewardAmount: args['reward-amount'],
+    excludelist: args.excludelist,
+    failOnExclude: args['fail-on-exclude'],
+  }
 }
 
 interface KpiRow {
@@ -101,17 +115,10 @@ interface KpiRow {
 }
 
 async function main(args: ReturnType<typeof parseArgs>) {
-  const startTimestamp = new Date(args['start-timestamp'])
-  const endTimestampExclusive = new Date(args['end-timestamp'])
-
-  const resultDirectory = new ResultDirectory({
-    datadir: args.datadir,
-    name: 'celo-pg',
-    startTimestamp,
-    endTimestampExclusive,
-  })
-
-  const rewardAmount = args['reward-amount']
+  const startTimestamp = new Date(args.startTimestamp)
+  const endTimestampExclusive = new Date(args.endTimestampExclusive)
+  const resultDirectory = args.resultDirectory
+  const rewardAmount = args.rewardAmount
 
   const kpiData = await resultDirectory.readKpi()
 
@@ -127,7 +134,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
   const filteredKpiData = filterExcludedReferrerIds({
     data: kpiData,
     excludeList,
-    failOnExclude: args['fail-on-exclude'],
+    failOnExclude: args.failOnExclude,
   })
 
   const rewards = calculateRewardsCeloPG({
