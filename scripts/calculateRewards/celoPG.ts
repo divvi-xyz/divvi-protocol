@@ -114,7 +114,7 @@ interface KpiRow {
   kpi: string
 }
 
-async function main(args: ReturnType<typeof parseArgs>) {
+export async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args.startTimestamp)
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const resultDirectory = args.resultDirectory
