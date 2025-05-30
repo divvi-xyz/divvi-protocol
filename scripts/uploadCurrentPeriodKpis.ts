@@ -156,8 +156,10 @@ async function uploadCurrentPeriodKpis(
       `Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,
     )
 
-    const outputFilePath = join(outputDir, 'kpi.csv') // this is the output file of calculateKpi
-    kpiFilePaths.push(outputFilePath)
+    // These are the output files calculateKpi will write with ResultDirectory
+    const outputFilePathCsv = join(outputDir, 'kpi.csv') // this is the output file of calculateKpi
+    const outputFilePathJson = join(outputDir, 'kpi.json') // this is the output file of calculateKpi
+    kpiFilePaths.push(outputFilePathCsv, outputFilePathJson)
   }
 
   const validPaths = kpiFilePaths.filter((path) => path !== null)
