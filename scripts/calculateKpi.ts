@@ -1,11 +1,7 @@
 import calculateKpiHandlers from './calculateKpi/protocols'
-import { parse } from 'csv-parse/sync'
-import { stringify } from 'csv-stringify/sync'
-import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import yargs from 'yargs'
 import { Protocol, protocols } from './types'
-import { toPeriodFolderName } from './utils/dateFormatting'
-import { dirname, join } from 'path'
+import { ResultDirectory } from '../src/resultDirectory'
 
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
@@ -106,17 +102,14 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const protocol = args.protocol
 
-  const inputFile = join(args.outputDir, 'referrals.csv')
-  const outputFile = join(args.outputDir, 'kpi.csv')
+  const resultDirectory = new ResultDirectory({
+    datadir: args.datadir,
+    name: protocol,
+    startTimestamp,
+    endTimestampExclusive,
+  })
 
-  const eligibleUsers: ReferralData[] = parse(
-    readFileSync(inputFile, 'utf-8').toString(),
-    {
-      skip_empty_lines: true,
-      delimiter: ',',
-      columns: true,
-    },
-  )
+  const eligibleUsers = await resultDirectory.readReferrals()
 
   const allResults = await calculateKpiBatch({
     eligibleUsers,
@@ -126,13 +119,9 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
     endTimestampExclusive,
   })
 
-  // Create directory if it doesn't exist
-  mkdirSync(dirname(outputFile), { recursive: true })
-  writeFileSync(outputFile, stringify(allResults, { header: true }), {
-    encoding: 'utf-8',
-  })
+  await resultDirectory.writeKpi(allResults)
 
-  console.log(`Wrote results to ${outputFile}`)
+  console.log(`Wrote results to ${resultDirectory.kpiFileSuffix}.csv`)
 }
 
 async function getArgs() {
@@ -162,17 +151,8 @@ async function getArgs() {
       default: 'rewards',
     }).argv
 
-  const outputDir = join(
-    argv['datadir'],
-    argv['protocol'],
-    toPeriodFolderName({
-      startTimestamp: new Date(argv['start-timestamp']),
-      endTimestampExclusive: new Date(argv['end-timestamp']),
-    }),
-  )
-
   return {
-    outputDir,
+    datadir: argv['datadir'],
     protocol: argv['protocol'],
     startTimestamp: argv['start-timestamp'],
     endTimestampExclusive: argv['end-timestamp'],
