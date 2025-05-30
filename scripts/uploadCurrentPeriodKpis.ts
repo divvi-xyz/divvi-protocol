@@ -8,7 +8,6 @@ import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import yargs from 'yargs'
 import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
-import { upload } from '@google-cloud/storage/build/cjs/src/resumable-upload'
 
 interface Campaign {
   protocol: Protocol
