@@ -151,6 +151,7 @@ async function uploadCurrentPeriodKpis(
       startTimestamp: currentPeriod.startTimestamp,
       endTimestampExclusive,
       datadir,
+      endTimestampExclusiveCampaign: currentPeriod.endTimestampExclusive,
     })
     console.log(
       `Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,

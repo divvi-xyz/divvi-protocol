@@ -100,13 +100,16 @@ async function calculateKpiBatch({
 export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
   const startTimestamp = new Date(args.startTimestamp)
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
+  const endTimestampExclusiveCampaign = new Date(
+    args.endTimestampExclusiveCampaign,
+  )
   const protocol = args.protocol
 
   const resultDirectory = new ResultDirectory({
     datadir: args.datadir,
     name: protocol,
     startTimestamp,
-    endTimestampExclusive,
+    endTimestampExclusive: endTimestampExclusiveCampaign,
   })
 
   const eligibleUsers = await resultDirectory.readReferrals()
@@ -146,6 +149,13 @@ async function getArgs() {
       type: 'string',
       demandOption: true,
     })
+    .option('end-timestamp-campaign', {
+      alias: 'e',
+      description:
+        'End timestamp (exclusive) for the campaign (new Date() compatible epoch milliseconds or string)',
+      type: 'string',
+      demandOption: true,
+    })
     .option('datadir', {
       description: 'Directory to save data',
       default: 'rewards',
@@ -156,6 +166,7 @@ async function getArgs() {
     protocol: argv['protocol'],
     startTimestamp: argv['start-timestamp'],
     endTimestampExclusive: argv['end-timestamp'],
+    endTimestampExclusiveCampaign: argv['end-timestamp-campaign'],
   }
 }
 
