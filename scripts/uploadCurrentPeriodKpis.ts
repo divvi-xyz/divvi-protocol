@@ -7,12 +7,19 @@ import { toPeriodFolderName } from './utils/dateFormatting'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import yargs from 'yargs'
 import { ResultDirectory } from '../src/resultDirectory'
+import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
+import { upload } from '@google-cloud/storage/build/cjs/src/resumable-upload'
 
 interface Campaign {
   protocol: Protocol
   rewardsPeriods: {
     startTimestamp: string
     endTimestampExclusive: string
+    calculateRewards?: (args: {
+      resultDirectory: ResultDirectory
+      startTimestamp: string
+      endTimestampExclusive: string
+    }) => Promise<void>
   }[]
 }
 
@@ -40,6 +47,24 @@ const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-05-15T00:00:00Z',
         endTimestampExclusive: '2025-06-01T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardsCeloPG({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '25000',
+            excludelist: [],
+            failOnExclude: false,
+          })
+        },
       },
       {
         startTimestamp: '2025-06-01T00:00:00Z',
@@ -86,7 +111,7 @@ async function uploadCurrentPeriodKpis(
   )
   const endTimestampExclusive = new Date(startOfCalculationHour).toISOString()
 
-  const kpiFilePaths: string[] = []
+  const uploadFilePaths: string[] = []
 
   // Due to the DefiLlama API rate limit, there is no point in parallelising the calculations across campaigns
   for (const campaign of campaigns) {
@@ -166,10 +191,21 @@ async function uploadCurrentPeriodKpis(
     // These are the output files calculateKpi writes with ResultDirectory
     const outputFilePathCsv = join(outputDir, 'kpi.csv')
     const outputFilePathJson = join(outputDir, 'kpi.json')
-    kpiFilePaths.push(outputFilePathCsv, outputFilePathJson)
+    uploadFilePaths.push(outputFilePathCsv, outputFilePathJson)
+
+    if (currentPeriod.calculateRewards) {
+      await currentPeriod.calculateRewards({
+        resultDirectory,
+        startTimestamp: currentPeriod.startTimestamp,
+        endTimestampExclusive,
+      })
+      const rewardsFilePathCsv = join(outputDir, 'rewards.csv')
+      const rewardsFilePathJson = join(outputDir, 'rewards.json')
+      uploadFilePaths.push(rewardsFilePathCsv, rewardsFilePathJson)
+    }
   }
 
-  const validPaths = kpiFilePaths.filter((path) => path !== null)
+  const validPaths = uploadFilePaths.filter((path) => path !== null)
 
   await uploadFilesToGCS(
     validPaths,
