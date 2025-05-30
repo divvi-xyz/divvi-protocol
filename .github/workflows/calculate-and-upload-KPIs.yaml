@@ -2,7 +2,7 @@ name: Calculate and Upload KPIs
 
 on:
   schedule:
-    - cron: '0 * * * *' # Runs at minute 0 of every hour
+    - cron: '0 */2 * * *' # Runs at minute 0 of every 2nd hour
   workflow_dispatch:
     inputs:
       timestamp:
