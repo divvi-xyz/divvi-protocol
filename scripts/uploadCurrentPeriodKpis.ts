@@ -6,6 +6,7 @@ import { join } from 'path'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import yargs from 'yargs'
+import { ResultDirectory } from '../src/resultDirectory'
 
 interface Campaign {
   protocol: Protocol
@@ -130,6 +131,12 @@ async function uploadCurrentPeriodKpis(
         endTimestampExclusive: new Date(currentPeriod.endTimestampExclusive),
       }),
     )
+    const resultDirectory = new ResultDirectory({
+      datadir,
+      name: campaign.protocol,
+      startTimestamp: new Date(currentPeriod.startTimestamp),
+      endTimestampExclusive: new Date(currentPeriod.endTimestampExclusive),
+    })
 
     const fetchReferralsStartTime = Date.now()
     await fetchReferrals({
@@ -147,18 +154,18 @@ async function uploadCurrentPeriodKpis(
 
     const calculateKpiStartTime = Date.now()
     await calculateKpi({
+      resultDirectory,
       protocol: campaign.protocol,
       startTimestamp: currentPeriod.startTimestamp,
       endTimestampExclusive,
-      datadir,
     })
     console.log(
       `Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,
     )
 
-    // These are the output files calculateKpi will write with ResultDirectory
-    const outputFilePathCsv = join(outputDir, 'kpi.csv') // this is the output file of calculateKpi
-    const outputFilePathJson = join(outputDir, 'kpi.json') // this is the output file of calculateKpi
+    // These are the output files calculateKpi writes with ResultDirectory
+    const outputFilePathCsv = join(outputDir, 'kpi.csv')
+    const outputFilePathJson = join(outputDir, 'kpi.json')
     kpiFilePaths.push(outputFilePathCsv, outputFilePathJson)
   }
 
