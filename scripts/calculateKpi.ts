@@ -101,13 +101,7 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
   const startTimestamp = new Date(args.startTimestamp)
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const protocol = args.protocol
-
-  const resultDirectory = new ResultDirectory({
-    datadir: args.datadir,
-    name: protocol,
-    startTimestamp,
-    endTimestampExclusive,
-  })
+  const resultDirectory = args.resultDirectory
 
   const eligibleUsers = await resultDirectory.readReferrals()
 
@@ -151,8 +145,15 @@ async function getArgs() {
       default: 'rewards',
     }).argv
 
-  return {
+  const resultDirectory = new ResultDirectory({
     datadir: argv['datadir'],
+    name: argv['protocol'],
+    startTimestamp: new Date(argv['start-timestamp']),
+    endTimestampExclusive: new Date(argv['end-timestamp']),
+  })
+
+  return {
+    resultDirectory,
     protocol: argv['protocol'],
     startTimestamp: argv['start-timestamp'],
     endTimestampExclusive: argv['end-timestamp'],
