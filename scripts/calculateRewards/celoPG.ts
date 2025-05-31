@@ -19,8 +19,11 @@ export function calculateRewardsCeloPG({
   proportionLinear: number
 }) {
   const totalRewardsForPeriod = new BigNumber(parseEther(rewardAmount))
-  const totalLinearRewardsForPeriod = totalRewardsForPeriod.times(proportionLinear)
-  const totalPowerRewardsForPeriod = totalRewardsForPeriod.times(1 - proportionLinear)
+  const totalLinearRewardsForPeriod =
+    totalRewardsForPeriod.times(proportionLinear)
+  const totalPowerRewardsForPeriod = totalRewardsForPeriod.times(
+    1 - proportionLinear,
+  )
 
   const referrerKpis = kpiData.reduce(
     (acc, row) => {
@@ -54,7 +57,9 @@ export function calculateRewardsCeloPG({
 
   const rewards = Object.entries(referrerKpis).map(([referrerId, kpi]) => {
     const linearProportion = BigNumber(kpi).div(total)
-    const powerProportion = BigNumber(referrerPowerKpis[referrerId]).div(totalPower)
+    const powerProportion = BigNumber(referrerPowerKpis[referrerId]).div(
+      totalPower,
+    )
 
     const linearReward = totalLinearRewardsForPeriod.times(linearProportion)
     const powerReward = totalPowerRewardsForPeriod.times(powerProportion)
@@ -102,7 +107,8 @@ function parseArgs() {
     })
     .option('proportion-linear', {
       alias: 'l',
-      description: 'the proportion of the rewards that are distributed linearly',
+      description:
+        'the proportion of the rewards that are distributed linearly',
       type: 'number',
       default: 1,
     })
