@@ -28,21 +28,22 @@ describe('calculateRewardsCeloPG', () => {
     const rewards = calculateRewardsCeloPG({
       kpiData,
       rewardAmount,
+      proportionLinear: 1,
     })
 
     expect(rewards).toEqual([
-      {
+      expect.objectContaining({
         referrerId: '0xreferrer1',
         rewardAmount: new BigNumber(rewardAmountInEther)
           .times(0.3)
           .toFixed(0, BigNumber.ROUND_DOWN),
-      },
-      {
+      }),
+      expect.objectContaining({
         referrerId: '0xreferrer2',
         rewardAmount: new BigNumber(rewardAmountInEther)
           .times(0.7)
           .toFixed(0, BigNumber.ROUND_DOWN),
-      },
+      }),
     ])
   })
 
@@ -50,6 +51,7 @@ describe('calculateRewardsCeloPG', () => {
     const rewards = calculateRewardsCeloPG({
       kpiData: [],
       rewardAmount,
+      proportionLinear: 1,
     })
 
     expect(rewards).toHaveLength(0)
@@ -67,16 +69,17 @@ describe('calculateRewardsCeloPG', () => {
     const rewards = calculateRewardsCeloPG({
       kpiData,
       rewardAmount,
+      proportionLinear: 1,
     })
 
     expect(rewards).toEqual([
-      {
+      expect.objectContaining({
         referrerId: '0xreferrer1',
         rewardAmount: new BigNumber(rewardAmountInEther).toFixed(
           0,
           BigNumber.ROUND_DOWN,
         ),
-      },
+      }),
     ])
   })
 })
