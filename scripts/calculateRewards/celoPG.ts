@@ -12,11 +12,18 @@ const REWARD_POOL_ADDRESS = '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3' // on C
 export function calculateRewardsCeloPG({
   kpiData,
   rewardAmount,
+  proportionLinear,
 }: {
   kpiData: KpiRow[]
   rewardAmount: string
+  proportionLinear: number
 }) {
   const totalRewardsForPeriod = new BigNumber(parseEther(rewardAmount))
+  const totalLinearRewardsForPeriod =
+    totalRewardsForPeriod.times(proportionLinear)
+  const totalPowerRewardsForPeriod = totalRewardsForPeriod.times(
+    1 - proportionLinear,
+  )
 
   const referrerKpis = kpiData.reduce(
     (acc, row) => {
@@ -30,18 +37,43 @@ export function calculateRewardsCeloPG({
     {} as Record<string, bigint>,
   )
 
+  const referrerPowerKpis = Object.entries(referrerKpis).reduce(
+    (acc, [referrerId, kpi]) => {
+      acc[referrerId] = BigNumber(kpi).sqrt()
+      return acc
+    },
+    {} as Record<string, BigNumber>,
+  )
+
   const total = Object.values(referrerKpis).reduce(
     (sum, value) => sum + value,
     BigInt(0),
   )
 
+  const totalPower = Object.values(referrerPowerKpis).reduce(
+    (sum, value) => sum.plus(value),
+    BigNumber(0),
+  )
+
   const rewards = Object.entries(referrerKpis).map(([referrerId, kpi]) => {
+    const linearProportion = BigNumber(kpi).div(total)
+    const powerProportion = BigNumber(referrerPowerKpis[referrerId]).div(
+      totalPower,
+    )
+
+    const linearReward = totalLinearRewardsForPeriod.times(linearProportion)
+    const powerReward = totalPowerRewardsForPeriod.times(powerProportion)
+    const rewardAmount = linearReward.plus(powerReward)
+
     return {
       referrerId,
-      rewardAmount: totalRewardsForPeriod
-        .times(kpi)
-        .div(total)
-        .toFixed(0, BigNumber.ROUND_DOWN),
+      rewardAmount: rewardAmount.toFixed(0, BigNumber.ROUND_DOWN),
+
+      kpi,
+      linearProportion: linearProportion.toFixed(8, BigNumber.ROUND_DOWN),
+      powerProportion: powerProportion.toFixed(8, BigNumber.ROUND_DOWN),
+      linearReward: linearReward.toFixed(8, BigNumber.ROUND_DOWN),
+      powerReward: powerReward.toFixed(8, BigNumber.ROUND_DOWN),
     }
   })
 
@@ -73,6 +105,13 @@ function parseArgs() {
       type: 'string',
       demandOption: true,
     })
+    .option('proportion-linear', {
+      alias: 'l',
+      description:
+        'the proportion of the rewards that are distributed linearly',
+      type: 'number',
+      default: 1,
+    })
     .option('excludelist', {
       description:
         'Comma-separated list of CSV files with excluded addresses (e.g., file1.csv,file2.csv)',
@@ -103,6 +142,7 @@ function parseArgs() {
     startTimestamp: args['start-timestamp'],
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
+    proportionLinear: args['proportion-linear'],
     excludelist: args.excludelist,
     failOnExclude: args['fail-on-exclude'],
   }
@@ -119,7 +159,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const resultDirectory = args.resultDirectory
   const rewardAmount = args.rewardAmount
-
+  const proportionLinear = args.proportionLinear
   const kpiData = await resultDirectory.readKpi()
 
   const excludeList = args.excludelist.flatMap((file) =>
@@ -140,6 +180,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const rewards = calculateRewardsCeloPG({
     kpiData: filteredKpiData,
     rewardAmount,
+    proportionLinear,
   })
 
   createAddRewardSafeTransactionJSON({
