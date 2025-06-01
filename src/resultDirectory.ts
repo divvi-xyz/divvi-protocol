@@ -73,7 +73,10 @@ export class ResultDirectory {
   }
 
   async _writeJson(filePath: string, data: any[]) {
-    return writeFile(`${filePath}.json`, JSON.stringify(data), {
+    const stringifiedData = JSON.stringify(data, (_, value) =>
+      typeof value === 'bigint' ? value.toString() : value,
+    )
+    return writeFile(`${filePath}.json`, stringifiedData, {
       encoding: 'utf-8',
     })
   }
