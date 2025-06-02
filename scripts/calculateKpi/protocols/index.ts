@@ -11,6 +11,30 @@ import { calculateKpi as calculateKpiCeloTransactions } from './celoTransactions
 import { calculateKpi as calculateKpiRhino } from './rhino'
 import { calculateKpi as calculateKpiScoutGameV0 } from './scoutGameV0'
 
+/**
+ * Central registry of KPI calculation handlers for all supported protocols.
+ *
+ * **KPI Unit**: Mixed units - USD revenue for DeFi protocols, transaction counts for activity-based metrics, gas usage for infrastructure
+ *
+ * **Business Purpose**: Maps protocol identifiers to their respective KPI calculation functions,
+ * enabling automated revenue and usage tracking across different DeFi protocols and blockchain applications.
+ *
+ * **Supported Protocol KPIs**:
+ * - **DeFi Protocols (USD Revenue)**: Aerodrome, Velodrome (DEX trading fees), Beefy (vault management fees), Aave (lending protocol revenue), Somm (strategy fees)
+ * - **Activity Metrics (Transaction Count)**: Scout Game V0 (user engagement), Celo Transactions (network usage)
+ * - **Infrastructure Metrics**: Celo PG (gas usage), Arbitrum (network activity), Fonbnk (transaction volume)
+ *
+ * **Data Sources**:
+ * - On-chain transaction data via HyperSync clients
+ * - DEX swap events and liquidity pool interactions
+ * - Token price feeds for USD conversion
+ * - Block timestamp data for time-based filtering
+ *
+ * **Business Assumptions**:
+ * - Revenue attribution based on user transaction activity within specified time windows
+ * - Token prices fetched at transaction timestamps for accurate USD conversion
+ * - Protocol-specific fee structures and revenue sharing models are hardcoded per protocol
+ */
 const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   beefy: calculateKpiBeefy,
   aerodrome: calculateKpiAerodrome,
