@@ -69,6 +69,25 @@ const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-06-01T00:00:00Z',
         endTimestampExclusive: '2025-07-01T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardsCeloPG({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '50000',
+            proportionLinear: 1,
+            excludelist: [],
+            failOnExclude: false,
+          })
+        },
       },
       {
         startTimestamp: '2025-07-01T00:00:00Z',
