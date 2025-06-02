@@ -10,6 +10,7 @@ import { calculateKpi as calculateKpiAave } from './aave'
 import { calculateKpi as calculateKpiCeloTransactions } from './celoTransactions'
 import { calculateKpi as calculateKpiRhino } from './rhino'
 import { calculateKpi as calculateKpiScoutGameV0 } from './scoutGameV0'
+import { calculateKpi as calculateKpiLiskV0 } from './liskV0'
 
 const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   beefy: calculateKpiBeefy,
@@ -23,6 +24,7 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   'celo-transactions': calculateKpiCeloTransactions,
   rhino: calculateKpiRhino,
   'scout-game-v0': calculateKpiScoutGameV0,
+  'lisk-v0': calculateKpiLiskV0,
 }
 
 export default calculateKpiHandlers

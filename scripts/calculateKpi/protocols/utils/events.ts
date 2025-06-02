@@ -16,6 +16,7 @@ const NETWORK_ID_TO_DEFI_LLAMA_CHAIN: Partial<{
   [NetworkId['celo-mainnet']]: 'celo',
   [NetworkId['polygon-pos-mainnet']]: 'polygon',
   [NetworkId['base-mainnet']]: 'base',
+  [NetworkId['lisk-mainnet']]: 'lisk',
 }
 
 /**

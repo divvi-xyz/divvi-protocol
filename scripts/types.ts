@@ -12,6 +12,7 @@ export const protocols = [
   'celo-transactions',
   'rhino',
   'scout-game-v0',
+  'lisk-v0',
 ] as const
 export type Protocol = (typeof protocols)[number]
 
@@ -38,6 +39,7 @@ export enum NetworkId {
   'polygon-pos-amoy' = 'polygon-pos-amoy',
   'base-mainnet' = 'base-mainnet',
   'base-sepolia' = 'base-sepolia',
+  'lisk-mainnet' = 'lisk-mainnet',
 }
 
 export interface TokenPriceData {

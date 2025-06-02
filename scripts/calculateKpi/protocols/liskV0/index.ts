@@ -1,0 +1,26 @@
+import { NetworkId } from '../../../types'
+import { getBlockRange } from '../utils/events'
+import { fetchTotalGasUsed } from '../utils/networks'
+
+export async function calculateKpi({
+  address,
+  startTimestamp,
+  endTimestampExclusive,
+}: {
+  address: string
+  startTimestamp: Date
+  endTimestampExclusive: Date
+}): Promise<number> {
+  const { startBlock, endBlockExclusive } = await getBlockRange({
+    networkId: NetworkId['lisk-mainnet'],
+    startTimestamp,
+    endTimestampExclusive,
+  })
+
+  return await fetchTotalGasUsed({
+    networkId: NetworkId['lisk-mainnet'],
+    users: [address],
+    startBlock,
+    endBlockExclusive,
+  })
+}
