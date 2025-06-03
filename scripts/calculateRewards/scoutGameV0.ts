@@ -40,7 +40,7 @@ export function calculateRewards({
 }
 
 function parseArgs() {
-  return yargs
+  const args = yargs
     .option('datadir', {
       description: 'the directory to store the results',
       type: 'string',
@@ -62,18 +62,21 @@ function parseArgs() {
     })
     .strict()
     .parseSync()
+
+  return {
+    resultDirectory: new ResultDirectory({
+      datadir: args.datadir,
+      name: 'scout-game-v0',
+      startTimestamp: new Date(args['start-timestamp']),
+      endTimestampExclusive: new Date(args['end-timestamp']),
+    }),
+    startTimestamp: new Date(args['start-timestamp']),
+    endTimestampExclusive: new Date(args['end-timestamp']),
+  }
 }
 
 async function main(args: ReturnType<typeof parseArgs>) {
-  const startTimestamp = new Date(args['start-timestamp'])
-  const endTimestampExclusive = new Date(args['end-timestamp'])
-
-  const resultDirectory = new ResultDirectory({
-    datadir: args.datadir,
-    name: 'scout-game-v0',
-    startTimestamp,
-    endTimestampExclusive,
-  })
+  const { resultDirectory, startTimestamp, endTimestampExclusive } = args
 
   const kpiData = await resultDirectory.readKpi()
 
