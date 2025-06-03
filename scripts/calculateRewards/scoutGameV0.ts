@@ -75,7 +75,7 @@ function parseArgs() {
   }
 }
 
-async function main(args: ReturnType<typeof parseArgs>) {
+export async function main(args: ReturnType<typeof parseArgs>) {
   const { resultDirectory, startTimestamp, endTimestampExclusive } = args
 
   const kpiData = await resultDirectory.readKpi()
