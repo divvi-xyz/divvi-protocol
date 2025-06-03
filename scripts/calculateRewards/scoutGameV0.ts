@@ -1,12 +1,9 @@
 import yargs from 'yargs'
-import { parse } from 'csv-parse/sync'
-import { readFileSync } from 'fs'
 import { formatEther, parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import { toPeriodFolderName } from '../utils/dateFormatting'
-import { join } from 'path'
 import { calculateProportionalPrizeContest } from './proportionalPrizeContest'
+import { KpiRow, ResultDirectory } from '../../src/resultDirectory'
 
 const scoutGameStartTimestamp = new Date('Tue Jun 03 2025 07:00:00 GMT+0000')
 const scoutGameEndTimestampExclusive = new Date(
@@ -67,32 +64,18 @@ function parseArgs() {
     .parseSync()
 }
 
-interface KpiRow {
-  referrerId: string
-  userAddress: string
-  kpi: string
-}
-
 async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args['start-timestamp'])
   const endTimestampExclusive = new Date(args['end-timestamp'])
 
-  const folderPath = join(
-    args.datadir,
-    'scout-game-v0',
-    toPeriodFolderName({
-      startTimestamp,
-      endTimestampExclusive,
-    }),
-  )
-  const inputPath = join(folderPath, 'kpi.csv')
-  const outputPath = join(folderPath, 'safe-transactions.json')
+  const resultDirectory = new ResultDirectory({
+    datadir: args.datadir,
+    name: 'scout-game-v0',
+    startTimestamp,
+    endTimestampExclusive,
+  })
 
-  const kpiData = parse(readFileSync(inputPath, 'utf-8').toString(), {
-    skip_empty_lines: true,
-    delimiter: ',',
-    columns: true,
-  }) as KpiRow[]
+  const kpiData = await resultDirectory.readKpi()
 
   const rewards = calculateRewards({
     kpiData,
@@ -109,12 +92,14 @@ async function main(args: ReturnType<typeof parseArgs>) {
   )
 
   createAddRewardSafeTransactionJSON({
-    filePath: outputPath,
+    filePath: resultDirectory.safeTransactionsFilePath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
     rewards,
     startTimestamp,
     endTimestampExclusive,
   })
+
+  resultDirectory.writeRewards(rewards)
 }
 
 // Only run main if this file is being executed directly
