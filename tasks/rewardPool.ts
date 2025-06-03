@@ -4,6 +4,7 @@ import {
   upgradeContract,
   ONE_DAY,
 } from './helpers/deployHelpers'
+import { zeroAddress } from 'viem'
 
 task('reward-pool:deploy', 'Deploy RewardPool contract')
   .addParam('poolToken', 'Address of the token used for rewards')
@@ -22,7 +23,7 @@ task('reward-pool:deploy', 'Deploy RewardPool contract')
     const ownerAddress =
       taskArgs.ownerAddress || (await hre.ethers.getSigners())[0].address
 
-    const managerAddress = taskArgs.managerAddress || ownerAddress
+    const managerAddress = taskArgs.managerAddress || zeroAddress
 
     const rewardFunctionId = hre.ethers.zeroPadValue(
       taskArgs.rewardFunction || '0x00',

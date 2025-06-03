@@ -19,7 +19,7 @@ const MOCK_REWARD_FUNCTION_ARGS = [1000, 2000]
 const WEEK_IN_SECONDS = 60 * 60 * 24 * 7
 const TIMELOCK = WEEK_IN_SECONDS
 const ADMIN_CHANGE_DELAY = WEEK_IN_SECONDS
-const MANAGER_CAPITAL = hre.ethers.parseEther('1000')
+const SPEND_CAPITAL = hre.ethers.parseEther('1000')
 
 describe(CONTRACT_NAME, function () {
   async function deployRewardPoolContract({
@@ -55,12 +55,16 @@ describe(CONTRACT_NAME, function () {
     )
     await proxy.waitForDeployment()
 
-    // Mint tokens to manager for deposits
-    await mockERC20.mint(manager.address, MANAGER_CAPITAL)
+    // Mint tokens to manager and stranger for deposits
+    await mockERC20.mint(manager.address, SPEND_CAPITAL)
+    await mockERC20.mint(stranger.address, SPEND_CAPITAL)
 
     // Approve tokens for deposit
     const mockToken = mockERC20.connect(manager) as typeof mockERC20
-    await mockToken.approve(await proxy.getAddress(), MANAGER_CAPITAL)
+    await mockToken.approve(await proxy.getAddress(), SPEND_CAPITAL)
+
+    const mockTokenStranger = mockERC20.connect(stranger) as typeof mockERC20
+    await mockTokenStranger.approve(await proxy.getAddress(), SPEND_CAPITAL)
 
     return {
       rewardPool: proxy,
@@ -174,25 +178,16 @@ describe(CONTRACT_NAME, function () {
           poolWithManager = rewardPool.connect(manager) as typeof rewardPool
         })
 
-        it('allows manager to deposit tokens', async function () {
-          await expect(deposit(poolWithManager, depositAmount))
-            .to.emit(rewardPool, 'Deposit')
-            .withArgs(depositAmount)
-
-          expect(await rewardPool.poolBalance()).to.equal(depositAmount)
-        })
-
-        it('reverts when non-manager tries to deposit', async function () {
+        it('allows anyone to deposit', async function () {
           const poolWithStranger = rewardPool.connect(
             stranger,
           ) as typeof rewardPool
 
-          await expect(
-            deposit(poolWithStranger, depositAmount),
-          ).to.be.revertedWithCustomError(
-            rewardPool,
-            'AccessControlUnauthorizedAccount',
-          )
+          await expect(deposit(poolWithStranger, depositAmount))
+            .to.emit(rewardPool, 'Deposit')
+            .withArgs(depositAmount)
+
+          expect(await rewardPool.poolBalance()).to.equal(depositAmount)
         })
 
         if (tokenType === 'ERC20') {

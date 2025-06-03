@@ -139,9 +139,8 @@ contract RewardPool is
   /**
    * @dev Allows the manager to deposit funds for rewards
    * @param amount Amount to deposit (required for ERC-20, informational for native token)
-   * @notice Allowed only for address with MANAGER_ROLE
    */
-  function deposit(uint256 amount) external payable onlyRole(MANAGER_ROLE) {
+  function deposit(uint256 amount) external payable {
     if (isNativeToken) {
       if (msg.value != amount) revert AmountMismatch(amount, msg.value);
     } else {
