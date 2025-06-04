@@ -93,7 +93,7 @@ export async function fetchReferrals(
       userAddress: event.userAddress,
       timestamp: new Date(event.timestamp * 1000).toISOString(),
     }))
-    .slice(33800)
+    .reverse()
 
   const outputFile = join(args.outputDir, 'referrals.csv')
 
