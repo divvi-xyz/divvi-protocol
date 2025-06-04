@@ -35,6 +35,8 @@ async function _getNearestBlock(
   const unixTimestamp = Math.floor(timestamp.getTime() / 1000)
   const defiLlamaChain = NETWORK_ID_TO_DEFI_LLAMA_CHAIN[networkId]
 
+  console.log('======fetching block timestamp======')
+
   const response = await fetchWithTimeout(
     `${DEFI_LLAMA_API_URL}/block/${defiLlamaChain}/${unixTimestamp}`,
   )
