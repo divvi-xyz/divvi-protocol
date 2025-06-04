@@ -2,7 +2,7 @@ import yargs from 'yargs'
 import { formatEther, parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import { calculateProportionalPrizeContest } from './proportionalPrizeContest'
+import { calculateSqrtProportionalPrizeContest } from './proportionalPrizeContest'
 import { KpiRow, ResultDirectory } from '../../src/resultDirectory'
 
 const scoutGameStartTimestamp = new Date('Tue Jun 03 2025 07:00:00 GMT+0000')
@@ -33,7 +33,7 @@ export function calculateRewards({
   )
   const totalRewardsForPeriod = timeDiff.times(rewardsPerMillisecond)
 
-  return calculateProportionalPrizeContest({
+  return calculateSqrtProportionalPrizeContest({
     kpiData,
     rewards: totalRewardsForPeriod,
   })
