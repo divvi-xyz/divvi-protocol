@@ -37,6 +37,7 @@ export function calculateProportionalPrizeContest({
     ([referrerId, kpi]) => {
       return {
         referrerId,
+        kpi,
         rewardAmount: rewards
           .times(kpi)
           .div(total)
@@ -87,6 +88,7 @@ export function calculateSqrtProportionalPrizeContest({
 
       return {
         referrerId,
+        kpi: referrerKpis[referrerId],
         rewardAmount: rewardAmount.toFixed(0, BigNumber.ROUND_DOWN),
       }
     },
