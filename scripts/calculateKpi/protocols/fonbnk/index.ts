@@ -25,6 +25,7 @@ import { Address, fromHex, isAddress, pad } from 'viem'
  * 2. Filters transfers within the specified time window using block timestamps
  * 3. Validates transaction data completeness before including in results
  *
+ * @internal
  * @param params - Query parameters
  * @param params.address - User wallet address receiving Fonbnk payouts
  * @param params.payoutWallet - Fonbnk payout wallet address that distributes payments
@@ -105,6 +106,7 @@ export async function getUserTransactions({
  * **Price Accuracy**: Uses token prices at transaction timestamps to ensure accurate
  * USD conversion reflecting market conditions when transactions occurred.
  *
+ * @internal
  * @param params - Calculation parameters
  * @param params.transactions - Array of Fonbnk token transactions to convert
  * @param params.networkId - Network where transactions occurred (for token price lookup)

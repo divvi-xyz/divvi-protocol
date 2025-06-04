@@ -1,0 +1,21 @@
+{
+  // See the following for more details:
+  // - https://typedoc-plugin-markdown.org/docs/options
+  // - https://typedoc-plugin-markdown.org/plugins/frontmatter/options
+  "$schema": "https://typedoc.org/schema.json",
+  "plugin": ["typedoc-plugin-markdown"],
+  "entryPoints": [
+    "scripts/calculateKpi/protocols/*/index.ts",
+    "scripts/calculateKpi/protocols/scoutGameV0.ts"
+  ],
+  "out": "docs/calculate-kpi",
+  "githubPages": false,
+  "gitRevision": "main",
+  "name": "Divvi Protocol - KPI Calculation Functions",
+  "readme": "none",
+  "excludeNotDocumented": true,
+  "excludeInternal": true,
+  "formatWithPrettier": true,
+  "useCodeBlocks": true,
+  "outputFileStrategy": "modules",
+} 

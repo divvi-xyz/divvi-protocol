@@ -17,6 +17,7 @@ export const ONE_YEAR = 365 * 24 * 60 * 60 * 1000
  * **Business Purpose**: Determines the current vault token balance for use in TVL calculations
  * and temporal balance tracking across deposit/withdrawal events.
  *
+ * @internal
  * @param vaultInfo - Vault configuration and metadata
  * @param address - User wallet address to query balance for
  * @returns Promise resolving to user's current vault token balance (in vault token units)
@@ -53,6 +54,7 @@ export async function getBalanceOfAddress({
  * **Time-Weighting**: Uses milliseconds as the base unit for precise temporal calculations,
  * tracking how long each balance amount was held and at what vault token price.
  *
+ * @internal
  * @param vaultInfo - Vault configuration including address and network
  * @param address - User wallet address to calculate TVL for
  * @param startTimestamp - Start of calculation period (inclusive)
@@ -154,6 +156,7 @@ export async function getTvlProratedPerYear({
  * **Business Purpose**: Helper function for time-weighted TVL calculations,
  * ensuring accurate temporal measurements for vault participation periods.
  *
+ * @internal
  * @param startTimestamp - Start of time range
  * @param endTimestampExclusive - End of time range (exclusive)
  * @returns Duration in milliseconds between timestamps
