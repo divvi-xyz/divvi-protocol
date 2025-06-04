@@ -85,6 +85,10 @@ async function calculateKpiBatch({
         (result): result is NonNullable<typeof result> => result !== null,
       ),
     )
+
+    console.log(
+      `Finished processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)} for campaign ${protocol}`,
+    )
   }
 
   return results
