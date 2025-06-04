@@ -87,13 +87,11 @@ export async function fetchReferrals(
     : undefined
 
   const filteredEvents = await args.protocolFilter(uniqueEvents, { allowList })
-  const outputEvents = filteredEvents
-    .map((event) => ({
-      referrerId: event.referrerId,
-      userAddress: event.userAddress,
-      timestamp: new Date(event.timestamp * 1000).toISOString(),
-    }))
-    .reverse()
+  const outputEvents = filteredEvents.map((event) => ({
+    referrerId: event.referrerId,
+    userAddress: event.userAddress,
+    timestamp: new Date(event.timestamp * 1000).toISOString(),
+  }))
 
   const outputFile = join(args.outputDir, 'referrals.csv')
 
