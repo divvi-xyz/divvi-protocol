@@ -52,8 +52,8 @@ async function _getNearestBlock(
 
 // Set up a Bottleneck instance to keep requests to DefiLlama under the allowed rate limit (500 requests per minute).
 const limiter = new Bottleneck({
-  reservoir: 500, // initial number of available requests
-  reservoirRefreshAmount: 500, // how many tokens to add on refresh
+  reservoir: 450, // initial number of available requests
+  reservoirRefreshAmount: 450, // how many tokens to add on refresh
   reservoirRefreshInterval: 60 * 1000, // refresh every 60 seconds
   minTime: 0, // no minimum time between requests
 })
