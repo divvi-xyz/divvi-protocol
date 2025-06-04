@@ -4,6 +4,7 @@ import { fetchWithTimeout } from '../../../utils/fetchWithTimeout'
 import memoize from '@github/memoize'
 import { getViemPublicClient } from '../../../utils'
 import { BlockTimestampData } from '../types'
+import Bottleneck from 'bottleneck'
 
 const DEFI_LLAMA_API_URL = 'https://coins.llama.fi'
 
@@ -49,11 +50,22 @@ async function _getNearestBlock(
   return blockTimestampData
 }
 
+// Set up a Bottleneck instance to keep requests to DefiLlama under the allowed rate limit (500 requests per minute).
+const limiter = new Bottleneck({
+  reservoir: 500, // initial number of available requests
+  reservoirRefreshAmount: 500, // how many tokens to add on refresh
+  reservoirRefreshInterval: 60 * 1000, // refresh every 60 seconds
+  minTime: 0, // no minimum time between requests
+})
+
+const _safeGetNearestBlock = limiter.wrap(_getNearestBlock)
+
 /**
  * Intentionally not exported. We should use `getBlockRange` instead.
  */
-const getNearestBlock = memoize(_getNearestBlock, {
-  hash: (...params: Parameters<typeof _getNearestBlock>) => params.join(','),
+const getNearestBlock = memoize(_safeGetNearestBlock, {
+  hash: (...params: Parameters<typeof _safeGetNearestBlock>) =>
+    params.join(','),
 })
 
 export const _getNearestBlockForTesting = getNearestBlock
