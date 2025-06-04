@@ -17,5 +17,5 @@
   "excludeInternal": true,
   "formatWithPrettier": true,
   "useCodeBlocks": true,
-  "outputFileStrategy": "modules",
-} 
+  "outputFileStrategy": "modules"
+}
