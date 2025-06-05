@@ -10,7 +10,7 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<{kpi: number}> {
+}): Promise<{ kpi: number }> {
   const { startBlock, endBlockExclusive } = await getBlockRange({
     networkId: NetworkId['celo-mainnet'],
     startTimestamp,
@@ -23,5 +23,5 @@ export async function calculateKpi({
     startBlock,
     endBlockExclusive,
   })
-  return {kpi}
+  return { kpi }
 }

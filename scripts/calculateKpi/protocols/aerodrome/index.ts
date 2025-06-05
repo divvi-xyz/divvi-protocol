@@ -12,7 +12,7 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<{kpi: number}> {
+}): Promise<{ kpi: number }> {
   const kpi = await calculateRevenueDrome({
     address,
     startTimestamp,
@@ -21,5 +21,5 @@ export async function calculateKpi({
       AERODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
     networkId: AERODROME_NETWORK_ID,
   })
-  return {kpi}
+  return { kpi }
 }

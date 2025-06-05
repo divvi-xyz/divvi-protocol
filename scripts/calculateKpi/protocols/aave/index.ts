@@ -36,7 +36,7 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<{kpi: number}> {
+}): Promise<{ kpi: number }> {
   let revenue = new BigNumber(0)
 
   for (const network of SUPPORTED_NETWORKS) {
@@ -50,7 +50,7 @@ export async function calculateKpi({
     )
   }
 
-  return {kpi: revenue.toNumber()}
+  return { kpi: revenue.toNumber() }
 }
 
 async function revenueInNetwork(
