@@ -8,6 +8,7 @@ import { Address } from 'viem'
 import { parse } from 'csv-parse/sync'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { dirname, join } from 'path'
+import { getRedisClient } from '../src/redis'
 
 async function getArgs() {
   const argv = await yargs
@@ -44,6 +45,18 @@ async function getArgs() {
       alias: 'a',
       description: 'a csv file of allowlisted builders ',
       type: 'string',
+    })
+    .option('use-redis', {
+      boolean: true,
+      implies: ['redis-port', 'redis-host'],
+    })
+    .option('redis-port', {
+      type: 'number',
+      default: 6379,
+    })
+    .option('redis-host', {
+      type: 'string',
+      default: '127.0.0.1',
     }).argv
 
   const outputDir = join(
@@ -63,18 +76,32 @@ async function getArgs() {
     builderAllowList: argv['builder-allowlist-file'],
     startTimestamp: argv['start-timestamp'],
     endTimestampExclusive: argv['end-timestamp'],
+    redisConfig: argv['use-redis']
+      ? {
+          host: argv['redis-host'],
+          port: argv['redis-port'],
+        }
+      : undefined,
   }
 }
 
 export async function fetchReferrals(
   args: Awaited<ReturnType<typeof getArgs>>,
 ) {
+  const redis = args.redisConfig
+    ? await getRedisClient({
+        host: args.redisConfig.host,
+        port: args.redisConfig.port,
+      })
+    : undefined
+
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const referralEvents = await fetchReferralEvents(
     args.protocol,
     undefined,
     args.useStaging,
     endTimestampExclusive,
+    redis,
   )
   const uniqueEvents = removeDuplicates(referralEvents)
   const allowList = args.builderAllowList
