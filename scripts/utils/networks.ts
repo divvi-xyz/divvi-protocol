@@ -26,4 +26,5 @@ export const NETWORK_ID_TO_HYPERSYNC_URL = {
   [NetworkId['ethereum-mainnet']]: 'https://eth.hypersync.xyz',
   [NetworkId['op-mainnet']]: 'https://optimism.hypersync.xyz',
   [NetworkId['polygon-pos-mainnet']]: 'https://polygon.hypersync.xyz',
+  [NetworkId['lisk-mainnet']]: 'https://lisk.hypersync.xyz',
 } as Partial<Record<NetworkId, string>>
