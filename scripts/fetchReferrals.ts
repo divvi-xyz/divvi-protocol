@@ -8,7 +8,7 @@ import { Address } from 'viem'
 import { parse } from 'csv-parse/sync'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { dirname, join } from 'path'
-import { getRedisClient } from '../src/redis'
+import { closeRedisClient, getRedisClient } from '../src/redis'
 
 async function getArgs() {
   const argv = await yargs
@@ -134,6 +134,8 @@ export async function fetchReferrals(
     copyFileSync(args.builderAllowList, allowListOutputFile)
     console.log(`Copied builder allowlist to ${allowListOutputFile}`)
   }
+
+  await closeRedisClient()
 }
 
 if (require.main === module) {

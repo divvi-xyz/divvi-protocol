@@ -3,7 +3,7 @@ import yargs from 'yargs'
 import { Protocol, protocols } from './types'
 import { ResultDirectory } from '../src/resultDirectory'
 import { RedisClientType } from '@redis/client'
-import { getRedisClient } from '../src/redis'
+import { closeRedisClient, getRedisClient } from '../src/redis'
 
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
@@ -122,6 +122,8 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
   await resultDirectory.writeKpi(allResults)
 
   console.log(`Wrote results to ${resultDirectory.kpiFileSuffix}.csv`)
+
+  await closeRedisClient()
 }
 
 async function getArgs() {
