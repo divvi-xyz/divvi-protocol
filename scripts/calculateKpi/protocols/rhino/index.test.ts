@@ -207,6 +207,6 @@ describe('calculateKpi', () => {
     // The first included transaction has hex value 0x2710 with 4 decimals which is 1, with a price of 3 that is 3 USD
     // The second included transaction has hex value 0x88B8 with 4 decimals which is 3.5, with a price of 3 that is 10.5 USD
     // Then each transaction is included three times, once for each supported network (since the mocked hypersync returns the same for each)
-    expect(result).toEqual(40.5)
+    expect(result).toEqual({kpi: 40.5})
   })
 })

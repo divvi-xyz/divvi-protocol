@@ -239,7 +239,7 @@ describe('Beefy revenue calculation', () => {
       })
 
       // 160 USD from Arbitrum, 5 from Ethereum
-      expect(result).toEqual(165)
+      expect(result).toEqual({kpi: 165})
     })
   })
 })

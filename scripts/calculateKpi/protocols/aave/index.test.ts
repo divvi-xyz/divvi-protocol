@@ -188,6 +188,6 @@ describe('Aave revenue calculation', () => {
       endTimestampExclusive: mockEndTimestamp,
     })
 
-    expect(revenue).toEqual(1750) // Total revenue in USD ((1.425 * 1000) + (325 * 1))
+    expect(revenue).toEqual({kpi: 1750}) // Total revenue in USD ((1.425 * 1000) + (325 * 1))
   })
 })
