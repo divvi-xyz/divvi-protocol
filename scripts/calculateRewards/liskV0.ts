@@ -7,7 +7,7 @@ import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransacti
 import filterExcludedReferrerIds from '../utils/filterExcludedReferralIds'
 import { ResultDirectory } from '../../src/resultDirectory'
 
-const REWARD_POOL_ADDRESS = '0x30EAF6BAB31fcFeEb82eb9ED9C26081134225d8F'
+const REWARD_POOL_ADDRESS = '0xBBF7B15C819102B137A96703E63eCF1c3d57CC68'
 const REWARD_AMOUNT_IN_DECIMALS = '15000'
 
 export function calculateRewardsLiskV0({
