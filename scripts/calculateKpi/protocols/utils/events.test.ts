@@ -37,7 +37,7 @@ describe('On-chain event helpers', () => {
         .get(`/block/arbitrum/1736525692`)
         .reply(200, mockBlockTimestamp)
 
-      const timestamp = new Date(1736525692000)
+      const timestamp = 1736525692
       const result = await getNearestBlock(networkId, timestamp)
 
       expect(result).toEqual(mockBlockTimestamp)
