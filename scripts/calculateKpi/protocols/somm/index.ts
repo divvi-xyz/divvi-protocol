@@ -8,8 +8,6 @@ import {
   getDailySnapshots,
 } from './dailySnapshots'
 
-
-
 const REWARDS_PERCENTAGE = 0.1 // 10%
 export const ONE_YEAR = 365 * 24 * 60 * 60 * 1000
 
