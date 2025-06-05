@@ -79,9 +79,13 @@ export async function getFirstBlockAtOrAfterTimestamp(
   const cacheKey = `block-at-${targetTimestampSec}-${networkId}`
 
   if (redis) {
-    const cachedBlock = await redis.get(cacheKey)
-    if (cachedBlock) {
-      return parseInt(cachedBlock)
+    try {
+      const cachedBlock = await redis.get(cacheKey)
+      if (cachedBlock) {
+        return parseInt(cachedBlock)
+      }
+    } catch (error) {
+      console.error(`Error getting cached block for key ${cacheKey}:`, error)
     }
   }
 
