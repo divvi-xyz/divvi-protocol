@@ -1,21 +1,17 @@
 import { task, types } from 'hardhat/config'
-import {
-  deployContract,
-  upgradeContract,
-  ONE_DAY,
-} from './helpers/deployHelpers'
+import { deployContract } from './helpers/deployHelpers'
 
 task('reward-pool:deploy', 'Deploy RewardPool contract')
   .addParam('poolToken', 'Address of the token used for rewards')
-  .addOptionalParam('managerAddress', 'Address that will have MANAGER_ROLE')
-  .addOptionalParam('rewardFunction', 'Identifier of the reward function')
-  .addOptionalParam(
+  .addParam('rewardFunction', 'Identifier of the reward function')
+  .addParam('ownerAddress', 'Address to use as owner')
+  .addParam('managerAddress', 'Address that will have MANAGER_ROLE')
+  .addParam(
     'timelock',
     'Timestamp when manager withdrawals will be allowed',
     0,
     types.int,
   )
-  .addOptionalParam('ownerAddress', 'Address to use as owner')
   .addFlag('useDefender', 'Deploy using OpenZeppelin Defender')
   .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
   .setAction(async (taskArgs, hre) => {
@@ -36,25 +32,12 @@ task('reward-pool:deploy', 'Deploy RewardPool contract')
         taskArgs.poolToken,
         rewardFunctionId,
         ownerAddress,
-        ONE_DAY,
         managerAddress,
         taskArgs.timelock,
       ],
       {
-        isUpgradeable: true,
         useDefender: taskArgs.useDefender,
         defenderDeploySalt: taskArgs.defenderDeploySalt,
       },
     )
-  })
-
-task('reward-pool:upgrade', 'Upgrade RewardPool contract')
-  .addParam('proxyAddress', 'Address of the token used for rewards')
-  .addFlag('useDefender', 'Deploy using OpenZeppelin Defender')
-  .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
-  .setAction(async (taskArgs, hre) => {
-    await upgradeContract(hre, 'RewardPool', taskArgs.proxyAddress, {
-      useDefender: taskArgs.useDefender,
-      defenderDeploySalt: taskArgs.defenderDeploySalt,
-    })
   })

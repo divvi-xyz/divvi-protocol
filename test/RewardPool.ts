@@ -18,7 +18,6 @@ const MOCK_REWARD_FUNCTION_ID = hre.ethers.zeroPadValue(
 const MOCK_REWARD_FUNCTION_ARGS = [1000, 2000]
 const WEEK_IN_SECONDS = 60 * 60 * 24 * 7
 const TIMELOCK = WEEK_IN_SECONDS
-const ADMIN_CHANGE_DELAY = WEEK_IN_SECONDS
 const MANAGER_CAPITAL = hre.ethers.parseEther('1000')
 
 describe(CONTRACT_NAME, function () {
@@ -41,29 +40,24 @@ describe(CONTRACT_NAME, function () {
         ? NATIVE_TOKEN_ADDRESS
         : await mockERC20.getAddress()
 
-    const proxy = await hre.upgrades.deployProxy(
-      RewardPool,
-      [
-        tokenAddress,
-        MOCK_REWARD_FUNCTION_ID,
-        owner.address,
-        ADMIN_CHANGE_DELAY,
-        manager.address,
-        (await time.latest()) + TIMELOCK,
-      ],
-      { kind: 'uups' },
+    const implementation = await RewardPool.deploy(
+      tokenAddress,
+      MOCK_REWARD_FUNCTION_ID,
+      owner.address,
+      manager.address,
+      (await time.latest()) + TIMELOCK,
     )
-    await proxy.waitForDeployment()
+    await implementation.waitForDeployment()
 
     // Mint tokens to manager for deposits
     await mockERC20.mint(manager.address, MANAGER_CAPITAL)
 
     // Approve tokens for deposit
     const mockToken = mockERC20.connect(manager) as typeof mockERC20
-    await mockToken.approve(await proxy.getAddress(), MANAGER_CAPITAL)
+    await mockToken.approve(await implementation.getAddress(), MANAGER_CAPITAL)
 
     return {
-      rewardPool: proxy,
+      rewardPool: implementation,
       mockERC20,
       deployer,
       owner,
@@ -150,6 +144,26 @@ describe(CONTRACT_NAME, function () {
             MOCK_REWARD_FUNCTION_ID,
             currentTimelock,
           )
+      })
+
+      it(`reverts when trying to initialize after deployment with ${tokenType} token`, async function () {
+        const { rewardPool, mockERC20, owner, manager } =
+          await loadFixture(deployFixture)
+
+        const tokenAddress =
+          tokenType === 'native'
+            ? NATIVE_TOKEN_ADDRESS
+            : await mockERC20.getAddress()
+
+        await expect(
+          rewardPool.initialize(
+            tokenAddress,
+            MOCK_REWARD_FUNCTION_ID,
+            owner.address,
+            manager.address,
+            (await time.latest()) + TIMELOCK,
+          ),
+        ).to.be.revertedWithCustomError(rewardPool, 'AlreadyInitialized')
       })
     })
   })
@@ -741,146 +755,6 @@ describe(CONTRACT_NAME, function () {
           )
         })
       })
-    })
-  })
-
-  describe('Upgrade', function () {
-    it('allows admin to upgrade the contract', async function () {
-      const { rewardPool, mockERC20, owner } = await loadFixture(
-        deployERC20RewardPoolContract,
-      )
-
-      const proxyAddress = await rewardPool.getAddress()
-
-      // Get current implementation address
-      const currentImplementationAddress =
-        await hre.upgrades.erc1967.getImplementationAddress(proxyAddress)
-
-      // Deploy new implementation
-      const RewardPoolV2 = await hre.ethers.getContractFactory(
-        CONTRACT_NAME,
-        owner,
-      )
-      const upgradedPool = await hre.upgrades.upgradeProxy(
-        proxyAddress,
-        RewardPoolV2,
-        { kind: 'uups', redeployImplementation: 'always' },
-      )
-
-      // Get new implementation address
-      const newImplementationAddress =
-        await hre.upgrades.erc1967.getImplementationAddress(proxyAddress)
-
-      // Verify implementation changed
-      expect(newImplementationAddress).to.not.equal(
-        currentImplementationAddress,
-      )
-
-      // Verify state was preserved
-      expect(await upgradedPool.poolToken()).to.equal(
-        await mockERC20.getAddress(),
-      )
-      expect(await upgradedPool.rewardFunctionId()).to.equal(
-        MOCK_REWARD_FUNCTION_ID,
-      )
-    })
-
-    it('reverts when deployer tries to upgrade', async function () {
-      const { rewardPool, deployer } = await loadFixture(
-        deployERC20RewardPoolContract,
-      )
-
-      const proxyAddress = await rewardPool.getAddress()
-
-      // Deploy new implementation
-      const RewardPoolV2 = await hre.ethers.getContractFactory(
-        CONTRACT_NAME,
-        deployer,
-      )
-
-      // Try to upgrade proxy
-      await expect(
-        hre.upgrades.upgradeProxy(proxyAddress, RewardPoolV2, {
-          kind: 'uups',
-          redeployImplementation: 'always',
-        }),
-      ).to.be.rejectedWith('AccessControlUnauthorizedAccount')
-    })
-
-    it('reverts when non-admin tries to upgrade', async function () {
-      const { rewardPool, stranger } = await loadFixture(
-        deployERC20RewardPoolContract,
-      )
-
-      // Deploy new implementation
-      const RewardPoolV2 = await hre.ethers.getContractFactory(CONTRACT_NAME)
-      const rewardPoolV2 = await RewardPoolV2.deploy()
-      await rewardPoolV2.waitForDeployment()
-
-      // Connect with stranger
-      const poolWithStranger = rewardPool.connect(stranger) as typeof rewardPool
-
-      // Try to update proxy
-      await expect(
-        poolWithStranger.upgradeToAndCall(
-          await rewardPoolV2.getAddress(),
-          '0x',
-        ),
-      ).to.be.rejectedWith('AccessControlUnauthorizedAccount')
-    })
-  })
-
-  describe('Admin change', function () {
-    it('DEFAULT_ADMIN_ROLE transfer works with delay', async function () {
-      const { rewardPool, owner, stranger } = await loadFixture(
-        deployERC20RewardPoolContract,
-      )
-
-      // Check that owner is the current admin
-      expect(
-        await rewardPool.hasRole(
-          await rewardPool.DEFAULT_ADMIN_ROLE(),
-          owner.address,
-        ),
-      ).to.be.true
-
-      // Connect with owner
-      const poolWithOwner = rewardPool.connect(owner) as typeof rewardPool
-
-      // Begin the admin transfer process
-      await poolWithOwner.beginDefaultAdminTransfer(stranger.address)
-
-      // Connect with new admin account and try to accept too early
-      const rewardPoolWithStranger = rewardPool.connect(
-        stranger,
-      ) as typeof rewardPool
-
-      await expect(
-        rewardPoolWithStranger.acceptDefaultAdminTransfer(),
-      ).to.be.revertedWithCustomError(
-        rewardPool,
-        'AccessControlEnforcedDefaultAdminDelay',
-      )
-
-      // Wait out the delay
-      await mine(10, { interval: ADMIN_CHANGE_DELAY })
-
-      // Accept the transfer
-      await rewardPoolWithStranger.acceptDefaultAdminTransfer()
-
-      // Verify admin role has been transferred
-      expect(
-        await rewardPool.hasRole(
-          await rewardPool.DEFAULT_ADMIN_ROLE(),
-          stranger.address,
-        ),
-      ).to.be.true
-      expect(
-        await rewardPool.hasRole(
-          await rewardPool.DEFAULT_ADMIN_ROLE(),
-          owner.address,
-        ),
-      ).to.be.false
     })
   })
 })

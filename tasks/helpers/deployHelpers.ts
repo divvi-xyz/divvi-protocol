@@ -131,6 +131,8 @@ export async function deployContract(
   console.log(
     `yarn hardhat verify ${contractAddress} --network ${hre.network.name} ${proxyAddress ? '' : constructorArgs.join(' ')}`,
   )
+
+  return contractAddress || proxyAddress
 }
 
 // Contract upgrade helper
