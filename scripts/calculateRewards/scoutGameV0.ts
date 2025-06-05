@@ -14,8 +14,8 @@ const totalRewards = parseEther('180000')
 const REWARD_POOL_ADDRESS = '0x6F599b879541d289e344e325f4D9badf8c5bB49E' // on Base
 
 const rewardsPerMillisecond = new BigNumber(totalRewards).div(
-  new BigNumber(scoutGameStartTimestamp.getTime()).minus(
-    new BigNumber(scoutGameEndTimestampExclusive.getTime()),
+  new BigNumber(scoutGameEndTimestampExclusive.getTime()).minus(
+    new BigNumber(scoutGameStartTimestamp.getTime()),
   ),
 )
 
