@@ -29,7 +29,8 @@ task(
       taskArgs.ownerAddress || (await hre.ethers.getSigners())[0].address
 
     // Get current block timestamp and add 1 day for timelock
-    // This is a dummy value, to be replaced when deploying clones.
+    // This is a dummy value, (as are the other constructor arguments)
+    // to be replaced when deploying clones.
     const currentBlock = await hre.ethers.provider.getBlock('latest')
     if (!currentBlock) {
       throw new Error('Failed to get current block')
@@ -41,11 +42,11 @@ task(
       hre,
       IMPLEMENTATION_NAME,
       [
-        '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // NATIVE_TOKEN_ADDRESS
-        '0x0000000000000000000000000000000000000000000000000000000000000000', // rewardFunctionId
-        ownerAddress, // owner
-        ownerAddress, // manager
-        futureTimelock, // timelock - set to 1 day in the future
+        '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        ownerAddress,
+        ownerAddress,
+        futureTimelock,
       ],
       {
         isUpgradeable: false,

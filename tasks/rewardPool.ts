@@ -3,10 +3,10 @@ import { deployContract } from './helpers/deployHelpers'
 
 task('reward-pool:deploy', 'Deploy RewardPool contract')
   .addParam('poolToken', 'Address of the token used for rewards')
-  .addParam('rewardFunction', 'Identifier of the reward function')
-  .addParam('ownerAddress', 'Address to use as owner')
-  .addParam('managerAddress', 'Address that will have MANAGER_ROLE')
-  .addParam(
+  .addOptionalParam('rewardFunction', 'Identifier of the reward function')
+  .addOptionalParam('ownerAddress', 'Address to use as owner')
+  .addOptionalParam('managerAddress', 'Address that will have MANAGER_ROLE')
+  .addOptionalParam(
     'timelock',
     'Timestamp when manager withdrawals will be allowed',
     0,
@@ -36,6 +36,7 @@ task('reward-pool:deploy', 'Deploy RewardPool contract')
         taskArgs.timelock,
       ],
       {
+        isUpgradeable: false,
         useDefender: taskArgs.useDefender,
         defenderDeploySalt: taskArgs.defenderDeploySalt,
       },
