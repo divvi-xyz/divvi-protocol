@@ -62,19 +62,19 @@ interface Segment {
  *
  * **Supported Networks**: Multiple EVM-compatible networks where Aave has deployed lending pools
  *
- * **Reserve Factor Model**: Each asset market has a specific reserve factor (0-30%) that determines
+ * **Reserve Factor Model**: Each asset market has a specific reserve factor (for example 20%) that determines
  * the portion of interest that goes to the protocol treasury versus liquidity providers.
  *
  * **Data Sources**:
- * - **The Graph**: Aave subgraphs for lending/borrowing events, reserve data, and interest calculations
+ * - **The Graph**: Aave subgraphs for lending events, reserve data, and interest calculations
  * - **RPC Queries**: Reserve factors and pool configurations via Viem public client calls
  * - **Token Price API**: Historical token prices via `fetchTokenPrices` utility for USD conversion
  * - **Block Data**: Timestamps via `getBlockRange` utility for temporal filtering
  *
  * **Business Assumptions**:
- * - Revenue is derived from interest rate spreads and reserve factors applied to borrowing activity
- * - User's revenue contribution is proportional to their lending/borrowing positions within time window
- * - USD conversion uses token prices at time of each transaction for accuracy
+ * - Revenue is derived from reserve factor applied to liquidity provider income
+ * - User's revenue contribution is proportional to their deposits within time window
+ * - USD conversion uses token prices at the end of the calculation period
  * - Reserve factors are applied consistently across all supported markets
  * - Interest calculations account for compound interest and variable rate changes
  *
@@ -85,11 +85,11 @@ interface Segment {
  * - Protocol-specific fees (varies by network and governance decisions)
  *
  * **Calculation Method**:
- * 1. Queries user's lending and borrowing positions across all supported networks
- * 2. Retrieves interest accrual events and reserve factor data for each position
+ * 1. Queries user's deposits across all supported networks
+ * 2. Calculates user earnings and retrieves reserve factor data for each position
  * 3. Calculates protocol revenue portion using reserve factors applied to interest payments
  * 4. Applies temporal filtering to include only activity within specified time window
- * 5. Converts all amounts to USD using historical token prices at transaction timestamps
+ * 5. Converts all amounts to USD using historical token prices at the end of the calculation period
  * 6. Aggregates revenue across all networks and asset markets
  * 7. Returns total protocol revenue attributable to user's activity
  *
@@ -303,7 +303,7 @@ function splitUserEarningHistoryIntoSegments(
  * **Business Purpose**: Creates discrete time segments showing which reserve factor
  * was active during each period, enabling precise protocol revenue calculations.
  *
- * **Reserve Factor**: Percentage of borrower interest that goes to protocol (typically 10-25%)
+ * **Reserve Factor**: Percentage of borrower interest that goes to protocol (for example 20%)
  *
  * @param reserveTokenAddress - Reserve token to get factor history for
  * @param context - Calculation context with reserve factor data
