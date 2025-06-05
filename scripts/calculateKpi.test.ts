@@ -10,7 +10,7 @@ jest.mock('./calculateKpi/protocols', () => ({
 
 describe('_calculateKpiBatch', () => {
   mockHandler.mockImplementation(async ({ address }) => {
-    return {kpi: address === '0x123' ? 100 : 50}
+    return { kpi: address === '0x123' ? 100 : 50 }
   })
 
   const startTimestamp = new Date('2024-01-01T00:00:00Z')
@@ -143,7 +143,7 @@ describe('_calculateKpiBatch', () => {
       if (address === '0x123') {
         throw new Error('Handler error')
       }
-      return {kpi: 100}
+      return { kpi: 100 }
     })
     const eligibleUsers = [
       {
