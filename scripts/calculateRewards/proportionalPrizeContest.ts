@@ -37,10 +37,59 @@ export function calculateProportionalPrizeContest({
     ([referrerId, kpi]) => {
       return {
         referrerId,
+        kpi,
         rewardAmount: rewards
           .times(kpi)
           .div(total)
           .toFixed(0, BigNumber.ROUND_DOWN),
+      }
+    },
+  )
+
+  return rewardsPerReferrer
+}
+
+export function calculateSqrtProportionalPrizeContest({
+  kpiData,
+  rewards,
+}: {
+  kpiData: KpiRow[]
+  rewards: BigNumber
+}) {
+  const referrerKpis = kpiData.reduce(
+    (acc, row) => {
+      if (!(row.referrerId in acc)) {
+        acc[row.referrerId] = BigInt(row.kpi)
+      } else {
+        acc[row.referrerId] += BigInt(row.kpi)
+      }
+      return acc
+    },
+    {} as Record<string, bigint>,
+  )
+
+  const referrerPowerKpis = Object.entries(referrerKpis).reduce(
+    (acc, [referrerId, kpi]) => {
+      acc[referrerId] = BigNumber(kpi).sqrt()
+      return acc
+    },
+    {} as Record<string, BigNumber>,
+  )
+
+  const totalPower = Object.values(referrerPowerKpis).reduce(
+    (sum, value) => sum.plus(value),
+    BigNumber(0),
+  )
+
+  const rewardsPerReferrer = Object.entries(referrerPowerKpis).map(
+    ([referrerId, powerKpi]) => {
+      const proportion = BigNumber(powerKpi).div(totalPower)
+      const rewardAmount = rewards.times(proportion)
+
+      return {
+        referrerId,
+        kpi: referrerKpis[referrerId],
+        rewardAmount: rewardAmount.toFixed(0, BigNumber.ROUND_DOWN),
       }
     },
   )

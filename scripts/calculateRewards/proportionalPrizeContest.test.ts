@@ -1,6 +1,9 @@
 import { expect } from 'chai'
 import BigNumber from 'bignumber.js'
-import { calculateProportionalPrizeContest } from './proportionalPrizeContest'
+import {
+  calculateProportionalPrizeContest,
+  calculateSqrtProportionalPrizeContest,
+} from './proportionalPrizeContest'
 
 describe('calculateProportionalPrizeContest', () => {
   it('should calculate rewards proportionally based on KPI', () => {
@@ -23,10 +26,12 @@ describe('calculateProportionalPrizeContest', () => {
       {
         referrerId: 'ref1',
         rewardAmount: '500',
+        kpi: 300n,
       },
       {
         referrerId: 'ref2',
         rewardAmount: '500',
+        kpi: 300n,
       },
     ])
   })
@@ -48,6 +53,7 @@ describe('calculateProportionalPrizeContest', () => {
       {
         referrerId: 'ref2',
         rewardAmount: '1000', // All rewards go to ref2
+        kpi: 100n,
       },
     ])
   })
@@ -81,5 +87,34 @@ describe('calculateProportionalPrizeContest', () => {
     })
 
     expect(result).to.deep.equal([])
+  })
+})
+
+describe('calculateSqrtProportionalPrizeContest', () => {
+  it('should calculate rewards proportionally based on KPI raised to power', () => {
+    const rewards = new BigNumber('1000')
+    const kpiData = [
+      { referrerId: 'ref1', userAddress: 'user1', kpi: '1' },
+      { referrerId: 'ref2', userAddress: 'user2', kpi: '8' },
+      { referrerId: 'ref2', userAddress: 'user3', kpi: '8' },
+    ]
+
+    const result = calculateSqrtProportionalPrizeContest({
+      kpiData,
+      rewards,
+    })
+
+    expect(result).to.deep.equal([
+      {
+        referrerId: 'ref1',
+        rewardAmount: '200',
+        kpi: 1n,
+      },
+      {
+        referrerId: 'ref2',
+        rewardAmount: '800',
+        kpi: 16n,
+      },
+    ])
   })
 })
