@@ -125,7 +125,7 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<number> {
+}): Promise<{kpi: number}> {
   if (!isAddress(address)) {
     throw new Error('Invalid address')
   }
@@ -167,5 +167,5 @@ export async function calculateKpi({
       totalRevenue += revenue
     }
   }
-  return totalRevenue
+  return {kpi: totalRevenue}
 }

@@ -35,8 +35,10 @@ export const calculateKpi: CalculateKpiFn = async ({
   )
 
   let totalTransactions = 0
-  for (const count of transactions) {
-    totalTransactions += count
-  }
-  return totalTransactions
+  const segmentedKpi: { [key: string]: number } = {}
+  transactions.forEach((item, index) => {
+    totalTransactions += item
+    segmentedKpi[networkIds[index]] = item
+  })
+  return { kpi: totalTransactions, segmentedKpi }
 }

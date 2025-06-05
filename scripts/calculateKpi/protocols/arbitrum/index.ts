@@ -10,17 +10,18 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<number> {
+}): Promise<{kpi: number}> {
   const { startBlock, endBlockExclusive } = await getBlockRange({
     networkId: NetworkId['arbitrum-one'],
     startTimestamp,
     endTimestampExclusive,
   })
 
-  return await fetchTotalGasUsed({
+  const kpi = await fetchTotalGasUsed({
     networkId: NetworkId['arbitrum-one'],
     users: [address],
     startBlock,
     endBlockExclusive,
   })
+  return {kpi}
 }

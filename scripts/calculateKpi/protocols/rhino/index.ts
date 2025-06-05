@@ -128,7 +128,7 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<number> {
+}): Promise<{kpi: number}> {
   if (!isAddress(address)) {
     throw new Error('Invalid address')
   }
@@ -159,5 +159,5 @@ export async function calculateKpi({
     )
   ).reduce((acc, curr) => acc + curr, 0) // Then sum across all networks
 
-  return totalRevenueUsd
+  return {kpi: totalRevenueUsd}
 }

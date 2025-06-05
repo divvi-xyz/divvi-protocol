@@ -51,7 +51,7 @@ export type CalculateKpiFn = (params: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}) => Promise<number>
+}) => Promise<{kpi: number, segmentedKpi?: {[key: string]: number}}>
 
 export interface ReferralEvent {
   userAddress: string

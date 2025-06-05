@@ -134,7 +134,7 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<number> {
+}): Promise<{kpi: number}> {
   const vaultsInfo = await getVaults(
     address,
     startTimestamp,
@@ -149,5 +149,5 @@ export async function calculateKpi({
     const vaultRevenue = await calculateVaultRevenue(vaultInfo)
     totalRevenue += vaultRevenue
   }
-  return totalRevenue
+  return {kpi: totalRevenue}
 }
