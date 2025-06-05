@@ -7,6 +7,10 @@ import { calculateRevenueDrome } from '../utils/drome/calculateRevenueDrome'
 /**
  * Calculates trading fee revenue generated for Aerodrome DEX on Base Network.
  *
+ * **Important Note**: For multi-hop swaps (e.g., user -> pool 1 -> pool 2 -> user),
+ * only the trading fee from the final transfer (pool 2 -> user) is captured in the calculation.
+ * Intermediate transfer fees are not included.
+ *
  * **KPI Unit**: USD (United States Dollars)
  *
  * **Business Purpose**: Measures the trading fee revenue attributable to a specific user's trading activity
@@ -16,13 +20,7 @@ import { calculateRevenueDrome } from '../utils/drome/calculateRevenueDrome'
  * **Protocol Context**: Aerodrome is a next-generation AMM (Automated Market Maker) designed to serve as the
  * central liquidity hub on Base Network, offering efficient token swaps with competitive fees.
  *
- * **Supported Liquidity Pools**:
- * - WETH/USDC - Core ETH trading pair
- * - cbBTC/LBTC - Bitcoin variant trading
- * - USDC/cbBTC - Bitcoin/stablecoin pair
- * - WETH/cbBTC - ETH/Bitcoin cross-pair
- * - VIRTUAL/WETH - Emerging token pair
- * - WETH/superOETHb - Liquid staking derivatives
+ * **Supported Liquidity Pools**: See `AERODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES` in `./constants.ts`
  *
  * **Data Sources**:
  * - **HyperSync**: Base Network swap events from Aerodrome liquidity pools

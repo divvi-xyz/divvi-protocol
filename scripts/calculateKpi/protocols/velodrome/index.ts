@@ -7,6 +7,10 @@ import { calculateRevenueDrome } from '../utils/drome/calculateRevenueDrome'
 /**
  * Calculates trading fee revenue generated for Velodrome DEX on Optimism Network.
  *
+ * **Important Note**: For multi-hop swaps (e.g., user -> pool 1 -> pool 2 -> user),
+ * only the trading fee from the final transfer (pool 2 -> user) is captured in the calculation.
+ * Intermediate transfer fees are not included.
+ *
  * **KPI Unit**: USD (United States Dollars)
  *
  * **Business Purpose**: Measures the trading fee revenue attributable to a specific user's trading activity
@@ -16,6 +20,8 @@ import { calculateRevenueDrome } from '../utils/drome/calculateRevenueDrome'
  * **Protocol Context**: Velodrome is an Optimism-native AMM (Automated Market Maker) designed to serve as the
  * central liquidity hub for the Optimism ecosystem. It builds on the vote-escrowed model with enhanced tokenomics
  * and offers efficient token swaps with variable fee structures.
+ *
+ * **Supported Liquidity Pools**: See `VELODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES` in `./constants.ts`
  *
  * **Network**: Optimism Mainnet (and networks where Velodrome has deployed liquidity pools)
  *
@@ -35,14 +41,15 @@ import { calculateRevenueDrome } from '../utils/drome/calculateRevenueDrome'
  * - Only whitelisted liquidity pools are included in revenue calculations
  * - Fee rates are dynamically set per pool based on volatility and governance decisions
  *
- * **Shared Implementation**: Uses the common `calculateRevenueDrome` utility which handles the core
- * trading fee calculation logic shared between Velodrome and Aerodrome (fork relationship).
+ * **Fee Structure**: Variable fees per pool (typically 0.05% to 1.00% depending on pool volatility and type)
  *
  * **Calculation Method**:
- * 1. Delegates to the shared calculateRevenueDrome utility
- * 2. Passes Velodrome-specific supported liquidity pool addresses
- * 3. Uses Optimism network ID for transaction data retrieval
- * 4. Returns aggregated trading fee revenue across all supported pools
+ * 1. Iterates through all supported Velodrome liquidity pools
+ * 2. For each pool, fetches user's swap events within the time window
+ * 3. Calculates USD volume of swaps using historical token prices at transaction timestamps
+ * 4. Retrieves pool-specific fee rate from the liquidity pool smart contract
+ * 5. Applies fee rate to swap volume to determine trading fee revenue per pool
+ * 6. Aggregates revenue across all pools for total user-attributed trading fee revenue
  *
  * @param params - Calculation parameters
  * @param params.address - User wallet address to calculate trading fee revenue for
