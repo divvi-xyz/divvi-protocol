@@ -11,7 +11,7 @@
   "out": "docs/calculate-kpi",
   "githubPages": false,
   "gitRevision": "main",
-  "name": "Divvi Protocol - KPI Calculation Functions",
+  "name": "Divvi Protocol - KPI calculation functions",
   "readme": "none",
   "excludeNotDocumented": true,
   "excludeInternal": true,
