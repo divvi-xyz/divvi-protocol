@@ -207,7 +207,7 @@ async function getArgs() {
   }
 }
 
-export async function uploadCurrentPeriodKpis(
+async function uploadCurrentPeriodKpis(
   args: Awaited<ReturnType<typeof getArgs>>,
 ) {
   // This script will calculate rewards ending at the start of the current hour
