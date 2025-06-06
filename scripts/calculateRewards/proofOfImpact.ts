@@ -2,7 +2,7 @@ import yargs from 'yargs'
 import { formatEther, parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import { calculateProportionalPrizeContest } from './proportionalPrizeContest'
+import { calculateProportionalPrizeContest } from '../../src/proportionalPrizeContest'
 import { ResultDirectory, KpiRow } from '../../src/resultDirectory'
 
 // proof-of-impact campaign parameters
