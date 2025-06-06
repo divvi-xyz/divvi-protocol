@@ -199,6 +199,11 @@ export async function calculateVaultRevenue(
  * 1. Retrieves all configurations for vaults with which user has had transactions from Beefy API
  * 2. Filters vaults by supported networks and active status
  * 3. For each vault, queries user's deposit/withdrawal events within time window
+ * 4. For each vault, queries historical Fee events within time window
+ * 5. Calculates user's proportional share of vault deposits at the time of each Fee event
+ * 6. Determines user contribution to management fee based off their proportional share of vault TVL
+ * 7. Converts to USD using historical token prices at transaction timestamps
+ * 8. Aggregates user fee contribution across all vaults and networks to get total user fee contribution
  * 4. Calculates user's proportional share of vault deposits using TVL data
  * 5. Applies 4.5% fee rate to user's proportional vault activity
  * 6. Converts to USD using historical token prices at transaction timestamps
