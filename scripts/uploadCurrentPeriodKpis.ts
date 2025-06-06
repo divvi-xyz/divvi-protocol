@@ -308,8 +308,8 @@ async function uploadCurrentPeriodKpis(
         startTimestamp: currentPeriod.startTimestamp,
         endTimestampExclusive,
       })
-      const rewardsFilePathCsv = join(outputDir, 'rewards.csv')
-      const rewardsFilePathJson = join(outputDir, 'rewards.json')
+      const rewardsFilePathCsv = join(outputDir, 'rewards-test.csv')
+      const rewardsFilePathJson = join(outputDir, 'rewards-test.json')
       uploadFilePaths.push(rewardsFilePathCsv, rewardsFilePathJson)
     }
   }

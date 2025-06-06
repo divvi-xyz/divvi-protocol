@@ -48,7 +48,7 @@ export class ResultDirectory {
   }
 
   get rewardsFileSuffix() {
-    return path.join(this.resultsDirectory, 'rewards')
+    return path.join(this.resultsDirectory, 'rewards-test')
   }
 
   excludeListFilePath(fileName: string) {
