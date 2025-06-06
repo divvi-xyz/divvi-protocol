@@ -27,6 +27,7 @@ import { rhinoFiBridgeAbi } from '../../../abis/RhinoFiBridge'
  * 3. Decodes event data to extract withdrawal amounts and token information
  * 4. Validates transaction data completeness and temporal filtering
  *
+ * @internal
  * @param params - Query parameters
  * @param params.address - User wallet address initiating bridge withdrawals
  * @param params.contractAddress - Rhino.fi bridge contract address on target network
@@ -120,6 +121,7 @@ export async function getUserBridges({
  * **Native Token Handling**: Rhino.fi uses zero address (0x0) to represent native tokens
  * in bridge events, requiring special handling for native token price lookups.
  *
+ * @internal
  * @param params - Calculation parameters
  * @param params.userBridges - Array of bridge transactions to convert to USD
  * @param params.networkId - Network where transactions occurred (for token price lookup)
