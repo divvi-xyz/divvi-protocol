@@ -4,7 +4,7 @@ import {
   VaultInfo,
 } from './types'
 import { getStrategyContract } from '../utils/viem'
-import { TokenPriceData } from '../../../types'
+import { KpiResult, TokenPriceData } from '../../../types'
 import { getVaults } from './getVaults'
 import { fetchTokenPrices } from '../utils/tokenPrices'
 import { getErc20Contract } from '../../../utils'
@@ -219,7 +219,7 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<{ kpi: number }> {
+}): Promise<KpiResult> {
   const vaultsInfo = await getVaults(
     address,
     startTimestamp,

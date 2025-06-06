@@ -5,6 +5,7 @@ import { RAY, rayDiv, rayMul } from './math'
 import { calculateOverlap, createSegments } from './utils'
 import { fetchBlockchainData } from './blockchainData'
 import { BalanceSnapshot, ReserveData, ReserveFactor } from './types'
+import { KpiResult } from '../../../types'
 
 /**
  * Context object containing all data required for Aave protocol revenue calculations.
@@ -108,7 +109,7 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<{ kpi: number }> {
+}): Promise<KpiResult> {
   let revenue = new BigNumber(0)
 
   for (const network of SUPPORTED_NETWORKS) {

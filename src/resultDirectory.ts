@@ -9,7 +9,7 @@ export interface KpiRow {
   referrerId: string
   userAddress: string
   kpi: string
-  segmentedKpi?: { [key: string]: string }
+  segmentedKpi?: string
 }
 
 interface ReferralRow {
@@ -48,7 +48,7 @@ export class ResultDirectory {
   }
 
   get rewardsFileSuffix() {
-    return path.join(this.resultsDirectory, 'rewards-test')
+    return path.join(this.resultsDirectory, 'rewards')
   }
 
   excludeListFilePath(fileName: string) {
@@ -71,6 +71,11 @@ export class ResultDirectory {
     return writeFile(`${filePath}.csv`, stringify(data, { header: true }), {
       encoding: 'utf-8',
     })
+  }
+  
+  async _readJson(filePath: string) {
+    const rawData = await readFile(`${filePath}.json`, 'utf-8');
+    return JSON.parse(rawData)
   }
 
   async _writeJson(filePath: string, data: any[]) {
@@ -99,7 +104,7 @@ export class ResultDirectory {
   }
 
   async readKpi() {
-    return (await this._readCsv(this.kpiFileSuffix)) as KpiRow[]
+    return (await this._readJson(this.kpiFileSuffix)) as KpiRow[]
   }
 
   async readReferrals() {

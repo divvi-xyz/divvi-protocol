@@ -1,4 +1,4 @@
-import { NetworkId } from '../../../types'
+import { KpiResult, NetworkId } from '../../../types'
 import { getBlockRange } from '../utils/events'
 import { fetchTotalGasUsed } from '../utils/networks'
 
@@ -52,7 +52,7 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<{ kpi: number }> {
+}): Promise<KpiResult> {
   const { startBlock, endBlockExclusive } = await getBlockRange({
     networkId: NetworkId['arbitrum-one'],
     startTimestamp,

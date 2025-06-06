@@ -48,12 +48,17 @@ export interface TokenPriceData {
   priceFetchedAt: number
 }
 
+export interface KpiResult {
+  kpi: number
+  segmentedKpi?: { [key: string]: number }
+}
+
 export type CalculateKpiFn = (params: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
   redis?: RedisClientType
-}) => Promise<{ kpi: number; segmentedKpi?: { [key: string]: number } }>
+}) => Promise<KpiResult>
 
 export interface ReferralEvent {
   userAddress: string

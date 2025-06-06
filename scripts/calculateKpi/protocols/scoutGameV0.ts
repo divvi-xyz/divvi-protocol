@@ -90,6 +90,5 @@ export const calculateKpi: CalculateKpiFn = async ({
     totalTransactions += item
     segmentedKpi[networkIdToKpiName[networkIds[index]] ?? 'otherKpi'] = item
   })
-  console.log('!!!', segmentedKpi)
   return { kpi: totalTransactions, segmentedKpi }
 }
