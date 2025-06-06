@@ -9,7 +9,7 @@ export interface KpiRow {
   referrerId: string
   userAddress: string
   kpi: string
-  segmentedKpi?: {[key: string]: number}
+  segmentedKpi?: { [key: string]: number }
 }
 
 interface ReferralRow {

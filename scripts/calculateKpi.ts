@@ -14,7 +14,7 @@ interface KpiResult {
   referrerId: string
   userAddress: string
   kpi: number
-  segmentedKpi?: {[key: string]: number}
+  segmentedKpi?: { [key: string]: number }
 }
 
 interface ReferralData {
