@@ -184,16 +184,11 @@ export async function calculateVaultRevenue(
  * - **RPC Queries**: User deposit/withdrawal events via Viem public client calls to vault contracts
  * - **Token Price API**: Historical token prices via `fetchTokenPrices` utility for USD conversion
  * - **Block Data**: Timestamps via `getBlockRange` utility for temporal filtering
- * - **Network RPCs**: Multi-network vault contract interactions across Arbitrum, Polygon, Base, Optimism
  *
  * **Business Assumptions**:
- * - Standard management fee rate is 4.5% of total vault yield
  * - Revenue attribution is proportional to user's share of vault deposits within time window
  * - USD conversion uses token prices at time of each transaction
- * - Only active vault strategies with positive TVL are included
  * - Fee distribution is immediate and based on real-time vault performance
- *
- * **Fee Structure**: 4.5% performance fee on all vault yields (industry standard for yield aggregators)
  *
  * **Calculation Method**:
  * 1. Retrieves all configurations for vaults with which user has had transactions from Beefy API
@@ -204,10 +199,6 @@ export async function calculateVaultRevenue(
  * 6. Determines user contribution to management fee based off their proportional share of vault TVL
  * 7. Converts to USD using historical token prices at transaction timestamps
  * 8. Aggregates user fee contribution across all vaults and networks to get total user fee contribution
- * 4. Calculates user's proportional share of vault deposits using TVL data
- * 5. Applies 4.5% fee rate to user's proportional vault activity
- * 6. Converts to USD using historical token prices at transaction timestamps
- * 7. Aggregates fees across all vaults and networks for total revenue
  *
  * @param params - Calculation parameters
  * @param params.address - User wallet address to calculate vault management fees for
