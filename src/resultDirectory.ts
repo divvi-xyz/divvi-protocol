@@ -72,9 +72,9 @@ export class ResultDirectory {
       encoding: 'utf-8',
     })
   }
-  
+
   async _readJson(filePath: string) {
-    const rawData = await readFile(`${filePath}.json`, 'utf-8');
+    const rawData = await readFile(`${filePath}.json`, 'utf-8')
     return JSON.parse(rawData)
   }
 
