@@ -14,7 +14,7 @@ interface KpiResult {
   referrerId: string
   userAddress: string
   kpi: number
-  segmentedKpi?: string
+  segmentedKpi?: {[key: string]: number}
 }
 
 interface ReferralData {
@@ -81,7 +81,7 @@ async function calculateKpiBatch({
           referrerId,
           userAddress,
           kpi,
-          segmentedKpi: JSON.stringify(segmentedKpi),
+          segmentedKpi: segmentedKpi,
         }
       },
     )

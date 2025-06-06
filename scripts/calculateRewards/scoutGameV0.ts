@@ -93,14 +93,11 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   for (const { referrerId, segmentedKpi } of kpiData) {
     if (!segmentedKpi) continue
 
-    const segmentedKpiObject: { [key: string]: string } =
-      JSON.parse(segmentedKpi)
-
     if (!segmentedKpiPerReferrer[referrerId]) {
       segmentedKpiPerReferrer[referrerId] = {}
     }
 
-    for (const [key, value] of Object.entries(segmentedKpiObject)) {
+    for (const [key, value] of Object.entries(segmentedKpi)) {
       segmentedKpiPerReferrer[referrerId][key] =
         (segmentedKpiPerReferrer[referrerId][key] ?? 0n) + BigInt(value)
     }

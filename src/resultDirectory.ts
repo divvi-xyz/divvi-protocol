@@ -9,7 +9,7 @@ export interface KpiRow {
   referrerId: string
   userAddress: string
   kpi: string
-  segmentedKpi?: string
+  segmentedKpi?: {[key: string]: number}
 }
 
 interface ReferralRow {
@@ -74,8 +74,7 @@ export class ResultDirectory {
   }
 
   async _readJson(filePath: string) {
-    const rawData = await readFile(`${filePath}.json`, 'utf-8')
-    return JSON.parse(rawData)
+    return JSON.parse(await readFile(`${filePath}.json`, 'utf-8'))
   }
 
   async _writeJson(filePath: string, data: any[]) {
