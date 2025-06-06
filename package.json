@@ -25,7 +25,8 @@
     "supercheck": "yarn format && yarn lint:fix && yarn typecheck && yarn knip && yarn test",
     "example": "ts-node ./scripts/example.ts",
     "knip": "knip",
-    "compile": "hardhat compile"
+    "compile": "hardhat compile",
+    "docs": "typedoc"
   },
   "devDependencies": {
     "@bgd-labs/aave-address-book": "^4.18.0",
@@ -52,6 +53,7 @@
     "@typescript-eslint/parser": "^8.33.0",
     "@valora/prettier-config": "^0.0.1",
     "bignumber.js": "^9.2.1",
+    "bottleneck": "^2.19.5",
     "chai": "^4.5.0",
     "csv-parse": "^5.6.0",
     "csv-stringify": "^6.5.2",
@@ -74,9 +76,15 @@
     "solidity-coverage": "^0.8.14",
     "ts-jest": "^29.3.0",
     "ts-node": "^10.9.2",
+    "typedoc": "^0.28.5",
+    "typedoc-plugin-markdown": "^4.6.4",
     "typescript": "^5.8.3",
     "unzipper": "^0.12.3",
     "viem": "^2.24.1",
     "yargs": "^17.7.2"
+  },
+  "dependencies": {
+    "@redis/client": "^5.5.5",
+    "redis": "^5.5.5"
   }
 }

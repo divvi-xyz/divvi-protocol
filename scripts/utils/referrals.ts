@@ -5,6 +5,7 @@ import { BlockField, LogField, Query } from '@envio-dev/hypersync-client'
 import { paginateEventsQuery } from './hypersyncPagination'
 import { divviRegistryAbi } from '../../abis/DivviRegistry'
 import { getFirstBlockAtOrAfterTimestamp } from '../calculateKpi/protocols/utils/events'
+import { RedisClientType } from '@redis/client'
 
 const REGISTRY_CONTRACT_ADDRESS = '0xedb51a8c390fc84b1c2a40e0ae9c9882fa7b7277'
 const STAGING_REGISTRY_CONTRACT_ADDRESS =
@@ -40,6 +41,7 @@ export async function fetchReferralEvents(
   referrerIds?: Address[],
   useStaging = false,
   endTimestampExclusive?: Date,
+  redis?: RedisClientType,
 ): Promise<ReferralEvent[]> {
   const referralEvents: ReferralEvent[] = []
   console.log('Fetching referral events for protocol:', protocol)
@@ -64,6 +66,7 @@ export async function fetchReferralEvents(
     ? await getFirstBlockAtOrAfterTimestamp(
         REGISTRY_NETWORK_ID,
         endTimestampExclusive,
+        redis,
       )
     : undefined
 
