@@ -210,7 +210,6 @@ async function getArgs() {
 async function uploadCurrentPeriodKpis(
   args: Awaited<ReturnType<typeof getArgs>>,
 ) {
-  console.log('=====dry run', args.dryRun)
   // This script will calculate rewards ending at the start of the current hour
   const startOfCalculationHour = new Date(args.calculationTimestamp).setMinutes(
     0,
@@ -317,7 +316,11 @@ async function uploadCurrentPeriodKpis(
 
   const validPaths = uploadFilePaths.filter((path) => path !== null)
 
-  await uploadFilesToGCS(validPaths, 'divvi-campaign-data-production', true)
+  await uploadFilesToGCS(
+    validPaths,
+    'divvi-campaign-data-production',
+    args.dryRun,
+  )
 }
 
 // Only run if this file is being run directly
