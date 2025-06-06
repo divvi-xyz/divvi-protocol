@@ -7,7 +7,7 @@ import { toPeriodFolderName } from './utils/dateFormatting'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import yargs from 'yargs'
 import { ResultDirectory } from '../src/resultDirectory'
-import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
+// import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
 import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV0'
 
 interface Campaign {
@@ -24,78 +24,78 @@ interface Campaign {
 }
 
 const campaigns: Campaign[] = [
-  {
-    protocol: 'celo-transactions',
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-05-08T00:00:00Z',
-        endTimestampExclusive: '2025-05-16T00:00:00Z',
-      },
-      {
-        startTimestamp: '2025-05-16T00:00:00Z',
-        endTimestampExclusive: '2025-05-23T00:00:00Z',
-      },
-      {
-        startTimestamp: '2025-05-23T00:00:00Z',
-        endTimestampExclusive: '2025-05-29T07:00:00Z',
-      },
-    ],
-  },
-  {
-    protocol: 'celo-pg',
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-05-15T00:00:00Z',
-        endTimestampExclusive: '2025-06-01T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
-        }) => {
-          await calculateRewardsCeloPG({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '25000',
-            proportionLinear: 0.8,
-            excludelist: [],
-            failOnExclude: false,
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-06-01T00:00:00Z',
-        endTimestampExclusive: '2025-07-01T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
-        }) => {
-          await calculateRewardsCeloPG({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '50000',
-            proportionLinear: 1,
-            excludelist: [],
-            failOnExclude: false,
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-07-01T00:00:00Z',
-        endTimestampExclusive: '2025-08-01T00:00:00Z',
-      },
-    ],
-  },
+  // {
+  //   protocol: 'celo-transactions',
+  //   rewardsPeriods: [
+  //     {
+  //       startTimestamp: '2025-05-08T00:00:00Z',
+  //       endTimestampExclusive: '2025-05-16T00:00:00Z',
+  //     },
+  //     {
+  //       startTimestamp: '2025-05-16T00:00:00Z',
+  //       endTimestampExclusive: '2025-05-23T00:00:00Z',
+  //     },
+  //     {
+  //       startTimestamp: '2025-05-23T00:00:00Z',
+  //       endTimestampExclusive: '2025-05-29T07:00:00Z',
+  //     },
+  //   ],
+  // },
+  // {
+  //   protocol: 'celo-pg',
+  //   rewardsPeriods: [
+  //     {
+  //       startTimestamp: '2025-05-15T00:00:00Z',
+  //       endTimestampExclusive: '2025-06-01T00:00:00Z',
+  //       calculateRewards: async ({
+  //         resultDirectory,
+  //         startTimestamp,
+  //         endTimestampExclusive,
+  //       }: {
+  //         resultDirectory: ResultDirectory
+  //         startTimestamp: string
+  //         endTimestampExclusive: string
+  //       }) => {
+  //         await calculateRewardsCeloPG({
+  //           resultDirectory,
+  //           startTimestamp,
+  //           endTimestampExclusive,
+  //           rewardAmount: '25000',
+  //           proportionLinear: 0.8,
+  //           excludelist: [],
+  //           failOnExclude: false,
+  //         })
+  //       },
+  //     },
+  //     {
+  //       startTimestamp: '2025-06-01T00:00:00Z',
+  //       endTimestampExclusive: '2025-07-01T00:00:00Z',
+  //       calculateRewards: async ({
+  //         resultDirectory,
+  //         startTimestamp,
+  //         endTimestampExclusive,
+  //       }: {
+  //         resultDirectory: ResultDirectory
+  //         startTimestamp: string
+  //         endTimestampExclusive: string
+  //       }) => {
+  //         await calculateRewardsCeloPG({
+  //           resultDirectory,
+  //           startTimestamp,
+  //           endTimestampExclusive,
+  //           rewardAmount: '50000',
+  //           proportionLinear: 1,
+  //           excludelist: [],
+  //           failOnExclude: false,
+  //         })
+  //       },
+  //     },
+  //     {
+  //       startTimestamp: '2025-07-01T00:00:00Z',
+  //       endTimestampExclusive: '2025-08-01T00:00:00Z',
+  //     },
+  //   ],
+  // },
   {
     protocol: 'scout-game-v0',
     rewardsPeriods: [
