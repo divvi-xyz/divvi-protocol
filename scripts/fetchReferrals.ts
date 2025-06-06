@@ -8,6 +8,7 @@ import { Address } from 'viem'
 import { parse } from 'csv-parse/sync'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { dirname, join } from 'path'
+import { closeRedisClient, getRedisClient } from '../src/redis'
 
 async function getArgs() {
   const argv = await yargs
@@ -44,6 +45,11 @@ async function getArgs() {
       alias: 'a',
       description: 'a csv file of allowlisted builders ',
       type: 'string',
+    })
+    .option('redis-connection', {
+      type: 'string',
+      description:
+        'redis connection string, to run locally use redis://127.0.0.1:6379',
     }).argv
 
   const outputDir = join(
@@ -63,18 +69,24 @@ async function getArgs() {
     builderAllowList: argv['builder-allowlist-file'],
     startTimestamp: argv['start-timestamp'],
     endTimestampExclusive: argv['end-timestamp'],
+    redisConnection: argv['redis-connection'],
   }
 }
 
 export async function fetchReferrals(
   args: Awaited<ReturnType<typeof getArgs>>,
 ) {
+  const redis = args.redisConnection
+    ? await getRedisClient(args.redisConnection)
+    : undefined
+
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const referralEvents = await fetchReferralEvents(
     args.protocol,
     undefined,
     args.useStaging,
     endTimestampExclusive,
+    redis,
   )
   const uniqueEvents = removeDuplicates(referralEvents)
   const allowList = args.builderAllowList
@@ -107,6 +119,8 @@ export async function fetchReferrals(
     copyFileSync(args.builderAllowList, allowListOutputFile)
     console.log(`Copied builder allowlist to ${allowListOutputFile}`)
   }
+
+  await closeRedisClient()
 }
 
 if (require.main === module) {

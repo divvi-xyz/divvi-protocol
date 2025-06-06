@@ -11,6 +11,17 @@ import {
 const REWARDS_PERCENTAGE = 0.1 // 10%
 export const ONE_YEAR = 365 * 24 * 60 * 60 * 1000
 
+/**
+ * Retrieves the current token balance of a user address in a specific Sommelier vault.
+ *
+ * **Business Purpose**: Determines the current vault token balance for use in TVL calculations
+ * and temporal balance tracking across deposit/withdrawal events.
+ *
+ * @internal
+ * @param vaultInfo - Vault configuration and metadata
+ * @param address - User wallet address to query balance for
+ * @returns Promise resolving to user's current vault token balance (in vault token units)
+ */
 export async function getBalanceOfAddress({
   vaultInfo,
   address,
@@ -29,8 +40,29 @@ export async function getBalanceOfAddress({
 
 /**
  * Calculates the Total Value Locked (TVL) for a given user address prorated for a year.
- * This function calculates the TVL for a user address in a given vault pair within a specified
- * time range using daily snapshots of the vault's price and shares.
+ *
+ * **Business Purpose**: Computes the time-weighted TVL for a user's position in a Sommelier vault,
+ * accounting for deposits and withdrawals over time. This forms the basis for strategy fee revenue
+ * attribution based on user's proportional vault participation.
+ *
+ * **Calculation Method**:
+ * 1. Tracks user's vault token balance changes through historical events
+ * 2. Calculates time-weighted average TVL using daily price snapshots
+ * 3. Prorates the TVL contribution over a yearly basis for standardized comparison
+ * 4. Accounts for vault token price fluctuations during the period
+ *
+ * **Time-Weighting**: Uses milliseconds as the base unit for precise temporal calculations,
+ * tracking how long each balance amount was held and at what vault token price.
+ *
+ * @internal
+ * @param vaultInfo - Vault configuration including address and network
+ * @param address - User wallet address to calculate TVL for
+ * @param startTimestamp - Start of calculation period (inclusive)
+ * @param endTimestampExclusive - End of calculation period (exclusive)
+ * @param nowTimestamp - Current timestamp for balance calculations
+ * @returns Promise resolving to annualized time-weighted TVL in USD
+ *
+ * @throws Error if endTimestampExclusive is in the future relative to nowTimestamp
  */
 export async function getTvlProratedPerYear({
   vaultInfo,
@@ -118,10 +150,69 @@ export async function getTvlProratedPerYear({
   return tvlMilliseconds / ONE_YEAR
 }
 
+/**
+ * Utility function to calculate time duration within a specified range.
+ *
+ * **Business Purpose**: Helper function for time-weighted TVL calculations,
+ * ensuring accurate temporal measurements for vault participation periods.
+ *
+ * @internal
+ * @param startTimestamp - Start of time range
+ * @param endTimestampExclusive - End of time range (exclusive)
+ * @returns Duration in milliseconds between timestamps
+ */
 function getTimeInRange(startTimestamp: Date, endTimestampExclusive: Date) {
   return endTimestampExclusive.getTime() - startTimestamp.getTime()
 }
 
+/**
+ * Calculates reward allocation based on user's time-weighted TVL in Sommelier protocol.
+ *
+ * **KPI Unit**: USD (United States Dollars)
+ *
+ * **Business Purpose**: Measures the reward allocation for a specific user based on their
+ * time-weighted TVL across Sommelier strategy vaults. This metric quantifies the user's
+ * proportional participation in Sommelier's active yield strategies and determines their
+ * reward share.
+ *
+ * **Protocol Context**: Sommelier is a decentralized asset management platform that runs active yield
+ * strategies on Ethereum. Users are rewarded based on their time-weighted TVL in the protocol's
+ * strategy vaults.
+ *
+ * **Network**: Ethereum Mainnet (and networks where Sommelier has deployed strategy vaults)
+ *
+ * **Data Sources**:
+ * - **Sommelier API**: Strategy vault data, performance metrics, and metadata from Sommelier's API
+ * - **RPC Queries**: User deposit/withdrawal events via Viem public client calls to strategy vault contracts
+ * - **Token Price API**: Historical token prices via `fetchTokenPrices` utility for USD conversion
+ * - **Block Data**: Timestamps via `getBlockRange` utility for temporal filtering
+ * - **Vault Contracts**: Time-weighted TVL calculations and share price data from strategy vault contracts
+ *
+ * **Business Assumptions**:
+ * - Reward rate is 10% of user's time-weighted TVL
+ * - Reward attribution is proportional to user's time-weighted deposits within strategy vaults
+ * - USD conversion uses token prices at time of each transaction for accuracy
+ * - Only active strategy vaults are included in calculations
+ * - Reward distribution follows time-weighted calculation based on vault share ownership
+ *
+ * **Reward Structure**: 10% of time-weighted TVL (standard reward rate for protocol participation)
+ *
+ * **Calculation Method**:
+ * 1. Retrieves active strategy vault configurations from Sommelier API
+ * 2. Filters vaults by Ethereum network and active status
+ * 3. For each vault, queries user's deposit/withdrawal events within time window
+ * 4. Calculates user's time-weighted share of vault deposits using share price history
+ * 5. Applies 10% reward rate to user's proportional vault activity
+ * 6. Converts to USD using historical token prices at transaction timestamps
+ * 7. Aggregates rewards across all strategy vaults for total allocation
+ *
+ * @param params - Calculation parameters
+ * @param params.address - User wallet address to calculate rewards for
+ * @param params.startTimestamp - Start of time window for reward calculation (inclusive)
+ * @param params.endTimestampExclusive - End of time window for reward calculation (exclusive)
+ *
+ * @returns Promise resolving to total reward allocation in USD
+ */
 export async function calculateKpi({
   address,
   startTimestamp,

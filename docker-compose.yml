@@ -1,0 +1,14 @@
+version: '2'
+services:
+  redis:
+    container_name: redis-kpi-calculation
+    image: redis:latest
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    environment:
+      - REDIS_PASSWORD=pass
+      - REDIS_PORT=6379
+    volumes:
+      - ./redis_data:/data
+    command: redis-server --save 60 1 --logLevel warning --requirepass "${REDIS_PASSWORD}"
