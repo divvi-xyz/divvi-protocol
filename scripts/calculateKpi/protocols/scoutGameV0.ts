@@ -49,6 +49,7 @@ export const calculateKpi: CalculateKpiFn = async ({
   address,
   startTimestamp,
   endTimestampExclusive,
+  redis,
 }) => {
   const networkIds = [
     NetworkId['base-mainnet'],
@@ -62,6 +63,7 @@ export const calculateKpi: CalculateKpiFn = async ({
         networkId,
         startTimestamp,
         endTimestampExclusive,
+        redis,
       }),
     ),
   )

@@ -1,3 +1,4 @@
+import { RedisClientType } from '@redis/client'
 import { GetContractReturnType } from 'viem'
 import { NetworkId } from '../../../types'
 import { fetchWithTimeout } from '../../../utils/fetchWithTimeout'
@@ -30,13 +31,12 @@ const NETWORK_ID_TO_DEFI_LLAMA_CHAIN: Partial<{
  */
 async function _getNearestBlock(
   networkId: NetworkId,
-  timestamp: Date,
+  targetTimestampSec: number,
 ): Promise<BlockTimestampData> {
-  const unixTimestamp = Math.floor(timestamp.getTime() / 1000)
   const defiLlamaChain = NETWORK_ID_TO_DEFI_LLAMA_CHAIN[networkId]
 
   const response = await fetchWithTimeout(
-    `${DEFI_LLAMA_API_URL}/block/${defiLlamaChain}/${unixTimestamp}`,
+    `${DEFI_LLAMA_API_URL}/block/${defiLlamaChain}/${targetTimestampSec}`,
   )
   if (!response.ok) {
     const errorBody = await response.text()
@@ -73,18 +73,38 @@ export const _getNearestBlockForTesting = getNearestBlock
 export async function getFirstBlockAtOrAfterTimestamp(
   networkId: NetworkId,
   targetDate: Date,
+  redis?: RedisClientType,
 ): Promise<number> {
   const targetTimestampSec = Math.floor(targetDate.getTime() / 1000)
-  const block = await getNearestBlock(networkId, targetDate)
+  const cacheKey = `block-at-${targetTimestampSec}-${networkId}`
 
-  if (block.timestamp >= targetTimestampSec) {
-    // The nearest block is at or after the target. It must be the first.
-    return block.height
-  } else {
-    // The nearest block is before the target. The next block must be the first one at or after.
-    // Note: Assumes block numbers increment by 1 and block N+1 always has timestamp >= block N.
-    return block.height + 1
+  if (redis) {
+    try {
+      const cachedBlock = await redis.get(cacheKey)
+      if (cachedBlock) {
+        return parseInt(cachedBlock)
+      }
+    } catch (error) {
+      console.error(`Error getting cached block for key ${cacheKey}:`, error)
+    }
   }
+
+  const nearestBlock = await getNearestBlock(networkId, targetTimestampSec)
+  // If the nearest block is at or after the target timestamp, it must be the first block at or after the target timestamp.
+  // Otherwise, if the nearest block is before the target timestamp, the next block must be the first one at or after the target timestamp.
+  // Note: Assumes block numbers increment by 1 and block N+1 always has timestamp >= block N.
+  const firstBlockAtOrAfterTimestamp =
+    nearestBlock.timestamp >= targetTimestampSec
+      ? nearestBlock.height
+      : nearestBlock.height + 1
+
+  if (redis) {
+    await redis.set(cacheKey, firstBlockAtOrAfterTimestamp, {
+      EX: 60 * 60 * 24 * 90, // 90 days
+    })
+  }
+
+  return firstBlockAtOrAfterTimestamp
 }
 
 /**
@@ -108,10 +128,12 @@ export async function getBlockRange({
   networkId,
   startTimestamp,
   endTimestampExclusive,
+  redis,
 }: {
   networkId: NetworkId
   startTimestamp: Date // inclusive
   endTimestampExclusive: Date // exclusive
+  redis?: RedisClientType
 }): Promise<{
   startBlock: number // inclusive
   endBlockExclusive: number
@@ -123,13 +145,13 @@ export async function getBlockRange({
   const [startBlock, endBlockExclusive] = await Promise.all([
     // Determine the inclusive startBlock:
     // This is the first block whose timestamp is greater than or equal to the startTimestamp.
-    getFirstBlockAtOrAfterTimestamp(networkId, startTimestamp),
+    getFirstBlockAtOrAfterTimestamp(networkId, startTimestamp, redis),
     // Determine the exclusive endBlock:
     // This is the first block whose timestamp is greater than or equal to the endTimestampExclusive.
     // Using this block's height as `endBlockExclusive` means that loops iterating up to `endBlockExclusive - 1`
     // will process all blocks strictly before this `endBlockExclusive`.
     // Thus, the last processed block will have a timestamp < endTimestampExclusive.
-    getFirstBlockAtOrAfterTimestamp(networkId, endTimestampExclusive),
+    getFirstBlockAtOrAfterTimestamp(networkId, endTimestampExclusive, redis),
   ])
 
   // Validate the calculated block range.
