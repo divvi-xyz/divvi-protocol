@@ -103,11 +103,8 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
 
   const eligibleUsers = await resultDirectory.readReferrals()
 
-  const redis = args.redisConfig
-    ? await getRedisClient({
-        host: args.redisConfig.host,
-        port: args.redisConfig.port,
-      })
+  const redis = args.redisConnection
+    ? await getRedisClient(args.redisConnection)
     : undefined
 
   const allResults = await calculateKpiBatch({
@@ -152,17 +149,10 @@ async function getArgs() {
       description: 'Directory to save data',
       default: 'rewards',
     })
-    .option('use-redis', {
-      boolean: true,
-      implies: ['redis-port', 'redis-host'],
-    })
-    .option('redis-port', {
-      type: 'number',
-      default: 6379,
-    })
-    .option('redis-host', {
+    .option('redis-connection', {
       type: 'string',
-      default: '127.0.0.1',
+      description:
+        'redis connection string, to run locally use redis://127.0.0.1:6379',
     }).argv
 
   const resultDirectory = new ResultDirectory({
@@ -177,12 +167,7 @@ async function getArgs() {
     protocol: argv['protocol'],
     startTimestamp: argv['start-timestamp'],
     endTimestampExclusive: argv['end-timestamp'],
-    redisConfig: argv['use-redis']
-      ? {
-          host: argv['redis-host'],
-          port: argv['redis-port'],
-        }
-      : undefined,
+    redisConnection: argv['redis-connection'],
   }
 }
 

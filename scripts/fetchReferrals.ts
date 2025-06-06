@@ -46,17 +46,10 @@ async function getArgs() {
       description: 'a csv file of allowlisted builders ',
       type: 'string',
     })
-    .option('use-redis', {
-      boolean: true,
-      implies: ['redis-port', 'redis-host'],
-    })
-    .option('redis-port', {
-      type: 'number',
-      default: 6379,
-    })
-    .option('redis-host', {
+    .option('redis-connection', {
       type: 'string',
-      default: '127.0.0.1',
+      description:
+        'redis connection string, to run locally use redis://127.0.0.1:6379',
     }).argv
 
   const outputDir = join(
@@ -76,23 +69,15 @@ async function getArgs() {
     builderAllowList: argv['builder-allowlist-file'],
     startTimestamp: argv['start-timestamp'],
     endTimestampExclusive: argv['end-timestamp'],
-    redisConfig: argv['use-redis']
-      ? {
-          host: argv['redis-host'],
-          port: argv['redis-port'],
-        }
-      : undefined,
+    redisConnection: argv['redis-connection'],
   }
 }
 
 export async function fetchReferrals(
   args: Awaited<ReturnType<typeof getArgs>>,
 ) {
-  const redis = args.redisConfig
-    ? await getRedisClient({
-        host: args.redisConfig.host,
-        port: args.redisConfig.port,
-      })
+  const redis = args.redisConnection
+    ? await getRedisClient(args.redisConnection)
     : undefined
 
   const endTimestampExclusive = new Date(args.endTimestampExclusive)

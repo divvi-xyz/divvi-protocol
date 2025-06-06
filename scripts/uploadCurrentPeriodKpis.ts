@@ -194,32 +194,20 @@ async function getArgs() {
       type: 'string',
       default: new Date().toISOString(),
     })
-    .option('use-redis', {
-      boolean: true,
-      implies: ['redis-port', 'redis-host'],
-    })
-    .option('redis-port', {
-      type: 'number',
-      default: 6379,
-    })
-    .option('redis-host', {
+    .option('redis-connection', {
       type: 'string',
-      default: '127.0.0.1',
+      description:
+        'redis connection string, to run locally use redis://127.0.0.1:6379',
     }).argv
 
   return {
     dryRun: argv['dry-run'],
     calculationTimestamp: argv['calculation-timestamp'],
-    redisConfig: argv['use-redis']
-      ? {
-          host: argv['redis-host'],
-          port: argv['redis-port'],
-        }
-      : undefined,
+    redisConnection: argv['redis-connection'],
   }
 }
 
-async function uploadCurrentPeriodKpis(
+export async function uploadCurrentPeriodKpis(
   args: Awaited<ReturnType<typeof getArgs>>,
 ) {
   // This script will calculate rewards ending at the start of the current hour
@@ -291,7 +279,7 @@ async function uploadCurrentPeriodKpis(
       builderAllowList: undefined, // TODO: not really sure how to get an up to date builder allowlist for CI...
       useStaging: false,
       protocolFilter: protocolFilters[campaign.protocol],
-      redisConfig: args.redisConfig,
+      redisConnection: args.redisConnection,
     })
     console.log(
       `Fetched referrals for campaign ${campaign.protocol} in ${Date.now() - fetchReferralsStartTime}ms`,
@@ -303,7 +291,7 @@ async function uploadCurrentPeriodKpis(
       protocol: campaign.protocol,
       startTimestamp: currentPeriod.startTimestamp,
       endTimestampExclusive,
-      redisConfig: args.redisConfig,
+      redisConnection: args.redisConnection,
     })
     console.log(
       `Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,

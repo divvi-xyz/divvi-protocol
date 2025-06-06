@@ -4,13 +4,8 @@ import { createClient } from 'redis'
 let initRedisPromise: Promise<RedisClientType> | null = null
 let redisClientInstance: RedisClientType | null = null
 
-async function initRedis({ host, port }: { host: string; port: number }) {
-  const redisClient: RedisClientType = createClient({
-    socket: {
-      host,
-      port,
-    },
-  })
+async function initRedis(url: string) {
+  const redisClient: RedisClientType = createClient({ url })
 
   // Save the client instance for later shutdown
   redisClientInstance = redisClient
@@ -24,13 +19,10 @@ async function initRedis({ host, port }: { host: string; port: number }) {
   return redisClient
 }
 
-export async function getRedisClient(redisConfig: {
-  host: string
-  port: number
-}) {
+export async function getRedisClient(redisUrl: string) {
   initRedisPromise =
     initRedisPromise ||
-    initRedis(redisConfig).catch((e) => {
+    initRedis(redisUrl).catch((e) => {
       // Reset the promise so the next call will try again
       initRedisPromise = null
       throw e
