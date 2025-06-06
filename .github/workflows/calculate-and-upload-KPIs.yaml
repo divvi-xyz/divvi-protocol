@@ -8,6 +8,7 @@ on:
       timestamp:
         description: 'KPIs are calculated for the reward period that includes this timestamp, from the start of the period up to this timestamp. (new Date() compatible epoch milliseconds or string)'
         required: true
+  pull_request:
 
 jobs:
   calculate-and-upload-KPIs:
@@ -27,7 +28,8 @@ jobs:
       - name: Calculate and upload KPIs for the current reward period
         run: |
           yarn ts-node scripts/uploadCurrentPeriodKpis.ts \
-            --calculation-timestamp ${{ github.event.inputs.timestamp }}
+            --calculation-timestamp ${{ github.event.inputs.timestamp }} \
+            --redis-connection ${{ secrets.REDIS_URL }}
 
       # TODO(kathy)
       # - name: Notify Slack on Failure

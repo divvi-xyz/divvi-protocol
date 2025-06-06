@@ -35,6 +35,8 @@ async function _getNearestBlock(
 ): Promise<BlockTimestampData> {
   const defiLlamaChain = NETWORK_ID_TO_DEFI_LLAMA_CHAIN[networkId]
 
+  console.log('=====making request to defillama=====')
+
   const response = await fetchWithTimeout(
     `${DEFI_LLAMA_API_URL}/block/${defiLlamaChain}/${targetTimestampSec}`,
   )
