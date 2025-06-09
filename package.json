@@ -50,7 +50,7 @@
     "@types/sax": "^1.2.7",
     "@types/unzipper": "^0.10.11",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
-    "@typescript-eslint/parser": "^8.33.0",
+    "@typescript-eslint/parser": "^8.33.1",
     "@valora/prettier-config": "^0.0.1",
     "bignumber.js": "^9.2.1",
     "bottleneck": "^2.19.5",
