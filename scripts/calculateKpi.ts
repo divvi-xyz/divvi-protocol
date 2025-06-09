@@ -14,6 +14,7 @@ interface KpiResult {
   referrerId: string
   userAddress: string
   kpi: number
+  segmentedKpi?: { [key: string]: number }
 }
 
 interface ReferralData {
@@ -65,7 +66,7 @@ async function calculateKpiBatch({
           return null
         }
 
-        const kpi = await calculateKpiHandlers[protocol]({
+        const { kpi, breakdown } = await calculateKpiHandlers[protocol]({
           address: userAddress,
           // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
           startTimestamp:
@@ -80,6 +81,7 @@ async function calculateKpiBatch({
           referrerId,
           userAddress,
           kpi,
+          breakdown,
         }
       },
     )

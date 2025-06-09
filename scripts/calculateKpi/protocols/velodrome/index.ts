@@ -3,6 +3,7 @@ import {
   VELODROME_NETWORK_ID,
 } from './constants'
 import { calculateRevenueDrome } from '../utils/drome/calculateRevenueDrome'
+import { KpiResult } from '../../../types'
 
 /**
  * Calculates trading fee revenue generated for Velodrome DEX on Optimism Network.
@@ -66,8 +67,8 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<number> {
-  return calculateRevenueDrome({
+}): Promise<KpiResult> {
+  const kpi = await calculateRevenueDrome({
     address,
     startTimestamp,
     endTimestampExclusive,
@@ -75,4 +76,5 @@ export async function calculateKpi({
       VELODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
     networkId: VELODROME_NETWORK_ID,
   })
+  return { kpi }
 }

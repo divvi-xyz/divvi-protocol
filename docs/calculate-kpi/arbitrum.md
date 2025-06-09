@@ -11,7 +11,7 @@
 ### calculateKpi()
 
 ```ts
-function calculateKpi(params): Promise<number>
+function calculateKpi(params): Promise<KpiResult<string>>
 ```
 
 Defined in: [arbitrum/index.ts:47](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/arbitrum/index.ts#L47)
@@ -79,6 +79,6 @@ Start of time window for gas calculation (inclusive)
 
 #### Returns
 
-`Promise`\<`number`\>
+`Promise`\<`KpiResult`\<`string`\>\>
 
 Promise resolving to total gas units consumed by user's transactions on Arbitrum

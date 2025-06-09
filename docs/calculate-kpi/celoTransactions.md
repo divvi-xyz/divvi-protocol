@@ -11,7 +11,7 @@
 ### calculateKpi()
 
 ```ts
-function calculateKpi(params): Promise<number>
+function calculateKpi(params): Promise<KpiResult<string>>
 ```
 
 Defined in: [celoTransactions/index.ts:47](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/celoTransactions/index.ts#L47)
@@ -82,6 +82,6 @@ Start of time window for transaction counting (inclusive)
 
 #### Returns
 
-`Promise`\<`number`\>
+`Promise`\<`KpiResult`\<`string`\>\>
 
 Promise resolving to total number of transactions initiated by the user

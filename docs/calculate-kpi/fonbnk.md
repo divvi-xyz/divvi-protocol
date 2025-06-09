@@ -11,7 +11,7 @@
 ### calculateKpi()
 
 ```ts
-function calculateKpi(params): Promise<number>
+function calculateKpi(params): Promise<KpiResult<string>>
 ```
 
 Defined in: [fonbnk/index.ts:215](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/fonbnk/index.ts#L215)
@@ -83,6 +83,6 @@ Start of time window for volume calculation (inclusive)
 
 #### Returns
 
-`Promise`\<`number`\>
+`Promise`\<`KpiResult`\<`string`\>\>
 
 Promise resolving to total cash-in transaction volume in USD
