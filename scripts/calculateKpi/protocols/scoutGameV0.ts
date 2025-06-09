@@ -2,6 +2,8 @@ import { CalculateKpiFn, NetworkId } from '../../types'
 import { getBlockRange } from './utils/events'
 import { fetchTotalTransactions } from './utils/networks'
 
+type ScoutGameBreakdown = 'baseKpi' | 'celoKpi' | 'polygonKpi'
+
 /**
  * Calculates transaction count for Scout Game V0 user engagement tracking.
  *
@@ -45,7 +47,7 @@ import { fetchTotalTransactions } from './utils/networks'
  * @returns Promise resolving to total number of transactions across all supported networks
  */
 
-export const calculateKpi: CalculateKpiFn = async ({
+export const calculateKpi: CalculateKpiFn<ScoutGameBreakdown> = async ({
   address,
   startTimestamp,
   endTimestampExclusive,
@@ -56,7 +58,7 @@ export const calculateKpi: CalculateKpiFn = async ({
     NetworkId['celo-mainnet'],
     NetworkId['polygon-pos-mainnet'],
   ]
-  const networkIdToKpiName: Partial<Record<NetworkId, string>> = {
+  const networkIdToKpiName: Partial<Record<NetworkId, ScoutGameBreakdown>> = {
     [NetworkId['base-mainnet']]: 'baseKpi',
     [NetworkId['celo-mainnet']]: 'celoKpi',
     [NetworkId['polygon-pos-mainnet']]: 'polygonKpi',
@@ -85,10 +87,17 @@ export const calculateKpi: CalculateKpiFn = async ({
   )
 
   let totalTransactions = 0
-  const segmentedKpi: { [key: string]: number } = {}
+  let breakdown: Record<ScoutGameBreakdown, number> = {
+    baseKpi: 0,
+    celoKpi: 0,
+    polygonKpi: 0,
+  }
   transactions.forEach((item, index) => {
     totalTransactions += item
-    segmentedKpi[networkIdToKpiName[networkIds[index]] ?? 'otherKpi'] = item
+    const kpiName = networkIdToKpiName[networkIds[index]]
+    if (kpiName) {
+      breakdown[kpiName] = item
+    }
   })
-  return { kpi: totalTransactions, segmentedKpi }
+  return { kpi: totalTransactions, breakdown }
 }

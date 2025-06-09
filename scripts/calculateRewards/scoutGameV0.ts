@@ -90,14 +90,14 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     [referrerId: string]: { [key: string]: bigint }
   } = {}
 
-  for (const { referrerId, segmentedKpi } of kpiData) {
-    if (!segmentedKpi) continue
+  for (const { referrerId, breakdown } of kpiData) {
+    if (!breakdown) continue
 
     if (!segmentedKpiPerReferrer[referrerId]) {
       segmentedKpiPerReferrer[referrerId] = {}
     }
 
-    for (const [key, value] of Object.entries(segmentedKpi)) {
+    for (const [key, value] of Object.entries(breakdown)) {
       segmentedKpiPerReferrer[referrerId][key] =
         (segmentedKpiPerReferrer[referrerId][key] ?? 0n) + BigInt(value)
     }
