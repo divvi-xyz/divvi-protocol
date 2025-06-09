@@ -85,6 +85,6 @@
   },
   "dependencies": {
     "@redis/client": "^5.5.5",
-    "redis": "^5.5.5"
+    "redis": "^5.5.6"
   }
 }
