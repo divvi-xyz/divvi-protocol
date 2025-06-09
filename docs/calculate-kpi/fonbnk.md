@@ -11,7 +11,7 @@
 ### calculateKpi()
 
 ```ts
-function calculateKpi(params): Promise<KpiResult<string>>;
+function calculateKpi(params): Promise<KpiResult<string>>
 ```
 
 Defined in: [fonbnk/index.ts:215](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/fonbnk/index.ts#L215)
