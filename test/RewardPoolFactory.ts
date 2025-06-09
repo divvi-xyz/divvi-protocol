@@ -87,8 +87,8 @@ describe(CONTRACT_NAME, function () {
     it('creates a new RewardPool clone', async function () {
       const poolToken = await hre.ethers.getSigner(user1.address)
       const rewardFunctionId = MOCK_REWARD_FUNCTION_ID
-      const poolOwner = owner.address
-      const poolManager = manager.address
+      const poolOwner = user1.address
+      const poolManager = user1.address
       const timelock = (await time.latest()) + TIMELOCK
 
       const tx = await factory.createRewardPool(
