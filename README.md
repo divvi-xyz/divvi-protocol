@@ -1,4 +1,4 @@
-# Funding Layer
+# Divvi Protocol
 
 ## Setup
 
@@ -98,6 +98,18 @@ Calculates KPI for a list of referrals. By default it directly reads from the ou
 $ yarn ts-node ./scripts/calculateKpi.ts --protocol beefy --startTimestamp 2025-05-08T00:00:00Z --endTimestamp 2025-05-16T00:00:00Z
 Calculating KPI for 0x15B5f5FE55704140ce5057d85c28f8b237c1Bc53 (1/1)
 Wrote results to rewards/beefy/2025-05-08T00:00:00.000Z_2025-05-16T00:00:00.000Z/kpi.csv
+```
+
+Calculating KPIs requires fetching the user's referral timestamp, which is slow due to rate limits. If running KPI calculations frequently, it may help to use Redis. Locally, run in a separate terminal:
+
+```bash
+docker-compose up
+```
+
+Then add the redis url to the above command:
+
+```bash
+$ yarn ts-node ./scripts/calculateKpi.ts --protocol beefy --startTimestamp 2025-05-08T00:00:00Z --endTimestamp 2025-05-16T00:00:00Z --redis-connection=redis://127.0.0.1:6379
 ```
 
 ### Referrer User Count

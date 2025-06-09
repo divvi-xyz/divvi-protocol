@@ -117,6 +117,7 @@ describe('fetchReferralEvents', () => {
     expect(getFirstBlockAtOrAfterTimestamp).toHaveBeenCalledWith(
       'op-mainnet',
       endTimestamp,
+      undefined, // redis instance is not used in this test
     )
     expect(mockGetEvents).toHaveBeenCalledWith(
       expect.objectContaining({

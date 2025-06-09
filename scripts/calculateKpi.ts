@@ -2,14 +2,13 @@ import calculateKpiHandlers from './calculateKpi/protocols'
 import yargs from 'yargs'
 import { Protocol, protocols } from './types'
 import { ResultDirectory } from '../src/resultDirectory'
+import { RedisClientType } from '@redis/client'
+import { closeRedisClient, getRedisClient } from '../src/redis'
 
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
 // Calculate KPIs for end users in batches to speed things up
 const BATCH_SIZE = 20
-
-// DefiLlama API limit, at worst we need to fetch the referral block timestamp for every user
-const MAX_REQUESTS_PER_MINUTE = 500
 
 interface KpiResult {
   referrerId: string
@@ -32,15 +31,16 @@ async function calculateKpiBatch({
   startTimestamp,
   endTimestampExclusive,
   protocol,
+  redis,
 }: {
   eligibleUsers: ReferralData[]
   batchSize: number
   startTimestamp: Date
   endTimestampExclusive: Date
   protocol: Protocol
+  redis?: RedisClientType
 }): Promise<KpiResult[]> {
   const results: KpiResult[] = []
-  const delayPerBatchInMs = (60_000 * BATCH_SIZE) / MAX_REQUESTS_PER_MINUTE
 
   for (let i = 0; i < eligibleUsers.length; i += batchSize) {
     const batch = eligibleUsers.slice(i, i + batchSize)
@@ -73,6 +73,7 @@ async function calculateKpiBatch({
               ? referralTimestamp
               : startTimestamp,
           endTimestampExclusive,
+          redis,
         })
 
         return {
@@ -89,9 +90,6 @@ async function calculateKpiBatch({
         (result): result is NonNullable<typeof result> => result !== null,
       ),
     )
-
-    // Delay to avoid rate limits from DefiLlama
-    await new Promise((resolve) => setTimeout(resolve, delayPerBatchInMs))
   }
 
   return results
@@ -105,17 +103,24 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
 
   const eligibleUsers = await resultDirectory.readReferrals()
 
+  const redis = args.redisConnection
+    ? await getRedisClient(args.redisConnection)
+    : undefined
+
   const allResults = await calculateKpiBatch({
     eligibleUsers,
     batchSize: BATCH_SIZE,
     protocol,
     startTimestamp,
     endTimestampExclusive,
+    redis,
   })
 
   await resultDirectory.writeKpi(allResults)
 
   console.log(`Wrote results to ${resultDirectory.kpiFileSuffix}.csv`)
+
+  await closeRedisClient()
 }
 
 async function getArgs() {
@@ -143,6 +148,11 @@ async function getArgs() {
     .option('datadir', {
       description: 'Directory to save data',
       default: 'rewards',
+    })
+    .option('redis-connection', {
+      type: 'string',
+      description:
+        'redis connection string, to run locally use redis://127.0.0.1:6379',
     }).argv
 
   const resultDirectory = new ResultDirectory({
@@ -157,6 +167,7 @@ async function getArgs() {
     protocol: argv['protocol'],
     startTimestamp: argv['start-timestamp'],
     endTimestampExclusive: argv['end-timestamp'],
+    redisConnection: argv['redis-connection'],
   }
 }
 

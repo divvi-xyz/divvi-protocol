@@ -1,3 +1,4 @@
+import { RedisClientType } from '@redis/client'
 import { Address } from 'viem'
 
 export const protocols = [
@@ -51,6 +52,7 @@ export type CalculateKpiFn = (params: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
+  redis?: RedisClientType
 }) => Promise<number>
 
 export interface ReferralEvent {
