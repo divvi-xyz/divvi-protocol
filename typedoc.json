@@ -16,6 +16,9 @@
   "excludeNotDocumented": true,
   "excludeInternal": true,
   "formatWithPrettier": true,
+  // For some reason, the default prettier config is not found
+  // so we need to specify it manually
+  "prettierConfigFile": ".prettierrc.js",
   "useCodeBlocks": true,
   "outputFileStrategy": "modules"
 }
