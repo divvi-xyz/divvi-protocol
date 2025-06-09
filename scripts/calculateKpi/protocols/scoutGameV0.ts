@@ -87,7 +87,7 @@ export const calculateKpi: CalculateKpiFn<ScoutGameBreakdown> = async ({
   )
 
   let totalTransactions = 0
-  let breakdown: Record<ScoutGameBreakdown, number> = {
+  const breakdown: Record<ScoutGameBreakdown, number> = {
     baseKpi: 0,
     celoKpi: 0,
     polygonKpi: 0,
