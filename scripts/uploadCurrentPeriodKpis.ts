@@ -227,6 +227,11 @@ async function getArgs() {
       type: 'string',
       default: new Date().toISOString(),
     })
+    .option('protocol', {
+      description:
+        'Protocol to calculate KPIs for, e.g. celo-pg, scout-game-v0, lisk-v0',
+      type: 'string',
+    })
     .option('redis-connection', {
       type: 'string',
       description:
@@ -237,12 +242,24 @@ async function getArgs() {
     dryRun: argv['dry-run'],
     calculationTimestamp: argv['calculation-timestamp'],
     redisConnection: argv['redis-connection'],
+    protocol: argv['protocol'],
   }
 }
 
 async function uploadCurrentPeriodKpis(
   args: Awaited<ReturnType<typeof getArgs>>,
 ) {
+  // If a protocol is specified, only calculate KPIs for that campaign
+  const campaignsToCalculate = args.protocol
+    ? campaigns.filter((campaign) => campaign.protocol === args.protocol)
+    : campaigns
+
+  if (campaignsToCalculate.length === 0) {
+    throw new Error(
+      `No campaigns found for protocol ${args.protocol}. Please ensure the protocol is correct and has campaign information defined in the script.`,
+    )
+  }
+
   // This script will calculate rewards ending at the start of the current hour
   const startOfCalculationHour = new Date(args.calculationTimestamp).setMinutes(
     0,
@@ -254,7 +271,7 @@ async function uploadCurrentPeriodKpis(
   const uploadFilePaths: string[] = []
 
   // Due to the DefiLlama API rate limit, there is no point in parallelising the calculations across campaigns
-  for (const campaign of campaigns) {
+  for (const campaign of campaignsToCalculate) {
     const campaignStartTimestamp = Date.parse(
       campaign.rewardsPeriods[0].startTimestamp,
     )
