@@ -9,6 +9,7 @@ import yargs from 'yargs'
 import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
 import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV0'
+import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
 
 interface Campaign {
   protocol: Protocol
@@ -24,23 +25,6 @@ interface Campaign {
 }
 
 const campaigns: Campaign[] = [
-  {
-    protocol: 'celo-transactions',
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-05-08T00:00:00Z',
-        endTimestampExclusive: '2025-05-16T00:00:00Z',
-      },
-      {
-        startTimestamp: '2025-05-16T00:00:00Z',
-        endTimestampExclusive: '2025-05-23T00:00:00Z',
-      },
-      {
-        startTimestamp: '2025-05-23T00:00:00Z',
-        endTimestampExclusive: '2025-05-29T07:00:00Z',
-      },
-    ],
-  },
   {
     protocol: 'celo-pg',
     rewardsPeriods: [
@@ -172,6 +156,55 @@ const campaigns: Campaign[] = [
             resultDirectory,
             startTimestamp: new Date(startTimestamp),
             endTimestampExclusive: new Date(endTimestampExclusive),
+          })
+        },
+      },
+    ],
+  },
+  {
+    protocol: 'lisk-v0',
+    rewardsPeriods: [
+      {
+        startTimestamp: '2025-06-05T00:00:00Z',
+        endTimestampExclusive: '2025-07-01T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardsLiskV0({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            proportionLinear: 1,
+            excludelist: [],
+            failOnExclude: false,
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-07-01T00:00:00Z',
+        endTimestampExclusive: '2025-08-01T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardsLiskV0({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            proportionLinear: 1,
+            excludelist: [],
+            failOnExclude: false,
           })
         },
       },
