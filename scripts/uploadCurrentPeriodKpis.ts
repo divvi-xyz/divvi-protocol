@@ -249,6 +249,17 @@ async function getArgs() {
 async function uploadCurrentPeriodKpis(
   args: Awaited<ReturnType<typeof getArgs>>,
 ) {
+  // If a protocol is specified, only calculate KPIs for that campaign
+  const campaignsToCalculate = args.protocol
+    ? campaigns.filter((campaign) => campaign.protocol === args.protocol)
+    : campaigns
+
+  if (campaignsToCalculate.length === 0) {
+    throw new Error(
+      `No campaigns found for protocol ${args.protocol}. Please ensure the protocol is correct and has campaign information defined in the script.`,
+    )
+  }
+
   // This script will calculate rewards ending at the start of the current hour
   const startOfCalculationHour = new Date(args.calculationTimestamp).setMinutes(
     0,
@@ -256,11 +267,6 @@ async function uploadCurrentPeriodKpis(
     0,
   )
   const endTimestampExclusive = new Date(startOfCalculationHour).toISOString()
-
-  // If a protocol is specified, only calculate KPIs for that campaign
-  const campaignsToCalculate = args.protocol
-    ? campaigns.filter((campaign) => campaign.protocol === args.protocol)
-    : campaigns
 
   const uploadFilePaths: string[] = []
 
