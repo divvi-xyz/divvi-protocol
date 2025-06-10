@@ -5,9 +5,9 @@ import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransacti
 import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
 import { KpiRow, ResultDirectory } from '../../src/resultDirectory'
 
-const scoutGameStartTimestamp = new Date('Tue Jun 03 2025 07:00:00 GMT+0000')
+const scoutGameStartTimestamp = new Date('Tue Jun 03 2025 00:00:00 GMT+0000')
 const scoutGameEndTimestampExclusive = new Date(
-  'Fri Jul 02 2025 07:00:00 GMT+0000',
+  'Fri Jul 02 2025 00:00:00 GMT+0000',
 )
 
 const totalRewards = parseEther('180000')
