@@ -5,6 +5,7 @@ import {
   impersonateAccount,
 } from '@nomicfoundation/hardhat-network-helpers'
 import { type HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
+import { ethers } from 'ethers'
 
 const CONTRACT_NAME = 'DivviRegistry'
 
@@ -744,6 +745,479 @@ describe(CONTRACT_NAME, function () {
 
       // Double-check that the role was not granted
       expect(await registry.hasRole(roleToGrant, provider.address)).to.be.false
+    })
+  })
+
+  describe('Referrals with Offchain Signature', function () {
+    let provider: HardhatEthersSigner
+    let consumer: HardhatEthersSigner
+    let user: HardhatEthersSigner
+    let extraUser: HardhatEthersSigner
+    let registry: Awaited<
+      ReturnType<typeof deployDivviRegistryContract>
+    >['registry']
+    let owner: HardhatEthersSigner
+
+    beforeEach(async function () {
+      const deployed = await deployDivviRegistryContract()
+      registry = deployed.registry
+      owner = deployed.owner
+      provider = deployed.provider
+      consumer = deployed.consumer
+      user = deployed.extraUser
+      extraUser = deployed.provider // Use provider as second user for testing
+
+      // Setup entities and agreement
+      await (
+        registry.connect(provider) as typeof registry
+      ).registerRewardsEntity(false)
+      await (
+        registry.connect(consumer) as typeof registry
+      ).registerRewardsEntity(false)
+      await (
+        registry.connect(provider) as typeof registry
+      ).registerAgreementAsProvider(consumer.address)
+
+      // Grant registrar role to owner
+      const registrarRole = await registry.REFERRAL_REGISTRAR_ROLE()
+      await (registry.connect(owner) as typeof registry).grantRole(
+        registrarRole,
+        owner.address,
+      )
+    })
+
+    describe('EIP-712 Domain Functions', function () {
+      it('should return correct domain separator and type hash', async function () {
+        const domainSeparator = await registry.getDomainSeparator()
+        const typeHash = await registry.getReferralTypeHash()
+
+        expect(domainSeparator).to.be.a('string')
+        expect(typeHash).to.be.a('string')
+        expect(typeHash).to.equal(
+          ethers.keccak256(
+            ethers.toUtf8Bytes(
+              'DivviReferral(address user,address rewardsConsumer)',
+            ),
+          ),
+        )
+      })
+
+      it('should return correct EIP-712 domain info', async function () {
+        const domain = await registry.eip712Domain()
+        expect(domain.name).to.equal('DivviRegistry')
+        expect(domain.version).to.equal('1')
+        expect(domain.chainId).to.equal(31337n) // Default hardhat network chainId
+        expect(domain.verifyingContract).to.equal(await registry.getAddress())
+      })
+    })
+
+    describe('Signature Verification', function () {
+      describe('EOA Signatures', function () {
+        it('should verify valid ECDSA signatures from EOAs', async function () {
+          // Create signature
+          const domain = {
+            name: 'DivviRegistry',
+            version: '1',
+            chainId: 31337,
+            verifyingContract: await registry.getAddress(),
+          }
+
+          const types = {
+            DivviReferral: [
+              { name: 'user', type: 'address' },
+              { name: 'rewardsConsumer', type: 'address' },
+            ],
+          }
+
+          const message = {
+            user: user.address,
+            rewardsConsumer: consumer.address,
+          }
+
+          const signature = await user.signTypedData(domain, types, message)
+
+          const isValid = await registry.verifyReferralSignature(
+            user.address,
+            consumer.address,
+            signature,
+          )
+
+          expect(isValid).to.be.true
+        })
+
+        it('should reject invalid signatures', async function () {
+          // Create signature with wrong user
+          const domain = {
+            name: 'DivviRegistry',
+            version: '1',
+            chainId: 31337,
+            verifyingContract: await registry.getAddress(),
+          }
+
+          const types = {
+            DivviReferral: [
+              { name: 'user', type: 'address' },
+              { name: 'rewardsConsumer', type: 'address' },
+            ],
+          }
+
+          const message = {
+            user: extraUser.address, // Wrong user
+            rewardsConsumer: consumer.address,
+          }
+
+          const signature = await user.signTypedData(domain, types, message)
+
+          const isValid = await registry.verifyReferralSignature(
+            user.address, // Correct user but wrong signature
+            consumer.address,
+            signature,
+          )
+
+          expect(isValid).to.be.false
+        })
+      })
+
+      describe('Smart Contract Signatures (EIP-1271)', function () {
+        it('should verify valid signatures from smart contracts', async function () {
+          // Deploy a mock EIP-1271 contract that always validates signatures
+          const MockEIP1271 = await hre.ethers.getContractFactory(
+            'contracts/mocks/MockEIP1271.sol:MockEIP1271',
+          )
+          const mockContract = await MockEIP1271.deploy(true) // alwaysValid = true
+          await mockContract.waitForDeployment()
+          const smartContractAddress = await mockContract.getAddress()
+
+          // Test signature verification
+          const isValid = await registry.verifyReferralSignature(
+            smartContractAddress,
+            consumer.address,
+            '0x' + '00'.repeat(65), // Any signature should work with our mock
+          )
+
+          expect(isValid).to.be.true
+        })
+
+        it('should reject invalid signatures from smart contracts', async function () {
+          // Deploy a mock EIP-1271 contract that never validates signatures
+          const MockEIP1271 = await hre.ethers.getContractFactory(
+            'contracts/mocks/MockEIP1271.sol:MockEIP1271',
+          )
+          const mockContract = await MockEIP1271.deploy(false) // alwaysValid = false
+          await mockContract.waitForDeployment()
+          const smartContractAddress = await mockContract.getAddress()
+
+          // Test signature verification
+          const isValid = await registry.verifyReferralSignature(
+            smartContractAddress,
+            consumer.address,
+            '0x' + '00'.repeat(65), // Any signature should be rejected
+          )
+
+          expect(isValid).to.be.false
+        })
+
+        it('should handle smart contracts that do not implement EIP-1271', async function () {
+          // Deploy a contract that doesn't implement EIP-1271
+          const MockNonEIP1271 = await hre.ethers.getContractFactory(
+            'contracts/mocks/MockEIP1271.sol:MockNonEIP1271',
+          )
+          const mockContract = await MockNonEIP1271.deploy()
+          await mockContract.waitForDeployment()
+          const smartContractAddress = await mockContract.getAddress()
+
+          // Test signature verification - should return false when contract doesn't implement EIP-1271
+          const isValid = await registry.verifyReferralSignature(
+            smartContractAddress,
+            consumer.address,
+            '0x' + '00'.repeat(65),
+          )
+
+          expect(isValid).to.be.false
+        })
+
+        it('should handle smart contracts with selective hash validation', async function () {
+          // Deploy a mock EIP-1271 contract that validates specific hashes
+          const MockEIP1271 = await hre.ethers.getContractFactory(
+            'contracts/mocks/MockEIP1271.sol:MockEIP1271',
+          )
+          const mockContract = await MockEIP1271.deploy(false) // alwaysValid = false
+          await mockContract.waitForDeployment()
+          const smartContractAddress = await mockContract.getAddress()
+
+          // Calculate the message hash for this specific message
+          const domain = {
+            name: 'DivviRegistry',
+            version: '1',
+            chainId: 31337,
+            verifyingContract: await registry.getAddress(),
+          }
+
+          const types = {
+            DivviReferral: [
+              { name: 'user', type: 'address' },
+              { name: 'rewardsConsumer', type: 'address' },
+            ],
+          }
+
+          const message = {
+            user: smartContractAddress,
+            rewardsConsumer: consumer.address,
+          }
+
+          const messageHash = ethers.TypedDataEncoder.hash(
+            domain,
+            types,
+            message,
+          )
+
+          // Set this specific hash as valid in the mock contract
+          await mockContract.setValidHash(messageHash, true)
+
+          // Test signature verification - should now return true
+          const isValid = await registry.verifyReferralSignature(
+            smartContractAddress,
+            consumer.address,
+            '0x' + '00'.repeat(65),
+          )
+
+          expect(isValid).to.be.true
+
+          // Test with a different rewardsConsumer (different hash) - should return false
+          const [, , , extraUser] = await hre.ethers.getSigners()
+          const isValidDifferentHash = await registry.verifyReferralSignature(
+            smartContractAddress,
+            extraUser.address,
+            '0x' + '00'.repeat(65),
+          )
+
+          expect(isValidDifferentHash).to.be.false
+        })
+      })
+    })
+
+    describe('Batch Referral Registration V2', function () {
+      for (const useMetaTx of [false, true]) {
+        describe(`via ${useMetaTx ? 'meta-transaction' : 'direct call'}`, function () {
+          it('should process signature-based referrals', async function () {
+            // Create signature
+            const domain = {
+              name: 'DivviRegistry',
+              version: '1',
+              chainId: 31337,
+              verifyingContract: await registry.getAddress(),
+            }
+
+            const types = {
+              DivviReferral: [
+                { name: 'user', type: 'address' },
+                { name: 'rewardsConsumer', type: 'address' },
+              ],
+            }
+
+            const message = {
+              user: user.address,
+              rewardsConsumer: consumer.address,
+            }
+
+            const signature = await user.signTypedData(domain, types, message)
+
+            const referralV2 = {
+              user: user.address,
+              rewardsProvider: provider.address,
+              rewardsConsumer: consumer.address,
+              txHash: ethers.ZeroHash,
+              chainId: '',
+              offchainSignature: signature,
+            }
+
+            await expect(
+              executeAs(
+                registry,
+                owner,
+                'batchRegisterReferralV2',
+                [[referralV2]],
+                useMetaTx,
+              ),
+            )
+              .to.emit(registry, 'ReferralRegistered')
+              .withArgs(
+                user.address,
+                provider.address,
+                consumer.address,
+                '', // Empty chainId for signature-based
+                ethers.ZeroHash, // Zero txHash for signature-based
+              )
+
+            expect(
+              await registry.isUserReferredToProvider(
+                user.address,
+                provider.address,
+              ),
+            ).to.be.true
+          })
+
+          it('should process mixed tx-based and signature-based referrals', async function () {
+            // Create signature for user
+            const domain = {
+              name: 'DivviRegistry',
+              version: '1',
+              chainId: 31337,
+              verifyingContract: await registry.getAddress(),
+            }
+
+            const types = {
+              DivviReferral: [
+                { name: 'user', type: 'address' },
+                { name: 'rewardsConsumer', type: 'address' },
+              ],
+            }
+
+            const message = {
+              user: user.address,
+              rewardsConsumer: consumer.address,
+            }
+
+            const signature = await user.signTypedData(domain, types, message)
+
+            const referrals = [
+              // Signature-based referral
+              {
+                user: user.address,
+                rewardsProvider: provider.address,
+                rewardsConsumer: consumer.address,
+                txHash: ethers.ZeroHash,
+                chainId: '',
+                offchainSignature: signature,
+              },
+              // Traditional tx-based referral (empty signature)
+              {
+                user: extraUser.address,
+                rewardsProvider: provider.address,
+                rewardsConsumer: consumer.address,
+                txHash:
+                  '0x1234567890123456789012345678901234567890123456789012345678901234',
+                chainId: 'ethereum',
+                offchainSignature: '0x',
+              },
+            ]
+
+            await expect(
+              executeAs(
+                registry,
+                owner,
+                'batchRegisterReferralV2',
+                [referrals],
+                useMetaTx,
+              ),
+            )
+              .to.emit(registry, 'ReferralRegistered')
+              .withArgs(
+                user.address,
+                provider.address,
+                consumer.address,
+                '', // Empty for signature-based
+                ethers.ZeroHash,
+              )
+              .to.emit(registry, 'ReferralRegistered')
+              .withArgs(
+                extraUser.address,
+                provider.address,
+                consumer.address,
+                'ethereum', // Real chainId for tx-based
+                '0x1234567890123456789012345678901234567890123456789012345678901234',
+              )
+
+            expect(
+              await registry.isUserReferredToProvider(
+                user.address,
+                provider.address,
+              ),
+            ).to.be.true
+            expect(
+              await registry.isUserReferredToProvider(
+                extraUser.address,
+                provider.address,
+              ),
+            ).to.be.true
+          })
+
+          it('should skip referrals with invalid signatures', async function () {
+            const referralV2 = {
+              user: user.address,
+              rewardsProvider: provider.address,
+              rewardsConsumer: consumer.address,
+              txHash: ethers.ZeroHash,
+              chainId: '',
+              offchainSignature: '0x' + '00'.repeat(65), // Invalid signature of correct length
+            }
+
+            await expect(
+              executeAs(
+                registry,
+                owner,
+                'batchRegisterReferralV2',
+                [[referralV2]],
+                useMetaTx,
+              ),
+            )
+              .to.emit(registry, 'ReferralSkipped')
+              .withArgs(
+                user.address,
+                provider.address,
+                consumer.address,
+                '',
+                ethers.ZeroHash,
+                4, // INVALID_SIGNATURE
+              )
+
+            expect(
+              await registry.isUserReferredToProvider(
+                user.address,
+                provider.address,
+              ),
+            ).to.be.false
+          })
+
+          it('should maintain backward compatibility with traditional flow', async function () {
+            // Use V2 function with empty signature (traditional flow)
+            const referralV2 = {
+              user: user.address,
+              rewardsProvider: provider.address,
+              rewardsConsumer: consumer.address,
+              txHash:
+                '0x1234567890123456789012345678901234567890123456789012345678901234',
+              chainId: 'ethereum',
+              offchainSignature: '0x', // Empty signature triggers traditional flow
+            }
+
+            await expect(
+              executeAs(
+                registry,
+                owner,
+                'batchRegisterReferralV2',
+                [[referralV2]],
+                useMetaTx,
+              ),
+            )
+              .to.emit(registry, 'ReferralRegistered')
+              .withArgs(
+                user.address,
+                provider.address,
+                consumer.address,
+                'ethereum',
+                '0x1234567890123456789012345678901234567890123456789012345678901234',
+              )
+
+            expect(
+              await registry.isUserReferredToProvider(
+                user.address,
+                provider.address,
+              ),
+            ).to.be.true
+          })
+        })
+      }
     })
   })
 })

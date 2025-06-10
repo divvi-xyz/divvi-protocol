@@ -6,6 +6,9 @@ import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import {ERC2771ContextUpgradeable} from '@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol';
 import {ContextUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol';
+import {EIP712Upgradeable} from '@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol';
+import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
 
 /**
  * @title DivviRegistry
@@ -15,7 +18,8 @@ contract DivviRegistry is
   Initializable,
   AccessControlDefaultAdminRulesUpgradeable,
   UUPSUpgradeable,
-  ERC2771ContextUpgradeable
+  ERC2771ContextUpgradeable,
+  EIP712Upgradeable
 {
   // Data structs
   struct EntityData {
@@ -33,12 +37,29 @@ contract DivviRegistry is
     string chainId;
   }
 
+  struct ReferralDataV2 {
+    address user;
+    address rewardsProvider;
+    address rewardsConsumer;
+    bytes32 txHash;
+    string chainId;
+    bytes offchainSignature;
+  }
+
   enum ReferralStatus {
     SUCCESS,
     ENTITY_NOT_FOUND,
     AGREEMENT_NOT_FOUND,
-    USER_ALREADY_REFERRED
+    USER_ALREADY_REFERRED,
+    INVALID_SIGNATURE
   }
+
+  // EIP-712 type hash for offchain referral signatures
+  bytes32 private constant REFERRAL_TYPEHASH =
+    keccak256('DivviReferral(address user,address rewardsConsumer)');
+
+  // EIP-1271 magic value for valid signatures
+  bytes4 private constant EIP1271_MAGIC_VALUE = 0x1626ba7e;
 
   // Entities storage
   mapping(address => EntityData) private _entities;
@@ -93,6 +114,7 @@ contract DivviRegistry is
   error EntityDoesNotExist(address entity);
   error AgreementAlreadyExists(address provider, address consumer);
   error ProviderRequiresApproval(address provider);
+  error InvalidSignature(address user, bytes signature);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() ERC2771ContextUpgradeable(address(0x0)) {
@@ -107,6 +129,7 @@ contract DivviRegistry is
   function initialize(address owner, uint48 transferDelay) public initializer {
     __AccessControlDefaultAdminRules_init(transferDelay, owner);
     __UUPSUpgradeable_init();
+    __EIP712_init('DivviRegistry', '1');
   }
 
   /**
@@ -219,7 +242,8 @@ contract DivviRegistry is
       ReferralStatus status = _registerReferral(
         referral.user,
         referral.rewardsProvider,
-        referral.rewardsConsumer
+        referral.rewardsConsumer,
+        '' // No signature for traditional tx-based referrals
       );
 
       // Emit appropriate event based on status
@@ -245,18 +269,115 @@ contract DivviRegistry is
   }
 
   /**
+   * @notice Register multiple referrals in a single transaction with support for offchain signatures
+   * @dev Requires REFERRAL_REGISTRAR_ROLE. Validates signatures on-chain for transparency and decentralization
+   * @param referrals Array of referral data to register
+   */
+  function batchRegisterReferralV2(
+    ReferralDataV2[] calldata referrals
+  ) external onlyRole(REFERRAL_REGISTRAR_ROLE) {
+    for (uint256 i = 0; i < referrals.length; i++) {
+      ReferralDataV2 calldata referral = referrals[i];
+
+      // Determine if this is a signature-based referral
+      bool isSignatureBased = referral.offchainSignature.length > 0;
+
+      // Set event values based on referral type
+      string memory eventChainId = isSignatureBased ? '' : referral.chainId;
+      bytes32 eventTxHash = isSignatureBased ? bytes32(0) : referral.txHash;
+
+      // Process the referral (including signature verification if applicable)
+      ReferralStatus status = _registerReferral(
+        referral.user,
+        referral.rewardsProvider,
+        referral.rewardsConsumer,
+        referral.offchainSignature
+      );
+
+      // Emit appropriate event based on status
+      if (status == ReferralStatus.SUCCESS) {
+        emit ReferralRegistered(
+          referral.user,
+          referral.rewardsProvider,
+          referral.rewardsConsumer,
+          eventChainId,
+          eventTxHash
+        );
+      } else {
+        emit ReferralSkipped(
+          referral.user,
+          referral.rewardsProvider,
+          referral.rewardsConsumer,
+          eventChainId,
+          eventTxHash,
+          status
+        );
+      }
+    }
+  }
+
+  /**
+   * @notice Verify an EIP-712 signature for referral consent
+   * @param user The user address that should have signed
+   * @param rewardsConsumer The rewards consumer (referrer) address
+   * @param signature The signature to verify
+   * @return valid Whether the signature is valid
+   */
+  function _verifyReferralSignature(
+    address user,
+    address rewardsConsumer,
+    bytes memory signature
+  ) internal view returns (bool valid) {
+    // Construct the EIP-712 message hash
+    bytes32 structHash = keccak256(
+      abi.encode(REFERRAL_TYPEHASH, user, rewardsConsumer)
+    );
+    bytes32 messageHash = _hashTypedDataV4(structHash);
+
+    // Check if user is a contract (potential smart wallet)
+    if (user.code.length > 0) {
+      // Try EIP-1271 verification for smart contracts
+      try IERC1271(user).isValidSignature(messageHash, signature) returns (
+        bytes4 magicValue
+      ) {
+        return magicValue == EIP1271_MAGIC_VALUE;
+      } catch {
+        return false;
+      }
+    } else {
+      // Standard ECDSA verification for EOAs using OpenZeppelin's tryRecover
+      (address recoveredSigner, ECDSA.RecoverError error, ) = ECDSA.tryRecover(
+        messageHash,
+        signature
+      );
+
+      // Check if recovery was successful and signer matches expected user
+      return error == ECDSA.RecoverError.NoError && recoveredSigner == user;
+    }
+  }
+
+  /**
    * @notice Register a user as being referred to a rewards agreement
-   * @dev Internal function that returns status instead of emitting events
+   * @dev Internal function that returns status instead of emitting events. Handles signature verification if provided.
    * @param user The address of the user being referred
    * @param rewardsProvider The address of the rewards provider entity
    * @param rewardsConsumer The address of the rewards consumer entity
+   * @param offchainSignature Optional signature for offchain referrals (empty for tx-based referrals)
    * @return status The status of the referral registration
    */
   function _registerReferral(
     address user,
     address rewardsProvider,
-    address rewardsConsumer
+    address rewardsConsumer,
+    bytes memory offchainSignature
   ) internal returns (ReferralStatus status) {
+    // Verify signature if provided
+    if (offchainSignature.length > 0) {
+      if (!_verifyReferralSignature(user, rewardsConsumer, offchainSignature)) {
+        return ReferralStatus.INVALID_SIGNATURE;
+      }
+    }
+
     // Check if entities exist
     if (
       !_entities[rewardsProvider].exists || !_entities[rewardsConsumer].exists
@@ -344,6 +465,37 @@ contract DivviRegistry is
   ) public view returns (address consumer) {
     bytes32 referralKey = keccak256(abi.encodePacked(user, provider));
     return _registeredReferrals[referralKey];
+  }
+
+  /**
+   * @notice Get the EIP-712 domain separator for this contract
+   * @return The domain separator used for signature verification
+   */
+  function getDomainSeparator() external view returns (bytes32) {
+    return _domainSeparatorV4();
+  }
+
+  /**
+   * @notice Get the EIP-712 type hash for referral signatures
+   * @return The type hash used for constructing referral signatures
+   */
+  function getReferralTypeHash() external pure returns (bytes32) {
+    return REFERRAL_TYPEHASH;
+  }
+
+  /**
+   * @notice Verify a referral signature without processing the referral
+   * @param user The user address that should have signed
+   * @param rewardsConsumer The rewards consumer (referrer) address
+   * @param signature The signature to verify
+   * @return valid Whether the signature is valid
+   */
+  function verifyReferralSignature(
+    address user,
+    address rewardsConsumer,
+    bytes memory signature
+  ) external view returns (bool valid) {
+    return _verifyReferralSignature(user, rewardsConsumer, signature);
   }
 
   // ERC2771Context overrides
