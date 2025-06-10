@@ -11,10 +11,10 @@
 ### calculateKpi()
 
 ```ts
-function calculateKpi(params): Promise<number>
+function calculateKpi(params): Promise<KpiResult<string>>
 ```
 
-Defined in: [somm/index.ts:216](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/somm/index.ts#L216)
+Defined in: [somm/index.ts:217](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/somm/index.ts#L217)
 
 Calculates reward allocation based on user's time-weighted TVL in Sommelier protocol.
 
@@ -85,6 +85,6 @@ Start of time window for reward calculation (inclusive)
 
 #### Returns
 
-`Promise`\<`number`\>
+`Promise`\<`KpiResult`\<`string`\>\>
 
 Promise resolving to total reward allocation in USD

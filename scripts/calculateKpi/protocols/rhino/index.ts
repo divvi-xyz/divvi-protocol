@@ -6,7 +6,7 @@ import {
   BRIDGED_WITHDRAWAL_TOPIC,
 } from './constants'
 import { getTokenHistoricalPrice } from '../utils/getHistoricalTokenPrice'
-import { NetworkId } from '../../../types'
+import { KpiResult, NetworkId } from '../../../types'
 import { BridgeTransaction } from './types'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { Address, decodeEventLog, Hex, isAddress, zeroAddress } from 'viem'
@@ -226,7 +226,7 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<number> {
+}): Promise<KpiResult> {
   if (!isAddress(address)) {
     throw new Error('Invalid address')
   }
@@ -257,5 +257,5 @@ export async function calculateKpi({
     )
   ).reduce((acc, curr) => acc + curr, 0) // Then sum across all networks
 
-  return totalRevenueUsd
+  return { kpi: totalRevenueUsd }
 }

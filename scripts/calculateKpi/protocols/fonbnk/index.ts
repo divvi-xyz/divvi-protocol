@@ -7,7 +7,7 @@ import {
 } from './constants'
 import { getFonbnkAssets, getPayoutWallets } from './helpers'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
-import { NetworkId } from '../../../types'
+import { KpiResult, NetworkId } from '../../../types'
 import { fetchTokenPrices } from '../utils/tokenPrices'
 import { getTokenPrice } from '../beefy'
 import { FonbnkTransaction, SUPPORTED_FONBNK_NETWORKS } from './types'
@@ -220,7 +220,7 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<number> {
+}): Promise<KpiResult> {
   if (!isAddress(address)) {
     throw new Error('Invalid address')
   }
@@ -262,5 +262,5 @@ export async function calculateKpi({
       totalRevenue += revenue
     }
   }
-  return totalRevenue
+  return { kpi: totalRevenue }
 }

@@ -3,6 +3,7 @@ import {
   AERODROME_NETWORK_ID,
 } from './constants'
 import { calculateRevenueDrome } from '../utils/drome/calculateRevenueDrome'
+import { KpiResult } from '../../../types'
 
 /**
  * Calculates trading fee revenue generated for Aerodrome DEX on Base Network.
@@ -60,8 +61,8 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<number> {
-  return calculateRevenueDrome({
+}): Promise<KpiResult> {
+  const kpi = await calculateRevenueDrome({
     address,
     startTimestamp,
     endTimestampExclusive,
@@ -69,4 +70,5 @@ export async function calculateKpi({
       AERODROME_SUPPORTED_LIQUIDITY_POOL_ADDRESSES,
     networkId: AERODROME_NETWORK_ID,
   })
+  return { kpi }
 }

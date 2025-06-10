@@ -1,5 +1,5 @@
 import { RedisClientType } from '@redis/client'
-import { NetworkId } from '../../../types'
+import { KpiResult, NetworkId } from '../../../types'
 import { getBlockRange } from '../utils/events'
 import { fetchTotalTransactions } from '../utils/networks'
 
@@ -54,7 +54,7 @@ export async function calculateKpi({
   startTimestamp: Date
   endTimestampExclusive: Date
   redis?: RedisClientType
-}): Promise<number> {
+}): Promise<KpiResult> {
   const { startBlock, endBlockExclusive } = await getBlockRange({
     networkId: NetworkId['celo-mainnet'],
     startTimestamp,
@@ -62,10 +62,11 @@ export async function calculateKpi({
     redis,
   })
 
-  return await fetchTotalTransactions({
+  const kpi = await fetchTotalTransactions({
     networkId: NetworkId['celo-mainnet'],
     users: [address],
     startBlock,
     endBlockExclusive,
   })
+  return { kpi }
 }
