@@ -268,10 +268,17 @@ async function uploadCurrentPeriodKpis(
   )
   const endTimestampExclusive = new Date(startOfCalculationHour).toISOString()
 
-  const uploadFilePaths: string[] = []
+  console.log(
+    `📣 Calculating KPIs for protocol(s) ${campaignsToCalculate
+      .map((campaign) => campaign.protocol)
+      .join(
+        ', ',
+      )}, from ${new Date(startOfCalculationHour).toISOString()} to ${endTimestampExclusive} (exclusive)`,
+  )
 
   // Due to the DefiLlama API rate limit, there is no point in parallelising the calculations across campaigns
   for (const campaign of campaignsToCalculate) {
+    console.log(`🧮 Calculating KPIs for campaign ${campaign.protocol}`)
     const campaignStartTimestamp = Date.parse(
       campaign.rewardsPeriods[0].startTimestamp,
     )
@@ -332,7 +339,7 @@ async function uploadCurrentPeriodKpis(
       redisConnection: args.redisConnection,
     })
     console.log(
-      `Fetched referrals for campaign ${campaign.protocol} in ${Date.now() - fetchReferralsStartTime}ms`,
+      `👍🏻 Fetched referrals for campaign ${campaign.protocol} in ${Date.now() - fetchReferralsStartTime}ms`,
     )
 
     const calculateKpiStartTime = Date.now()
@@ -344,13 +351,13 @@ async function uploadCurrentPeriodKpis(
       redisConnection: args.redisConnection,
     })
     console.log(
-      `Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,
+      `🍾 Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,
     )
 
     // These are the output files calculateKpi writes with ResultDirectory
     const outputFilePathCsv = join(outputDir, 'kpi.csv')
     const outputFilePathJson = join(outputDir, 'kpi.json')
-    uploadFilePaths.push(outputFilePathCsv, outputFilePathJson)
+    const campaignFilePaths = [outputFilePathCsv, outputFilePathJson]
 
     if (currentPeriod.calculateRewards) {
       await currentPeriod.calculateRewards({
@@ -360,17 +367,19 @@ async function uploadCurrentPeriodKpis(
       })
       const rewardsFilePathCsv = join(outputDir, 'rewards.csv')
       const rewardsFilePathJson = join(outputDir, 'rewards.json')
-      uploadFilePaths.push(rewardsFilePathCsv, rewardsFilePathJson)
+      campaignFilePaths.push(rewardsFilePathCsv, rewardsFilePathJson)
     }
+
+    const validPaths = campaignFilePaths.filter((path) => path !== null)
+    await uploadFilesToGCS(
+      validPaths,
+      'divvi-campaign-data-production',
+      args.dryRun,
+    )
+    console.log(`🎉 Uploaded files for campaign ${campaign.protocol}`)
   }
 
-  const validPaths = uploadFilePaths.filter((path) => path !== null)
-
-  await uploadFilesToGCS(
-    validPaths,
-    'divvi-campaign-data-production',
-    args.dryRun,
-  )
+  console.log('🥳 All campaigns have been processed')
 }
 
 // Only run if this file is being run directly
