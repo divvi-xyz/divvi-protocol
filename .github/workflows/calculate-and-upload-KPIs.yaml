@@ -31,7 +31,8 @@ jobs:
         run: |
           yarn ts-node scripts/uploadCurrentPeriodKpis.ts \
             --calculation-timestamp ${{ github.event.inputs.timestamp }} \
-            --protocol ${{ github.event.inputs.protocol }}
+            --protocol ${{ github.event.inputs.protocol }} \
+            --redis-connection ${{ secrets.REDIS_CONNECTION }}
 
       # TODO(kathy)
       # - name: Notify Slack on Failure
