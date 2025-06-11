@@ -1,0 +1,36 @@
+{
+  "meta": {},
+  "transactions": [
+    {
+      "to": "0x6F599b879541d289e344e325f4D9badf8c5bB49E",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address[]",
+            "name": "users",
+            "type": "address[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "amounts",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "rewardFunctionArgs",
+            "type": "uint256[]"
+          }
+        ],
+        "name": "addRewards",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "users": "[0x3e6e1f37249bb22d8543fdb0728716632eac24ac, 0x6b3bc1b55b28380193733a2fd27f2639d92f14be, 0x5e23d5be257d9140d4c5b12654111a4d4e18d9b2, 0x124d8fad33e0b9fe9f3e1e90d0fc0055abe8ca8d, 0xe6e6c0ddf053822bbbc1f39218f30ea25fca58dd, 0x53eaf4cd171842d8144e45211308e5d90b4b0088, 0xc5337cee97ff5b190f26c4a12341dd210f26e17c, 0xd59b83de618561c8ff4e98fc29a1b96abcbfb18a, 0xa353557ddfc96325a8ab18e6f6d9c1fc0d7c1ea6, 0xe6d39bb0a25ff3a1918adc57796656173918afe5, 0xc49b8e093600f684b69ed6ba1e36b7dfad42f982, 0x3207d4728c32391405c7122e59ccb115a4af31ea, 0x000cbf0bec88214aab15bc1fa40d3c30b3ca97a9, 0xaf108dd1ac530f1c4bded13f43e336a9cec92b44, 0x2c2bc76b97bce84a5a9c6e2835ab13306b964cf1, 0x99342d3ce2d10c34b7d20d960ea75bd742aec468, 0x55a5705453ee82c742274154136fce8149597058, 0x4ea48e01f1314db0925653e30617b254d1cf5366, 0x22886c71a4c1fa2824bd86210ead1c310b3d7cf5]",
+        "amounts": "[464641790213517791337, 99629657499477090227, 217137804409894916172, 111389343371926246055, 16215549332273673921434, 352244032125867102103, 5491618894860084774248, 9911022923728456013979, 111389343371926246055, 385864004283823647496, 238903526046420863068, 1299966610437396869027, 907669377161881705675, 311093505832676195420, 6030063929578088941075, 628141090022901372786, 315056640200823439075, 307079227900389837103, 49814828749738544896]",
+        "rewardFunctionArgs": "[1748908800, 1749513600]"
+      }
+    }
+  ]
+}
