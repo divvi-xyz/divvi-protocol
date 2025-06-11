@@ -335,6 +335,10 @@ async function uploadCurrentPeriodKpis(
       `Fetched referrals for campaign ${campaign.protocol} in ${Date.now() - fetchReferralsStartTime}ms`,
     )
 
+    // These are the output files fetchReferrals writes with ResultDirectory
+    const referralsFilePathJson = join(outputDir, 'referrals.json')
+    uploadFilePaths.push(referralsFilePathJson)
+
     const calculateKpiStartTime = Date.now()
     await calculateKpi({
       resultDirectory,

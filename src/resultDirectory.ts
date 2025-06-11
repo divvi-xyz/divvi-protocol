@@ -1,9 +1,8 @@
-import path from 'path'
+import path, { dirname } from 'path'
 import { copyFile, readFile, writeFile, mkdir } from 'fs/promises'
 import { stringify } from 'csv-stringify/sync'
 import { toPeriodFolderName } from '../scripts/utils/dateFormatting'
 import { parse } from 'csv-parse/sync'
-import { dirname } from 'path'
 
 export interface KpiRow {
   referrerId: string
@@ -51,6 +50,10 @@ export class ResultDirectory {
     return path.join(this.resultsDirectory, 'rewards')
   }
 
+  get builderAllowlistFilePath() {
+    return path.join(this.resultsDirectory, 'builder-allowlist.csv')
+  }
+
   excludeListFilePath(fileName: string) {
     return path.join(this.resultsDirectory, `exclude-${fileName}`)
   }
@@ -95,10 +98,18 @@ export class ResultDirectory {
   }
 
   async writeKpi(kpi: any[]) {
-    await mkdir(dirname(this.rewardsFileSuffix), { recursive: true })
+    await mkdir(dirname(this.kpiFileSuffix), { recursive: true })
     return await Promise.all([
       this._writeCsv(this.kpiFileSuffix, kpi),
       this._writeJson(this.kpiFileSuffix, kpi),
+    ])
+  }
+
+  async writeReferrals(referrals: any[]) {
+    await mkdir(dirname(this.referralsFileSuffix), { recursive: true })
+    return await Promise.all([
+      this._writeCsv(this.referralsFileSuffix, referrals),
+      this._writeJson(this.referralsFileSuffix, referrals),
     ])
   }
 

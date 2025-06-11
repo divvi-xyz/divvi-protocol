@@ -1,14 +1,12 @@
-import { writeFileSync, readFileSync, mkdirSync, copyFileSync } from 'fs'
+import { readFileSync, copyFileSync } from 'fs'
 import yargs from 'yargs'
 import { protocolFilters } from './protocolFilters'
 import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
 import { Protocol, protocols } from './types'
-import { stringify } from 'csv-stringify/sync'
 import { Address } from 'viem'
 import { parse } from 'csv-parse/sync'
-import { toPeriodFolderName } from './utils/dateFormatting'
-import { dirname, join } from 'path'
 import { closeRedisClient, getRedisClient } from '../src/redis'
+import { ResultDirectory } from '../src/resultDirectory'
 
 async function getArgs() {
   const argv = await yargs
@@ -52,19 +50,17 @@ async function getArgs() {
         'redis connection string, to run locally use redis://127.0.0.1:6379',
     }).argv
 
-  const outputDir = join(
-    argv['datadir'],
-    argv['protocol'],
-    toPeriodFolderName({
-      startTimestamp: new Date(argv['start-timestamp']),
-      endTimestampExclusive: new Date(argv['end-timestamp']),
-    }),
-  )
+  const resultDirectory = new ResultDirectory({
+    datadir: argv['datadir'],
+    name: argv['protocol'],
+    startTimestamp: new Date(argv['start-timestamp']),
+    endTimestampExclusive: new Date(argv['end-timestamp']),
+  })
 
   return {
+    resultDirectory,
     protocol: argv['protocol'] as Protocol,
     protocolFilter: protocolFilters[argv['protocol'] as Protocol],
-    outputDir,
     useStaging: argv['use-staging'],
     builderAllowList: argv['builder-allowlist-file'],
     startTimestamp: argv['start-timestamp'],
@@ -79,7 +75,7 @@ export async function fetchReferrals(
   const redis = args.redisConnection
     ? await getRedisClient(args.redisConnection)
     : undefined
-
+  const resultDirectory = args.resultDirectory
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const referralEvents = await fetchReferralEvents(
     args.protocol,
@@ -105,19 +101,17 @@ export async function fetchReferrals(
     timestamp: new Date(event.timestamp * 1000).toISOString(),
   }))
 
-  const outputFile = join(args.outputDir, 'referrals.csv')
-
-  // Create directory if it doesn't exist
-  mkdirSync(dirname(outputFile), { recursive: true })
-  writeFileSync(outputFile, stringify(outputEvents, { header: true }), {
-    encoding: 'utf-8',
-  })
-  console.log(`Wrote results to ${outputFile}`)
+  await resultDirectory.writeReferrals(outputEvents)
+  console.log(`Wrote results to ${resultDirectory.referralsFileSuffix}.csv`)
 
   if (args.builderAllowList) {
-    const allowListOutputFile = join(args.outputDir, 'builder-allowlist.csv')
-    copyFileSync(args.builderAllowList, allowListOutputFile)
-    console.log(`Copied builder allowlist to ${allowListOutputFile}`)
+    copyFileSync(
+      args.builderAllowList,
+      resultDirectory.builderAllowlistFilePath,
+    )
+    console.log(
+      `Copied builder allowlist to ${resultDirectory.builderAllowlistFilePath}`,
+    )
   }
 
   await closeRedisClient()
