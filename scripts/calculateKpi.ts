@@ -51,10 +51,6 @@ async function calculateKpiBatch({
 
     const batchPromises = batch.map(
       async ({ referrerId, userAddress, timestamp }) => {
-        console.log(
-          `Calculating KPI for ${userAddress} for campaign ${protocol}`,
-        )
-
         const referralTimestamp = new Date(
           Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
         )
