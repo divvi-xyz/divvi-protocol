@@ -19,13 +19,21 @@ export function calculateProportionalPrizeContest({
 
   const rewardsPerReferrer = Object.entries(referrerKpis).map(
     ([referrerId, kpi]) => {
+      if (totalKpi === BigInt(0)) {
+        return {
+          referrerId,
+          kpi: 0n,
+          referralCount: referrerReferrals[referrerId],
+          rewardAmount: '0',
+        }
+      }
       return {
         referrerId,
         kpi,
-        numReferrals: referrerReferrals[referrerId],
+        referralCount: referrerReferrals[referrerId],
         rewardAmount: rewards
           .times(kpi)
-          .div(totalKpi === BigInt(0) ? BigInt(1) : totalKpi)
+          .div(totalKpi)
           .toFixed(0, BigNumber.ROUND_DOWN),
       }
     },
@@ -64,7 +72,7 @@ export function calculateSqrtProportionalPrizeContest({
       return {
         referrerId,
         kpi: referrerKpis[referrerId],
-        numReferrals: referrerReferrals[referrerId],
+        referralCount: referrerReferrals[referrerId],
         rewardAmount: rewardAmount.toFixed(0, BigNumber.ROUND_DOWN),
       }
     },

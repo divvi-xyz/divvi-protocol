@@ -59,7 +59,7 @@ export function calculateRewardsLiskV0({
     return {
       referrerId,
       rewardAmount: rewardAmount.toFixed(0, BigNumber.ROUND_DOWN),
-      numReferrals: referrerReferrals[referrerId],
+      referralCount: referrerReferrals[referrerId],
       kpi,
       linearProportion: linearProportion.toFixed(8, BigNumber.ROUND_DOWN),
       powerProportion: powerProportion.toFixed(8, BigNumber.ROUND_DOWN),

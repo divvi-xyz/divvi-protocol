@@ -6,14 +6,11 @@ export function getReferrerMetricsFromKpi(kpi: KpiRow[]) {
   let totalKpi = BigInt(0)
 
   kpi.forEach((row) => {
-    if (!referrerReferrals[row.referrerId]) {
+    if (!(row.referrerId in referrerReferrals)) {
       referrerReferrals[row.referrerId] = 0
-    }
-    referrerReferrals[row.referrerId]++
-
-    if (referrerKpis[row.referrerId] === undefined) {
       referrerKpis[row.referrerId] = BigInt(0)
     }
+    referrerReferrals[row.referrerId]++
     referrerKpis[row.referrerId] += BigInt(row.kpi)
 
     totalKpi += BigInt(row.kpi)
