@@ -6,6 +6,7 @@ import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import filterExcludedReferrerIds from '../utils/filterExcludedReferralIds'
 import { ResultDirectory } from '../../src/resultDirectory'
+import { getReferrerMetricsFromKpi } from './getReferrerMetricsFromKpi'
 
 const REWARD_POOL_ADDRESS = '0xBBF7B15C819102B137A96703E63eCF1c3d57CC68'
 const REWARD_AMOUNT_IN_DECIMALS = '15000'
@@ -26,17 +27,11 @@ export function calculateRewardsLiskV0({
     1 - proportionLinear,
   )
 
-  const referrerKpis = kpiData.reduce(
-    (acc, row) => {
-      if (!(row.referrerId in acc)) {
-        acc[row.referrerId] = BigInt(row.kpi)
-      } else {
-        acc[row.referrerId] += BigInt(row.kpi)
-      }
-      return acc
-    },
-    {} as Record<string, bigint>,
-  )
+  const {
+    referrerReferrals,
+    referrerKpis,
+    totalKpi: totalLinear,
+  } = getReferrerMetricsFromKpi(kpiData)
 
   const referrerPowerKpis = Object.entries(referrerKpis).reduce(
     (acc, [referrerId, kpi]) => {
@@ -46,18 +41,13 @@ export function calculateRewardsLiskV0({
     {} as Record<string, BigNumber>,
   )
 
-  const total = Object.values(referrerKpis).reduce(
-    (sum, value) => sum + value,
-    BigInt(0),
-  )
-
   const totalPower = Object.values(referrerPowerKpis).reduce(
     (sum, value) => sum.plus(value),
     BigNumber(0),
   )
 
   const rewards = Object.entries(referrerKpis).map(([referrerId, kpi]) => {
-    const linearProportion = BigNumber(kpi).div(total)
+    const linearProportion = BigNumber(kpi).div(totalLinear)
     const powerProportion = BigNumber(referrerPowerKpis[referrerId]).div(
       totalPower,
     )
@@ -69,7 +59,7 @@ export function calculateRewardsLiskV0({
     return {
       referrerId,
       rewardAmount: rewardAmount.toFixed(0, BigNumber.ROUND_DOWN),
-
+      referralCount: referrerReferrals[referrerId],
       kpi,
       linearProportion: linearProportion.toFixed(8, BigNumber.ROUND_DOWN),
       powerProportion: powerProportion.toFixed(8, BigNumber.ROUND_DOWN),

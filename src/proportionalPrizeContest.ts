@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js'
+import { getReferrerMetricsFromKpi } from '../scripts/calculateRewards/getReferrerMetricsFromKpi'
 
 interface KpiRow {
   referrerId: string
@@ -13,34 +14,26 @@ export function calculateProportionalPrizeContest({
   kpiData: KpiRow[]
   rewards: BigNumber
 }) {
-  const referrerKpis = kpiData
-    // filter out rows with no KPI, which is possible for users who were referred between the reward period end date and the time of the reward distribution
-    .filter((row) => BigInt(row.kpi) > 0)
-    .reduce(
-      (acc, row) => {
-        if (!(row.referrerId in acc)) {
-          acc[row.referrerId] = BigInt(row.kpi)
-        } else {
-          acc[row.referrerId] += BigInt(row.kpi)
-        }
-        return acc
-      },
-      {} as Record<string, bigint>,
-    )
-
-  const total = Object.values(referrerKpis).reduce(
-    (sum, value) => sum + value,
-    BigInt(0),
-  )
+  const { referrerReferrals, referrerKpis, totalKpi } =
+    getReferrerMetricsFromKpi(kpiData)
 
   const rewardsPerReferrer = Object.entries(referrerKpis).map(
     ([referrerId, kpi]) => {
+      if (totalKpi === BigInt(0)) {
+        return {
+          referrerId,
+          kpi: 0n,
+          referralCount: referrerReferrals[referrerId],
+          rewardAmount: '0',
+        }
+      }
       return {
         referrerId,
         kpi,
+        referralCount: referrerReferrals[referrerId],
         rewardAmount: rewards
           .times(kpi)
-          .div(total)
+          .div(totalKpi)
           .toFixed(0, BigNumber.ROUND_DOWN),
       }
     },
@@ -56,17 +49,7 @@ export function calculateSqrtProportionalPrizeContest({
   kpiData: KpiRow[]
   rewards: BigNumber
 }) {
-  const referrerKpis = kpiData.reduce(
-    (acc, row) => {
-      if (!(row.referrerId in acc)) {
-        acc[row.referrerId] = BigInt(row.kpi)
-      } else {
-        acc[row.referrerId] += BigInt(row.kpi)
-      }
-      return acc
-    },
-    {} as Record<string, bigint>,
-  )
+  const { referrerReferrals, referrerKpis } = getReferrerMetricsFromKpi(kpiData)
 
   const referrerPowerKpis = Object.entries(referrerKpis).reduce(
     (acc, [referrerId, kpi]) => {
@@ -89,6 +72,7 @@ export function calculateSqrtProportionalPrizeContest({
       return {
         referrerId,
         kpi: referrerKpis[referrerId],
+        referralCount: referrerReferrals[referrerId],
         rewardAmount: rewardAmount.toFixed(0, BigNumber.ROUND_DOWN),
       }
     },
