@@ -271,14 +271,11 @@ async function uploadCurrentPeriodKpis(
   console.log(
     `📣 Calculating KPIs for protocol(s) ${campaignsToCalculate
       .map((campaign) => campaign.protocol)
-      .join(
-        ', ',
-      )}, from ${new Date(startOfCalculationHour).toISOString()} to ${endTimestampExclusive} (exclusive)`,
+      .join(', ')}`,
   )
 
   // Due to the DefiLlama API rate limit, there is no point in parallelising the calculations across campaigns
   for (const campaign of campaignsToCalculate) {
-    console.log(`🧮 Calculating KPIs for campaign ${campaign.protocol}`)
     const campaignStartTimestamp = Date.parse(
       campaign.rewardsPeriods[0].startTimestamp,
     )
@@ -309,6 +306,10 @@ async function uploadCurrentPeriodKpis(
         `No active period found for campaign ${campaign.protocol}`,
       )
     }
+
+    console.log(
+      `🧮 Calculating KPIs for campaign ${campaign.protocol}, from ${currentPeriod.startTimestamp} to ${endTimestampExclusive} (exclusive)`,
+    )
 
     const datadir = 'kpi'
 
