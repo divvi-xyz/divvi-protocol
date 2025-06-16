@@ -1,5 +1,6 @@
 // utils/uploadToGCS.ts
 import { Storage, TransferManager } from '@google-cloud/storage'
+import axios from 'axios'
 
 /**
  * Upload specific files to GCS using their full local paths.
@@ -28,5 +29,24 @@ export async function uploadFilesToGCS(
     for (const filePath of filePaths) {
       console.log(`${filePath} uploaded to gs://${bucketName}/${filePath}`)
     }
+  }
+}
+
+export async function listGCSFiles(bucketName: string) {
+  const url = `https://storage.googleapis.com/storage/v1/b/${bucketName}/o`
+
+  try {
+    const response = await axios.get(url)
+    const items = response.data.items || []
+
+    const files = items.map((item: { name: string }) => ({
+      name: item.name,
+      url: `https://storage.googleapis.com/${bucketName}/${item.name}`,
+    }))
+
+    return files
+  } catch (error) {
+    console.error('Error fetching GCS files:', error)
+    throw error
   }
 }
