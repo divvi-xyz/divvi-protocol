@@ -36,33 +36,46 @@ contract DivviRegistry is
     string chainId;
   }
 
+  enum OffchainMessageType {
+    NONE, // For on-chain referrals
+    ETH_SIGNED_MESSAGE // Standard Ethereum signed message format
+    // EIP_712 // TODO: EIP-712 typed data (not yet implemented)
+  }
+
+  /**
+   * @notice On-chain transaction data for referral verification
+   * @dev Encapsulates transaction-related data for on-chain referrals
+   */
+  struct OnchainTxData {
+    bytes32 txHash;
+    string chainId;
+  }
+
+  /**
+   * @notice Off-chain message data for referral verification
+   * @dev Encapsulates all signature-related data for better type safety and extensibility
+   */
+  struct OffchainMessageData {
+    OffchainMessageType messageType;
+    bytes message;
+    bytes signature;
+  }
+
   /**
    * @notice Referral data structure supporting both on-chain and off-chain referrals
    * @dev Two types of referrals:
    * 1. On-chain referrals:
-   *    - txHash: The transaction hash of the referral
-   *    - chainId: The chain ID of the referral
-   *    - offchainMessageType: NONE
+   *    - onchainTx: Contains transaction hash and chain ID
+   *    - offchainMessage.messageType: NONE
    * 2. Off-chain referrals:
-   *    - offchainMessage: The message that was signed
-   *    - offchainSignature: The signature of the message
-   *    - offchainMessageType: ETH_SIGNED_MESSAGE or EIP_712
+   *    - offchainMessage: Contains message, signature, and message type
    */
   struct ReferralDataV2 {
     address user;
     address rewardsProvider;
     address rewardsConsumer;
-    bytes32 txHash; // For on-chain referrals only
-    string chainId; // For on-chain referrals only
-    bytes offchainMessage; // For off-chain referrals only
-    bytes offchainSignature; // For off-chain referrals only
-    OffchainMessageType offchainMessageType; // Type of off-chain message
-  }
-
-  enum OffchainMessageType {
-    NONE, // For on-chain referrals
-    ETH_SIGNED_MESSAGE // Standard Ethereum signed message format
-    // EIP_712 // TODO: EIP-712 typed data (not yet implemented)
+    OnchainTxData onchainTx; // For on-chain referrals
+    OffchainMessageData offchainMessage; // For off-chain referrals
   }
 
   enum ReferralStatus {
@@ -257,9 +270,11 @@ contract DivviRegistry is
         referral.user,
         referral.rewardsProvider,
         referral.rewardsConsumer,
-        '', // No message for traditional tx-based referrals
-        '', // No signature for traditional tx-based referrals
-        OffchainMessageType.NONE // On-chain referral
+        OffchainMessageData({
+          messageType: OffchainMessageType.NONE,
+          message: '',
+          signature: ''
+        })
       );
 
       // Emit appropriate event based on status
@@ -298,23 +313,23 @@ contract DivviRegistry is
     for (uint256 i = 0; i < referrals.length; i++) {
       ReferralDataV2 calldata referral = referrals[i];
 
-      // Determine if this is a signature-based referral
-      bool isSignatureBased = referral.offchainSignature.length > 0;
+      // Determine if this is an off-chain signature-based referral
+      bool isSignatureBased = referral.offchainMessage.signature.length > 0;
 
       // Set event values based on referral type
       string memory eventChainId = isSignatureBased
         ? 'offchain'
-        : referral.chainId;
-      bytes32 eventTxHash = isSignatureBased ? bytes32(0) : referral.txHash;
+        : referral.onchainTx.chainId;
+      bytes32 eventTxHash = isSignatureBased
+        ? bytes32(0)
+        : referral.onchainTx.txHash;
 
       // Process the referral (including signature verification if applicable)
       ReferralStatus status = _registerReferral(
         referral.user,
         referral.rewardsProvider,
         referral.rewardsConsumer,
-        referral.offchainMessage,
-        referral.offchainSignature,
-        referral.offchainMessageType
+        referral.offchainMessage
       );
 
       // Emit appropriate event based on status
@@ -342,22 +357,20 @@ contract DivviRegistry is
   /**
    * @notice Verify a signature for referral consent
    * @param user The user address that should have signed
-   * @param message The original message that was signed
-   * @param signature The signature to verify
-   * @param messageType The type of off-chain message
+   * @param offchainMessage The off-chain message data containing message, signature, and type
    * @return valid Whether the signature is valid
    */
   function _verifyReferralSignature(
     address user,
-    bytes memory message,
-    bytes memory signature,
-    OffchainMessageType messageType
+    OffchainMessageData memory offchainMessage
   ) internal view returns (bool valid) {
     bytes32 messageHash;
 
-    if (messageType == OffchainMessageType.ETH_SIGNED_MESSAGE) {
+    if (offchainMessage.messageType == OffchainMessageType.ETH_SIGNED_MESSAGE) {
       // Create message hash (Ethereum signed message format)
-      messageHash = MessageHashUtils.toEthSignedMessageHash(message);
+      messageHash = MessageHashUtils.toEthSignedMessageHash(
+        offchainMessage.message
+      );
     } else {
       // Invalid message type for signature verification
       return false;
@@ -366,9 +379,9 @@ contract DivviRegistry is
     // Check if user is a contract (potential smart wallet)
     if (user.code.length > 0) {
       // Try EIP-1271 verification for smart contracts
-      try IERC1271(user).isValidSignature(messageHash, signature) returns (
-        bytes4 magicValue
-      ) {
+      try
+        IERC1271(user).isValidSignature(messageHash, offchainMessage.signature)
+      returns (bytes4 magicValue) {
         return magicValue == EIP1271_MAGIC_VALUE;
       } catch {
         return false;
@@ -377,7 +390,7 @@ contract DivviRegistry is
       // Standard ECDSA verification for EOAs using OpenZeppelin's tryRecover
       (address recoveredSigner, ECDSA.RecoverError error, ) = ECDSA.tryRecover(
         messageHash,
-        signature
+        offchainMessage.signature
       );
 
       // Check if recovery was successful and signer matches expected user
@@ -391,29 +404,18 @@ contract DivviRegistry is
    * @param user The address of the user being referred
    * @param rewardsProvider The address of the rewards provider entity
    * @param rewardsConsumer The address of the rewards consumer entity
-   * @param offchainMessage Optional message for offchain referrals (empty for tx-based referrals)
-   * @param offchainSignature Optional signature for offchain referrals (empty for tx-based referrals)
-   * @param messageType The type of off-chain message
+   * @param offchainMessage Off-chain message data for referrals
    * @return status The status of the referral registration
    */
   function _registerReferral(
     address user,
     address rewardsProvider,
     address rewardsConsumer,
-    bytes memory offchainMessage,
-    bytes memory offchainSignature,
-    OffchainMessageType messageType
+    OffchainMessageData memory offchainMessage
   ) internal returns (ReferralStatus status) {
     // Verify signature if provided
-    if (offchainSignature.length > 0) {
-      if (
-        !_verifyReferralSignature(
-          user,
-          offchainMessage,
-          offchainSignature,
-          messageType
-        )
-      ) {
+    if (offchainMessage.signature.length > 0) {
+      if (!_verifyReferralSignature(user, offchainMessage)) {
         return ReferralStatus.INVALID_SIGNATURE;
       }
     }

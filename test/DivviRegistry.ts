@@ -16,7 +16,7 @@ const TRUSTED_FORWARDER = '0x0000000000000000000000072057edf0200a2de2'
 const BATCH_REGISTER_REFERRAL_V1 =
   'batchRegisterReferral((address,address,address,bytes32,string)[])'
 const BATCH_REGISTER_REFERRAL_V2 =
-  'batchRegisterReferral((address,address,address,bytes32,string,bytes,bytes,uint8)[])'
+  'batchRegisterReferral((address,address,address,(bytes32,string),(uint8,bytes,bytes))[])'
 
 describe(CONTRACT_NAME, function () {
   async function deployDivviRegistryContract() {
@@ -749,11 +749,12 @@ describe(CONTRACT_NAME, function () {
             user: user.address,
             rewardsProvider: provider.address,
             rewardsConsumer: consumer.address,
-            txHash: ethers.ZeroHash,
-            chainId: '',
-            offchainMessage: ethers.toUtf8Bytes(eoaMessage),
-            offchainSignature: eoaSignature,
-            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(eoaMessage),
+              signature: eoaSignature,
+            },
           }
 
           // 2. EIP-1271-signed referral
@@ -767,11 +768,12 @@ describe(CONTRACT_NAME, function () {
             user: smartContractAddress,
             rewardsProvider: provider.address,
             rewardsConsumer: consumer.address,
-            txHash: ethers.ZeroHash,
-            chainId: '',
-            offchainMessage: ethers.toUtf8Bytes(scwMessage),
-            offchainSignature: scwSignature,
-            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(scwMessage),
+              signature: scwSignature,
+            },
           }
 
           // 3. On-chain (tx-based) referral
@@ -781,11 +783,12 @@ describe(CONTRACT_NAME, function () {
             user: user2.address,
             rewardsProvider: provider.address,
             rewardsConsumer: consumer.address,
-            txHash: txHash,
-            chainId: 'eip155:1',
-            offchainMessage: '0x',
-            offchainSignature: '0x',
-            offchainMessageType: 0, // NONE
+            onchainTx: { txHash: txHash, chainId: 'eip155:1' },
+            offchainMessage: {
+              messageType: 0, // NONE
+              message: '0x',
+              signature: '0x',
+            },
           }
 
           const referrals = [eoaReferral, scwReferral, onChainReferral]
@@ -856,11 +859,12 @@ describe(CONTRACT_NAME, function () {
             user: user.address,
             rewardsProvider: provider.address,
             rewardsConsumer: consumer.address,
-            txHash: ethers.ZeroHash,
-            chainId: '',
-            offchainMessage: ethers.toUtf8Bytes(initialMessage),
-            offchainSignature: initialSignature,
-            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(initialMessage),
+              signature: initialSignature,
+            },
           }
           await executeAs(
             registry,
@@ -878,11 +882,12 @@ describe(CONTRACT_NAME, function () {
             user: user2.address,
             rewardsProvider: provider.address,
             rewardsConsumer: consumer.address,
-            txHash: ethers.ZeroHash,
-            chainId: '',
-            offchainMessage: ethers.toUtf8Bytes(successMessage),
-            offchainSignature: successSignature,
-            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(successMessage),
+              signature: successSignature,
+            },
           }
 
           // b. Duplicate referral (using initial data)
@@ -894,11 +899,12 @@ describe(CONTRACT_NAME, function () {
             user: user.address, // Arbitrary user
             rewardsProvider: provider.address,
             rewardsConsumer: consumer.address,
-            txHash: ethers.ZeroHash,
-            chainId: '',
-            offchainMessage: ethers.toUtf8Bytes(invalidEoaMessage),
-            offchainSignature: '0x' + '11'.repeat(65), // Bad signature
-            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(invalidEoaMessage),
+              signature: '0x' + '11'.repeat(65), // Bad signature
+            },
           }
 
           // d. Invalid EIP-1271 signature
@@ -911,11 +917,12 @@ describe(CONTRACT_NAME, function () {
             user: smartContractAddress,
             rewardsProvider: provider.address,
             rewardsConsumer: consumer.address,
-            txHash: ethers.ZeroHash,
-            chainId: '',
-            offchainMessage: ethers.toUtf8Bytes(invalidScwMessage),
-            offchainSignature: '0x' + '22'.repeat(65), // Dummy signature, will be rejected
-            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(invalidScwMessage),
+              signature: '0x' + '22'.repeat(65), // Dummy signature, will be rejected
+            },
           }
 
           const mixedReferrals = [
@@ -989,11 +996,12 @@ describe(CONTRACT_NAME, function () {
             user: user.address,
             rewardsProvider: provider.address,
             rewardsConsumer: consumer.address,
-            txHash: ethers.ZeroHash,
-            chainId: '',
-            offchainMessage: ethers.toUtf8Bytes(message),
-            offchainSignature: '0x' + '11'.repeat(65), // Invalid signature
-            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(message),
+              signature: '0x' + '11'.repeat(65), // Invalid signature
+            },
           }
 
           await expect(
@@ -1027,11 +1035,12 @@ describe(CONTRACT_NAME, function () {
             user: smartContractAddress,
             rewardsProvider: provider.address,
             rewardsConsumer: consumer.address,
-            txHash: ethers.ZeroHash,
-            chainId: '',
-            offchainMessage: ethers.toUtf8Bytes(message),
-            offchainSignature: '0x' + '22'.repeat(65), // Dummy signature, will be rejected
-            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(message),
+              signature: '0x' + '22'.repeat(65), // Dummy signature, will be rejected
+            },
           }
 
           await expect(
@@ -1066,11 +1075,12 @@ describe(CONTRACT_NAME, function () {
             user: smartContractAddress,
             rewardsProvider: provider.address,
             rewardsConsumer: consumer.address,
-            txHash: ethers.ZeroHash,
-            chainId: '',
-            offchainMessage: ethers.toUtf8Bytes(message),
-            offchainSignature: '0x' + '33'.repeat(65), // Dummy signature
-            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(message),
+              signature: '0x' + '33'.repeat(65), // Dummy signature
+            },
           }
 
           await expect(
@@ -1102,11 +1112,12 @@ describe(CONTRACT_NAME, function () {
             user: user.address,
             rewardsProvider: provider.address,
             rewardsConsumer: unregisteredConsumer.address, // Not registered
-            txHash: ethers.ZeroHash,
-            chainId: '',
-            offchainMessage: ethers.toUtf8Bytes(message),
-            offchainSignature: signature,
-            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(message),
+              signature: signature,
+            },
           }
 
           await expect(
@@ -1154,11 +1165,12 @@ describe(CONTRACT_NAME, function () {
             user: user.address,
             rewardsProvider: provider.address,
             rewardsConsumer: otherConsumer.address, // No agreement
-            txHash: ethers.ZeroHash,
-            chainId: '',
-            offchainMessage: ethers.toUtf8Bytes(message),
-            offchainSignature: signature,
-            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(message),
+              signature: signature,
+            },
           }
 
           await expect(
@@ -1195,11 +1207,12 @@ describe(CONTRACT_NAME, function () {
             user: user.address,
             rewardsProvider: provider.address,
             rewardsConsumer: consumer.address,
-            txHash: ethers.ZeroHash,
-            chainId: '',
-            offchainMessage: ethers.toUtf8Bytes(message),
-            offchainSignature: signature,
-            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(message),
+              signature: signature,
+            },
           }
 
           // Attemp call from `user` who does not have the role
