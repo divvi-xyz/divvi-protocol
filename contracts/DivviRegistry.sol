@@ -7,8 +7,8 @@ import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {ERC2771ContextUpgradeable} from '@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol';
 import {ContextUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import {MessageHashUtils} from '@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol';
 import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
-import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 
 /**
  * @title DivviRegistry
@@ -20,8 +20,6 @@ contract DivviRegistry is
   UUPSUpgradeable,
   ERC2771ContextUpgradeable
 {
-  using Strings for uint256;
-
   // Data structs
   struct EntityData {
     bool exists;
@@ -44,9 +42,11 @@ contract DivviRegistry is
    * 1. On-chain referrals:
    *    - txHash: The transaction hash of the referral
    *    - chainId: The chain ID of the referral
+   *    - offchainMessageType: NONE
    * 2. Off-chain referrals:
    *    - offchainMessage: The message that was signed
    *    - offchainSignature: The signature of the message
+   *    - offchainMessageType: ETH_SIGNED_MESSAGE or EIP_712
    */
   struct ReferralDataV2 {
     address user;
@@ -56,6 +56,13 @@ contract DivviRegistry is
     string chainId; // For on-chain referrals only
     bytes offchainMessage; // For off-chain referrals only
     bytes offchainSignature; // For off-chain referrals only
+    OffchainMessageType offchainMessageType; // Type of off-chain message
+  }
+
+  enum OffchainMessageType {
+    NONE, // For on-chain referrals
+    ETH_SIGNED_MESSAGE // Standard Ethereum signed message format
+    // EIP_712 // TODO: EIP-712 typed data (not yet implemented)
   }
 
   enum ReferralStatus {
@@ -251,7 +258,8 @@ contract DivviRegistry is
         referral.rewardsProvider,
         referral.rewardsConsumer,
         '', // No message for traditional tx-based referrals
-        '' // No signature for traditional tx-based referrals
+        '', // No signature for traditional tx-based referrals
+        OffchainMessageType.NONE // On-chain referral
       );
 
       // Emit appropriate event based on status
@@ -305,7 +313,8 @@ contract DivviRegistry is
         referral.rewardsProvider,
         referral.rewardsConsumer,
         referral.offchainMessage,
-        referral.offchainSignature
+        referral.offchainSignature,
+        referral.offchainMessageType
       );
 
       // Emit appropriate event based on status
@@ -335,21 +344,24 @@ contract DivviRegistry is
    * @param user The user address that should have signed
    * @param message The original message that was signed
    * @param signature The signature to verify
+   * @param messageType The type of off-chain message
    * @return valid Whether the signature is valid
    */
   function _verifyReferralSignature(
     address user,
     bytes memory message,
-    bytes memory signature
+    bytes memory signature,
+    OffchainMessageType messageType
   ) internal view returns (bool valid) {
-    // Create message hash (Ethereum signed message format)
-    bytes32 messageHash = keccak256(
-      abi.encodePacked(
-        '\x19Ethereum Signed Message:\n',
-        message.length.toString(),
-        message
-      )
-    );
+    bytes32 messageHash;
+
+    if (messageType == OffchainMessageType.ETH_SIGNED_MESSAGE) {
+      // Create message hash (Ethereum signed message format)
+      messageHash = MessageHashUtils.toEthSignedMessageHash(message);
+    } else {
+      // Invalid message type for signature verification
+      return false;
+    }
 
     // Check if user is a contract (potential smart wallet)
     if (user.code.length > 0) {
@@ -381,6 +393,7 @@ contract DivviRegistry is
    * @param rewardsConsumer The address of the rewards consumer entity
    * @param offchainMessage Optional message for offchain referrals (empty for tx-based referrals)
    * @param offchainSignature Optional signature for offchain referrals (empty for tx-based referrals)
+   * @param messageType The type of off-chain message
    * @return status The status of the referral registration
    */
   function _registerReferral(
@@ -388,11 +401,19 @@ contract DivviRegistry is
     address rewardsProvider,
     address rewardsConsumer,
     bytes memory offchainMessage,
-    bytes memory offchainSignature
+    bytes memory offchainSignature,
+    OffchainMessageType messageType
   ) internal returns (ReferralStatus status) {
     // Verify signature if provided
     if (offchainSignature.length > 0) {
-      if (!_verifyReferralSignature(user, offchainMessage, offchainSignature)) {
+      if (
+        !_verifyReferralSignature(
+          user,
+          offchainMessage,
+          offchainSignature,
+          messageType
+        )
+      ) {
         return ReferralStatus.INVALID_SIGNATURE;
       }
     }

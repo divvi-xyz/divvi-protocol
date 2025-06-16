@@ -16,7 +16,7 @@ const TRUSTED_FORWARDER = '0x0000000000000000000000072057edf0200a2de2'
 const BATCH_REGISTER_REFERRAL_V1 =
   'batchRegisterReferral((address,address,address,bytes32,string)[])'
 const BATCH_REGISTER_REFERRAL_V2 =
-  'batchRegisterReferral((address,address,address,bytes32,string,bytes,bytes)[])'
+  'batchRegisterReferral((address,address,address,bytes32,string,bytes,bytes,uint8)[])'
 
 describe(CONTRACT_NAME, function () {
   async function deployDivviRegistryContract() {
@@ -753,6 +753,7 @@ describe(CONTRACT_NAME, function () {
             chainId: '',
             offchainMessage: ethers.toUtf8Bytes(eoaMessage),
             offchainSignature: eoaSignature,
+            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
           }
 
           // 2. EIP-1271-signed referral
@@ -770,6 +771,7 @@ describe(CONTRACT_NAME, function () {
             chainId: '',
             offchainMessage: ethers.toUtf8Bytes(scwMessage),
             offchainSignature: scwSignature,
+            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
           }
 
           // 3. On-chain (tx-based) referral
@@ -783,6 +785,7 @@ describe(CONTRACT_NAME, function () {
             chainId: 'eip155:1',
             offchainMessage: '0x',
             offchainSignature: '0x',
+            offchainMessageType: 0, // NONE
           }
 
           const referrals = [eoaReferral, scwReferral, onChainReferral]
@@ -857,6 +860,7 @@ describe(CONTRACT_NAME, function () {
             chainId: '',
             offchainMessage: ethers.toUtf8Bytes(initialMessage),
             offchainSignature: initialSignature,
+            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
           }
           await executeAs(
             registry,
@@ -878,6 +882,7 @@ describe(CONTRACT_NAME, function () {
             chainId: '',
             offchainMessage: ethers.toUtf8Bytes(successMessage),
             offchainSignature: successSignature,
+            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
           }
 
           // b. Duplicate referral (using initial data)
@@ -893,6 +898,7 @@ describe(CONTRACT_NAME, function () {
             chainId: '',
             offchainMessage: ethers.toUtf8Bytes(invalidEoaMessage),
             offchainSignature: '0x' + '11'.repeat(65), // Bad signature
+            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
           }
 
           // d. Invalid EIP-1271 signature
@@ -909,6 +915,7 @@ describe(CONTRACT_NAME, function () {
             chainId: '',
             offchainMessage: ethers.toUtf8Bytes(invalidScwMessage),
             offchainSignature: '0x' + '22'.repeat(65), // Dummy signature, will be rejected
+            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
           }
 
           const mixedReferrals = [
@@ -986,6 +993,7 @@ describe(CONTRACT_NAME, function () {
             chainId: '',
             offchainMessage: ethers.toUtf8Bytes(message),
             offchainSignature: '0x' + '11'.repeat(65), // Invalid signature
+            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
           }
 
           await expect(
@@ -1023,6 +1031,7 @@ describe(CONTRACT_NAME, function () {
             chainId: '',
             offchainMessage: ethers.toUtf8Bytes(message),
             offchainSignature: '0x' + '22'.repeat(65), // Dummy signature, will be rejected
+            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
           }
 
           await expect(
@@ -1061,6 +1070,7 @@ describe(CONTRACT_NAME, function () {
             chainId: '',
             offchainMessage: ethers.toUtf8Bytes(message),
             offchainSignature: '0x' + '33'.repeat(65), // Dummy signature
+            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
           }
 
           await expect(
@@ -1096,6 +1106,7 @@ describe(CONTRACT_NAME, function () {
             chainId: '',
             offchainMessage: ethers.toUtf8Bytes(message),
             offchainSignature: signature,
+            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
           }
 
           await expect(
@@ -1147,6 +1158,7 @@ describe(CONTRACT_NAME, function () {
             chainId: '',
             offchainMessage: ethers.toUtf8Bytes(message),
             offchainSignature: signature,
+            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
           }
 
           await expect(
@@ -1187,6 +1199,7 @@ describe(CONTRACT_NAME, function () {
             chainId: '',
             offchainMessage: ethers.toUtf8Bytes(message),
             offchainSignature: signature,
+            offchainMessageType: 1, // ETH_SIGNED_MESSAGE
           }
 
           // Attemp call from `user` who does not have the role
