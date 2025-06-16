@@ -356,11 +356,11 @@ contract DivviRegistry is
 
   /**
    * @notice Verify a signature for referral consent
-   * @param user The user address that should have signed
+   * @param user The address that should have signed (EOA or EIP-1271 contract)
    * @param offchainMessage The off-chain message data containing message, signature, and type
    * @return valid Whether the signature is valid
    */
-  function _verifyReferralSignature(
+  function _verifyOffchainReferralSignature(
     address user,
     OffchainMessageData memory offchainMessage
   ) internal view returns (bool valid) {
@@ -415,7 +415,7 @@ contract DivviRegistry is
   ) internal returns (ReferralStatus status) {
     // Verify signature if provided
     if (offchainMessage.signature.length > 0) {
-      if (!_verifyReferralSignature(user, offchainMessage)) {
+      if (!_verifyOffchainReferralSignature(user, offchainMessage)) {
         return ReferralStatus.INVALID_SIGNATURE;
       }
     }
