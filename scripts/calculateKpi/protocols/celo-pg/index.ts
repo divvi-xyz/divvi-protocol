@@ -77,5 +77,5 @@ export async function calculateKpi({
       endBlockExclusive,
     }),
   ])
-  return { kpi, breakdown: { totalTransactions } }
+  return { kpi, metadata: { totalTransactions } }
 }

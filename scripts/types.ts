@@ -51,13 +51,13 @@ export interface TokenPriceData {
 /**
  * Represents the result of a KPI computation.
  *
- * @template T - The allowed string keys for the breakdown.
+ * @template T - The allowed string keys for the metadata.
  * - `kpi`: overall KPI value.
- * - `breakdown`: an optional map from typed segment keys to their KPI values.
+ * - `metadata`: an optional map from typed segment keys to their KPI values.
  */
 export interface KpiResult<T extends string = string> {
   kpi: number
-  breakdown?: Record<T, number>
+  metadata?: Record<T, number>
 }
 
 export type CalculateKpiFn<T extends string = string> = (params: {

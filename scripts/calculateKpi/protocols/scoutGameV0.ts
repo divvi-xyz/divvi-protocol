@@ -99,5 +99,5 @@ export const calculateKpi: CalculateKpiFn<ScoutGameBreakdown> = async ({
       breakdown[kpiName] = item
     }
   })
-  return { kpi: totalTransactions, breakdown }
+  return { kpi: totalTransactions, metadata: breakdown }
 }

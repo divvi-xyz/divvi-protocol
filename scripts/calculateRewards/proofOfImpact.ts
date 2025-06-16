@@ -88,23 +88,6 @@ async function main(args: ReturnType<typeof parseArgs>) {
     endTimestampExclusive,
   })
 
-  const totalTransactionsPerReferrer: {
-    [referrerId: string]: number
-  } = {}
-
-  for (const { referrerId, breakdown } of kpiData) {
-    if (!breakdown) continue
-
-    totalTransactionsPerReferrer[referrerId] =
-      (totalTransactionsPerReferrer[referrerId] ?? 0) +
-      (breakdown['totalTransactions'] ?? 0)
-  }
-
-  const rewardsWithTotalTransactions = rewards.map((reward) => ({
-    ...reward,
-    totalTransactions: totalTransactionsPerReferrer[reward.referrerId],
-  }))
-
   createAddRewardSafeTransactionJSON({
     filePath: resultDirectory.safeTransactionsFilePath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
@@ -113,7 +96,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     endTimestampExclusive,
   })
 
-  await resultDirectory.writeRewards(rewardsWithTotalTransactions)
+  await resultDirectory.writeRewards(rewards)
 }
 
 // Only run main if this file is being executed directly
