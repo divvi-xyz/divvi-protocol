@@ -704,7 +704,6 @@ describe(CONTRACT_NAME, function () {
     let provider: HardhatEthersSigner
     let consumer: HardhatEthersSigner
     let user: HardhatEthersSigner
-    let extraUser: HardhatEthersSigner
     let registry: Awaited<
       ReturnType<typeof deployDivviRegistryContract>
     >['registry']
