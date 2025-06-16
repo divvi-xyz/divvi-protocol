@@ -1,6 +1,6 @@
 import { CalculateKpiFn, NetworkId } from '../../types'
 import { getBlockRange } from './utils/events'
-import { fetchTotalTransactions } from './utils/networks'
+import { fetchNetworkMetrics } from './utils/networks'
 
 type ScoutGameBreakdown = 'baseKpi' | 'celoKpi' | 'polygonKpi'
 
@@ -77,7 +77,7 @@ export const calculateKpi: CalculateKpiFn<ScoutGameBreakdown> = async ({
 
   const transactions = await Promise.all(
     networkIds.map((networkId, index) =>
-      fetchTotalTransactions({
+      fetchNetworkMetrics({
         networkId,
         users: [address],
         startBlock: blockRanges[index].startBlock,
@@ -93,10 +93,10 @@ export const calculateKpi: CalculateKpiFn<ScoutGameBreakdown> = async ({
     polygonKpi: 0,
   }
   transactions.forEach((item, index) => {
-    totalTransactions += item
+    totalTransactions += item.totalTransactions
     const kpiName = networkIdToKpiName[networkIds[index]]
     if (kpiName) {
-      breakdown[kpiName] = item
+      breakdown[kpiName] = item.totalTransactions
     }
   })
   return { kpi: totalTransactions, metadata: breakdown }

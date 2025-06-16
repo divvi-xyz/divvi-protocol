@@ -185,7 +185,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
       (metadata['totalTransactions'] ?? 0)
   }
 
-  const rewardsWithTotalTransactions = rewards.map((reward) => ({
+  const rewardsWithMetadata = rewards.map((reward) => ({
     ...reward,
     totalTransactions: totalTransactionsPerReferrer[reward.referrerId],
   }))
@@ -205,7 +205,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     )
   }
 
-  await resultDirectory.writeRewards(rewardsWithTotalTransactions)
+  await resultDirectory.writeRewards(rewardsWithMetadata)
 }
 
 // Only run main if this file is being executed directly

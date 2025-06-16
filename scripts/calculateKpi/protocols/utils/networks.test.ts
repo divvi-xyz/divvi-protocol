@@ -1,4 +1,4 @@
-import { fetchTotalGasUsed } from './networks'
+import { fetchNetworkMetrics } from './networks'
 import { getHyperSyncClient } from '../../../utils'
 import { QueryResponse } from '@envio-dev/hypersync-client'
 import { NetworkId } from '../../../types'
@@ -20,7 +20,7 @@ function calculateExpected(transactions: { gasUsed: bigint }[]) {
   return transactions.reduce((acc, tx) => acc + Number(tx.gasUsed), 0)
 }
 
-describe('fetchTotalGasUsed', () => {
+describe('fetchNetworkMetrics', () => {
   const networkId: NetworkId = NetworkId['celo-mainnet']
   const users = ['0xUser1']
   let mockClient: { get: jest.Mock }
@@ -44,14 +44,14 @@ describe('fetchTotalGasUsed', () => {
       },
     } as QueryResponse)
 
-    const result = await fetchTotalGasUsed({
+    const result = await fetchNetworkMetrics({
       networkId,
       users,
       startBlock: 0,
       endBlockExclusive: 100,
     })
 
-    expect(result).toBe(
+    expect(result.totalGasUsed).toBe(
       calculateExpected([{ gasUsed: 64678n }, { gasUsed: 211128n }]),
     )
     expect(mockClient.get).toHaveBeenCalledTimes(1)
@@ -68,13 +68,13 @@ describe('fetchTotalGasUsed', () => {
       } as QueryResponse)
       .mockReturnValueOnce(mockResponse as QueryResponse)
 
-    const result = await fetchTotalGasUsed({
+    const result = await fetchNetworkMetrics({
       networkId,
       users,
       startBlock: 0,
     })
 
-    expect(result).toBe(
+    expect(result.totalGasUsed).toBe(
       calculateExpected([{ gasUsed: 64678n }, { gasUsed: 211128n }]),
     )
     expect(mockClient.get).toHaveBeenCalledTimes(2)
@@ -84,7 +84,7 @@ describe('fetchTotalGasUsed', () => {
     mockClient.get.mockRejectedValue(new Error('API failure'))
 
     await expect(
-      fetchTotalGasUsed({ networkId, users, startBlock: 0 }),
+      fetchNetworkMetrics({ networkId, users, startBlock: 0 }),
     ).rejects.toThrow('API failure')
     expect(mockClient.get).toHaveBeenCalledTimes(1)
   })
@@ -105,13 +105,13 @@ describe('fetchTotalGasUsed', () => {
       } as QueryResponse)
       .mockResolvedValueOnce(mockResponse as QueryResponse)
 
-    const result = await fetchTotalGasUsed({
+    const result = await fetchNetworkMetrics({
       networkId,
       users,
       startBlock: 0,
     })
 
-    expect(result).toBe(
+    expect(result.totalGasUsed).toBe(
       calculateExpected([{ gasUsed: 30000n }, { gasUsed: 60000n }]),
     )
     expect(mockClient.get).toHaveBeenCalledTimes(3)
