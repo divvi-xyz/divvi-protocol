@@ -6,9 +6,9 @@ import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import {ERC2771ContextUpgradeable} from '@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol';
 import {ContextUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol';
-import {EIP712Upgradeable} from '@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
+import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 
 /**
  * @title DivviRegistry
@@ -18,9 +18,10 @@ contract DivviRegistry is
   Initializable,
   AccessControlDefaultAdminRulesUpgradeable,
   UUPSUpgradeable,
-  ERC2771ContextUpgradeable,
-  EIP712Upgradeable
+  ERC2771ContextUpgradeable
 {
+  using Strings for uint256;
+
   // Data structs
   struct EntityData {
     bool exists;
@@ -37,13 +38,24 @@ contract DivviRegistry is
     string chainId;
   }
 
+  /**
+   * @notice Referral data structure supporting both on-chain and off-chain referrals
+   * @dev Two types of referrals:
+   * 1. On-chain referrals:
+   *    - txHash: The transaction hash of the referral
+   *    - chainId: The chain ID of the referral
+   * 2. Off-chain referrals:
+   *    - offchainMessage: The message that was signed
+   *    - offchainSignature: The signature of the message
+   */
   struct ReferralDataV2 {
     address user;
     address rewardsProvider;
     address rewardsConsumer;
-    bytes32 txHash;
-    string chainId;
-    bytes offchainSignature;
+    bytes32 txHash; // For on-chain referrals only
+    string chainId; // For on-chain referrals only
+    bytes offchainMessage; // For off-chain referrals only
+    bytes offchainSignature; // For off-chain referrals only
   }
 
   enum ReferralStatus {
@@ -53,10 +65,6 @@ contract DivviRegistry is
     USER_ALREADY_REFERRED,
     INVALID_SIGNATURE
   }
-
-  // EIP-712 type hash for offchain referral signatures
-  bytes32 private constant REFERRAL_TYPEHASH =
-    keccak256('DivviReferral(address user,address rewardsConsumer)');
 
   // EIP-1271 magic value for valid signatures
   bytes4 private constant EIP1271_MAGIC_VALUE = 0x1626ba7e;
@@ -129,7 +137,6 @@ contract DivviRegistry is
   function initialize(address owner, uint48 transferDelay) public initializer {
     __AccessControlDefaultAdminRules_init(transferDelay, owner);
     __UUPSUpgradeable_init();
-    __EIP712_init('DivviRegistry', '1');
   }
 
   /**
@@ -243,6 +250,7 @@ contract DivviRegistry is
         referral.user,
         referral.rewardsProvider,
         referral.rewardsConsumer,
+        '', // No message for traditional tx-based referrals
         '' // No signature for traditional tx-based referrals
       );
 
@@ -269,11 +277,14 @@ contract DivviRegistry is
   }
 
   /**
-   * @notice Register multiple referrals in a single transaction with support for offchain signatures
-   * @dev Requires REFERRAL_REGISTRAR_ROLE. Validates signatures on-chain for transparency and decentralization
+   * @notice Register multiple referrals in a single transaction with support for both on-chain and off-chain referrals
+   * @dev Requires REFERRAL_REGISTRAR_ROLE.
+   * For off-chain referrals, it validates the signature on-chain for transparency, but trusts that the caller (with REFERRAL_REGISTRAR_ROLE)
+   * has already verified the content of `offchainMessage` to ensure it represents a valid referral intent (e.g., contains a specific tag).
+   * A future upgrade will incorporate this content validation fully on-chain.
    * @param referrals Array of referral data to register
    */
-  function batchRegisterReferralV2(
+  function batchRegisterReferral(
     ReferralDataV2[] calldata referrals
   ) external onlyRole(REFERRAL_REGISTRAR_ROLE) {
     for (uint256 i = 0; i < referrals.length; i++) {
@@ -283,7 +294,9 @@ contract DivviRegistry is
       bool isSignatureBased = referral.offchainSignature.length > 0;
 
       // Set event values based on referral type
-      string memory eventChainId = isSignatureBased ? '' : referral.chainId;
+      string memory eventChainId = isSignatureBased
+        ? 'offchain'
+        : referral.chainId;
       bytes32 eventTxHash = isSignatureBased ? bytes32(0) : referral.txHash;
 
       // Process the referral (including signature verification if applicable)
@@ -291,6 +304,7 @@ contract DivviRegistry is
         referral.user,
         referral.rewardsProvider,
         referral.rewardsConsumer,
+        referral.offchainMessage,
         referral.offchainSignature
       );
 
@@ -317,22 +331,25 @@ contract DivviRegistry is
   }
 
   /**
-   * @notice Verify an EIP-712 signature for referral consent
+   * @notice Verify a signature for referral consent
    * @param user The user address that should have signed
-   * @param rewardsConsumer The rewards consumer (referrer) address
+   * @param message The original message that was signed
    * @param signature The signature to verify
    * @return valid Whether the signature is valid
    */
   function _verifyReferralSignature(
     address user,
-    address rewardsConsumer,
+    bytes memory message,
     bytes memory signature
   ) internal view returns (bool valid) {
-    // Construct the EIP-712 message hash
-    bytes32 structHash = keccak256(
-      abi.encode(REFERRAL_TYPEHASH, user, rewardsConsumer)
+    // Create message hash (Ethereum signed message format)
+    bytes32 messageHash = keccak256(
+      abi.encodePacked(
+        '\x19Ethereum Signed Message:\n',
+        message.length.toString(),
+        message
+      )
     );
-    bytes32 messageHash = _hashTypedDataV4(structHash);
 
     // Check if user is a contract (potential smart wallet)
     if (user.code.length > 0) {
@@ -362,6 +379,7 @@ contract DivviRegistry is
    * @param user The address of the user being referred
    * @param rewardsProvider The address of the rewards provider entity
    * @param rewardsConsumer The address of the rewards consumer entity
+   * @param offchainMessage Optional message for offchain referrals (empty for tx-based referrals)
    * @param offchainSignature Optional signature for offchain referrals (empty for tx-based referrals)
    * @return status The status of the referral registration
    */
@@ -369,11 +387,12 @@ contract DivviRegistry is
     address user,
     address rewardsProvider,
     address rewardsConsumer,
+    bytes memory offchainMessage,
     bytes memory offchainSignature
   ) internal returns (ReferralStatus status) {
     // Verify signature if provided
     if (offchainSignature.length > 0) {
-      if (!_verifyReferralSignature(user, rewardsConsumer, offchainSignature)) {
+      if (!_verifyReferralSignature(user, offchainMessage, offchainSignature)) {
         return ReferralStatus.INVALID_SIGNATURE;
       }
     }
@@ -465,37 +484,6 @@ contract DivviRegistry is
   ) public view returns (address consumer) {
     bytes32 referralKey = keccak256(abi.encodePacked(user, provider));
     return _registeredReferrals[referralKey];
-  }
-
-  /**
-   * @notice Get the EIP-712 domain separator for this contract
-   * @return The domain separator used for signature verification
-   */
-  function getDomainSeparator() external view returns (bytes32) {
-    return _domainSeparatorV4();
-  }
-
-  /**
-   * @notice Get the EIP-712 type hash for referral signatures
-   * @return The type hash used for constructing referral signatures
-   */
-  function getReferralTypeHash() external pure returns (bytes32) {
-    return REFERRAL_TYPEHASH;
-  }
-
-  /**
-   * @notice Verify a referral signature without processing the referral
-   * @param user The user address that should have signed
-   * @param rewardsConsumer The rewards consumer (referrer) address
-   * @param signature The signature to verify
-   * @return valid Whether the signature is valid
-   */
-  function verifyReferralSignature(
-    address user,
-    address rewardsConsumer,
-    bytes memory signature
-  ) external view returns (bool valid) {
-    return _verifyReferralSignature(user, rewardsConsumer, signature);
   }
 
   // ERC2771Context overrides
