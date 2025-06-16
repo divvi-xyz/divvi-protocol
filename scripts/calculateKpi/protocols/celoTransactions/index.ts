@@ -1,7 +1,7 @@
 import { RedisClientType } from '@redis/client'
 import { KpiResult, NetworkId } from '../../../types'
 import { getBlockRange } from '../utils/events'
-import { fetchTotalTransactions } from '../utils/networks'
+import { fetchNetworkMetrics } from '../utils/networks'
 
 /**
  * Calculates transaction count for Celo network activity.
@@ -62,7 +62,7 @@ export async function calculateKpi({
     redis,
   })
 
-  const kpi = await fetchTotalTransactions({
+  const { totalTransactions: kpi } = await fetchNetworkMetrics({
     networkId: NetworkId['celo-mainnet'],
     users: [address],
     startBlock,

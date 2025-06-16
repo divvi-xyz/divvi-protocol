@@ -62,7 +62,7 @@ async function calculateKpiBatch({
           return null
         }
 
-        const { kpi, breakdown } = await calculateKpiHandlers[protocol]({
+        const { kpi, metadata } = await calculateKpiHandlers[protocol]({
           address: userAddress,
           // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
           startTimestamp:
@@ -77,7 +77,7 @@ async function calculateKpiBatch({
           referrerId,
           userAddress,
           kpi,
-          breakdown,
+          metadata,
         }
       },
     )
