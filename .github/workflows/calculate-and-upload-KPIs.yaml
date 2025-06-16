@@ -11,6 +11,11 @@ on:
       protocol:
         description: 'Protocol to calculate KPIs for, e.g. celo-pg, scout-game-v0, lisk-v0'
 
+# Cancel any in progress run of the workflow to avoid uploading outdated KPIs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}
+  cancel-in-progress: true
+
 jobs:
   calculate-and-upload-KPIs:
     name: Calculate and Upload KPIs
