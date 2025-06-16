@@ -52,6 +52,7 @@
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^8.34.0",
     "@valora/prettier-config": "^0.0.1",
+    "axios": "^1.10.0",
     "bignumber.js": "^9.2.1",
     "bottleneck": "^2.19.5",
     "chai": "^4.5.0",
