@@ -6,9 +6,6 @@ import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import {ERC2771ContextUpgradeable} from '@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol';
 import {ContextUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol';
-import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
-import {MessageHashUtils} from '@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol';
-import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
 
 /**
  * @title DivviRegistry
@@ -59,6 +56,7 @@ contract DivviRegistry is
     OffchainMessageType messageType;
     bytes message;
     bytes signature;
+    string chainId; // Chain ID where the signature should be verified (for EIP-1271)
   }
 
   /**
@@ -82,12 +80,8 @@ contract DivviRegistry is
     SUCCESS,
     ENTITY_NOT_FOUND,
     AGREEMENT_NOT_FOUND,
-    USER_ALREADY_REFERRED,
-    INVALID_SIGNATURE
+    USER_ALREADY_REFERRED
   }
-
-  // EIP-1271 magic value for valid signatures
-  bytes4 private constant EIP1271_MAGIC_VALUE = 0x1626ba7e;
 
   // Entities storage
   mapping(address => EntityData) private _entities;
@@ -142,7 +136,6 @@ contract DivviRegistry is
   error EntityDoesNotExist(address entity);
   error AgreementAlreadyExists(address provider, address consumer);
   error ProviderRequiresApproval(address provider);
-  error InvalidSignature(address user, bytes signature);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() ERC2771ContextUpgradeable(address(0x0)) {
@@ -269,12 +262,7 @@ contract DivviRegistry is
       ReferralStatus status = _registerReferral(
         referral.user,
         referral.rewardsProvider,
-        referral.rewardsConsumer,
-        OffchainMessageData({
-          messageType: OffchainMessageType.NONE,
-          message: '',
-          signature: ''
-        })
+        referral.rewardsConsumer
       );
 
       // Emit appropriate event based on status
@@ -302,9 +290,9 @@ contract DivviRegistry is
   /**
    * @notice Register multiple referrals in a single transaction with support for both on-chain and off-chain referrals
    * @dev Requires REFERRAL_REGISTRAR_ROLE.
-   * For off-chain referrals, it validates the signature on-chain for transparency, but trusts that the caller (with REFERRAL_REGISTRAR_ROLE)
-   * has already verified the content of `offchainMessage` to ensure it represents a valid referral intent (e.g., contains a specific tag).
-   * A future upgrade will incorporate this content validation fully on-chain.
+   * For off-chain referrals, the contract trusts that the caller (with REFERRAL_REGISTRAR_ROLE)
+   * has already verified the signature and content of `offchainMessage` to ensure it represents a valid referral intent.
+   * The signed message data is stored on-chain for auditability but not verified on-chain.
    * @param referrals Array of referral data to register
    */
   function batchRegisterReferral(
@@ -313,23 +301,22 @@ contract DivviRegistry is
     for (uint256 i = 0; i < referrals.length; i++) {
       ReferralDataV2 calldata referral = referrals[i];
 
-      // Determine if this is an off-chain signature-based referral
-      bool isSignatureBased = referral.offchainMessage.signature.length > 0;
+      bool isOffchainReferral = referral.offchainMessage.messageType !=
+        OffchainMessageType.NONE;
 
       // Set event values based on referral type
-      string memory eventChainId = isSignatureBased
-        ? 'offchain'
+      string memory eventChainId = isOffchainReferral
+        ? referral.offchainMessage.chainId
         : referral.onchainTx.chainId;
-      bytes32 eventTxHash = isSignatureBased
+      bytes32 eventTxHash = isOffchainReferral
         ? bytes32(0)
         : referral.onchainTx.txHash;
 
-      // Process the referral (including signature verification if applicable)
+      // Process the referral
       ReferralStatus status = _registerReferral(
         referral.user,
         referral.rewardsProvider,
-        referral.rewardsConsumer,
-        referral.offchainMessage
+        referral.rewardsConsumer
       );
 
       // Emit appropriate event based on status
@@ -355,71 +342,18 @@ contract DivviRegistry is
   }
 
   /**
-   * @notice Verify a signature for referral consent
-   * @param user The address that should have signed (EOA or EIP-1271 contract)
-   * @param offchainMessage The off-chain message data containing message, signature, and type
-   * @return valid Whether the signature is valid
-   */
-  function _verifyOffchainReferralSignature(
-    address user,
-    OffchainMessageData memory offchainMessage
-  ) internal view returns (bool valid) {
-    bytes32 messageHash;
-
-    if (offchainMessage.messageType == OffchainMessageType.ETH_SIGNED_MESSAGE) {
-      // Create message hash (Ethereum signed message format)
-      messageHash = MessageHashUtils.toEthSignedMessageHash(
-        offchainMessage.message
-      );
-    } else {
-      // Invalid message type for signature verification
-      return false;
-    }
-
-    // Check if user is a contract (potential smart wallet)
-    if (user.code.length > 0) {
-      // Try EIP-1271 verification for smart contracts
-      try
-        IERC1271(user).isValidSignature(messageHash, offchainMessage.signature)
-      returns (bytes4 magicValue) {
-        return magicValue == EIP1271_MAGIC_VALUE;
-      } catch {
-        return false;
-      }
-    } else {
-      // Standard ECDSA verification for EOAs using OpenZeppelin's tryRecover
-      (address recoveredSigner, ECDSA.RecoverError error, ) = ECDSA.tryRecover(
-        messageHash,
-        offchainMessage.signature
-      );
-
-      // Check if recovery was successful and signer matches expected user
-      return error == ECDSA.RecoverError.NoError && recoveredSigner == user;
-    }
-  }
-
-  /**
    * @notice Register a user as being referred to a rewards agreement
-   * @dev Internal function that returns status instead of emitting events. Handles signature verification if provided.
+   * @dev Internal function that returns status instead of emitting events.
    * @param user The address of the user being referred
    * @param rewardsProvider The address of the rewards provider entity
    * @param rewardsConsumer The address of the rewards consumer entity
-   * @param offchainMessage Off-chain message data for referrals
    * @return status The status of the referral registration
    */
   function _registerReferral(
     address user,
     address rewardsProvider,
-    address rewardsConsumer,
-    OffchainMessageData memory offchainMessage
+    address rewardsConsumer
   ) internal returns (ReferralStatus status) {
-    // Verify signature if provided
-    if (offchainMessage.signature.length > 0) {
-      if (!_verifyOffchainReferralSignature(user, offchainMessage)) {
-        return ReferralStatus.INVALID_SIGNATURE;
-      }
-    }
-
     // Check if entities exist
     if (
       !_entities[rewardsProvider].exists || !_entities[rewardsConsumer].exists

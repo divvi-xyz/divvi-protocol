@@ -16,7 +16,7 @@ const TRUSTED_FORWARDER = '0x0000000000000000000000072057edf0200a2de2'
 const BATCH_REGISTER_REFERRAL_V1 =
   'batchRegisterReferral((address,address,address,bytes32,string)[])'
 const BATCH_REGISTER_REFERRAL_V2 =
-  'batchRegisterReferral((address,address,address,(bytes32,string),(uint8,bytes,bytes))[])'
+  'batchRegisterReferral((address,address,address,(bytes32,string),(uint8,bytes,bytes,string))[])'
 
 describe(CONTRACT_NAME, function () {
   async function deployDivviRegistryContract() {
@@ -740,7 +740,7 @@ describe(CONTRACT_NAME, function () {
 
     for (const useMetaTx of [false, true]) {
       describe(`via ${useMetaTx ? 'meta-transaction' : 'direct call'}`, function () {
-        it('should register a mixed batch of on-chain, EOA, and EIP-1271 referrals', async function () {
+        it('should register a mixed batch of on-chain and off-chain referrals', async function () {
           // 1. EOA-signed referral
           const eoaMessage = `referral for ${user.address}`
           const eoaSignature = await user.signMessage(eoaMessage)
@@ -753,18 +753,17 @@ describe(CONTRACT_NAME, function () {
               messageType: 1, // ETH_SIGNED_MESSAGE
               message: ethers.toUtf8Bytes(eoaMessage),
               signature: eoaSignature,
+              chainId: 'eip155:1',
             },
           }
 
-          // 2. EIP-1271-signed referral
-          const MockEIP1271 = await hre.ethers.getContractFactory('MockEIP1271')
-          const mockContract = await MockEIP1271.deploy(true) // alwaysValid
-          await mockContract.waitForDeployment()
-          const smartContractAddress = await mockContract.getAddress()
-          const scwMessage = `referral for ${smartContractAddress}`
-          const scwSignature = '0x' + '00'.repeat(65) // Dummy signature
+          // 2. Smart wallet off-chain referral (signature already verified by backend)
+          const smartWalletAddress =
+            '0x1234567890123456789012345678901234567890'
+          const scwMessage = `referral for ${smartWalletAddress}`
+          const scwSignature = '0x' + '00'.repeat(65) // Dummy signature (verified by backend)
           const scwReferral = {
-            user: smartContractAddress,
+            user: smartWalletAddress,
             rewardsProvider: provider.address,
             rewardsConsumer: consumer.address,
             onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
@@ -772,6 +771,7 @@ describe(CONTRACT_NAME, function () {
               messageType: 1, // ETH_SIGNED_MESSAGE
               message: ethers.toUtf8Bytes(scwMessage),
               signature: scwSignature,
+              chainId: 'eip155:10',
             },
           }
 
@@ -787,6 +787,7 @@ describe(CONTRACT_NAME, function () {
               messageType: 0, // NONE
               message: '0x',
               signature: '0x',
+              chainId: '',
             },
           }
 
@@ -807,16 +808,16 @@ describe(CONTRACT_NAME, function () {
               user.address,
               provider.address,
               consumer.address,
-              'offchain',
+              'eip155:1',
               ethers.ZeroHash,
             )
           await expect(tx)
             .to.emit(registry, 'ReferralRegistered')
             .withArgs(
-              smartContractAddress,
+              smartWalletAddress,
               provider.address,
               consumer.address,
-              'offchain',
+              'eip155:10',
               ethers.ZeroHash,
             )
           await expect(tx)
@@ -838,7 +839,7 @@ describe(CONTRACT_NAME, function () {
           ).to.be.true
           expect(
             await registry.isUserReferredToProvider(
-              smartContractAddress,
+              smartWalletAddress,
               provider.address,
             ),
           ).to.be.true
@@ -850,7 +851,7 @@ describe(CONTRACT_NAME, function () {
           ).to.be.true
         })
 
-        it('should handle a mixed batch of success, duplicate, and invalid signatures', async function () {
+        it('should handle a mixed batch of success and duplicate referrals', async function () {
           // 1. Pre-register `user` to test duplication
           const initialMessage = `initial referral for ${user.address}`
           const initialSignature = await user.signMessage(initialMessage)
@@ -863,6 +864,7 @@ describe(CONTRACT_NAME, function () {
               messageType: 1, // ETH_SIGNED_MESSAGE
               message: ethers.toUtf8Bytes(initialMessage),
               signature: initialSignature,
+              chainId: 'eip155:1',
             },
           }
           await executeAs(
@@ -886,50 +888,14 @@ describe(CONTRACT_NAME, function () {
               messageType: 1, // ETH_SIGNED_MESSAGE
               message: ethers.toUtf8Bytes(successMessage),
               signature: successSignature,
+              chainId: 'eip155:1',
             },
           }
 
           // b. Duplicate referral (using initial data)
           const duplicateReferral = initialReferral
 
-          // c. Invalid EOA signature
-          const invalidEoaMessage = 'a message with a bad signature'
-          const invalidEoaReferral = {
-            user: user.address, // Arbitrary user
-            rewardsProvider: provider.address,
-            rewardsConsumer: consumer.address,
-            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
-            offchainMessage: {
-              messageType: 1, // ETH_SIGNED_MESSAGE
-              message: ethers.toUtf8Bytes(invalidEoaMessage),
-              signature: '0x' + '11'.repeat(65), // Bad signature
-            },
-          }
-
-          // d. Invalid EIP-1271 signature
-          const MockEIP1271 = await hre.ethers.getContractFactory('MockEIP1271')
-          const mockContract = await MockEIP1271.deploy(false) // alwaysValid = false
-          await mockContract.waitForDeployment()
-          const smartContractAddress = await mockContract.getAddress()
-          const invalidScwMessage = `referral for ${smartContractAddress} that will fail`
-          const invalidScwReferral = {
-            user: smartContractAddress,
-            rewardsProvider: provider.address,
-            rewardsConsumer: consumer.address,
-            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
-            offchainMessage: {
-              messageType: 1, // ETH_SIGNED_MESSAGE
-              message: ethers.toUtf8Bytes(invalidScwMessage),
-              signature: '0x' + '22'.repeat(65), // Dummy signature, will be rejected
-            },
-          }
-
-          const mixedReferrals = [
-            successReferral,
-            duplicateReferral,
-            invalidEoaReferral,
-            invalidScwReferral,
-          ]
+          const mixedReferrals = [successReferral, duplicateReferral]
 
           // Execute and check events
           const tx = executeAs(
@@ -946,32 +912,16 @@ describe(CONTRACT_NAME, function () {
               user2.address,
               provider.address,
               consumer.address,
-              'offchain',
+              'eip155:1',
               ethers.ZeroHash,
             )
           await expect(tx).to.emit(registry, 'ReferralSkipped').withArgs(
             user.address,
             provider.address,
             consumer.address,
-            'offchain',
+            'eip155:1',
             ethers.ZeroHash,
             3, // USER_ALREADY_REFERRED
-          )
-          await expect(tx).to.emit(registry, 'ReferralSkipped').withArgs(
-            user.address,
-            provider.address,
-            consumer.address,
-            'offchain',
-            ethers.ZeroHash,
-            4, // INVALID_SIGNATURE
-          )
-          await expect(tx).to.emit(registry, 'ReferralSkipped').withArgs(
-            smartContractAddress,
-            provider.address,
-            consumer.address,
-            'offchain',
-            ethers.ZeroHash,
-            4, // INVALID_SIGNATURE
           )
 
           // Check final state
@@ -989,119 +939,6 @@ describe(CONTRACT_NAME, function () {
           ).to.be.true // The old one is still registered
         })
 
-        it('should skip a referral with an invalid EOA signature', async function () {
-          const message = 'a message'
-          const referral = {
-            user: user.address,
-            rewardsProvider: provider.address,
-            rewardsConsumer: consumer.address,
-            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
-            offchainMessage: {
-              messageType: 1, // ETH_SIGNED_MESSAGE
-              message: ethers.toUtf8Bytes(message),
-              signature: '0x' + '11'.repeat(65), // Invalid signature
-            },
-          }
-
-          await expect(
-            executeAs(
-              registry,
-              owner,
-              BATCH_REGISTER_REFERRAL_V2,
-              [[referral]],
-              useMetaTx,
-            ),
-          )
-            .to.emit(registry, 'ReferralSkipped')
-            .withArgs(
-              user.address,
-              provider.address,
-              consumer.address,
-              'offchain',
-              ethers.ZeroHash,
-              4, // INVALID_SIGNATURE
-            )
-        })
-
-        it('should skip a referral with a rejecting signature from an EIP-1271 contract', async function () {
-          const MockEIP1271 = await hre.ethers.getContractFactory('MockEIP1271')
-          const mockContract = await MockEIP1271.deploy(false) // alwaysValid = false
-          await mockContract.waitForDeployment()
-          const smartContractAddress = await mockContract.getAddress()
-
-          const message = `referral for ${smartContractAddress}`
-          const referral = {
-            user: smartContractAddress,
-            rewardsProvider: provider.address,
-            rewardsConsumer: consumer.address,
-            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
-            offchainMessage: {
-              messageType: 1, // ETH_SIGNED_MESSAGE
-              message: ethers.toUtf8Bytes(message),
-              signature: '0x' + '22'.repeat(65), // Dummy signature, will be rejected
-            },
-          }
-
-          await expect(
-            executeAs(
-              registry,
-              owner,
-              BATCH_REGISTER_REFERRAL_V2,
-              [[referral]],
-              useMetaTx,
-            ),
-          )
-            .to.emit(registry, 'ReferralSkipped')
-            .withArgs(
-              smartContractAddress,
-              provider.address,
-              consumer.address,
-              'offchain',
-              ethers.ZeroHash,
-              4, // INVALID_SIGNATURE
-            )
-        })
-
-        it('should skip a referral from a smart contract that lacks the EIP-1271 interface', async function () {
-          const MockNonEIP1271 =
-            await hre.ethers.getContractFactory('MockNonEIP1271')
-          const mockContract = await MockNonEIP1271.deploy()
-          await mockContract.waitForDeployment()
-          const smartContractAddress = await mockContract.getAddress()
-
-          const message = `referral for ${smartContractAddress}`
-          const referral = {
-            user: smartContractAddress,
-            rewardsProvider: provider.address,
-            rewardsConsumer: consumer.address,
-            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
-            offchainMessage: {
-              messageType: 1, // ETH_SIGNED_MESSAGE
-              message: ethers.toUtf8Bytes(message),
-              signature: '0x' + '33'.repeat(65), // Dummy signature
-            },
-          }
-
-          await expect(
-            executeAs(
-              registry,
-              owner,
-              BATCH_REGISTER_REFERRAL_V2,
-              [[referral]],
-              useMetaTx,
-            ),
-          )
-            .to.emit(registry, 'ReferralSkipped')
-            .withArgs(
-              smartContractAddress,
-              provider.address,
-              consumer.address,
-              'offchain',
-              ethers.ZeroHash,
-              4, // INVALID_SIGNATURE
-            )
-        })
-
         it('should skip a referral if an entity does not exist', async function () {
           const unregisteredConsumer = ethers.Wallet.createRandom()
           const message = `referral for ${user.address}`
@@ -1116,6 +953,7 @@ describe(CONTRACT_NAME, function () {
               messageType: 1, // ETH_SIGNED_MESSAGE
               message: ethers.toUtf8Bytes(message),
               signature: signature,
+              chainId: 'eip155:1',
             },
           }
 
@@ -1133,7 +971,7 @@ describe(CONTRACT_NAME, function () {
               user.address,
               provider.address,
               unregisteredConsumer.address,
-              'offchain',
+              'eip155:1',
               ethers.ZeroHash,
               1, // ENTITY_NOT_FOUND
             )
@@ -1169,6 +1007,7 @@ describe(CONTRACT_NAME, function () {
               messageType: 1, // ETH_SIGNED_MESSAGE
               message: ethers.toUtf8Bytes(message),
               signature: signature,
+              chainId: 'eip155:1',
             },
           }
 
@@ -1186,7 +1025,7 @@ describe(CONTRACT_NAME, function () {
               user.address,
               provider.address,
               otherConsumer.address,
-              'offchain',
+              'eip155:1',
               ethers.ZeroHash,
               2, // AGREEMENT_NOT_FOUND
             )
@@ -1211,6 +1050,7 @@ describe(CONTRACT_NAME, function () {
               messageType: 1, // ETH_SIGNED_MESSAGE
               message: ethers.toUtf8Bytes(message),
               signature: signature,
+              chainId: 'eip155:1',
             },
           }
 
