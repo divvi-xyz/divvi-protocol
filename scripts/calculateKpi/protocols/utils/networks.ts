@@ -31,8 +31,8 @@ export async function fetchNetworkMetrics({
   await paginateQuery(client, query, async (response) => {
     for (const tx of response.data.transactions) {
       totalGasUsed += Number(tx.gasUsed ?? 0)
-      totalTransactions += response.data.transactions.length
     }
+    totalTransactions += response.data.transactions.length
   })
 
   return { totalGasUsed, totalTransactions }
