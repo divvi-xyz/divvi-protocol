@@ -30,7 +30,7 @@ contract DivviRegistry is
     address rewardsProvider;
     address rewardsConsumer;
     bytes32 txHash;
-    string chainId;
+    string chainId; // CAIP-2 format
   }
 
   enum OffchainMessageType {
@@ -45,7 +45,7 @@ contract DivviRegistry is
    */
   struct OnchainTxData {
     bytes32 txHash;
-    string chainId;
+    string chainId; // CAIP-2 format
   }
 
   /**
@@ -56,7 +56,7 @@ contract DivviRegistry is
     OffchainMessageType messageType;
     bytes message;
     bytes signature;
-    string chainId; // Chain ID where the signature should be verified (for EIP-1271)
+    string chainId; // CAIP-2 format (mostly for EIP-1271 external signature verification)
   }
 
   /**
@@ -119,14 +119,14 @@ contract DivviRegistry is
     address indexed user,
     address indexed rewardsProvider,
     address indexed rewardsConsumer,
-    string chainId,
+    string chainId, // CAIP-2 format
     bytes32 txHash
   );
   event ReferralSkipped(
     address indexed user,
     address indexed rewardsProvider,
     address indexed rewardsConsumer,
-    string chainId,
+    string chainId, // CAIP-2 format
     bytes32 txHash,
     ReferralStatus status
   );
