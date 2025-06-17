@@ -364,7 +364,7 @@ async function uploadCurrentPeriodKpis(
       await currentPeriod.calculateRewards({
         resultDirectory,
         startTimestamp: currentPeriod.startTimestamp,
-        endTimestampExclusive,
+        endTimestampExclusive: currentPeriod.endTimestampExclusive,
       })
       const rewardsFilePathCsv = join(outputDir, 'rewards.csv')
       const rewardsFilePathJson = join(outputDir, 'rewards.json')
