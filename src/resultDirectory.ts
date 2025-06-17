@@ -9,7 +9,7 @@ export interface KpiRow {
   referrerId: string
   userAddress: string
   kpi: string
-  breakdown?: { [key: string]: number }
+  metadata?: { [key: string]: number }
 }
 
 interface ReferralRow {

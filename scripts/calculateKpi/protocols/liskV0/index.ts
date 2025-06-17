@@ -1,7 +1,7 @@
 import { RedisClientType } from '@redis/client'
 import { KpiResult, NetworkId } from '../../../types'
 import { getBlockRange } from '../utils/events'
-import { fetchTotalGasUsed } from '../utils/networks'
+import { fetchNetworkMetrics } from '../utils/networks'
 
 /**
  * Calculates gas usage for Lisk infrastructure activity.
@@ -63,7 +63,7 @@ export async function calculateKpi({
     redis,
   })
 
-  const kpi = await fetchTotalGasUsed({
+  const { totalGasUsed: kpi } = await fetchNetworkMetrics({
     networkId: NetworkId['lisk-mainnet'],
     users: [address],
     startBlock,

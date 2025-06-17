@@ -1,7 +1,7 @@
 import { RedisClientType } from '@redis/client'
 import { KpiResult, NetworkId } from '../../../types'
 import { getBlockRange } from '../utils/events'
-import { fetchTotalGasUsed } from '../utils/networks'
+import { fetchNetworkMetrics } from '../utils/networks'
 
 /**
  * Calculates gas usage for Celo public goods infrastructure activity.
@@ -63,11 +63,11 @@ export async function calculateKpi({
     redis,
   })
 
-  const kpi = await fetchTotalGasUsed({
+  const { totalGasUsed: kpi, totalTransactions } = await fetchNetworkMetrics({
     networkId: NetworkId['celo-mainnet'],
     users: [address],
     startBlock,
     endBlockExclusive,
   })
-  return { kpi }
+  return { kpi, metadata: { totalTransactions } }
 }
