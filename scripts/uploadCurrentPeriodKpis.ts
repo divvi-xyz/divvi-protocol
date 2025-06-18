@@ -286,7 +286,7 @@ async function uploadCurrentPeriodKpis(
 
     if (
       campaignStartTimestamp > startOfCalculationHour ||
-      campaignEndTimestampExclusive <= startOfCalculationHour
+      campaignEndTimestampExclusive < startOfCalculationHour
     ) {
       console.log(`Campaign ${campaign.protocol} is not active, skipping`)
       continue
