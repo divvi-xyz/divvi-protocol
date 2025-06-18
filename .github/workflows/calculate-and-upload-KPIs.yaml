@@ -37,13 +37,11 @@ jobs:
             --calculation-timestamp ${{ github.event.inputs.timestamp }} \
             --protocol ${{ github.event.inputs.protocol }} \
             --redis-connection ${{ secrets.REDIS_CONNECTION }}
-
-      # TODO(kathy)
-      # - name: Notify Slack on Failure
-      #   if: failure()
-      #   uses: slackapi/slack-github-action@v1.25.0
-      #   with:
-      #     channel-id: 'alerts'
-      #     slack-message: '❌ KPI calculation and upload workflow failed! Check the run details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-      #   env:
-      #     SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Notify Slack on Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_ON_CALL_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "⚠️ <!subteam^S0277QUM4KB> Periodic KPI calculation and upload workflow failed! The next scheduled run will automatically backfill any missed data, so single failures are generally not a concern. If failures continue, please review the run details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
