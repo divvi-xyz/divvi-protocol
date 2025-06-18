@@ -1,10 +1,10 @@
 import { Protocol } from './types'
-// import { fetchReferrals } from './fetchReferrals'
-// import { protocolFilters } from './protocolFilters'
-// import { calculateKpi } from './calculateKpi'
-// import { join } from 'path'
-// import { toPeriodFolderName } from './utils/dateFormatting'
-// import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
+import { fetchReferrals } from './fetchReferrals'
+import { protocolFilters } from './protocolFilters'
+import { calculateKpi } from './calculateKpi'
+import { join } from 'path'
+import { toPeriodFolderName } from './utils/dateFormatting'
+import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import yargs from 'yargs'
 import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
@@ -311,73 +311,73 @@ async function uploadCurrentPeriodKpis(
       `🧮 Calculating KPIs for campaign ${campaign.protocol}, from ${currentPeriod.startTimestamp} to ${endTimestampExclusive} (exclusive)`,
     )
 
-    // const datadir = 'kpi'
+    const datadir = 'kpi'
 
-    // const outputDir = join(
-    //   datadir,
-    //   campaign.protocol,
-    //   toPeriodFolderName({
-    //     startTimestamp: new Date(currentPeriod.startTimestamp),
-    //     endTimestampExclusive: new Date(currentPeriod.endTimestampExclusive),
-    //   }),
-    // )
-    // const resultDirectory = new ResultDirectory({
-    //   datadir,
-    //   name: campaign.protocol,
-    //   startTimestamp: new Date(currentPeriod.startTimestamp),
-    //   endTimestampExclusive: new Date(currentPeriod.endTimestampExclusive),
-    // })
+    const outputDir = join(
+      datadir,
+      campaign.protocol,
+      toPeriodFolderName({
+        startTimestamp: new Date(currentPeriod.startTimestamp),
+        endTimestampExclusive: new Date(currentPeriod.endTimestampExclusive),
+      }),
+    )
+    const resultDirectory = new ResultDirectory({
+      datadir,
+      name: campaign.protocol,
+      startTimestamp: new Date(currentPeriod.startTimestamp),
+      endTimestampExclusive: new Date(currentPeriod.endTimestampExclusive),
+    })
 
-    // const fetchReferralsStartTime = Date.now()
-    // await fetchReferrals({
-    //   protocol: campaign.protocol,
-    //   startTimestamp: currentPeriod.startTimestamp,
-    //   endTimestampExclusive,
-    //   outputDir,
-    //   builderAllowList: undefined, // TODO: not really sure how to get an up to date builder allowlist for CI...
-    //   useStaging: false,
-    //   protocolFilter: protocolFilters[campaign.protocol],
-    //   redisConnection: args.redisConnection,
-    // })
-    // console.log(
-    //   `👍🏻 Fetched referrals for campaign ${campaign.protocol} in ${Date.now() - fetchReferralsStartTime}ms`,
-    // )
+    const fetchReferralsStartTime = Date.now()
+    await fetchReferrals({
+      protocol: campaign.protocol,
+      startTimestamp: currentPeriod.startTimestamp,
+      endTimestampExclusive,
+      outputDir,
+      builderAllowList: undefined, // TODO: not really sure how to get an up to date builder allowlist for CI...
+      useStaging: false,
+      protocolFilter: protocolFilters[campaign.protocol],
+      redisConnection: args.redisConnection,
+    })
+    console.log(
+      `👍🏻 Fetched referrals for campaign ${campaign.protocol} in ${Date.now() - fetchReferralsStartTime}ms`,
+    )
 
-    // const calculateKpiStartTime = Date.now()
-    // await calculateKpi({
-    //   resultDirectory,
-    //   protocol: campaign.protocol,
-    //   startTimestamp: currentPeriod.startTimestamp,
-    //   endTimestampExclusive,
-    //   redisConnection: args.redisConnection,
-    // })
-    // console.log(
-    //   `🍾 Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,
-    // )
+    const calculateKpiStartTime = Date.now()
+    await calculateKpi({
+      resultDirectory,
+      protocol: campaign.protocol,
+      startTimestamp: currentPeriod.startTimestamp,
+      endTimestampExclusive,
+      redisConnection: args.redisConnection,
+    })
+    console.log(
+      `🍾 Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,
+    )
 
-    // // These are the output files calculateKpi writes with ResultDirectory
-    // const outputFilePathCsv = join(outputDir, 'kpi.csv')
-    // const outputFilePathJson = join(outputDir, 'kpi.json')
-    // const campaignFilePaths = [outputFilePathCsv, outputFilePathJson]
+    // These are the output files calculateKpi writes with ResultDirectory
+    const outputFilePathCsv = join(outputDir, 'kpi.csv')
+    const outputFilePathJson = join(outputDir, 'kpi.json')
+    const campaignFilePaths = [outputFilePathCsv, outputFilePathJson]
 
-    // if (currentPeriod.calculateRewards) {
-    //   await currentPeriod.calculateRewards({
-    //     resultDirectory,
-    //     startTimestamp: currentPeriod.startTimestamp,
-    //     endTimestampExclusive,
-    //   })
-    //   const rewardsFilePathCsv = join(outputDir, 'rewards.csv')
-    //   const rewardsFilePathJson = join(outputDir, 'rewards.json')
-    //   campaignFilePaths.push(rewardsFilePathCsv, rewardsFilePathJson)
-    // }
+    if (currentPeriod.calculateRewards) {
+      await currentPeriod.calculateRewards({
+        resultDirectory,
+        startTimestamp: currentPeriod.startTimestamp,
+        endTimestampExclusive,
+      })
+      const rewardsFilePathCsv = join(outputDir, 'rewards.csv')
+      const rewardsFilePathJson = join(outputDir, 'rewards.json')
+      campaignFilePaths.push(rewardsFilePathCsv, rewardsFilePathJson)
+    }
 
-    // const validPaths = campaignFilePaths.filter((path) => path !== null)
-    // await uploadFilesToGCS(
-    //   validPaths,
-    //   'divvi-campaign-data-production',
-    //   args.dryRun,
-    // )
-    // console.log(`🎉 Uploaded files for campaign ${campaign.protocol}`)
+    const validPaths = campaignFilePaths.filter((path) => path !== null)
+    await uploadFilesToGCS(
+      validPaths,
+      'divvi-campaign-data-production',
+      args.dryRun,
+    )
+    console.log(`🎉 Uploaded files for campaign ${campaign.protocol}`)
   }
 
   console.log('🥳 All campaigns have been processed')
