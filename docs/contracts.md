@@ -26,7 +26,8 @@ Owner address: [0xfC95675a6bB93406C0CbBa9403a084Dd8D566F06](https://app.safe.glo
 
 ## Staging
 
-Proxy address:[0x2f5E320698dB89CbefB810Fa19264103d99aAFB1](https://optimistic.etherscan.io/address/0x2f5E320698dB89CbefB810Fa19264103d99aAFB1)
+Proxy address: [0x2f5E320698dB89CbefB810Fa19264103d99aAFB1](https://optimistic.etherscan.io/address/0x2f5E320698dB89CbefB810Fa19264103d99aAFB1)
+
 Owner address: [0x8CA1cCe5c6420502d61e56eE69521b7F03eEFc8C](https://app.safe.global/home?safe=oeth:0x8CA1cCe5c6420502d61e56eE69521b7F03eEFc8C)
 
 ## Reward Pool Contract
