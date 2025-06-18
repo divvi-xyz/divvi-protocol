@@ -44,4 +44,4 @@ jobs:
           webhook: ${{ secrets.SLACK_ON_CALL_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
-            text: "⚠️ <!subteam^S0277QUM4KB> The periodic KPI calculation and upload workflow failed! Please check the run details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            text: "⚠️ <!subteam^S0277QUM4KB> Periodic KPI calculation and upload workflow failed! The next scheduled run will automatically backfill any missed data, so single failures are generally not a concern. If failures continue, please review the run details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
