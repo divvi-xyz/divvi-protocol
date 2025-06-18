@@ -6,6 +6,7 @@ import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import filterExcludedReferrerIds from '../utils/filterExcludedReferralIds'
 import { ResultDirectory } from '../../src/resultDirectory'
+import { getReferrerMetricsFromKpi } from './getReferrerMetricsFromKpi'
 
 const REWARD_POOL_ADDRESS = '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3' // on Celo mainnet
 
@@ -25,17 +26,11 @@ export function calculateRewardsCeloPG({
     1 - proportionLinear,
   )
 
-  const referrerKpis = kpiData.reduce(
-    (acc, row) => {
-      if (!(row.referrerId in acc)) {
-        acc[row.referrerId] = BigInt(row.kpi)
-      } else {
-        acc[row.referrerId] += BigInt(row.kpi)
-      }
-      return acc
-    },
-    {} as Record<string, bigint>,
-  )
+  const {
+    referrerReferrals,
+    referrerKpis,
+    totalKpi: totalLinear,
+  } = getReferrerMetricsFromKpi(kpiData)
 
   const referrerPowerKpis = Object.entries(referrerKpis).reduce(
     (acc, [referrerId, kpi]) => {
@@ -45,18 +40,13 @@ export function calculateRewardsCeloPG({
     {} as Record<string, BigNumber>,
   )
 
-  const total = Object.values(referrerKpis).reduce(
-    (sum, value) => sum + value,
-    BigInt(0),
-  )
-
   const totalPower = Object.values(referrerPowerKpis).reduce(
     (sum, value) => sum.plus(value),
     BigNumber(0),
   )
 
   const rewards = Object.entries(referrerKpis).map(([referrerId, kpi]) => {
-    const linearProportion = BigNumber(kpi).div(total)
+    const linearProportion = BigNumber(kpi).div(totalLinear)
     const powerProportion = BigNumber(referrerPowerKpis[referrerId]).div(
       totalPower,
     )
@@ -68,7 +58,7 @@ export function calculateRewardsCeloPG({
     return {
       referrerId,
       rewardAmount: rewardAmount.toFixed(0, BigNumber.ROUND_DOWN),
-
+      referralCount: referrerReferrals[referrerId],
       kpi,
       linearProportion: linearProportion.toFixed(8, BigNumber.ROUND_DOWN),
       powerProportion: powerProportion.toFixed(8, BigNumber.ROUND_DOWN),
@@ -183,6 +173,23 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     proportionLinear,
   })
 
+  const totalTransactionsPerReferrer: {
+    [referrerId: string]: number
+  } = {}
+
+  for (const { referrerId, metadata } of filteredKpiData) {
+    if (!metadata) continue
+
+    totalTransactionsPerReferrer[referrerId] =
+      (totalTransactionsPerReferrer[referrerId] ?? 0) +
+      (metadata['totalTransactions'] ?? 0)
+  }
+
+  const rewardsWithMetadata = rewards.map((reward) => ({
+    ...reward,
+    totalTransactions: totalTransactionsPerReferrer[reward.referrerId],
+  }))
+
   createAddRewardSafeTransactionJSON({
     filePath: resultDirectory.safeTransactionsFilePath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
@@ -198,7 +205,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     )
   }
 
-  await resultDirectory.writeRewards(rewards)
+  await resultDirectory.writeRewards(rewardsWithMetadata)
 }
 
 // Only run main if this file is being executed directly

@@ -1,6 +1,6 @@
-import { NetworkId } from '../../../types'
+import { KpiResult, NetworkId } from '../../../types'
 import { getBlockRange } from '../utils/events'
-import { fetchTotalGasUsed } from '../utils/networks'
+import { fetchNetworkMetrics } from '../utils/networks'
 
 /**
  * Calculates gas usage for Arbitrum network activity.
@@ -52,17 +52,18 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<number> {
+}): Promise<KpiResult> {
   const { startBlock, endBlockExclusive } = await getBlockRange({
     networkId: NetworkId['arbitrum-one'],
     startTimestamp,
     endTimestampExclusive,
   })
 
-  return await fetchTotalGasUsed({
+  const { totalGasUsed: kpi } = await fetchNetworkMetrics({
     networkId: NetworkId['arbitrum-one'],
     users: [address],
     startBlock,
     endBlockExclusive,
   })
+  return { kpi }
 }

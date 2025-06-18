@@ -5,9 +5,9 @@ import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransacti
 import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
 import { KpiRow, ResultDirectory } from '../../src/resultDirectory'
 
-const scoutGameStartTimestamp = new Date('Tue Jun 03 2025 07:00:00 GMT+0000')
+const scoutGameStartTimestamp = new Date('Tue Jun 03 2025 00:00:00 GMT+0000')
 const scoutGameEndTimestampExclusive = new Date(
-  'Fri Jul 02 2025 07:00:00 GMT+0000',
+  'Fri Jul 02 2025 00:00:00 GMT+0000',
 )
 
 const totalRewards = parseEther('180000')
@@ -86,6 +86,28 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     endTimestampExclusive,
   })
 
+  const segmentedKpiPerReferrer: {
+    [referrerId: string]: { [key: string]: bigint }
+  } = {}
+
+  for (const { referrerId, metadata } of kpiData) {
+    if (!metadata) continue
+
+    if (!segmentedKpiPerReferrer[referrerId]) {
+      segmentedKpiPerReferrer[referrerId] = {}
+    }
+
+    for (const [key, value] of Object.entries(metadata)) {
+      segmentedKpiPerReferrer[referrerId][key] =
+        (segmentedKpiPerReferrer[referrerId][key] ?? 0n) + BigInt(value)
+    }
+  }
+
+  const rewardsWithSegmentedKpi = rewards.map((reward) => ({
+    ...reward,
+    ...segmentedKpiPerReferrer[reward.referrerId],
+  }))
+
   console.log(
     'rewards:',
     rewards.map((r) => ({
@@ -102,7 +124,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     endTimestampExclusive,
   })
 
-  resultDirectory.writeRewards(rewards)
+  resultDirectory.writeRewards(rewardsWithSegmentedKpi)
 }
 
 // Only run main if this file is being executed directly

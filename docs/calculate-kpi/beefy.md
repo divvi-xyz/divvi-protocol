@@ -11,7 +11,7 @@
 ### calculateKpi()
 
 ```ts
-function calculateKpi(params): Promise<number>
+function calculateKpi(params): Promise<KpiResult<string>>
 ```
 
 Defined in: [beefy/index.ts:214](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/beefy/index.ts#L214)
@@ -80,6 +80,6 @@ Start of time window for revenue calculation (inclusive)
 
 #### Returns
 
-`Promise`\<`number`\>
+`Promise`\<`KpiResult`\<`string`\>\>
 
 Promise resolving to total vault management fee revenue in USD

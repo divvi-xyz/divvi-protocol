@@ -48,12 +48,24 @@ export interface TokenPriceData {
   priceFetchedAt: number
 }
 
-export type CalculateKpiFn = (params: {
+/**
+ * Represents the result of a KPI computation.
+ *
+ * @template T - The allowed string keys for the metadata.
+ * - `kpi`: overall KPI value.
+ * - `metadata`: an optional map from typed segment keys to their KPI values.
+ */
+export interface KpiResult<T extends string = string> {
+  kpi: number
+  metadata?: Record<T, number>
+}
+
+export type CalculateKpiFn<T extends string = string> = (params: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
   redis?: RedisClientType
-}) => Promise<number>
+}) => Promise<KpiResult<T>>
 
 export interface ReferralEvent {
   userAddress: string

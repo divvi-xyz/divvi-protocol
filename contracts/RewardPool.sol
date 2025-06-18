@@ -1,23 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {AccessControlDefaultAdminRulesUpgradeable} from '@openzeppelin/contracts-upgradeable/access/extensions/AccessControlDefaultAdminRulesUpgradeable.sol';
-import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
+import {ReentrancyGuard} from '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 /**
- * @title Divvi Reward Pool
+ * @title Divvi RewardPool
  * @custom:security-contact security@valora.xyz
  */
-contract RewardPool is
-  Initializable,
-  AccessControlDefaultAdminRulesUpgradeable,
-  UUPSUpgradeable,
-  ReentrancyGuardUpgradeable
-{
+contract RewardPool is AccessControl, ReentrancyGuard {
   using SafeERC20 for IERC20;
 
   // Constants
@@ -25,12 +18,10 @@ contract RewardPool is
     0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   bytes32 public constant MANAGER_ROLE = keccak256('MANAGER_ROLE');
 
-  // Init variables
+  // State variables
   address public poolToken;
   bool public isNativeToken;
   bytes32 public rewardFunctionId;
-
-  // State variables
   uint256 public timelock;
   uint256 public totalPendingRewards;
   mapping(address => uint256) public pendingRewards;
@@ -76,18 +67,16 @@ contract RewardPool is
   error UseDepositFunction();
   error ZeroAddressNotAllowed(uint256 index);
   error RewardAmountMustBeGreaterThanZero(uint256 index);
+  error AlreadyInitialized();
 
-  /// @custom:oz-upgrades-unsafe-allow constructor
-  constructor() {
-    _disableInitializers();
-  }
+  // This is needed to prevent the implementation from being initialized
+  bool private initialized;
 
   /**
    * @dev Initializes the contract
    * @param _poolToken Address of the token used for rewards
    * @param _rewardFunctionId Bytes32 identifier of the reward function (e.g. git commit hash)
    * @param _owner Address that will have DEFAULT_ADMIN_ROLE
-   * @param _changeDefaultAdminDelay The delay between admin change steps
    * @param _manager Address that will have MANAGER_ROLE
    * @param _timelock Timestamp when manager withdrawals will be allowed
    */
@@ -95,14 +84,44 @@ contract RewardPool is
     address _poolToken,
     bytes32 _rewardFunctionId,
     address _owner,
-    uint48 _changeDefaultAdminDelay,
     address _manager,
     uint256 _timelock
-  ) public initializer {
-    __AccessControlDefaultAdminRules_init(_changeDefaultAdminDelay, _owner);
-    __UUPSUpgradeable_init();
-    __ReentrancyGuard_init();
+  ) external {
+    if (initialized) revert AlreadyInitialized();
+    initialized = true;
 
+    _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+    _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+    _grantRole(MANAGER_ROLE, _manager);
+
+    poolToken = _poolToken;
+    isNativeToken = (_poolToken == NATIVE_TOKEN_ADDRESS);
+    rewardFunctionId = _rewardFunctionId;
+
+    _setTimelock(_timelock);
+
+    emit PoolInitialized(_poolToken, _rewardFunctionId, _timelock);
+  }
+
+  /**
+   * @dev Constructor for direct deployment
+   * @param _poolToken Address of the token used for rewards
+   * @param _rewardFunctionId Bytes32 identifier of the reward function (e.g. git commit hash)
+   * @param _owner Address that will have DEFAULT_ADMIN_ROLE
+   * @param _manager Address that will have MANAGER_ROLE
+   * @param _timelock Timestamp when manager withdrawals will be allowed
+   */
+  constructor(
+    address _poolToken,
+    bytes32 _rewardFunctionId,
+    address _owner,
+    address _manager,
+    uint256 _timelock
+  ) {
+    initialized = true;
+
+    _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+    _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
     _grantRole(MANAGER_ROLE, _manager);
 
     poolToken = _poolToken;
@@ -275,13 +294,4 @@ contract RewardPool is
   receive() external payable {
     revert UseDepositFunction();
   }
-
-  /**
-   * @dev Function required to authorize contract upgrades
-   * @param newImplementation Address of the new implementation contract
-   * @notice Allowed only address with DEFAULT_ADMIN_ROLE
-   */
-  function _authorizeUpgrade(
-    address newImplementation
-  ) internal override onlyRole(DEFAULT_ADMIN_ROLE) {} // solhint-disable-line no-empty-blocks
 }

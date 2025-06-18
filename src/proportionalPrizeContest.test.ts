@@ -27,11 +27,13 @@ describe('calculateProportionalPrizeContest', () => {
         referrerId: 'ref1',
         rewardAmount: '500',
         kpi: 300n,
+        referralCount: 2,
       },
       {
         referrerId: 'ref2',
         rewardAmount: '500',
         kpi: 300n,
+        referralCount: 1,
       },
     ])
   })
@@ -51,9 +53,16 @@ describe('calculateProportionalPrizeContest', () => {
     // Only ref2 should get rewards since ref1 has zero KPI
     expect(result).to.deep.equal([
       {
+        referrerId: 'ref1',
+        rewardAmount: '0',
+        kpi: 0n,
+        referralCount: 1,
+      },
+      {
         referrerId: 'ref2',
         rewardAmount: '1000', // All rewards go to ref2
         kpi: 100n,
+        referralCount: 1,
       },
     ])
   })
@@ -86,7 +95,20 @@ describe('calculateProportionalPrizeContest', () => {
       rewards,
     })
 
-    expect(result).to.deep.equal([])
+    expect(result).to.deep.equal([
+      {
+        referrerId: 'ref1',
+        rewardAmount: '0',
+        kpi: 0n,
+        referralCount: 1,
+      },
+      {
+        referrerId: 'ref2',
+        rewardAmount: '0',
+        kpi: 0n,
+        referralCount: 1,
+      },
+    ])
   })
 })
 
@@ -109,11 +131,13 @@ describe('calculateSqrtProportionalPrizeContest', () => {
         referrerId: 'ref1',
         rewardAmount: '200',
         kpi: 1n,
+        referralCount: 1,
       },
       {
         referrerId: 'ref2',
         rewardAmount: '800',
         kpi: 16n,
+        referralCount: 2,
       },
     ])
   })

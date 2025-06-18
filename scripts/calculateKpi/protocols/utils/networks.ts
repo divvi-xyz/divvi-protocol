@@ -3,7 +3,7 @@ import { NetworkId } from '../../../types'
 import { getHyperSyncClient } from '../../../utils'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 
-export async function fetchTotalGasUsed({
+export async function fetchNetworkMetrics({
   networkId,
   users,
   startBlock,
@@ -13,8 +13,9 @@ export async function fetchTotalGasUsed({
   users: string[]
   startBlock?: number // inclusive
   endBlockExclusive?: number
-}): Promise<number> {
+}): Promise<{ totalGasUsed: number; totalTransactions: number }> {
   let totalGasUsed = 0
+  let totalTransactions = 0
 
   const client = getHyperSyncClient(networkId)
 
@@ -31,38 +32,8 @@ export async function fetchTotalGasUsed({
     for (const tx of response.data.transactions) {
       totalGasUsed += Number(tx.gasUsed ?? 0)
     }
-  })
-
-  return totalGasUsed
-}
-
-export async function fetchTotalTransactions({
-  networkId,
-  users,
-  startBlock,
-  endBlockExclusive,
-}: {
-  networkId: NetworkId
-  users: string[]
-  startBlock?: number // inclusive
-  endBlockExclusive?: number
-}): Promise<number> {
-  let totalTransactions = 0
-
-  const client = getHyperSyncClient(networkId)
-
-  const query = {
-    transactions: [{ from: users }],
-    fieldSelection: {
-      transaction: [TransactionField.Hash],
-    },
-    fromBlock: startBlock ?? 0,
-    ...(endBlockExclusive && { toBlock: endBlockExclusive }),
-  }
-
-  await paginateQuery(client, query, async (response) => {
     totalTransactions += response.data.transactions.length
   })
 
-  return totalTransactions
+  return { totalGasUsed, totalTransactions }
 }

@@ -9,6 +9,7 @@ import yargs from 'yargs'
 import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
 import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV0'
+import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
 
 interface Campaign {
   protocol: Protocol
@@ -24,23 +25,6 @@ interface Campaign {
 }
 
 const campaigns: Campaign[] = [
-  {
-    protocol: 'celo-transactions',
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-05-08T00:00:00Z',
-        endTimestampExclusive: '2025-05-16T00:00:00Z',
-      },
-      {
-        startTimestamp: '2025-05-16T00:00:00Z',
-        endTimestampExclusive: '2025-05-23T00:00:00Z',
-      },
-      {
-        startTimestamp: '2025-05-23T00:00:00Z',
-        endTimestampExclusive: '2025-05-29T07:00:00Z',
-      },
-    ],
-  },
   {
     protocol: 'celo-pg',
     rewardsPeriods: [
@@ -177,6 +161,55 @@ const campaigns: Campaign[] = [
       },
     ],
   },
+  {
+    protocol: 'lisk-v0',
+    rewardsPeriods: [
+      {
+        startTimestamp: '2025-06-05T00:00:00Z',
+        endTimestampExclusive: '2025-07-01T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardsLiskV0({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            proportionLinear: 1,
+            excludelist: [],
+            failOnExclude: false,
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-07-01T00:00:00Z',
+        endTimestampExclusive: '2025-08-01T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardsLiskV0({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            proportionLinear: 1,
+            excludelist: [],
+            failOnExclude: false,
+          })
+        },
+      },
+    ],
+  },
 ]
 
 async function getArgs() {
@@ -194,6 +227,11 @@ async function getArgs() {
       type: 'string',
       default: new Date().toISOString(),
     })
+    .option('protocol', {
+      description:
+        'Protocol to calculate KPIs for, e.g. celo-pg, scout-game-v0, lisk-v0',
+      type: 'string',
+    })
     .option('redis-connection', {
       type: 'string',
       description:
@@ -204,12 +242,24 @@ async function getArgs() {
     dryRun: argv['dry-run'],
     calculationTimestamp: argv['calculation-timestamp'],
     redisConnection: argv['redis-connection'],
+    protocol: argv['protocol'],
   }
 }
 
 async function uploadCurrentPeriodKpis(
   args: Awaited<ReturnType<typeof getArgs>>,
 ) {
+  // If a protocol is specified, only calculate KPIs for that campaign
+  const campaignsToCalculate = args.protocol
+    ? campaigns.filter((campaign) => campaign.protocol === args.protocol)
+    : campaigns
+
+  if (campaignsToCalculate.length === 0) {
+    throw new Error(
+      `No campaigns found for protocol ${args.protocol}. Please ensure the protocol is correct and has campaign information defined in the script.`,
+    )
+  }
+
   // This script will calculate rewards ending at the start of the current hour
   const startOfCalculationHour = new Date(args.calculationTimestamp).setMinutes(
     0,
@@ -218,10 +268,14 @@ async function uploadCurrentPeriodKpis(
   )
   const endTimestampExclusive = new Date(startOfCalculationHour).toISOString()
 
-  const uploadFilePaths: string[] = []
+  console.log(
+    `📣 Calculating KPIs for protocol(s) ${campaignsToCalculate
+      .map((campaign) => campaign.protocol)
+      .join(', ')}`,
+  )
 
   // Due to the DefiLlama API rate limit, there is no point in parallelising the calculations across campaigns
-  for (const campaign of campaigns) {
+  for (const campaign of campaignsToCalculate) {
     const campaignStartTimestamp = Date.parse(
       campaign.rewardsPeriods[0].startTimestamp,
     )
@@ -253,6 +307,10 @@ async function uploadCurrentPeriodKpis(
       )
     }
 
+    console.log(
+      `🧮 Calculating KPIs for campaign ${campaign.protocol}, from ${currentPeriod.startTimestamp} to ${endTimestampExclusive} (exclusive)`,
+    )
+
     const datadir = 'kpi'
 
     const outputDir = join(
@@ -282,7 +340,7 @@ async function uploadCurrentPeriodKpis(
       redisConnection: args.redisConnection,
     })
     console.log(
-      `Fetched referrals for campaign ${campaign.protocol} in ${Date.now() - fetchReferralsStartTime}ms`,
+      `👍🏻 Fetched referrals for campaign ${campaign.protocol} in ${Date.now() - fetchReferralsStartTime}ms`,
     )
 
     const calculateKpiStartTime = Date.now()
@@ -294,13 +352,13 @@ async function uploadCurrentPeriodKpis(
       redisConnection: args.redisConnection,
     })
     console.log(
-      `Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,
+      `🍾 Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,
     )
 
     // These are the output files calculateKpi writes with ResultDirectory
     const outputFilePathCsv = join(outputDir, 'kpi.csv')
     const outputFilePathJson = join(outputDir, 'kpi.json')
-    uploadFilePaths.push(outputFilePathCsv, outputFilePathJson)
+    const campaignFilePaths = [outputFilePathCsv, outputFilePathJson]
 
     if (currentPeriod.calculateRewards) {
       await currentPeriod.calculateRewards({
@@ -310,17 +368,19 @@ async function uploadCurrentPeriodKpis(
       })
       const rewardsFilePathCsv = join(outputDir, 'rewards.csv')
       const rewardsFilePathJson = join(outputDir, 'rewards.json')
-      uploadFilePaths.push(rewardsFilePathCsv, rewardsFilePathJson)
+      campaignFilePaths.push(rewardsFilePathCsv, rewardsFilePathJson)
     }
+
+    const validPaths = campaignFilePaths.filter((path) => path !== null)
+    await uploadFilesToGCS(
+      validPaths,
+      'divvi-campaign-data-production',
+      args.dryRun,
+    )
+    console.log(`🎉 Uploaded files for campaign ${campaign.protocol}`)
   }
 
-  const validPaths = uploadFilePaths.filter((path) => path !== null)
-
-  await uploadFilesToGCS(
-    validPaths,
-    'divvi-campaign-data-production',
-    args.dryRun,
-  )
+  console.log('🥳 All campaigns have been processed')
 }
 
 // Only run if this file is being run directly

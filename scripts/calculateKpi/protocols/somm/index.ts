@@ -7,6 +7,7 @@ import {
   calculateWeightedAveragePrice,
   getDailySnapshots,
 } from './dailySnapshots'
+import { KpiResult } from '../../../types'
 
 const REWARDS_PERCENTAGE = 0.1 // 10%
 export const ONE_YEAR = 365 * 24 * 60 * 60 * 1000
@@ -221,7 +222,7 @@ export async function calculateKpi({
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<number> {
+}): Promise<KpiResult> {
   if (!isAddress(address)) {
     throw new Error('Invalid address')
   }
@@ -239,5 +240,5 @@ export async function calculateKpi({
     })
     totalRevenue += vaultRevenue
   }
-  return totalRevenue * REWARDS_PERCENTAGE
+  return { kpi: totalRevenue * REWARDS_PERCENTAGE }
 }

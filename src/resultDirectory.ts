@@ -9,6 +9,7 @@ export interface KpiRow {
   referrerId: string
   userAddress: string
   kpi: string
+  metadata?: { [key: string]: number }
 }
 
 interface ReferralRow {
@@ -72,6 +73,10 @@ export class ResultDirectory {
     })
   }
 
+  async _readJson(filePath: string) {
+    return JSON.parse(await readFile(`${filePath}.json`, 'utf-8'))
+  }
+
   async _writeJson(filePath: string, data: any[]) {
     const stringifiedData = JSON.stringify(data, (_, value) =>
       typeof value === 'bigint' ? value.toString() : value,
@@ -98,7 +103,7 @@ export class ResultDirectory {
   }
 
   async readKpi() {
-    return (await this._readCsv(this.kpiFileSuffix)) as KpiRow[]
+    return (await this._readJson(this.kpiFileSuffix)) as KpiRow[]
   }
 
   async readReferrals() {
