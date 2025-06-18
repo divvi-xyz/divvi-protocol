@@ -173,6 +173,17 @@ yarn hardhat divvi-registry:upgrade \
     --proxy-address <PROXY_ADDRESS>
 ```
 
+To upgrade the staging DivviRegistry, you need to specify the approval process ID:
+
+```bash
+yarn hardhat divvi-registry:upgrade \
+    --network op \
+    --use-defender \
+    --defender-deploy-salt <SALT> \
+    --defender-upgrade-approval-process-id f1d0a27d-c2f1-4f87-b36c-d3c308283702 \
+    --proxy-address 0x2f5E320698dB89CbefB810Fa19264103d99aAFB1
+```
+
 ### Metadata of upgradable contracts
 
 Metadata about proxy and implementation deployments is automatically generated and stored in the `.openzeppelin/` directory, which should be checked into version control.
