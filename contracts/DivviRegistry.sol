@@ -30,7 +30,50 @@ contract DivviRegistry is
     address rewardsProvider;
     address rewardsConsumer;
     bytes32 txHash;
-    string chainId;
+    string chainId; // CAIP-2 format
+  }
+
+  enum OffchainMessageType {
+    NONE, // For on-chain referrals
+    ETH_SIGNED_MESSAGE // Standard Ethereum signed message format
+    // EIP_712 // TODO: EIP-712 typed data (not yet implemented)
+  }
+
+  /**
+   * @notice On-chain transaction data for referral verification
+   * @dev Encapsulates transaction-related data for on-chain referrals
+   */
+  struct OnchainTxData {
+    bytes32 txHash;
+    string chainId; // CAIP-2 format
+  }
+
+  /**
+   * @notice Off-chain message data for referral verification
+   * @dev Encapsulates all signature-related data for better type safety and extensibility
+   */
+  struct OffchainMessageData {
+    OffchainMessageType messageType;
+    bytes message;
+    bytes signature;
+    string chainId; // CAIP-2 format (mostly for EIP-1271 external signature verification)
+  }
+
+  /**
+   * @notice Referral data structure supporting both on-chain and off-chain referrals
+   * @dev Two types of referrals:
+   * 1. On-chain referrals:
+   *    - onchainTx: Contains transaction hash and chain ID
+   *    - offchainMessage.messageType: NONE
+   * 2. Off-chain referrals:
+   *    - offchainMessage: Contains message, signature, and message type
+   */
+  struct ReferralDataV2 {
+    address user;
+    address rewardsProvider;
+    address rewardsConsumer;
+    OnchainTxData onchainTx; // For on-chain referrals
+    OffchainMessageData offchainMessage; // For off-chain referrals
   }
 
   enum ReferralStatus {
@@ -76,14 +119,14 @@ contract DivviRegistry is
     address indexed user,
     address indexed rewardsProvider,
     address indexed rewardsConsumer,
-    string chainId,
+    string chainId, // CAIP-2 format
     bytes32 txHash
   );
   event ReferralSkipped(
     address indexed user,
     address indexed rewardsProvider,
     address indexed rewardsConsumer,
-    string chainId,
+    string chainId, // CAIP-2 format
     bytes32 txHash,
     ReferralStatus status
   );
@@ -245,8 +288,62 @@ contract DivviRegistry is
   }
 
   /**
+   * @notice Register multiple referrals in a single transaction with support for both on-chain and off-chain referrals
+   * @dev Requires REFERRAL_REGISTRAR_ROLE.
+   * For off-chain referrals, the contract trusts that the caller (with REFERRAL_REGISTRAR_ROLE)
+   * has already verified the signature and content of `offchainMessage` to ensure it represents a valid referral intent.
+   * The signed message data is stored on-chain for auditability but not verified on-chain.
+   * @param referrals Array of referral data to register
+   */
+  function batchRegisterReferral(
+    ReferralDataV2[] calldata referrals
+  ) external onlyRole(REFERRAL_REGISTRAR_ROLE) {
+    for (uint256 i = 0; i < referrals.length; i++) {
+      ReferralDataV2 calldata referral = referrals[i];
+
+      bool isOffchainReferral = referral.offchainMessage.messageType !=
+        OffchainMessageType.NONE;
+
+      // Set event values based on referral type
+      string memory eventChainId = isOffchainReferral
+        ? referral.offchainMessage.chainId
+        : referral.onchainTx.chainId;
+      bytes32 eventTxHash = isOffchainReferral
+        ? bytes32(0)
+        : referral.onchainTx.txHash;
+
+      // Process the referral
+      ReferralStatus status = _registerReferral(
+        referral.user,
+        referral.rewardsProvider,
+        referral.rewardsConsumer
+      );
+
+      // Emit appropriate event based on status
+      if (status == ReferralStatus.SUCCESS) {
+        emit ReferralRegistered(
+          referral.user,
+          referral.rewardsProvider,
+          referral.rewardsConsumer,
+          eventChainId,
+          eventTxHash
+        );
+      } else {
+        emit ReferralSkipped(
+          referral.user,
+          referral.rewardsProvider,
+          referral.rewardsConsumer,
+          eventChainId,
+          eventTxHash,
+          status
+        );
+      }
+    }
+  }
+
+  /**
    * @notice Register a user as being referred to a rewards agreement
-   * @dev Internal function that returns status instead of emitting events
+   * @dev Internal function that returns status instead of emitting events.
    * @param user The address of the user being referred
    * @param rewardsProvider The address of the rewards provider entity
    * @param rewardsConsumer The address of the rewards consumer entity
