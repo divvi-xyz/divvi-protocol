@@ -21,7 +21,8 @@ The DivviRegistry contract is upgradable. Both staging and production contracts 
 
 ### Production
 
-Proxy address:[0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277](https://optimistic.etherscan.io/address/0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277)
+Proxy address: [0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277](https://optimistic.etherscan.io/address/0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277)
+
 Owner address: [0xfC95675a6bB93406C0CbBa9403a084Dd8D566F06](https://app.safe.global/home?safe=oeth:0xfC95675a6bB93406C0CbBa9403a084Dd8D566F06)
 
 ## Staging
