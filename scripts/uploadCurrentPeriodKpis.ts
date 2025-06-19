@@ -286,7 +286,7 @@ async function uploadCurrentPeriodKpis(
 
     if (
       campaignStartTimestamp > startOfCalculationHour ||
-      campaignEndTimestampExclusive <= startOfCalculationHour
+      campaignEndTimestampExclusive < startOfCalculationHour
     ) {
       console.log(`Campaign ${campaign.protocol} is not active, skipping`)
       continue
@@ -364,7 +364,7 @@ async function uploadCurrentPeriodKpis(
       await currentPeriod.calculateRewards({
         resultDirectory,
         startTimestamp: currentPeriod.startTimestamp,
-        endTimestampExclusive,
+        endTimestampExclusive: currentPeriod.endTimestampExclusive,
       })
       const rewardsFilePathCsv = join(outputDir, 'rewards.csv')
       const rewardsFilePathJson = join(outputDir, 'rewards.json')
