@@ -294,7 +294,7 @@
             "label": "_entities",
             "offset": 0,
             "slot": "0",
-            "type": "t_mapping(t_address,t_struct(EntityData)9123_storage)",
+            "type": "t_mapping(t_address,t_struct(EntityData)6271_storage)",
             "contract": "DivviRegistry",
             "src": "contracts/DivviRegistry.sol:44"
           },
@@ -434,7 +434,7 @@
             "label": "uint64",
             "numberOfBytes": "8"
           },
-          "t_mapping(t_address,t_struct(EntityData)9123_storage)": {
+          "t_mapping(t_address,t_struct(EntityData)6271_storage)": {
             "label": "mapping(address => struct DivviRegistry.EntityData)",
             "numberOfBytes": "32"
           },
@@ -446,7 +446,7 @@
             "label": "mapping(bytes32 => bool)",
             "numberOfBytes": "32"
           },
-          "t_struct(EntityData)9123_storage": {
+          "t_struct(EntityData)6271_storage": {
             "label": "struct DivviRegistry.EntityData",
             "members": [
               {

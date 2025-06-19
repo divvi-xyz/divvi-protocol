@@ -170,10 +170,11 @@ yarn hardhat divvi-registry:upgrade \
     --network op \
     --use-defender \
     --defender-deploy-salt <SALT> \
-    --proxy-address <PROXY_ADDRESS>
+    --defender-upgrade-approval-process-id 8bc61a25-72ed-41df-8370-7aa94526f1cb \
+    --proxy-address 0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277
 ```
 
-To upgrade the staging DivviRegistry, you need to specify the approval process ID:
+To upgrade the staging DivviRegistry, run:
 
 ```bash
 yarn hardhat divvi-registry:upgrade \
