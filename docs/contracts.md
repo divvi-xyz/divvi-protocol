@@ -42,3 +42,11 @@ List of staging contracts:
 | Network | Reward Token  | Proxy address                                                                                                          | Multisig Address (has both Owner and Manager roles)                                                                                    |
 | ------- | ------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Celo    | CELO (native) | [`0xecd6580636d0c7c93f60892daabd96af3a17e37b`](https://celoscan.io/address/0xecd6580636d0c7c93f60892daabd96af3a17e37b) | [`0x215bde0ec16d1358139f624d522361c431413754`](https://app.safe.global/home?safe=celo:celo:0x215bde0ec16d1358139f624d522361c431413754) |
+
+## RewardPoolFactory Contract
+
+The RewardPoolFactory contract is upgradeable; it is currently deployed on the following networks.
+
+| Network | Proxy address                                                                                                           | Multisig Address (has Owner role)                                                                                                            |
+| ------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base    | [`0xBF90d4BCbb74a5a58D6F8A31649D379E185F927C`](https://basescan.org/address/0xBF90d4BCbb74a5a58D6F8A31649D379E185F927C) | [`0xfC95675a6bB93406C0CbBa9403a084Dd8D566F06`](https://app.safe.global/transactions/tx?safe=base:0xfC95675a6bB93406C0CbBa9403a084Dd8D566F06) |
