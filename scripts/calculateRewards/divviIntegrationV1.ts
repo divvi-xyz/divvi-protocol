@@ -18,6 +18,7 @@ import { divviRegistryAbi } from '../../abis/DivviRegistry'
 import { rewardPoolAbi } from '../../abis/RewardPool'
 import { privateKeyToAccount } from 'viem/accounts'
 import { base } from 'viem/chains'
+import axios from 'axios'
 
 const DIVVI_REGISTRY_CONTRACT_ADDRESS =
   '0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'
@@ -71,6 +72,14 @@ const IDEMPOTENT_REWARD_POOL_ABI = [
   },
 ] as const
 
+const ALLOWLIST_URL =
+  'https://raw.githubusercontent.com/divvi-xyz/integration-list/main/src/integration-list.json'
+
+interface AllowlistedConsumer {
+  entityAddress: Address
+  githubUsername: string
+}
+
 async function getArgs() {
   const argv = await yargs
     .env('')
@@ -83,12 +92,26 @@ async function getArgs() {
       description: 'private key to use for the transaction',
       type: 'string',
       demandOption: true,
+    })
+    .option('use-allow-list', {
+      description: 'Use the allow list to filter consumers',
+      type: 'boolean',
+      default: false,
     }).argv
 
   return {
     dryRun: argv['dry-run'],
     privateKey: argv['private-key'] as Hex,
+    useAllowList: argv['use-allow-list'],
   }
+}
+
+async function getAllowListedConsumers() {
+  const response = await axios.get(ALLOWLIST_URL)
+  const data = response.data
+  return new Set(
+    data.map((consumer: AllowlistedConsumer) => consumer.entityAddress),
+  )
 }
 
 async function getReferralConsumers() {
@@ -166,6 +189,11 @@ async function getReferralConsumersThatReceivedRewards() {
 async function main() {
   const args = await getArgs()
 
+  const allowListedConsumers = args.useAllowList
+    ? await getAllowListedConsumers()
+    : new Set<Address>()
+  console.log('allowListedConsumers', allowListedConsumers)
+
   const referralConsumers = await getReferralConsumers()
   console.log('referralConsumers', referralConsumers)
 
@@ -177,7 +205,12 @@ async function main() {
   )
 
   const referralConsumersThatNeedRewards = [...referralConsumers].filter(
-    (consumer) => !referralConsumersThatReceivedRewards.has(consumer),
+    (consumer) => {
+      if (args.useAllowList && !allowListedConsumers.has(consumer)) {
+        return false
+      }
+      return !referralConsumersThatReceivedRewards.has(consumer)
+    },
   )
   console.log(
     'referralConsumersThatNeedRewards',
