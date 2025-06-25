@@ -4,7 +4,7 @@ import { readFileSync } from 'fs'
 import { parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import filterExcludedReferrerIds from '../utils/filterExcludedReferralIds'
+import { filterExcludedReferrerIds } from '../utils/filterReferrerIds'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { getReferrerMetricsFromKpi } from './getReferrerMetricsFromKpi'
 

@@ -46,8 +46,7 @@ const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '25000',
             proportionLinear: 0.8,
-            excludelist: [],
-            failOnExclude: false,
+            builderAllowListFile: undefined,
           })
         },
       },
@@ -69,8 +68,7 @@ const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '50000',
             proportionLinear: 0.8,
-            excludelist: [],
-            failOnExclude: false,
+            builderAllowListFile: undefined,
           })
         },
       },
@@ -334,7 +332,6 @@ async function uploadCurrentPeriodKpis(
       startTimestamp: currentPeriod.startTimestamp,
       endTimestampExclusive,
       outputDir,
-      builderAllowList: undefined, // TODO: not really sure how to get an up to date builder allowlist for CI...
       useStaging: false,
       protocolFilter: protocolFilters[campaign.protocol],
       redisConnection: args.redisConnection,

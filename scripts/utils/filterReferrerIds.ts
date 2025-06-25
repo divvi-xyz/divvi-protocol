@@ -1,6 +1,4 @@
-export default function filterExcludedReferrerIds<
-  T extends { referrerId: string },
->({
+export function filterExcludedReferrerIds<T extends { referrerId: string }>({
   data,
   excludeList,
   failOnExclude,
@@ -30,6 +28,27 @@ export default function filterExcludedReferrerIds<
       `ReferrerId ${referrerId} with ${count} entries is in the exclude list`,
     )
   }
+
+  return filteredData
+}
+
+export function filterIncludedReferrerIds<T extends { referrerId: string }>({
+  data,
+  allowList,
+}: {
+  data: T[]
+  allowList?: string[]
+}) {
+  // If no allowList is provided, return all data
+  if (!allowList) {
+    return data
+  }
+
+  const allowSet = new Set(allowList.map((id) => id.toLowerCase()))
+
+  const filteredData = data.filter(({ referrerId }) => {
+    return allowSet.has(referrerId.toLowerCase())
+  })
 
   return filteredData
 }
