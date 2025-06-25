@@ -24,24 +24,60 @@ const DIVVI_REGISTRY_CONTRACT_ADDRESS =
 const DIVVI_INTEGRATION_REWARDS_ENTITY =
   '0xf4cfa55b561b089cca3114f0d8ad1ae0d8b2c0ee'
 
-// RewardPool was deployed on base:
-//  https://basescan.org/tx/0xd295cdc3a680cf197c478d7cc49c0fb375f6019c0befe685040fa0a4a1be6a50
-// but this is the earliest block number on Optimism that we'd expect ReferralRegistered
-// events to be emitted.
-const APPROXIMATE_DIVVI_REWARD_POOL_DEPLOY_BLOCK = 137569508
-const DIVVI_REWARD_POOL_ADDRESS = '0xEd5527Cac28C4CEe3dab472b1f9F80D30Cf0D277'
+// This is when we registered the rewards entity:
+//   https://optimistic.etherscan.io/tx/0x831e09593105967387657dcfa3528d33a7c3242036ce1bd33358e26a149b9c8b
+const APPROXIMATE_DIVVI_REWARD_POOL_DEPLOY_BLOCK = 137599785
+const DIVVI_REWARD_POOL_ADDRESS = '0xf4fB5Ff2baf6B33dbd92659a88c6EE927B2C88A0'
 
 // TODO(sbw): hardcoded for 10 EURC for now. We should look at the RewardPool,
 // look at the reward token, and get the correct decimals.
 const DIVVI_REWARD_AMOUNT = parseUnits('10', 6)
 
+const IDEMPOTENT_REWARD_POOL_ABI = [
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'address',
+            name: 'user',
+            type: 'address',
+          },
+          {
+            internalType: 'uint256',
+            name: 'amount',
+            type: 'uint256',
+          },
+          {
+            internalType: 'bytes32',
+            name: 'idempotencyKey',
+            type: 'bytes32',
+          },
+        ],
+        internalType: 'struct IdempotentRewardPool.RewardData[]',
+        name: 'rewards',
+        type: 'tuple[]',
+      },
+      {
+        internalType: 'uint256[]',
+        name: 'rewardFunctionArgs',
+        type: 'uint256[]',
+      },
+    ],
+    name: 'addRewards',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+] as const
+
 async function getArgs() {
   const argv = await yargs
     .env('')
-    .option('write', {
-      description: 'Submit a transaction to add rewards',
+    .option('dry-run', {
+      description: 'Simulate the transaction to add rewards',
       type: 'boolean',
-      default: false,
+      default: true,
     })
     .option('private-key', {
       description: 'private key to use for the transaction',
@@ -50,7 +86,7 @@ async function getArgs() {
     }).argv
 
   return {
-    write: argv['write'],
+    dryRun: argv['dry-run'],
     privateKey: argv['private-key'] as Hex,
   }
 }
@@ -99,6 +135,7 @@ async function getReferralConsumersThatReceivedRewards() {
 
   const client = getHyperSyncClient(NetworkId['op-mainnet'])
 
+  // TODO(sbw): should probably update this to use the new RewardPool ABI.
   const ADD_REWARD_TOPIC = encodeEventTopics({
     abi: rewardPoolAbi,
     eventName: 'AddReward',
@@ -147,14 +184,10 @@ async function main() {
     referralConsumersThatNeedRewards,
   )
 
-  const rewardAmounts = new Array(referralConsumersThatNeedRewards.length).fill(
-    DIVVI_REWARD_AMOUNT,
-  )
-
   const privateKey = args.privateKey
   const account = privateKeyToAccount(privateKey)
 
-  if (args.write) {
+  if (!args.dryRun) {
     const walletClient = createWalletClient({
       account,
       chain: base,
@@ -162,9 +195,16 @@ async function main() {
     })
     const txHash = await walletClient.writeContract({
       address: DIVVI_REWARD_POOL_ADDRESS,
-      abi: rewardPoolAbi,
+      abi: IDEMPOTENT_REWARD_POOL_ABI,
       functionName: 'addRewards',
-      args: [referralConsumersThatNeedRewards, rewardAmounts, [0n]],
+      args: [
+        referralConsumersThatNeedRewards.map((consumer) => ({
+          user: consumer,
+          amount: DIVVI_REWARD_AMOUNT,
+          idempotencyKey: pad(consumer, { size: 32 }),
+        })),
+        [],
+      ],
     })
     console.log('writeContract successful', txHash)
   } else {
@@ -175,9 +215,16 @@ async function main() {
     await publicClient.simulateContract({
       address: DIVVI_REWARD_POOL_ADDRESS,
       account,
-      abi: rewardPoolAbi,
+      abi: IDEMPOTENT_REWARD_POOL_ABI,
       functionName: 'addRewards',
-      args: [referralConsumersThatNeedRewards, rewardAmounts, [0n]],
+      args: [
+        referralConsumersThatNeedRewards.map((consumer) => ({
+          user: consumer,
+          amount: DIVVI_REWARD_AMOUNT,
+          idempotencyKey: pad(consumer, { size: 32 }),
+        })),
+        [],
+      ],
     })
     console.log('simulateContract successful')
   }
