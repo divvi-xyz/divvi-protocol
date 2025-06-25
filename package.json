@@ -26,7 +26,8 @@
     "example": "ts-node ./scripts/example.ts",
     "knip": "knip",
     "compile": "hardhat compile",
-    "docs": "typedoc"
+    "docs": "typedoc",
+    "dget": "ts-node ./scripts/dget.ts"
   },
   "devDependencies": {
     "@bgd-labs/aave-address-book": "^4.18.0",
