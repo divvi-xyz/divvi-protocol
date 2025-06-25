@@ -186,6 +186,10 @@ async function main() {
 
   const privateKey = args.privateKey
   const account = privateKeyToAccount(privateKey)
+  const publicClient = createPublicClient({
+    chain: base,
+    transport: http(),
+  })
 
   if (!args.dryRun) {
     const walletClient = createWalletClient({
@@ -207,11 +211,9 @@ async function main() {
       ],
     })
     console.log('writeContract successful', txHash)
+    await publicClient.waitForTransactionReceipt({ hash: txHash })
+    console.log('transaction confirmed')
   } else {
-    const publicClient = createPublicClient({
-      chain: base,
-      transport: http(),
-    })
     await publicClient.simulateContract({
       address: DIVVI_REWARD_POOL_ADDRESS,
       account,
