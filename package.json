@@ -34,6 +34,7 @@
     "@envio-dev/hypersync-client": "^0.6.3",
     "@github/memoize": "^1.1.5",
     "@google-cloud/storage": "^7.16.0",
+    "@jest/globals": "^30.0.3",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
     "@nomicfoundation/hardhat-ignition": "^0.15.10",
