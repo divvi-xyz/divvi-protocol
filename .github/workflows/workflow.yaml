@@ -130,7 +130,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - run: yarn
       - name: Deploy rewardDivviEthCc2025IntegrationV1
-        run:
+        run: |
           yarn deploy:production:internal-single rewardDivviEthCc2025IntegrationV1 \
-          --env-vars-file=cloud-functions/endpoints/rewardDivviEthCc2025IntegrationV1/config-production.yaml \
-          --set-secrets REWARD_POOL_OWNER_PRIVATE_KEY=ETHCC2025_REWARD_POOL_OWNER_PRIVATE_KEY:latest
+            --env-vars-file=cloud-functions/endpoints/rewardDivviEthCc2025IntegrationV1/config-production.yaml \
+            --set-secrets REWARD_POOL_OWNER_PRIVATE_KEY=ETHCC2025_REWARD_POOL_OWNER_PRIVATE_KEY:latest
