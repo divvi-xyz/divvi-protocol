@@ -80,6 +80,12 @@ interface AllowlistedConsumer {
   githubUsername: string
 }
 
+export interface DivviRewardsConfig {
+  dryRun: boolean
+  privateKey: Hex
+  useAllowList: boolean
+}
+
 async function getArgs() {
   const argv = await yargs
     .env('')
@@ -186,10 +192,9 @@ async function getReferralConsumersThatReceivedRewards() {
 
   return referralConsumersRewards
 }
-async function main() {
-  const args = await getArgs()
 
-  const allowListedConsumers = args.useAllowList
+export async function runDivviRewards(config: DivviRewardsConfig) {
+  const allowListedConsumers = config.useAllowList
     ? await getAllowListedConsumers()
     : new Set<Address>()
   console.log('allowListedConsumers', allowListedConsumers)
@@ -206,7 +211,7 @@ async function main() {
 
   const referralConsumersThatNeedRewards = [...referralConsumers].filter(
     (consumer) => {
-      if (args.useAllowList && !allowListedConsumers.has(consumer)) {
+      if (config.useAllowList && !allowListedConsumers.has(consumer)) {
         return false
       }
       return !referralConsumersThatReceivedRewards.has(consumer)
@@ -217,14 +222,14 @@ async function main() {
     referralConsumersThatNeedRewards,
   )
 
-  const privateKey = args.privateKey
+  const privateKey = config.privateKey
   const account = privateKeyToAccount(privateKey)
   const publicClient = createPublicClient({
     chain: base,
     transport: http(),
   })
 
-  if (!args.dryRun) {
+  if (!config.dryRun) {
     const walletClient = createWalletClient({
       account,
       chain: base,
@@ -265,7 +270,15 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error)
-  process.exitCode = 1
-})
+async function main() {
+  const args = await getArgs()
+  await runDivviRewards(args)
+}
+
+// Only run main() if this is being executed as a CLI script (not imported)
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error)
+    process.exitCode = 1
+  })
+}

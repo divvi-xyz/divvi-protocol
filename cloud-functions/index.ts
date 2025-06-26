@@ -1,5 +1,6 @@
-import { helloEndpoint } from './endpoints/rewardEthCc2025IntegrationV1'
+import { rewardDivviEthCc2025IntegrationV1Endpoint } from './endpoints/rewardDivviEthCc2025IntegrationV1'
 
 export = {
-  [helloEndpoint.name]: helloEndpoint.handler,
+  [rewardDivviEthCc2025IntegrationV1Endpoint.name]:
+    rewardDivviEthCc2025IntegrationV1Endpoint.handler,
 }
