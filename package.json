@@ -40,7 +40,7 @@
     "deploy:staging:internal-single": "yarn deploy:staging:base --concurrency=1 --max-instances=1 --ingress-settings=internal-only"
   },
   "dependencies": {
-    "@envio-dev/hypersync-client": "^0.6.3",
+    "@envio-dev/hypersync-client": "^0.6.5",
     "@github/memoize": "^1.1.5",
     "@redis/client": "^5.5.6",
     "@valora/http-handler": "^0.0.1",
