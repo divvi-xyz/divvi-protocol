@@ -11,6 +11,7 @@ import './tasks/rewardPool'
 import './tasks/mockToken'
 import './tasks/divviRegistry'
 import './tasks/rewardPoolFactory'
+import './tasks/entityVerification'
 
 dotenv.config()
 
@@ -21,7 +22,16 @@ const accounts: HDAccountsUserConfig = {
 }
 
 const config: HardhatUserConfig = {
-  solidity: '0.8.24',
+  solidity: {
+    compilers: [
+      {
+        version: '0.8.24',
+      },
+      {
+        version: '0.8.28',
+      },
+    ],
+  },
   defender: {
     apiKey: process.env.DEFENDER_API_KEY!,
     apiSecret: process.env.DEFENDER_API_SECRET!,
