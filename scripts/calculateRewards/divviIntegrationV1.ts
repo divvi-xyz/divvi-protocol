@@ -84,6 +84,7 @@ export interface DivviRewardsConfig {
   dryRun: boolean
   privateKey: Hex
   useAllowList: boolean
+  forceAddress?: Address
 }
 
 async function getArgs() {
@@ -99,6 +100,11 @@ async function getArgs() {
       type: 'string',
       demandOption: true,
     })
+    .option('force-address', {
+      description: 'Force the address to add rewards to',
+      type: 'string',
+      demandOption: false,
+    })
     .option('use-allow-list', {
       description: 'Use the allow list to filter consumers',
       type: 'boolean',
@@ -109,6 +115,7 @@ async function getArgs() {
     dryRun: argv['dry-run'],
     privateKey: argv['private-key'] as Hex,
     useAllowList: argv['use-allow-list'],
+    forceAddress: argv['force-address'] as Address | undefined,
   }
 }
 
@@ -194,29 +201,36 @@ async function getReferralConsumersThatReceivedRewards() {
 }
 
 export async function runDivviRewards(config: DivviRewardsConfig) {
-  const allowListedConsumers = config.useAllowList
-    ? await getAllowListedConsumers()
-    : new Set<Address>()
-  console.log('allowListedConsumers', allowListedConsumers)
+  let referralConsumersThatNeedRewards: Address[] = []
+  if (config.forceAddress) {
+    referralConsumersThatNeedRewards = [
+      config.forceAddress.toLowerCase() as Address,
+    ]
+  } else {
+    const allowListedConsumers = config.useAllowList
+      ? await getAllowListedConsumers()
+      : new Set<Address>()
+    console.log('allowListedConsumers', allowListedConsumers)
 
-  const referralConsumers = await getReferralConsumers()
-  console.log('referralConsumers', referralConsumers)
+    const referralConsumers = await getReferralConsumers()
+    console.log('referralConsumers', referralConsumers)
 
-  const referralConsumersThatReceivedRewards =
-    await getReferralConsumersThatReceivedRewards()
-  console.log(
-    'referralConsumersThatReceivedRewards',
-    referralConsumersThatReceivedRewards,
-  )
+    const referralConsumersThatReceivedRewards =
+      await getReferralConsumersThatReceivedRewards()
+    console.log(
+      'referralConsumersThatReceivedRewards',
+      referralConsumersThatReceivedRewards,
+    )
 
-  const referralConsumersThatNeedRewards = [...referralConsumers].filter(
-    (consumer) => {
-      if (config.useAllowList && !allowListedConsumers.has(consumer)) {
-        return false
-      }
-      return !referralConsumersThatReceivedRewards.has(consumer)
-    },
-  )
+    referralConsumersThatNeedRewards = [...referralConsumers].filter(
+      (consumer) => {
+        if (config.useAllowList && !allowListedConsumers.has(consumer)) {
+          return false
+        }
+        return !referralConsumersThatReceivedRewards.has(consumer)
+      },
+    )
+  }
   console.log(
     'referralConsumersThatNeedRewards',
     referralConsumersThatNeedRewards,
