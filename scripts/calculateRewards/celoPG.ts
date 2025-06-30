@@ -4,7 +4,10 @@ import { readFileSync } from 'fs'
 import { Address, parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import { filterIncludedReferrerIds } from '../utils/filterReferrerIds'
+import {
+  filterIncludedReferrerIds,
+  filterExcludedReferrerIds,
+} from '../utils/filterReferrerIds'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { getReferrerMetricsFromKpi } from './getReferrerMetricsFromKpi'
 
@@ -107,6 +110,23 @@ function parseArgs() {
       description: 'a csv file of allowlisted builders',
       type: 'string',
     })
+    .option('excludelist', {
+      description:
+        'Comma-separated list of CSV files with excluded addresses (e.g., file1.csv,file2.csv)',
+      type: 'array',
+      default: [],
+      coerce: (arg: string[]) => {
+        return arg
+          .flatMap((s) => s.split(',').map((item) => item.trim()))
+          .filter(Boolean)
+      },
+    })
+    .option('fail-on-exclude', {
+      description:
+        'Fail if any of the excluded addresses are found in the referral events',
+      type: 'boolean',
+      default: false,
+    })
     .strict()
     .parseSync()
 
@@ -122,6 +142,8 @@ function parseArgs() {
     rewardAmount: args['reward-amount'],
     proportionLinear: args['proportion-linear'],
     builderAllowListFile: args['builder-allowlist-file'],
+    excludelist: args.excludelist,
+    failOnExclude: args['fail-on-exclude'],
   }
 }
 
@@ -139,6 +161,15 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const proportionLinear = args.proportionLinear
   const kpiData = await resultDirectory.readKpi()
 
+  const excludeList = args.excludelist.flatMap((file) =>
+    parse(readFileSync(file, 'utf-8').toString(), {
+      skip_empty_lines: true,
+      columns: true,
+    }).map(({ referrerId }: { referrerId: string }) =>
+      referrerId.toLowerCase(),
+    ),
+  ) as string[]
+
   const allowList = args.builderAllowListFile
     ? (parse(readFileSync(args.builderAllowListFile, 'utf-8').toString(), {
         skip_empty_lines: true,
@@ -148,10 +179,16 @@ export async function main(args: ReturnType<typeof parseArgs>) {
       ) as Address[])
     : undefined
 
-  const filteredKpiData = filterIncludedReferrerIds({
-    data: kpiData,
-    allowList,
-  })
+  const filteredKpiData = allowList
+    ? filterIncludedReferrerIds({
+        data: kpiData,
+        allowList,
+      })
+    : filterExcludedReferrerIds({
+        data: kpiData,
+        excludeList,
+        failOnExclude: args.failOnExclude,
+      })
 
   const rewards = calculateRewardsCeloPG({
     kpiData: filteredKpiData,
