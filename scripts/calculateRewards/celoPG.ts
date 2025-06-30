@@ -143,8 +143,8 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     ? (parse(readFileSync(args.builderAllowListFile, 'utf-8').toString(), {
         skip_empty_lines: true,
         columns: true,
-      }).map(
-        ({ referrerId }: { referrerId: Address }) => referrerId,
+      }).map(({ referrerId }: { referrerId: Address }) =>
+        referrerId.toLowerCase(),
       ) as Address[])
     : undefined
 
