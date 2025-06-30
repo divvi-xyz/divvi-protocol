@@ -27,7 +27,10 @@ const DIVVI_INTEGRATION_REWARDS_ENTITY =
 
 // This is when we registered the rewards entity:
 //   https://optimistic.etherscan.io/tx/0x831e09593105967387657dcfa3528d33a7c3242036ce1bd33358e26a149b9c8b
-const APPROXIMATE_DIVVI_REWARD_POOL_DEPLOY_BLOCK = 137599785
+const APPROXIMATE_DIVVI_ENTITY_REGISTRATION_BLOCK = 137599785
+// This is when the reward pool was deployed:
+//   https://basescan.org/tx/0x2ce5509dd3d39990c88d7b89c0be2146d71c042e505987a8eb4ffded72ead7fe
+const APPROXIMATE_DIVVI_REWARD_POOL_DEPLOY_BLOCK = 32039949
 const DIVVI_REWARD_POOL_ADDRESS = '0xf4fB5Ff2baf6B33dbd92659a88c6EE927B2C88A0'
 
 // TODO(sbw): hardcoded for 10 EURC for now. We should look at the RewardPool,
@@ -137,7 +140,7 @@ async function getReferralConsumers() {
   })[0]
 
   const queryForIntegrators = {
-    fromBlock: APPROXIMATE_DIVVI_REWARD_POOL_DEPLOY_BLOCK,
+    fromBlock: APPROXIMATE_DIVVI_ENTITY_REGISTRATION_BLOCK,
     logs: [
       {
         address: [DIVVI_REGISTRY_CONTRACT_ADDRESS],
@@ -169,7 +172,7 @@ async function getReferralConsumers() {
 async function getReferralConsumersThatReceivedRewards() {
   const referralConsumersRewards = new Set<Address>()
 
-  const client = getHyperSyncClient(NetworkId['op-mainnet'])
+  const client = getHyperSyncClient(NetworkId['base-mainnet'])
 
   // TODO(sbw): should probably update this to use the new RewardPool ABI.
   const ADD_REWARD_TOPIC = encodeEventTopics({
