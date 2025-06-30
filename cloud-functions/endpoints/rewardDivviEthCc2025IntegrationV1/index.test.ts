@@ -46,7 +46,7 @@ describe(rewardDivviEthCc2025IntegrationV1Endpoint.name, () => {
     expect(mockRunDivviRewards).toHaveBeenCalledTimes(4)
     expect(mockRunDivviRewards).toHaveBeenCalledWith({
       privateKey: '0x123',
-      dryRun: true,
+      dryRun: false,
       useAllowList: true,
     })
   })

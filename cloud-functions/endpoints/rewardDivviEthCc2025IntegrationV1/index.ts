@@ -51,7 +51,7 @@ export const rewardDivviEthCc2025IntegrationV1Endpoint = createEndpoint(
 
           await runDivviRewards({
             privateKey: config.REWARD_POOL_OWNER_PRIVATE_KEY,
-            dryRun: true, // TODO: switch to false when ready
+            dryRun: false,
             useAllowList: true,
           })
 
