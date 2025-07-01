@@ -239,6 +239,11 @@ export async function runDivviRewards(config: DivviRewardsConfig) {
     referralConsumersThatNeedRewards,
   )
 
+  if (referralConsumersThatNeedRewards.length === 0) {
+    console.log('No referral consumers that need rewards')
+    return
+  }
+
   const privateKey = config.privateKey
   const account = privateKeyToAccount(privateKey)
   const publicClient = createPublicClient({
