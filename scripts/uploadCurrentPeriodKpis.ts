@@ -47,6 +47,8 @@ const campaigns: Campaign[] = [
             rewardAmount: '25000',
             proportionLinear: 0.8,
             builderAllowListFile: undefined,
+            excludelist: [],
+            failOnExclude: false,
           })
         },
       },
@@ -69,6 +71,8 @@ const campaigns: Campaign[] = [
             rewardAmount: '50000',
             proportionLinear: 0.8,
             builderAllowListFile: undefined,
+            excludelist: [],
+            failOnExclude: false,
           })
         },
       },
