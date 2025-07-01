@@ -69,7 +69,7 @@ const campaigns: Campaign[] = [
             startTimestamp,
             endTimestampExclusive,
             rewardAmount: '50000',
-            proportionLinear: 0.8,
+            proportionLinear: 0.1,
             builderAllowListFile: undefined,
             excludelist: [],
             failOnExclude: false,
