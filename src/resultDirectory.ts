@@ -1,9 +1,8 @@
-import path from 'path'
+import path, { dirname } from 'path'
 import { copyFile, readFile, writeFile, mkdir } from 'fs/promises'
 import { stringify } from 'csv-stringify/sync'
 import { toPeriodFolderName } from '../scripts/utils/dateFormatting'
 import { parse } from 'csv-parse/sync'
-import { dirname } from 'path'
 
 export interface KpiRow {
   referrerId: string
@@ -53,6 +52,10 @@ export class ResultDirectory {
 
   excludeListFilePath(fileName: string) {
     return path.join(this.resultsDirectory, `exclude-${fileName}`)
+  }
+
+  includeListFilePath(fileName: string) {
+    return path.join(this.resultsDirectory, `include-${fileName}`)
   }
 
   get safeTransactionsFilePath() {
@@ -112,5 +115,9 @@ export class ResultDirectory {
 
   writeExcludeList(fileName: string) {
     return copyFile(fileName, this.excludeListFilePath(fileName))
+  }
+
+  writeIncludeList(fileName: string) {
+    return copyFile(fileName, this.includeListFilePath(fileName))
   }
 }
