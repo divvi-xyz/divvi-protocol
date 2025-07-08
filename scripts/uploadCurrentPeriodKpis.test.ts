@@ -49,6 +49,7 @@ describe('uploadCurrentPeriodKpis', () => {
               proportionLinear: 0.8,
               excludelist: [],
               failOnExclude: false,
+              builderAllowListFile: undefined,
             })
           },
         },
@@ -72,6 +73,7 @@ describe('uploadCurrentPeriodKpis', () => {
               proportionLinear: 0.8,
               excludelist: [],
               failOnExclude: false,
+              builderAllowListFile: undefined,
             })
           },
         },
@@ -95,6 +97,7 @@ describe('uploadCurrentPeriodKpis', () => {
               proportionLinear: 0.8,
               excludelist: [],
               failOnExclude: false,
+              builderAllowListFile: undefined,
             })
           },
         },
