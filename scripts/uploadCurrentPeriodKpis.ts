@@ -11,7 +11,7 @@ import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
 import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV0'
 import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
 
-interface Campaign {
+export interface Campaign {
   protocol: Protocol
   rewardsPeriods: {
     startTimestamp: string
@@ -268,8 +268,9 @@ async function getArgs() {
   }
 }
 
-async function uploadCurrentPeriodKpis(
+export async function uploadCurrentPeriodKpis(
   args: Awaited<ReturnType<typeof getArgs>>,
+  campaigns: Campaign[],
 ) {
   // If a protocol is specified, only calculate KPIs for that campaign
   const campaignsToCalculate = args.protocol
@@ -407,7 +408,7 @@ async function uploadCurrentPeriodKpis(
 // Only run if this file is being run directly
 if (require.main === module) {
   getArgs()
-    .then(uploadCurrentPeriodKpis)
+    .then((args) => uploadCurrentPeriodKpis(args, campaigns))
     .catch((error) => {
       console.error(error)
       process.exitCode = 1
