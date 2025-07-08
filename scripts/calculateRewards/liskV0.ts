@@ -4,7 +4,7 @@ import { readFileSync } from 'fs'
 import { parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import filterExcludedReferrerIds from '../utils/filterExcludedReferralIds'
+import { filterExcludedReferrerIds } from '../utils/filterReferrerIds'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { getReferrerMetricsFromKpi } from './getReferrerMetricsFromKpi'
 
@@ -120,7 +120,7 @@ function parseArgs() {
   return {
     resultDirectory: new ResultDirectory({
       datadir: args.datadir,
-      name: 'celo-pg',
+      name: 'lisk-v0',
       startTimestamp: new Date(args['start-timestamp']),
       endTimestampExclusive: new Date(args['end-timestamp']),
     }),

@@ -1,11 +1,9 @@
-import { writeFileSync, readFileSync, mkdirSync, copyFileSync } from 'fs'
+import { writeFileSync, mkdirSync } from 'fs'
 import yargs from 'yargs'
 import { protocolFilters } from './protocolFilters'
 import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
 import { Protocol, protocols } from './types'
 import { stringify } from 'csv-stringify/sync'
-import { Address } from 'viem'
-import { parse } from 'csv-parse/sync'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { dirname, join } from 'path'
 import { closeRedisClient, getRedisClient } from '../src/redis'
@@ -41,11 +39,6 @@ async function getArgs() {
       type: 'boolean',
       default: false,
     })
-    .option('builder-allowlist-file', {
-      alias: 'a',
-      description: 'a csv file of allowlisted builders ',
-      type: 'string',
-    })
     .option('redis-connection', {
       type: 'string',
       description:
@@ -66,7 +59,6 @@ async function getArgs() {
     protocolFilter: protocolFilters[argv['protocol'] as Protocol],
     outputDir,
     useStaging: argv['use-staging'],
-    builderAllowList: argv['builder-allowlist-file'],
     startTimestamp: argv['start-timestamp'],
     endTimestampExclusive: argv['end-timestamp'],
     redisConnection: argv['redis-connection'],
@@ -89,16 +81,8 @@ export async function fetchReferrals(
     redis,
   )
   const uniqueEvents = removeDuplicates(referralEvents)
-  const allowList = args.builderAllowList
-    ? (parse(readFileSync(args.builderAllowList, 'utf-8').toString(), {
-        skip_empty_lines: true,
-        columns: true,
-      }).map(
-        ({ referrerId }: { referrerId: Address }) => referrerId,
-      ) as Address[])
-    : undefined
 
-  const filteredEvents = await args.protocolFilter(uniqueEvents, { allowList })
+  const filteredEvents = await args.protocolFilter(uniqueEvents)
   const outputEvents = filteredEvents.map((event) => ({
     referrerId: event.referrerId,
     userAddress: event.userAddress,
@@ -113,12 +97,6 @@ export async function fetchReferrals(
     encoding: 'utf-8',
   })
   console.log(`Wrote results to ${outputFile}`)
-
-  if (args.builderAllowList) {
-    const allowListOutputFile = join(args.outputDir, 'builder-allowlist.csv')
-    copyFileSync(args.builderAllowList, allowListOutputFile)
-    console.log(`Copied builder allowlist to ${allowListOutputFile}`)
-  }
 
   await closeRedisClient()
 }

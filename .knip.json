@@ -1,15 +1,17 @@
 {
   "entry": [
     "src/index.ts",
+    "cloud-functions/index.ts",
     "hardhat.config.ts",
     "scripts/**/*.ts",
     "test/**/*.ts"
   ],
-  "project": ["src/**/*.ts"],
+  "project": ["src/**/*.ts", "cloud-functions/**/*.ts"],
   "ignoreDependencies": [
-    "@types/jest",
     "@openzeppelin/contracts",
     "@openzeppelin/contracts-upgradeable",
-    "@nomicfoundation/hardhat-ignition"
-  ]
+    "@nomicfoundation/hardhat-ignition",
+    "tsc-watch"
+  ],
+  "ignoreBinaries": ["gcloud"]
 }

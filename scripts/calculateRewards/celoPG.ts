@@ -1,10 +1,13 @@
 import yargs from 'yargs'
 import { parse } from 'csv-parse/sync'
 import { readFileSync } from 'fs'
-import { parseEther } from 'viem'
+import { Address, parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import filterExcludedReferrerIds from '../utils/filterExcludedReferralIds'
+import {
+  filterIncludedReferrerIds,
+  filterExcludedReferrerIds,
+} from '../utils/filterReferrerIds'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { getReferrerMetricsFromKpi } from './getReferrerMetricsFromKpi'
 
@@ -102,6 +105,11 @@ function parseArgs() {
       type: 'number',
       default: 1,
     })
+    .option('builder-allowlist-file', {
+      alias: 'a',
+      description: 'a csv file of allowlisted builders',
+      type: 'string',
+    })
     .option('excludelist', {
       description:
         'Comma-separated list of CSV files with excluded addresses (e.g., file1.csv,file2.csv)',
@@ -133,6 +141,7 @@ function parseArgs() {
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
     proportionLinear: args['proportion-linear'],
+    builderAllowListFile: args['builder-allowlist-file'],
     excludelist: args.excludelist,
     failOnExclude: args['fail-on-exclude'],
   }
@@ -161,11 +170,25 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     ),
   ) as string[]
 
-  const filteredKpiData = filterExcludedReferrerIds({
-    data: kpiData,
-    excludeList,
-    failOnExclude: args.failOnExclude,
-  })
+  const allowList = args.builderAllowListFile
+    ? (parse(readFileSync(args.builderAllowListFile, 'utf-8').toString(), {
+        skip_empty_lines: true,
+        columns: true,
+      }).map(({ referrerId }: { referrerId: Address }) =>
+        referrerId.toLowerCase(),
+      ) as Address[])
+    : undefined
+
+  const filteredKpiData = allowList
+    ? filterIncludedReferrerIds({
+        data: kpiData,
+        allowList,
+      })
+    : filterExcludedReferrerIds({
+        data: kpiData,
+        excludeList,
+        failOnExclude: args.failOnExclude,
+      })
 
   const rewards = calculateRewardsCeloPG({
     kpiData: filteredKpiData,
@@ -198,10 +221,11 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     endTimestampExclusive,
   })
 
-  for (const fileName of args.excludelist) {
-    await resultDirectory.writeExcludeList(fileName)
+  if (args.builderAllowListFile) {
+    const fileName = args.builderAllowListFile
+    await resultDirectory.writeIncludeList(fileName)
     console.log(
-      `Saved exclude list ${fileName} to ${resultDirectory.excludeListFilePath(fileName)}`,
+      `Saved include list ${fileName} to ${resultDirectory.includeListFilePath(fileName)}`,
     )
   }
 
