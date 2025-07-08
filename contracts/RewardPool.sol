@@ -65,7 +65,6 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   // Errors
   error AmountMismatch(uint256 expected, uint256 received);
   error AmountMustBeGreaterThanZero();
-  error ArraysLengthMismatch(uint256 usersLength, uint256 amountsLength);
   error CannotRescuePoolToken();
   error EmptyIdempotencyKey(uint256 index);
   error InsufficientPoolBalance(uint256 requested, uint256 available);
