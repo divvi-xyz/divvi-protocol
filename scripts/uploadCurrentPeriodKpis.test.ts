@@ -249,7 +249,7 @@ describe('uploadCurrentPeriodKpis', () => {
         mockCampaigns,
       )
 
-      // Should not call fetchReferrals for any campaigns since they're not active
+      // Should only call fetchReferrals for the active celo-pg campaign
       expect(mockFetchReferrals).toHaveBeenCalledTimes(1)
       expect(mockFetchReferrals).toHaveBeenCalledWith(
         expect.objectContaining({
