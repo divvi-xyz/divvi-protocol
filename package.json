@@ -48,8 +48,8 @@
     "axios": "^1.10.0",
     "dotenv": "^17.0.1",
     "redis": "^5.5.6",
-    "viem": "^2.31.6",
-    "zod": "^3.25.73"
+    "viem": "^2.31.7",
+    "zod": "^3.25.74"
   },
   "devDependencies": {
     "@bgd-labs/aave-address-book": "^4.18.0",

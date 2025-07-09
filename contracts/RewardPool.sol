@@ -18,6 +18,13 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   bytes32 public constant MANAGER_ROLE = keccak256('MANAGER_ROLE');
 
+  // Data structures
+  struct RewardData {
+    address user;
+    uint256 amount;
+    bytes32 idempotencyKey;
+  }
+
   // State variables
   address public poolToken;
   bool public isNativeToken;
@@ -25,6 +32,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   uint256 public timelock;
   uint256 public totalPendingRewards;
   mapping(address => uint256) public pendingRewards;
+  mapping(bytes32 => bool) public processedIdempotencyKeys;
 
   // Events
   event PoolInitialized(
@@ -40,14 +48,25 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     uint256 amount,
     uint256[] rewardFunctionArgs
   );
+  event AddRewardWithIdempotency(
+    address indexed user,
+    uint256 amount,
+    bytes32 indexed idempotencyKey,
+    uint256[] rewardFunctionArgs
+  );
+  event AddRewardSkipped(
+    address indexed user,
+    uint256 amount,
+    bytes32 indexed idempotencyKey
+  );
   event ClaimReward(address indexed user, uint256 amount);
   event RescueToken(address token, uint256 amount);
 
   // Errors
   error AmountMismatch(uint256 expected, uint256 received);
   error AmountMustBeGreaterThanZero();
-  error ArraysLengthMismatch(uint256 usersLength, uint256 amountsLength);
   error CannotRescuePoolToken();
+  error EmptyIdempotencyKey(uint256 index);
   error InsufficientPoolBalance(uint256 requested, uint256 available);
   error InsufficientRewardBalance(uint256 requested, uint256 available);
   error NativeTokenNotAccepted();
@@ -189,31 +208,56 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   }
 
   /**
-   * @dev Increases amounts available for users to claim
-   * @param users Array of user addresses
-   * @param amounts Array of amounts to allocate for each user
+   * @dev Increases amounts available for users to claim with idempotency protection
+   * @param rewards Array of reward items to process
    * @param rewardFunctionArgs Arguments used to calculate rewards
    * @notice Allowed only for address with DEFAULT_ADMIN_ROLE
    */
   function addRewards(
-    address[] calldata users,
-    uint256[] calldata amounts,
+    RewardData[] calldata rewards,
     uint256[] calldata rewardFunctionArgs
   ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    uint256 usersLength = users.length;
-    uint256 amountsLength = amounts.length;
-    if (usersLength != amountsLength)
-      revert ArraysLengthMismatch(usersLength, amountsLength);
+    for (uint256 i = 0; i < rewards.length; i++) {
+      RewardData calldata reward = rewards[i];
 
-    for (uint256 i = 0; i < usersLength; i++) {
-      if (users[i] == address(0)) revert ZeroAddressNotAllowed(i);
-      if (amounts[i] == 0) revert RewardAmountMustBeGreaterThanZero(i);
+      if (reward.user == address(0)) revert ZeroAddressNotAllowed(i);
+      if (reward.amount == 0) revert RewardAmountMustBeGreaterThanZero(i);
+      if (reward.idempotencyKey == bytes32(0)) revert EmptyIdempotencyKey(i);
 
-      pendingRewards[users[i]] += amounts[i];
-      totalPendingRewards += amounts[i];
+      if (!processedIdempotencyKeys[reward.idempotencyKey]) {
+        processedIdempotencyKeys[reward.idempotencyKey] = true;
 
-      emit AddReward(users[i], amounts[i], rewardFunctionArgs);
+        // Update pending rewards and total
+        pendingRewards[reward.user] += reward.amount;
+        totalPendingRewards += reward.amount;
+
+        // Old event for backwards compatibility
+        emit AddReward(reward.user, reward.amount, rewardFunctionArgs);
+        emit AddRewardWithIdempotency(
+          reward.user,
+          reward.amount,
+          reward.idempotencyKey,
+          rewardFunctionArgs
+        );
+      } else {
+        emit AddRewardSkipped(
+          reward.user,
+          reward.amount,
+          reward.idempotencyKey
+        );
+      }
     }
+  }
+
+  /**
+   * @dev Check if an idempotency key has been processed
+   * @param idempotencyKey The key to check
+   * @return bool indicating if the key has been processed
+   */
+  function isIdempotencyKeyProcessed(
+    bytes32 idempotencyKey
+  ) external view returns (bool) {
+    return processedIdempotencyKeys[idempotencyKey];
   }
 
   /**
