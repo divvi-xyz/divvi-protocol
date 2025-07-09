@@ -112,12 +112,21 @@ describe('uploadCurrentPeriodKpis', () => {
         },
       ],
     },
+    {
+      protocol: 'celo-transactions',
+      rewardsPeriods: [
+        {
+          startTimestamp: '2025-06-14T00:00:00Z',
+          endTimestampExclusive: '2025-06-21T00:00:00Z',
+        },
+      ],
+    },
   ]
   const defaultArgs = {
     dryRun: false,
     calculationTimestamp: '2025-06-15T14:45:00Z',
     redisConnection: 'redis://localhost:6379',
-    protocol: 'celo-pg' as const,
+    protocols: 'celo-pg',
   }
 
   beforeEach(() => {
@@ -194,13 +203,38 @@ describe('uploadCurrentPeriodKpis', () => {
   })
 
   describe('campaign filtering', () => {
-    it('should process all campaigns when no protocol is specified', async () => {
+    it('should process all campaigns when no protocols are specified', async () => {
       await uploadCurrentPeriodKpis(
-        { ...defaultArgs, protocol: undefined },
+        { ...defaultArgs, protocols: undefined },
         mockCampaigns,
       )
 
       // Should call fetchReferrals for all active campaigns
+      expect(mockFetchReferrals).toHaveBeenCalledTimes(3)
+      expect(mockFetchReferrals).toHaveBeenCalledWith(
+        expect.objectContaining({
+          protocol: 'celo-pg',
+        }),
+      )
+      expect(mockFetchReferrals).toHaveBeenCalledWith(
+        expect.objectContaining({
+          protocol: 'scout-game-v0',
+        }),
+      )
+      expect(mockFetchReferrals).toHaveBeenCalledWith(
+        expect.objectContaining({
+          protocol: 'celo-transactions',
+        }),
+      )
+    })
+
+    it('should process only specified protocols when comma-separated list is provided', async () => {
+      await uploadCurrentPeriodKpis(
+        { ...defaultArgs, protocols: 'celo-pg,scout-game-v0' },
+        mockCampaigns,
+      )
+
+      // Should call fetchReferrals for both specified protocols
       expect(mockFetchReferrals).toHaveBeenCalledTimes(2)
       expect(mockFetchReferrals).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -214,28 +248,13 @@ describe('uploadCurrentPeriodKpis', () => {
       )
     })
 
-    it('should process only specified protocol when protocol is provided', async () => {
-      await uploadCurrentPeriodKpis(
-        { ...defaultArgs, protocol: 'scout-game-v0' },
-        mockCampaigns,
-      )
-
-      // Should call fetchReferrals only once for the specified protocol
-      expect(mockFetchReferrals).toHaveBeenCalledTimes(1)
-      expect(mockFetchReferrals).toHaveBeenCalledWith(
-        expect.objectContaining({
-          protocol: 'scout-game-v0',
-        }),
-      )
-    })
-
-    it('should throw error for invalid protocol', async () => {
+    it('should throw error if any provided protocols are not found in the known campaigns', async () => {
       await expect(
         uploadCurrentPeriodKpis(
-          { ...defaultArgs, protocol: 'invalid-protocol' },
+          { ...defaultArgs, protocols: 'celo-pg,invalid-protocol' },
           mockCampaigns,
         ),
-      ).rejects.toThrow('No campaigns found for protocol invalid-protocol')
+      ).rejects.toThrow('Campaign invalid-protocol not found')
     })
   })
 
