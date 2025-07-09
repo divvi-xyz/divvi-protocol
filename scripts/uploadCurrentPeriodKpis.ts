@@ -249,9 +249,9 @@ async function getArgs() {
       type: 'string',
       default: new Date().toISOString(),
     })
-    .option('protocol', {
+    .option('protocols', {
       description:
-        'Protocol to calculate KPIs for, e.g. celo-pg, scout-game-v0, lisk-v0',
+        'Comma separated list of protocols to calculate KPIs for, e.g. celo-pg, scout-game-v0, lisk-v0. If not specified, KPIs will be calculated for all protocols.',
       type: 'string',
     })
     .option('redis-connection', {
@@ -264,7 +264,7 @@ async function getArgs() {
     dryRun: argv['dry-run'],
     calculationTimestamp: argv['calculation-timestamp'],
     redisConnection: argv['redis-connection'],
-    protocol: argv['protocol'],
+    protocols: argv['protocols'],
   }
 }
 
@@ -272,15 +272,17 @@ export async function uploadCurrentPeriodKpis(
   args: Awaited<ReturnType<typeof getArgs>>,
   campaigns: Campaign[],
 ) {
-  // If a protocol is specified, only calculate KPIs for that campaign
-  const campaignsToCalculate = args.protocol
-    ? campaigns.filter((campaign) => campaign.protocol === args.protocol)
-    : campaigns
-
-  if (campaignsToCalculate.length === 0) {
-    throw new Error(
-      `No campaigns found for protocol ${args.protocol}. Please ensure the protocol is correct and has campaign information defined in the script.`,
-    )
+  // If protocols is specified, only calculate KPIs for those campaigns.
+  // Otherwise, calculate KPIs for all campaigns.
+  let campaignsToCalculate = campaigns
+  if (args.protocols) {
+    campaignsToCalculate = args.protocols.split(',').map((protocol) => {
+      const campaign = campaigns.find((c) => c.protocol === protocol)
+      if (!campaign) {
+        throw new Error(`Campaign ${protocol} not found`)
+      }
+      return campaign
+    })
   }
 
   // This script will calculate rewards ending at the start of the current hour
