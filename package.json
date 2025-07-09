@@ -94,7 +94,7 @@
     "knip": "^5.46.2",
     "nock": "^14.0.2",
     "prettier": "^3.6.1",
-    "prettier-plugin-solidity": "^1.4.3",
+    "prettier-plugin-solidity": "^2.0.0",
     "sax": "^1.4.1",
     "solhint": "^5.0.5",
     "solidity-coverage": "^0.8.14",
