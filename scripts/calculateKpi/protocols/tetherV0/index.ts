@@ -136,7 +136,10 @@ export async function calculateKpi({
           endBlockExclusive: blockRange.endBlockExclusive,
           tokenAddress,
         })
-        kpiPerNetwork[networkId] = eligibleTxCount
+        if (kpiPerNetwork[networkId] === undefined) {
+          kpiPerNetwork[networkId] = 0
+        }
+        kpiPerNetwork[networkId] += eligibleTxCount
         totalKpi += eligibleTxCount
       },
     ),
