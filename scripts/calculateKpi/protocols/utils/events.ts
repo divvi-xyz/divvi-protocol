@@ -19,6 +19,11 @@ const NETWORK_ID_TO_DEFI_LLAMA_CHAIN: Partial<{
   [NetworkId['polygon-pos-mainnet']]: 'polygon',
   [NetworkId['base-mainnet']]: 'base',
   [NetworkId['lisk-mainnet']]: 'lisk',
+  // [NetworkId['sei-mainnet']]: 'sei',
+  [NetworkId['ink-mainnet']]: 'ink',
+  [NetworkId['unichain-mainnet']]: 'unichain',
+  [NetworkId['avalanche-mainnet']]: 'avax',
+  [NetworkId['berachain-mainnet']]: 'berachain',
 }
 
 /**

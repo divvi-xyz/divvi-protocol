@@ -27,4 +27,9 @@ export const NETWORK_ID_TO_HYPERSYNC_URL = {
   [NetworkId['op-mainnet']]: 'https://optimism.hypersync.xyz',
   [NetworkId['polygon-pos-mainnet']]: 'https://polygon.hypersync.xyz',
   [NetworkId['lisk-mainnet']]: 'https://lisk.hypersync.xyz',
+  // [NetworkId['sei-mainnet']]: 'https://sei.hypersync.xyz',
+  [NetworkId['ink-mainnet']]: 'https://ink.hypersync.xyz',
+  [NetworkId['unichain-mainnet']]: 'https://unichain.hypersync.xyz',
+  [NetworkId['avalanche-mainnet']]: 'https://avalanche.hypersync.xyz',
+  [NetworkId['berachain-mainnet']]: 'https://berachain.hypersync.xyz',
 } as Partial<Record<NetworkId, string>>

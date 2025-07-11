@@ -14,6 +14,7 @@ export const protocols = [
   'rhino',
   'scout-game-v0',
   'lisk-v0',
+  'tether-v0',
 ] as const
 export type Protocol = (typeof protocols)[number]
 
@@ -41,6 +42,11 @@ export enum NetworkId {
   'base-mainnet' = 'base-mainnet',
   'base-sepolia' = 'base-sepolia',
   'lisk-mainnet' = 'lisk-mainnet',
+  'avalanche-mainnet' = 'avalanche-mainnet',
+  'ink-mainnet' = 'ink-mainnet',
+  // 'sei-mainnet' = 'sei-mainnet',
+  'unichain-mainnet' = 'unichain-mainnet',
+  'berachain-mainnet' = 'berachain-mainnet',
 }
 
 export interface TokenPriceData {
