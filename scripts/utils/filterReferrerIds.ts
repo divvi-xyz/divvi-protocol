@@ -5,7 +5,9 @@ export function filterExcludedReferrerIds<T extends { referrerId: string }>({
   data: T[]
   excludeList: { referrerId: string }[]
 }) {
-  const excludeSet = new Set(excludeList.map(({ referrerId }) => referrerId))
+  const excludeSet = new Set(
+    excludeList.map(({ referrerId }) => referrerId.toLowerCase()),
+  )
   const excludedRows = new Map<string, number>()
 
   const filteredData = data.filter(({ referrerId }) => {
