@@ -11,6 +11,7 @@ import { calculateKpi as calculateKpiCeloTransactions } from './celoTransactions
 import { calculateKpi as calculateKpiRhino } from './rhino'
 import { calculateKpi as calculateKpiScoutGameV0 } from './scoutGameV0'
 import { calculateKpi as calculateKpiLiskV0 } from './liskV0'
+import { calculateKpi as calculateKpiBlazeTheBase } from './blaze-the-base'
 
 /**
  * Central registry of KPI calculation handlers for all supported protocols.
@@ -49,6 +50,7 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   rhino: calculateKpiRhino,
   'scout-game-v0': calculateKpiScoutGameV0,
   'lisk-v0': calculateKpiLiskV0,
+  'blaze-the-base': calculateKpiBlazeTheBase,
 }
 
 export default calculateKpiHandlers

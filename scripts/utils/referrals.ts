@@ -19,6 +19,7 @@ const REWARDS_PROVIDERS: Partial<Record<Protocol, Address>> = {
   'celo-pg': '0x0423189886D7966f0DD7E7d256898DAeEE625dca',
   'scout-game-v0': '0xC95876688026BE9d6fA7a7c33328bD013efFa2Bb',
   'lisk-v0': '0x7bEb0e14F8D2e6f6678Cc30d867787B384b19e20',
+  'blaze-the-base': '0xce56ed47c8f2ee8714087c9e48924b1a30bc455c',
 }
 
 // Remove duplicate events, keeping only the earliest event for each user

@@ -14,6 +14,7 @@ export const protocols = [
   'rhino',
   'scout-game-v0',
   'lisk-v0',
+  'blaze-the-base',
 ] as const
 export type Protocol = (typeof protocols)[number]
 
