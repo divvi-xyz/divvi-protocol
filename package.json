@@ -74,7 +74,7 @@
     "@types/supertest": "^6.0.3",
     "@types/unzipper": "^0.10.11",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
-    "@typescript-eslint/parser": "^8.35.0",
+    "@typescript-eslint/parser": "^8.36.0",
     "@valora/prettier-config": "^0.0.1",
     "axios": "^1.10.0",
     "bignumber.js": "^9.2.1",
