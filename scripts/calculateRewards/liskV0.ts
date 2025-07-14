@@ -1,12 +1,11 @@
 import yargs from 'yargs'
-import { parse } from 'csv-parse/sync'
-import { readFileSync } from 'fs'
 import { parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { filterExcludedReferrerIds } from '../utils/filterReferrerIds'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { getReferrerMetricsFromKpi } from './getReferrerMetricsFromKpi'
+import { getDivviRewardsExcludedReferrerIds } from '../utils/divviRewardsExcludedReferrerIds'
 
 const REWARD_POOL_ADDRESS = '0xBBF7B15C819102B137A96703E63eCF1c3d57CC68'
 const REWARD_AMOUNT_IN_DECIMALS = '15000'
@@ -97,23 +96,6 @@ function parseArgs() {
       type: 'number',
       default: 1,
     })
-    .option('excludelist', {
-      description:
-        'Comma-separated list of CSV files with excluded addresses (e.g., file1.csv,file2.csv)',
-      type: 'array',
-      default: [],
-      coerce: (arg: string[]) => {
-        return arg
-          .flatMap((s) => s.split(',').map((item) => item.trim()))
-          .filter(Boolean)
-      },
-    })
-    .option('fail-on-exclude', {
-      description:
-        'Fail if any of the excluded addresses are found in the referral events',
-      type: 'boolean',
-      default: false,
-    })
     .strict()
     .parseSync()
 
@@ -127,8 +109,6 @@ function parseArgs() {
     startTimestamp: args['start-timestamp'],
     endTimestampExclusive: args['end-timestamp'],
     proportionLinear: args['proportion-linear'],
-    excludelist: args.excludelist,
-    failOnExclude: args['fail-on-exclude'],
   }
 }
 
@@ -145,19 +125,12 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const proportionLinear = args.proportionLinear
   const kpiData = await resultDirectory.readKpi()
 
-  const excludeList = args.excludelist.flatMap((file) =>
-    parse(readFileSync(file, 'utf-8').toString(), {
-      skip_empty_lines: true,
-      columns: true,
-    }).map(({ referrerId }: { referrerId: string }) =>
-      referrerId.toLowerCase(),
-    ),
-  ) as string[]
+  const excludeList = await getDivviRewardsExcludedReferrerIds()
+  await resultDirectory.writeExcludeList(excludeList)
 
   const filteredKpiData = filterExcludedReferrerIds({
     data: kpiData,
     excludeList,
-    failOnExclude: args.failOnExclude,
   })
 
   const rewards = calculateRewardsLiskV0({
@@ -172,13 +145,6 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     startTimestamp,
     endTimestampExclusive,
   })
-
-  for (const fileName of args.excludelist) {
-    await resultDirectory.writeExcludeList(fileName)
-    console.log(
-      `Saved exclude list ${fileName} to ${resultDirectory.excludeListFilePath(fileName)}`,
-    )
-  }
 
   await resultDirectory.writeRewards(rewards)
 }

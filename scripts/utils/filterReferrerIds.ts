@@ -1,22 +1,17 @@
 export function filterExcludedReferrerIds<T extends { referrerId: string }>({
   data,
   excludeList,
-  failOnExclude,
 }: {
   data: T[]
-  excludeList: string[]
-  failOnExclude: boolean
+  excludeList: { referrerId: string }[]
 }) {
-  const excludeSet = new Set(excludeList)
+  const excludeSet = new Set(excludeList.map(({ referrerId }) => referrerId))
   const excludedRows = new Map<string, number>()
 
   const filteredData = data.filter(({ referrerId }) => {
     const isExcluded = excludeSet.has(referrerId.toLowerCase())
 
     if (isExcluded) {
-      if (failOnExclude) {
-        throw new Error(`ReferrerId ${referrerId} is in the exclude list`)
-      }
       excludedRows.set(referrerId, (excludedRows.get(referrerId) ?? 0) + 1)
     }
 
@@ -25,7 +20,7 @@ export function filterExcludedReferrerIds<T extends { referrerId: string }>({
 
   for (const [referrerId, count] of excludedRows.entries()) {
     console.warn(
-      `ReferrerId ${referrerId} with ${count} entries is in the exclude list`,
+      `ReferrerId ${referrerId} with ${count} referred users is in the exclude list, their campaign kpi's will be ignored.`,
     )
   }
 

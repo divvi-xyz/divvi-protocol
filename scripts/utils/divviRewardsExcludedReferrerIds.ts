@@ -3,6 +3,11 @@ import * as sax from 'sax'
 import * as unzipper from 'unzipper'
 import { Address, isAddress } from 'viem'
 
+const valoraEntities: Address[] = [
+  '0x9eCfE3dDFAf1BB9B55f56b84471406893c5E29ad', // Valora app
+  // TODO: add VEarn app
+]
+
 // https://sanctionslist.ofac.treas.gov/Home/SdnList
 const OFAC_SDN_ZIP_URL =
   'https://sanctionslistservice.ofac.treas.gov/api/download/SDN_XML.ZIP'
@@ -33,4 +38,16 @@ export async function getOfacSdnAddresses(): Promise<Address[]> {
 
     Readable.fromWeb(res.body).pipe(unzipper.ParseOne()).pipe(xmlParser)
   })
+}
+
+export async function getDivviRewardsExcludedReferrerIds(): Promise<
+  {
+    referrerId: Address
+  }[]
+> {
+  const ofacSdnAddresses = await getOfacSdnAddresses()
+
+  return valoraEntities.concat(ofacSdnAddresses).map((address) => ({
+    referrerId: address,
+  }))
 }

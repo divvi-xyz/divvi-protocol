@@ -1,15 +1,11 @@
 import yargs from 'yargs'
-import { parse } from 'csv-parse/sync'
-import { readFileSync } from 'fs'
-import { Address, parseEther } from 'viem'
+import { parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import {
-  filterIncludedReferrerIds,
-  filterExcludedReferrerIds,
-} from '../utils/filterReferrerIds'
+import { filterExcludedReferrerIds } from '../utils/filterReferrerIds'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { getReferrerMetricsFromKpi } from './getReferrerMetricsFromKpi'
+import { getDivviRewardsExcludedReferrerIds } from '../utils/divviRewardsExcludedReferrerIds'
 
 const REWARD_POOL_ADDRESS = '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3' // on Celo mainnet
 
@@ -105,28 +101,6 @@ function parseArgs() {
       type: 'number',
       default: 1,
     })
-    .option('builder-allowlist-file', {
-      alias: 'a',
-      description: 'a csv file of allowlisted builders',
-      type: 'string',
-    })
-    .option('excludelist', {
-      description:
-        'Comma-separated list of CSV files with excluded addresses (e.g., file1.csv,file2.csv)',
-      type: 'array',
-      default: [],
-      coerce: (arg: string[]) => {
-        return arg
-          .flatMap((s) => s.split(',').map((item) => item.trim()))
-          .filter(Boolean)
-      },
-    })
-    .option('fail-on-exclude', {
-      description:
-        'Fail if any of the excluded addresses are found in the referral events',
-      type: 'boolean',
-      default: false,
-    })
     .strict()
     .parseSync()
 
@@ -141,9 +115,6 @@ function parseArgs() {
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
     proportionLinear: args['proportion-linear'],
-    builderAllowListFile: args['builder-allowlist-file'],
-    excludelist: args.excludelist,
-    failOnExclude: args['fail-on-exclude'],
   }
 }
 
@@ -161,34 +132,13 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const proportionLinear = args.proportionLinear
   const kpiData = await resultDirectory.readKpi()
 
-  const excludeList = args.excludelist.flatMap((file) =>
-    parse(readFileSync(file, 'utf-8').toString(), {
-      skip_empty_lines: true,
-      columns: true,
-    }).map(({ referrerId }: { referrerId: string }) =>
-      referrerId.toLowerCase(),
-    ),
-  ) as string[]
+  const excludeList = await getDivviRewardsExcludedReferrerIds()
+  await resultDirectory.writeExcludeList(excludeList)
 
-  const allowList = args.builderAllowListFile
-    ? (parse(readFileSync(args.builderAllowListFile, 'utf-8').toString(), {
-        skip_empty_lines: true,
-        columns: true,
-      }).map(({ referrerId }: { referrerId: Address }) =>
-        referrerId.toLowerCase(),
-      ) as Address[])
-    : undefined
-
-  const filteredKpiData = allowList
-    ? filterIncludedReferrerIds({
-        data: kpiData,
-        allowList,
-      })
-    : filterExcludedReferrerIds({
-        data: kpiData,
-        excludeList,
-        failOnExclude: args.failOnExclude,
-      })
+  const filteredKpiData = filterExcludedReferrerIds({
+    data: kpiData,
+    excludeList,
+  })
 
   const rewards = calculateRewardsCeloPG({
     kpiData: filteredKpiData,
@@ -220,14 +170,6 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     startTimestamp,
     endTimestampExclusive,
   })
-
-  if (args.builderAllowListFile) {
-    const fileName = args.builderAllowListFile
-    await resultDirectory.writeIncludeList(fileName)
-    console.log(
-      `Saved include list ${fileName} to ${resultDirectory.includeListFilePath(fileName)}`,
-    )
-  }
 
   await resultDirectory.writeRewards(rewardsWithMetadata)
 }
