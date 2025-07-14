@@ -90,7 +90,7 @@ function parseArgs() {
   return {
     resultDirectory: new ResultDirectory({
       datadir: args.datadir,
-      name: 'celo-pg',
+      name: 'blaze-the-base',
       startTimestamp: new Date(args['start-timestamp']),
       endTimestampExclusive: new Date(args['end-timestamp']),
     }),
