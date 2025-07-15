@@ -5,47 +5,16 @@ import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { filterExcludedReferrerIds } from '../utils/filterReferrerIds'
 import { ResultDirectory } from '../../src/resultDirectory'
-import { getReferrerMetricsFromKpi } from './getReferrerMetricsFromKpi'
+import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
 
 const REWARD_POOL_ADDRESS = '0xA2a4C1eb286a2EfA470d42676081B771bbe9C1c8' // on Base mainnet
 const REWARD_AMOUNT = '1000000000' // 1000 USDC
 
-export function calculateRewardsBaseV0({
-  kpiData,
-}: {
-  kpiData: KpiRow[]
-}) {
-  const { referrerReferrals, referrerKpis } = getReferrerMetricsFromKpi(kpiData)
-
-  const referrerPowerKpis = Object.entries(referrerKpis).reduce(
-    (acc, [referrerId, kpi]) => {
-      acc[referrerId] = BigNumber(kpi).sqrt()
-      return acc
-    },
-    {} as Record<string, BigNumber>,
-  )
-
-  const totalPower = Object.values(referrerPowerKpis).reduce(
-    (sum, value) => sum.plus(value),
-    BigNumber(0),
-  )
-
-  const rewards = Object.entries(referrerKpis).map(([referrerId, kpi]) => {
-    const powerProportion = BigNumber(referrerPowerKpis[referrerId]).div(
-      totalPower,
-    )
-
-    const rewardAmount = new BigNumber(REWARD_AMOUNT).times(powerProportion)
-
-    return {
-      referrerId,
-      rewardAmount: rewardAmount.toFixed(0, BigNumber.ROUND_DOWN),
-      referralCount: referrerReferrals[referrerId],
-      kpi,
-    }
+export function calculateRewardsBaseV0({ kpiData }: { kpiData: KpiRow[] }) {
+  return calculateSqrtProportionalPrizeContest({
+    kpiData,
+    rewards: new BigNumber(REWARD_AMOUNT),
   })
-
-  return rewards
 }
 
 function parseArgs() {
