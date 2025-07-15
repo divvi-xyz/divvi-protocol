@@ -44,7 +44,6 @@ export enum NetworkId {
   'lisk-mainnet' = 'lisk-mainnet',
   'avalanche-mainnet' = 'avalanche-mainnet',
   'ink-mainnet' = 'ink-mainnet',
-  // 'sei-mainnet' = 'sei-mainnet',
   'unichain-mainnet' = 'unichain-mainnet',
   'berachain-mainnet' = 'berachain-mainnet',
 }

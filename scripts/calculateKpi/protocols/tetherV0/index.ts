@@ -26,7 +26,6 @@ const networkToTokenAddress: Partial<Record<NetworkId, Address>> = {
     '0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7',
   [NetworkId['celo-mainnet']]: '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e',
   [NetworkId['unichain-mainnet']]: '0x9151434b16b9763660705744891fa906f660ecc5',
-  // [NetworkId['sei-mainnet']]: '0x9151434b16b9763660705744891fa906f660ecc5',
   [NetworkId['ink-mainnet']]: '0x0200C29006150606B650577BBE7B6248F58470c1',
   [NetworkId['op-mainnet']]: '0x01bff41798a0bcf287b996046ca68b395dbc1071',
   [NetworkId['arbitrum-one']]: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
@@ -49,19 +48,19 @@ async function getEligibleTxCount({
 }): Promise<number> {
   const client = getHyperSyncClient(networkId)
 
-  // Since we are using events to count transfers, we need to ensure that transactions that emit multiple events are only counted once
-  const transactionHashesCounted = new Set<string>()
-  let totalTransactions = 0
+  const transactionValueByHash: Record<string, BigNumber> = {}
 
   const query = {
     transactions: [{ from: [user] }],
     logs: [
       {
         contractAddress: tokenAddress,
+        // transfer from user
         topics: [[transferEventSigHash], [pad(user, { size: 32 })], [], []],
       },
       {
         contractAddress: tokenAddress,
+        // transfer to user
         topics: [[transferEventSigHash], [], [pad(user, { size: 32 })], []],
       },
     ],
@@ -89,20 +88,23 @@ async function getEligibleTxCount({
           data: data as Hex,
           topics: topics as [],
         })
-        const transferValue = decodedLog.args.value
+        const isTransferToUser =
+          decodedLog.eventName === 'Transfer' &&
+          decodedLog.args.to.toLowerCase() === user.toLowerCase()
+        const transferValue = BigNumber(decodedLog.args.value).multipliedBy(
+          isTransferToUser ? 1 : -1,
+        )
 
-        if (
-          BigNumber(transferValue).gt(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT) &&
-          !transactionHashesCounted.has(transactionHash)
-        ) {
-          totalTransactions += 1
-          transactionHashesCounted.add(transactionHash)
-        }
+        transactionValueByHash[transactionHash] = (
+          transactionValueByHash[transactionHash] ?? BigNumber(0)
+        ).plus(transferValue)
       }
     }
   })
 
-  return totalTransactions
+  return Object.values(transactionValueByHash).filter((value) =>
+    value.abs().gte(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT),
+  ).length
 }
 
 export async function calculateKpi({

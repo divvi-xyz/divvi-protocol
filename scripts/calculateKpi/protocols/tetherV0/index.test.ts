@@ -180,6 +180,45 @@ describe('Tether V0 Protocol KPI Calculation', () => {
             data: encodedValueAboveThreshold,
             topics: [
               transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xabc123', // Same transaction hash
+          },
+        ])
+        await onPage(mockResponse)
+      })
+
+      const result = await calculateKpi(defaultProps)
+
+      // Should count as 1 transaction per network, not 2
+      expect(result.kpi).toBe(8)
+    })
+
+    it('should not count transactions with net transfer value below minimum threshold', async () => {
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse([
+          {
+            data: encodedValueAboveThreshold,
+            // transfer out
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xabc123',
+          },
+          {
+            data: encodedValueAboveThreshold,
+            // transfer in
+            topics: [
+              transferEventSigHash,
               pad('0x4567890123456789012345678901234567890123' as Address, {
                 size: 32,
               }),
@@ -194,8 +233,8 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       const result = await calculateKpi(defaultProps)
 
-      // Should count as 1 transaction per network, not 2
-      expect(result.kpi).toBe(8)
+      // Should count as 0 transactions per network since the net transfer value is 0
+      expect(result.kpi).toBe(0)
     })
 
     it('should handle both incoming and outgoing transfers', async () => {
