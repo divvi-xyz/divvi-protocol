@@ -10,7 +10,7 @@ import { getReferrerMetricsFromKpi } from './getReferrerMetricsFromKpi'
 const REWARD_POOL_ADDRESS = '0xA2a4C1eb286a2EfA470d42676081B771bbe9C1c8' // on Base mainnet
 const REWARD_AMOUNT = '1000000000' // 1000 USDC
 
-export function calculateRewardsBlazeTheBase({
+export function calculateRewardsBaseV0({
   kpiData,
 }: {
   kpiData: KpiRow[]
@@ -90,7 +90,7 @@ function parseArgs() {
   return {
     resultDirectory: new ResultDirectory({
       datadir: args.datadir,
-      name: 'blaze-the-base',
+      name: 'base-v0',
       startTimestamp: new Date(args['start-timestamp']),
       endTimestampExclusive: new Date(args['end-timestamp']),
     }),
@@ -128,7 +128,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     failOnExclude: args.failOnExclude,
   })
 
-  const rewards = calculateRewardsBlazeTheBase({
+  const rewards = calculateRewardsBaseV0({
     kpiData: filteredKpiData,
   })
 

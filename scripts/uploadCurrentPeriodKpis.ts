@@ -10,7 +10,7 @@ import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
 import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV0'
 import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
-import { main as calculateRewardsBlazeTheBase } from './calculateRewards/blazeTheBase'
+import { main as calculateRewardsBaseV0 } from './calculateRewards/baseV0'
 
 export interface Campaign {
   protocol: Protocol
@@ -234,7 +234,7 @@ const campaigns: Campaign[] = [
     ],
   },
   {
-    protocol: 'blaze-the-base',
+    protocol: 'base-v0',
     rewardsPeriods: [
       {
         startTimestamp: '2025-06-30T00:00:00Z',
@@ -248,7 +248,7 @@ const campaigns: Campaign[] = [
           startTimestamp: string
           endTimestampExclusive: string
         }) => {
-          await calculateRewardsBlazeTheBase({
+          await calculateRewardsBaseV0({
             resultDirectory,
             startTimestamp,
             endTimestampExclusive,
