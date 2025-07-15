@@ -9,6 +9,7 @@
 - [aave](aave.md)
 - [aerodrome](aerodrome.md)
 - [arbitrum](arbitrum.md)
+- [baseV0](baseV0.md)
 - [beefy](beefy.md)
 - [celo-pg](celo-pg.md)
 - [celoTransactions](celoTransactions.md)
