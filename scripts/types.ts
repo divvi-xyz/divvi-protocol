@@ -15,6 +15,7 @@ export const protocols = [
   'scout-game-v0',
   'lisk-v0',
   'tether-v0',
+  'base-v0',
 ] as const
 export type Protocol = (typeof protocols)[number]
 

@@ -18,6 +18,7 @@ import { filter as filterRhino } from './rhino'
 import { filter as filterScoutGameV0 } from './scoutGameV0'
 import { filter as filterLiskV0 } from './lisk-v0'
 import { filter as filterTetherV0 } from './tether-v0'
+import { filter as filterBaseV0 } from './baseV0'
 
 export const protocolFilters: Record<Protocol, FilterFn> = {
   beefy: _createFilter(filterBeefy),
@@ -33,6 +34,7 @@ export const protocolFilters: Record<Protocol, FilterFn> = {
   'scout-game-v0': _createFilter(filterScoutGameV0),
   'lisk-v0': _createFilter(filterLiskV0),
   'tether-v0': _createFilter(filterTetherV0),
+  'base-v0': _createFilter(filterBaseV0),
 }
 
 const BATCH_SIZE = 20

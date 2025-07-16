@@ -10,6 +10,7 @@ import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
 import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV0'
 import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
+import { main as calculateRewardsBaseV0 } from './calculateRewards/baseV0'
 
 export interface Campaign {
   protocol: Protocol
@@ -225,6 +226,32 @@ const campaigns: Campaign[] = [
             startTimestamp,
             endTimestampExclusive,
             proportionLinear: 1,
+            excludelist: [],
+            failOnExclude: false,
+          })
+        },
+      },
+    ],
+  },
+  {
+    protocol: 'base-v0',
+    rewardsPeriods: [
+      {
+        startTimestamp: '2025-06-30T00:00:00Z',
+        endTimestampExclusive: '2025-08-01T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardsBaseV0({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
             excludelist: [],
             failOnExclude: false,
           })
