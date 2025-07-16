@@ -18,4 +18,5 @@
 - [rhino](rhino.md)
 - [scoutGameV0](scoutGameV0.md)
 - [somm](somm.md)
+- [tetherV0](tetherV0.md)
 - [velodrome](velodrome.md)
