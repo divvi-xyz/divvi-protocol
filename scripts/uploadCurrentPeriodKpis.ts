@@ -239,8 +239,6 @@ const campaigns: Campaign[] = [
             resultDirectory,
             startTimestamp,
             endTimestampExclusive,
-            excludelist: [],
-            failOnExclude: false,
           })
         },
       },
