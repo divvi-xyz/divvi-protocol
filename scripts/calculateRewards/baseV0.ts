@@ -1,20 +1,12 @@
 import yargs from 'yargs'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import { filterExcludedReferrerIds } from '../utils/filterReferrerIds'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
 import { getDivviRewardsExcludedReferrerIds } from '../utils/divviRewardsExcludedReferrerIds'
 
 const REWARD_POOL_ADDRESS = '0xA2a4C1eb286a2EfA470d42676081B771bbe9C1c8' // on Base mainnet
 const REWARD_AMOUNT = '1000000000' // 1000 USDC
-
-export function calculateRewardsBaseV0({ kpiData }: { kpiData: KpiRow[] }) {
-  return calculateSqrtProportionalPrizeContest({
-    kpiData,
-    rewards: new BigNumber(REWARD_AMOUNT),
-  })
-}
 
 function parseArgs() {
   const args = yargs
@@ -50,12 +42,6 @@ function parseArgs() {
   }
 }
 
-interface KpiRow {
-  referrerId: string
-  userAddress: string
-  kpi: string
-}
-
 export async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args.startTimestamp)
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
@@ -63,22 +49,19 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const kpiData = await resultDirectory.readKpi()
 
   const excludeList = await getDivviRewardsExcludedReferrerIds()
-  await resultDirectory.writeExcludeList(excludeList)
+  await resultDirectory.writeExcludeList(Object.values(excludeList))
 
-  const filteredKpiData = filterExcludedReferrerIds({
-    data: kpiData,
+  const rewards = calculateSqrtProportionalPrizeContest({
+    kpiData,
     excludeList,
-  })
-
-  const rewards = calculateRewardsBaseV0({
-    kpiData: filteredKpiData,
+    rewards: new BigNumber(REWARD_AMOUNT),
   })
 
   const totalTransactionsPerReferrer: {
     [referrerId: string]: number
   } = {}
 
-  for (const { referrerId, metadata } of filteredKpiData) {
+  for (const { referrerId, metadata } of kpiData) {
     if (!metadata) continue
 
     totalTransactionsPerReferrer[referrerId] =

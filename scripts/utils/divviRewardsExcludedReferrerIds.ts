@@ -13,7 +13,7 @@ const OFAC_SDN_ZIP_URL =
   'https://sanctionslistservice.ofac.treas.gov/api/download/SDN_XML.ZIP'
 
 export async function getOfacSdnAddresses(): Promise<
-  { referrerId: Address; shouldWarn: true }[]
+  { referrerId: Address; shouldWarn: boolean }[]
 > {
   const res = await fetch(OFAC_SDN_ZIP_URL)
   if (!res.ok) {
@@ -50,12 +50,25 @@ export async function getOfacSdnAddresses(): Promise<
 }
 
 export async function getDivviRewardsExcludedReferrerIds(): Promise<
-  {
-    referrerId: Address
-    shouldWarn?: boolean
-  }[]
+  Record<
+    string,
+    {
+      referrerId: string
+      shouldWarn?: boolean
+    }
+  >
 > {
   const ofacSdnAddresses = await getOfacSdnAddresses()
 
-  return valoraEntities.concat(ofacSdnAddresses)
+  const excludedReferrersMap: Record<
+    string,
+    {
+      referrerId: string
+      shouldWarn?: boolean
+    }
+  > = {}
+  valoraEntities.concat(ofacSdnAddresses).forEach((referrer) => {
+    excludedReferrersMap[referrer.referrerId] = referrer
+  })
+  return excludedReferrersMap
 }

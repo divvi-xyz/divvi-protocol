@@ -2,7 +2,6 @@ import yargs from 'yargs'
 import { parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import { filterExcludedReferrerIds } from '../utils/filterReferrerIds'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { getReferrerMetricsFromKpi } from './getReferrerMetricsFromKpi'
 import { getDivviRewardsExcludedReferrerIds } from '../utils/divviRewardsExcludedReferrerIds'
@@ -13,9 +12,11 @@ const REWARD_AMOUNT_IN_DECIMALS = '15000'
 export function calculateRewardsLiskV0({
   kpiData,
   proportionLinear,
+  excludeList,
 }: {
   kpiData: KpiRow[]
   proportionLinear: number
+  excludeList: Record<string, { referrerId: string; shouldWarn?: boolean }>
 }) {
   const totalRewardsForPeriod = new BigNumber(
     parseEther(REWARD_AMOUNT_IN_DECIMALS),
@@ -26,11 +27,7 @@ export function calculateRewardsLiskV0({
     1 - proportionLinear,
   )
 
-  const {
-    referrerReferrals,
-    referrerKpis,
-    totalKpi: totalLinear,
-  } = getReferrerMetricsFromKpi(kpiData)
+  const { referrerReferrals, referrerKpis } = getReferrerMetricsFromKpi(kpiData)
 
   const referrerPowerKpis = Object.entries(referrerKpis).reduce(
     (acc, [referrerId, kpi]) => {
@@ -40,16 +37,34 @@ export function calculateRewardsLiskV0({
     {} as Record<string, BigNumber>,
   )
 
-  const totalPower = Object.values(referrerPowerKpis).reduce(
-    (sum, value) => sum.plus(value),
+  const totalLinear = Object.entries(referrerKpis).reduce(
+    (sum, [referrerId, kpi]) => {
+      if (referrerId.toLowerCase() in excludeList) {
+        return sum
+      }
+      return sum.plus(kpi)
+    },
+    BigNumber(0),
+  )
+  const totalPower = Object.entries(referrerPowerKpis).reduce(
+    (sum, [referrerId, kpi]) => {
+      if (referrerId.toLowerCase() in excludeList) {
+        return sum
+      }
+      return sum.plus(kpi)
+    },
     BigNumber(0),
   )
 
   const rewards = Object.entries(referrerKpis).map(([referrerId, kpi]) => {
-    const linearProportion = BigNumber(kpi).div(totalLinear)
-    const powerProportion = BigNumber(referrerPowerKpis[referrerId]).div(
-      totalPower,
-    )
+    const linearProportion =
+      referrerId.toLowerCase() in excludeList
+        ? BigNumber(0)
+        : BigNumber(kpi).div(totalLinear)
+    const powerProportion =
+      referrerId.toLowerCase() in excludeList
+        ? BigNumber(0)
+        : BigNumber(referrerPowerKpis[referrerId]).div(totalPower)
 
     const linearReward = totalLinearRewardsForPeriod.times(linearProportion)
     const powerReward = totalPowerRewardsForPeriod.times(powerProportion)
@@ -126,16 +141,12 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const kpiData = await resultDirectory.readKpi()
 
   const excludeList = await getDivviRewardsExcludedReferrerIds()
-  await resultDirectory.writeExcludeList(excludeList)
-
-  const filteredKpiData = filterExcludedReferrerIds({
-    data: kpiData,
-    excludeList,
-  })
+  await resultDirectory.writeExcludeList(Object.values(excludeList))
 
   const rewards = calculateRewardsLiskV0({
-    kpiData: filteredKpiData,
+    kpiData,
     proportionLinear,
+    excludeList,
   })
 
   createAddRewardSafeTransactionJSON({
