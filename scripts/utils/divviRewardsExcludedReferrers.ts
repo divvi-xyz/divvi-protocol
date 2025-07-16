@@ -49,7 +49,7 @@ export async function getOfacSdnAddresses(): Promise<
   })
 }
 
-export async function getDivviRewardsExcludedReferrerIds(): Promise<
+export async function getDivviRewardsExcludedReferrers(): Promise<
   Record<
     string,
     {

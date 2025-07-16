@@ -29,7 +29,7 @@ describe('calculateRewardsCeloPG', () => {
       kpiData,
       rewardAmount,
       proportionLinear: 1,
-      excludeList: {},
+      excludedReferrers: {},
     })
 
     expect(rewards).toEqual([
@@ -53,13 +53,13 @@ describe('calculateRewardsCeloPG', () => {
       kpiData: [],
       rewardAmount,
       proportionLinear: 1,
-      excludeList: {},
+      excludedReferrers: {},
     })
 
     expect(rewards).toHaveLength(0)
   })
 
-  it('should exclude referrers in excludeList from receiving rewards', () => {
+  it('should exclude referrers in excludedReferrers from receiving rewards', () => {
     const kpiData = [
       {
         referrerId: '0xreferrer1',
@@ -77,7 +77,7 @@ describe('calculateRewardsCeloPG', () => {
       kpiData,
       rewardAmount,
       proportionLinear: 1,
-      excludeList: {
+      excludedReferrers: {
         '0xreferrer1': { referrerId: '0xreferrer1' },
       },
     })

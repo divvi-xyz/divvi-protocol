@@ -3,7 +3,7 @@ import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
-import { getDivviRewardsExcludedReferrerIds } from '../utils/divviRewardsExcludedReferrerIds'
+import { getDivviRewardsExcludedReferrers } from '../utils/divviRewardsExcludedReferrers'
 
 const REWARD_POOL_ADDRESS = '0xA2a4C1eb286a2EfA470d42676081B771bbe9C1c8' // on Base mainnet
 const REWARD_AMOUNT = '1000000000' // 1000 USDC
@@ -48,12 +48,12 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const resultDirectory = args.resultDirectory
   const kpiData = await resultDirectory.readKpi()
 
-  const excludeList = await getDivviRewardsExcludedReferrerIds()
-  await resultDirectory.writeExcludeList(Object.values(excludeList))
+  const excludedReferrers = await getDivviRewardsExcludedReferrers()
+  await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
   const rewards = calculateSqrtProportionalPrizeContest({
     kpiData,
-    excludeList,
+    excludedReferrers,
     rewards: new BigNumber(REWARD_AMOUNT),
   })
 

@@ -125,7 +125,7 @@ describe('calculateSqrtProportionalPrizeContest', () => {
     const result = calculateSqrtProportionalPrizeContest({
       kpiData,
       rewards,
-      excludeList: {},
+      excludedReferrers: {},
     })
 
     // ref1: sqrt(1) = 1, ref2: sqrt(8+8) = sqrt(16) = 4
@@ -148,7 +148,7 @@ describe('calculateSqrtProportionalPrizeContest', () => {
     ])
   })
 
-  it('should exclude referrers in the excludeList from receiving rewards', () => {
+  it('should exclude referrers in the excludedReferrers from receiving rewards', () => {
     const result = calculateSqrtProportionalPrizeContest({
       kpiData: [
         { referrerId: 'ref1', userAddress: 'user1', kpi: '1' },
@@ -157,7 +157,7 @@ describe('calculateSqrtProportionalPrizeContest', () => {
         { referrerId: 'ref3', userAddress: 'user4', kpi: '16' },
       ],
       rewards,
-      excludeList: {
+      excludedReferrers: {
         ref2: { referrerId: 'ref2', shouldWarn: false },
       },
     })
@@ -197,7 +197,7 @@ describe('calculateSqrtProportionalPrizeContest', () => {
         { referrerId: 'ref2', userAddress: 'user3', kpi: '2' },
       ],
       rewards,
-      excludeList: {
+      excludedReferrers: {
         ref1: { referrerId: 'ref1', shouldWarn: false },
         ref2: { referrerId: 'ref2', shouldWarn: false },
       },

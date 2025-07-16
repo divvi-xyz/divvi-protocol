@@ -49,11 +49,11 @@ export function calculateProportionalPrizeContest({
 export function calculateSqrtProportionalPrizeContest({
   kpiData,
   rewards,
-  excludeList,
+  excludedReferrers,
 }: {
   kpiData: KpiRow[]
   rewards: BigNumber
-  excludeList: Record<
+  excludedReferrers: Record<
     string,
     {
       referrerId: string
@@ -74,7 +74,7 @@ export function calculateSqrtProportionalPrizeContest({
   const totalPower = Object.entries(referrerPowerKpis).reduce(
     (sum, [referrerId, value]) => {
       // exclude referrers in the exclude list
-      if (!(referrerId.toLowerCase() in excludeList)) {
+      if (!(referrerId.toLowerCase() in excludedReferrers)) {
         return sum.plus(value)
       }
       return sum
@@ -85,7 +85,7 @@ export function calculateSqrtProportionalPrizeContest({
   const rewardsPerReferrer = Object.entries(referrerPowerKpis).map(
     ([referrerId, powerKpi]) => {
       const proportion =
-        referrerId.toLowerCase() in excludeList
+        referrerId.toLowerCase() in excludedReferrers
           ? BigNumber(0)
           : BigNumber(powerKpi).div(totalPower)
       const rewardAmount = rewards.times(proportion)

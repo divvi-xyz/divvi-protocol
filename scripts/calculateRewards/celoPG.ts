@@ -4,7 +4,7 @@ import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { getReferrerMetricsFromKpi } from './getReferrerMetricsFromKpi'
-import { getDivviRewardsExcludedReferrerIds } from '../utils/divviRewardsExcludedReferrerIds'
+import { getDivviRewardsExcludedReferrers } from '../utils/divviRewardsExcludedReferrers'
 
 const REWARD_POOL_ADDRESS = '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3' // on Celo mainnet
 
@@ -12,12 +12,15 @@ export function calculateRewardsCeloPG({
   kpiData,
   rewardAmount,
   proportionLinear,
-  excludeList,
+  excludedReferrers,
 }: {
   kpiData: KpiRow[]
   rewardAmount: string
   proportionLinear: number
-  excludeList: Record<string, { referrerId: string; shouldWarn?: boolean }>
+  excludedReferrers: Record<
+    string,
+    { referrerId: string; shouldWarn?: boolean }
+  >
 }) {
   const totalRewardsForPeriod = new BigNumber(parseEther(rewardAmount))
   const totalLinearRewardsForPeriod =
@@ -38,7 +41,7 @@ export function calculateRewardsCeloPG({
 
   const totalLinear = Object.entries(referrerKpis).reduce(
     (sum, [referrerId, kpi]) => {
-      if (referrerId.toLowerCase() in excludeList) {
+      if (referrerId.toLowerCase() in excludedReferrers) {
         return sum
       }
       return sum.plus(kpi)
@@ -47,7 +50,7 @@ export function calculateRewardsCeloPG({
   )
   const totalPower = Object.entries(referrerPowerKpis).reduce(
     (sum, [referrerId, kpi]) => {
-      if (referrerId.toLowerCase() in excludeList) {
+      if (referrerId.toLowerCase() in excludedReferrers) {
         return sum
       }
       return sum.plus(kpi)
@@ -57,11 +60,11 @@ export function calculateRewardsCeloPG({
 
   const rewards = Object.entries(referrerKpis).map(([referrerId, kpi]) => {
     const linearProportion =
-      referrerId.toLowerCase() in excludeList
+      referrerId.toLowerCase() in excludedReferrers
         ? BigNumber(0)
         : BigNumber(kpi).div(totalLinear)
     const powerProportion =
-      referrerId.toLowerCase() in excludeList
+      referrerId.toLowerCase() in excludedReferrers
         ? BigNumber(0)
         : BigNumber(referrerPowerKpis[referrerId]).div(totalPower)
 
@@ -147,14 +150,14 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const proportionLinear = args.proportionLinear
   const kpiData = await resultDirectory.readKpi()
 
-  const excludeList = await getDivviRewardsExcludedReferrerIds()
-  await resultDirectory.writeExcludeList(Object.values(excludeList))
+  const excludedReferrers = await getDivviRewardsExcludedReferrers()
+  await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
   const rewards = calculateRewardsCeloPG({
     kpiData,
     rewardAmount,
     proportionLinear,
-    excludeList,
+    excludedReferrers,
   })
 
   const totalTransactionsPerReferrer: {
