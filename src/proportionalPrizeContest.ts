@@ -74,10 +74,20 @@ export function calculateSqrtProportionalPrizeContest({
   const totalPower = Object.entries(referrerPowerKpis).reduce(
     (sum, [referrerId, value]) => {
       // exclude referrers in the exclude list
-      if (!(referrerId.toLowerCase() in excludedReferrers)) {
-        return sum.plus(value)
+      if (referrerId.toLowerCase() in excludedReferrers) {
+        if (excludedReferrers[referrerId].shouldWarn) {
+          console.warn(
+            `⚠️ Flagged address ${referrerId} is a referrer, they will be excluded from campaign rewards.`,
+          )
+        } else {
+          console.log(
+            `Excluded referrer ${referrerId} kpi's are ignored for reward calculations.`,
+          )
+        }
+        return sum
       }
-      return sum
+
+      return sum.plus(value)
     },
     BigNumber(0),
   )

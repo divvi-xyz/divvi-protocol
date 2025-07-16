@@ -43,6 +43,15 @@ export function calculateRewardsLiskV0({
   const totalLinear = Object.entries(referrerKpis).reduce(
     (sum, [referrerId, kpi]) => {
       if (referrerId.toLowerCase() in excludedReferrers) {
+        if (excludedReferrers[referrerId].shouldWarn) {
+          console.warn(
+            `⚠️ Flagged address ${referrerId} is a referrer, they will be excluded from campaign rewards.`,
+          )
+        } else {
+          console.log(
+            `Excluded referrer ${referrerId} kpi's are ignored for reward calculations.`,
+          )
+        }
         return sum
       }
       return sum.plus(kpi)
@@ -60,14 +69,13 @@ export function calculateRewardsLiskV0({
   )
 
   const rewards = Object.entries(referrerKpis).map(([referrerId, kpi]) => {
-    const linearProportion =
-      referrerId.toLowerCase() in excludedReferrers
-        ? BigNumber(0)
-        : BigNumber(kpi).div(totalLinear)
-    const powerProportion =
-      referrerId.toLowerCase() in excludedReferrers
-        ? BigNumber(0)
-        : BigNumber(referrerPowerKpis[referrerId]).div(totalPower)
+    const isExcludedReferrer = referrerId.toLowerCase() in excludedReferrers
+    const linearProportion = isExcludedReferrer
+      ? BigNumber(0)
+      : BigNumber(kpi).div(totalLinear)
+    const powerProportion = isExcludedReferrer
+      ? BigNumber(0)
+      : BigNumber(referrerPowerKpis[referrerId]).div(totalPower)
 
     const linearReward = totalLinearRewardsForPeriod.times(linearProportion)
     const powerReward = totalPowerRewardsForPeriod.times(powerProportion)
