@@ -3,17 +3,24 @@ export function filterExcludedReferrerIds<T extends { referrerId: string }>({
   excludeList,
 }: {
   data: T[]
-  excludeList: { referrerId: string }[]
+  excludeList: { referrerId: string; shouldWarn?: boolean }[]
 }) {
-  const excludeSet = new Set(
-    excludeList.map(({ referrerId }) => referrerId.toLowerCase()),
-  )
+  const excludeMap: { [referrerId: string]: { shouldWarn: boolean } } = {}
+  excludeList.forEach(({ referrerId, shouldWarn }) => {
+    excludeMap[referrerId.toLowerCase()] = { shouldWarn: !!shouldWarn }
+  })
+
   const excludedRows = new Map<string, number>()
 
   const filteredData = data.filter(({ referrerId }) => {
-    const isExcluded = excludeSet.has(referrerId.toLowerCase())
+    const isExcluded = referrerId.toLowerCase() in excludeMap
 
     if (isExcluded) {
+      if (excludeMap[referrerId.toLowerCase()].shouldWarn) {
+        console.warn(
+          `⚠️ Flagged address ${referrerId} is a referrer, but their campaign kpi's will be ignored.`,
+        )
+      }
       excludedRows.set(referrerId, (excludedRows.get(referrerId) ?? 0) + 1)
     }
 

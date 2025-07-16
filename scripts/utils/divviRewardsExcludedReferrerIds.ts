@@ -3,8 +3,8 @@ import * as sax from 'sax'
 import * as unzipper from 'unzipper'
 import { Address, isAddress } from 'viem'
 
-const valoraEntities: Address[] = [
-  '0x9eCfE3dDFAf1BB9B55f56b84471406893c5E29ad', // Valora app
+const valoraEntities: { referrerId: Address }[] = [
+  { referrerId: '0x9ecfe3ddfaf1bb9b55f56b84471406893c5e29ad' }, // Valora app
   // TODO: add VEarn app
 ]
 
@@ -12,7 +12,9 @@ const valoraEntities: Address[] = [
 const OFAC_SDN_ZIP_URL =
   'https://sanctionslistservice.ofac.treas.gov/api/download/SDN_XML.ZIP'
 
-export async function getOfacSdnAddresses(): Promise<Address[]> {
+export async function getOfacSdnAddresses(): Promise<
+  { referrerId: Address; shouldWarn: true }[]
+> {
   const res = await fetch(OFAC_SDN_ZIP_URL)
   if (!res.ok) {
     throw new Error(
@@ -20,7 +22,7 @@ export async function getOfacSdnAddresses(): Promise<Address[]> {
     )
   }
 
-  return new Promise<Address[]>((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const addresses = new Set<Address>()
 
     if (!res.body) {
@@ -33,7 +35,14 @@ export async function getOfacSdnAddresses(): Promise<Address[]> {
         addresses.add(text.toLowerCase() as Address)
       }
     })
-    xmlParser.on('end', () => resolve([...addresses]))
+    xmlParser.on('end', () =>
+      resolve(
+        [...addresses].map((address) => ({
+          referrerId: address,
+          shouldWarn: true,
+        })),
+      ),
+    )
     xmlParser.on('error', reject)
 
     Readable.fromWeb(res.body).pipe(unzipper.ParseOne()).pipe(xmlParser)
@@ -43,11 +52,10 @@ export async function getOfacSdnAddresses(): Promise<Address[]> {
 export async function getDivviRewardsExcludedReferrerIds(): Promise<
   {
     referrerId: Address
+    shouldWarn?: boolean
   }[]
 > {
   const ofacSdnAddresses = await getOfacSdnAddresses()
 
-  return valoraEntities.concat(ofacSdnAddresses).map((address) => ({
-    referrerId: address,
-  }))
+  return valoraEntities.concat(ofacSdnAddresses)
 }
