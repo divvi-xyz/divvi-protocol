@@ -11,6 +11,7 @@ import { calculateKpi as calculateKpiCeloTransactions } from './celoTransactions
 import { calculateKpi as calculateKpiRhino } from './rhino'
 import { calculateKpi as calculateKpiScoutGameV0 } from './scoutGameV0'
 import { calculateKpi as calculateKpiLiskV0 } from './liskV0'
+import { calculateKpi as calculateKpiTetherV0 } from './tetherV0'
 import { calculateKpi as calculateKpiBaseV0 } from './baseV0'
 
 /**
@@ -50,6 +51,7 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   rhino: calculateKpiRhino,
   'scout-game-v0': calculateKpiScoutGameV0,
   'lisk-v0': calculateKpiLiskV0,
+  'tether-v0': calculateKpiTetherV0,
   'base-v0': calculateKpiBaseV0,
 }
 
