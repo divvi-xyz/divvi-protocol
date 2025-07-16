@@ -38,7 +38,7 @@ const config: HardhatUserConfig = {
       chainId: 42220,
     },
     mainnet: {
-      url: 'https://rpc.ankr.com/eth',
+      url: `https://eth-mainnet.g.alchemy.com/public`,
       accounts,
       chainId: 1,
     },
