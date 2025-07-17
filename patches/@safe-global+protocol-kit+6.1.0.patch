@@ -1,0 +1,20 @@
+diff --git a/node_modules/@safe-global/protocol-kit/dist/src/index.d.ts b/node_modules/@safe-global/protocol-kit/dist/src/index.d.ts
+index 1af291e..7fde0a2 100644
+--- a/node_modules/@safe-global/protocol-kit/dist/src/index.d.ts
++++ b/node_modules/@safe-global/protocol-kit/dist/src/index.d.ts
+@@ -19,9 +19,9 @@ import generateOnChainIdentifier from './utils/on-chain-tracking/generateOnChain
+ export { estimateTxBaseGas, estimateTxGas, estimateSafeTxGas, estimateSafeDeploymentGas, extractPasskeyData, ContractManager, CreateCallBaseContract, createERC20TokenTransferTransaction, DEFAULT_SAFE_VERSION, EthSafeSignature, MultiSendCallOnlyBaseContract, MultiSendBaseContract, generateOnChainIdentifier, PREDETERMINED_SALT_NONCE, SafeBaseContract, SafeProxyFactoryBaseContract, SafeTransactionOptionalProps, SignMessageLibBaseContract, encodeCreateProxyWithNonce, encodeMultiSendData, encodeSetupCallData, getCompatibilityFallbackHandlerContract, getCreateCallContract, getERC20Decimals, getMultiSendCallOnlyContract, getMultiSendContract, getSafeProxyFactoryContract, getSafeContract, getSignMessageLibContract, getSafeWebAuthnSignerFactoryContract, getSafeWebAuthnSharedSignerContract, isGasTokenCompatibleWithHandlePayment, predictSafeAddress, getPredictedSafeAddressInitCode, standardizeSafeTransactionData, validateEip3770Address, validateEthereumAddress, generateSignature, generateEIP712Signature, buildContractSignature, buildSignatureBytes, preimageSafeTransactionHash, preimageSafeMessageHash, getEip712TxTypes, getEip712MessageTypes, getSafeAddressFromDeploymentTx, hashSafeMessage, generateTypedData, SafeProvider, createPasskeyClient, EthSafeTransaction, EthSafeMessage, getPasskeyOwnerAddress };
+ export * from './types';
+ export default Safe;
+-declare module 'abitype' {
+-    interface Register {
+-        AddressType: string;
+-    }
+-}
++// declare module 'abitype' {
++//     interface Register {
++//         AddressType: string;
++//     }
++// }
+ //# sourceMappingURL=index.d.ts.map
+\ No newline at end of file

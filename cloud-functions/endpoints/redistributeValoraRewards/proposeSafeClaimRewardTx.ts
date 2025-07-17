@@ -1,0 +1,147 @@
+import { Address, encodeFunctionData } from 'viem'
+import { rewardPoolAbi } from '../../../abis/RewardPool'
+import { NetworkId } from '../../../scripts/types'
+import Safe from '@safe-global/protocol-kit'
+import { OperationType } from '@safe-global/types-kit'
+import { NETWORK_ID_TO_ALCHEMY_RPC_URL } from '../../../scripts/utils'
+
+const NETWORK_ID_TO_SAFE_CONFIG: Partial<
+  Record<
+    NetworkId,
+    {
+      apiUrl: string
+      shortName: string
+    }
+  >
+> = {
+  [NetworkId['celo-mainnet']]: {
+    apiUrl: 'https://safe-transaction-celo.safe.global',
+    shortName: 'celo',
+  },
+  [NetworkId['ethereum-mainnet']]: {
+    apiUrl: 'https://safe-transaction-mainnet.safe.global',
+    shortName: 'eth',
+  },
+  [NetworkId['arbitrum-one']]: {
+    apiUrl: 'https://safe-transaction-arbitrum.safe.global',
+    shortName: 'arb1',
+  },
+  [NetworkId['op-mainnet']]: {
+    apiUrl: 'https://safe-transaction-optimism.safe.global',
+    shortName: 'oeth',
+  },
+  [NetworkId['base-mainnet']]: {
+    apiUrl: 'https://safe-transaction-base.safe.global',
+    shortName: 'base',
+  },
+  [NetworkId['polygon-pos-mainnet']]: {
+    apiUrl: 'https://safe-transaction-polygon.safe.global',
+    shortName: 'pol',
+  },
+}
+
+/**
+ * Propose a Safe transaction to claim rewards from a RewardPool contract.
+ * @param safeAddress The Safe (VALORA_DIVVI_IDENTIFIER) address
+ * @param rewardPoolAddress The RewardPool contract address
+ * @param pendingRewards The amount to claim (as string or bigint)
+ * @param networkId The NetworkId for the Safe Transaction Service
+ */
+export async function proposeSafeClaimRewardTx({
+  safeAddress,
+  rewardPoolAddress,
+  pendingRewards,
+  networkId,
+  alchemyKey,
+}: {
+  safeAddress: Address
+  rewardPoolAddress: string
+  pendingRewards: string | bigint
+  networkId: NetworkId
+  alchemyKey: string
+}) {
+  const safeConfig = NETWORK_ID_TO_SAFE_CONFIG[networkId]
+  const alchemyRpcUrl = NETWORK_ID_TO_ALCHEMY_RPC_URL[networkId]
+
+  if (!safeConfig) {
+    throw new Error(`No Safe config found for networkId: ${networkId}`)
+  }
+
+  if (!alchemyRpcUrl) {
+    throw new Error(`No Alchemy RPC URL found for networkId: ${networkId}`)
+  }
+
+  const protocolKit = await Safe.init({
+    provider: `${alchemyRpcUrl}${alchemyKey}`,
+    safeAddress,
+  })
+
+  // 1. Encode calldata for claimReward
+  const data = encodeFunctionData({
+    abi: rewardPoolAbi,
+    functionName: 'claimReward',
+    args: [
+      typeof pendingRewards === 'bigint'
+        ? pendingRewards
+        : BigInt(pendingRewards),
+    ],
+  })
+
+  const safeTransactionData = {
+    to: rewardPoolAddress,
+    value: '0',
+    data,
+    operation: OperationType.Call,
+  }
+  // 2. Prepare Safe transaction data
+  const safeTx = await protocolKit.createTransaction({
+    transactions: [safeTransactionData],
+  })
+
+  const safeTxHash = await protocolKit.getTransactionHash(safeTx)
+
+  // 3. Propose transaction to Safe Transaction Service
+  const response = await fetch(
+    `${safeConfig.apiUrl}/v2/safes/${safeAddress}/multisig-transactions/`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...safeTransactionData,
+        baseGas: safeTx.data.baseGas,
+        gasPrice: safeTx.data.gasPrice,
+        nonce: safeTx.data.nonce,
+        safeTxGas: safeTx.data.safeTxGas,
+        contractTransactionHash: safeTxHash,
+        sender: (await getSafeOwners(safeAddress, networkId))[0], // this can be any signer on the safe, so pick the first one
+      }),
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+  return `https://app.safe.global/transactions/tx?safe=${safeConfig.shortName}:${safeAddress}&id=${safeTxHash}`
+}
+
+export async function getSafeOwners(
+  address: Address,
+  networkId: NetworkId,
+): Promise<Address[]> {
+  const safeConfig = NETWORK_ID_TO_SAFE_CONFIG[networkId]
+  if (!safeConfig) {
+    throw new Error(`No Safe Info found for networkId: ${networkId}`)
+  }
+  const response = await fetch(`${safeConfig.apiUrl}/v1/safes/${address}/`)
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to get Safe info: ${response.statusText}, ${await response.text()}`,
+    )
+  }
+
+  const safeDetails = (await response.json()) as { owners: Address[] }
+  return safeDetails.owners
+}
