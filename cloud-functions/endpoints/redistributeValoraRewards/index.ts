@@ -92,8 +92,7 @@ async function processCampaignRewards({
 
       logger.info(
         {
-          rewardsProvider,
-          rewardPoolAddress,
+          campaign,
           pendingRewards,
         },
         `Fetched pending rewards for ${rewardsProvider}`,
@@ -122,8 +121,7 @@ async function processCampaignRewards({
           logger.warn(
             {
               err: safeError,
-              rewardsProvider,
-              rewardPoolAddress,
+              campaign,
             },
             `Failed to propose Safe transaction for ${rewardsProvider}`,
           )
@@ -135,8 +133,7 @@ async function processCampaignRewards({
       logger.warn(
         {
           err: processError,
-          rewardsProvider,
-          rewardPoolAddress,
+          campaign,
         },
         `Failed to process rewards for ${rewardsProvider}`,
       )
