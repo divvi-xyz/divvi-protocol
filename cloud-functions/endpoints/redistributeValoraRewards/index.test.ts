@@ -25,6 +25,7 @@ process.env.VALORA_REWARDS_POOL_OWNER_PRIVATE_KEY =
   '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
 process.env.DIVVI_INDEXER_URL = 'https://test-indexer.example.com'
 process.env.ALCHEMY_KEY = 'test-alchemy-key'
+process.env.GCLOUD_PROJECT = 'divvi-staging'
 
 describe('redistributeValoraRewards', () => {
   let mockClient: jest.Mocked<GraphQLClient>
