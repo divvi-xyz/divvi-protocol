@@ -56,7 +56,7 @@ export async function proposeSafeClaimRewardTx({
 }: {
   safeAddress: Address
   rewardPoolAddress: string
-  pendingRewards: string | bigint
+  pendingRewards: bigint
   networkId: NetworkId
   alchemyKey: string
 }) {
@@ -80,11 +80,7 @@ export async function proposeSafeClaimRewardTx({
   const data = encodeFunctionData({
     abi: rewardPoolAbi,
     functionName: 'claimReward',
-    args: [
-      typeof pendingRewards === 'bigint'
-        ? pendingRewards
-        : BigInt(pendingRewards),
-    ],
+    args: [pendingRewards],
   })
 
   const safeTransactionData = {
@@ -126,7 +122,7 @@ export async function proposeSafeClaimRewardTx({
   return `https://app.safe.global/transactions/tx?safe=${safeConfig.shortName}:${safeAddress}&id=${safeTxHash}`
 }
 
-export async function getSafeOwners(
+async function getSafeOwners(
   address: Address,
   networkId: NetworkId,
 ): Promise<Address[]> {
