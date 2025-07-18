@@ -265,7 +265,6 @@ const campaigns: Campaign[] = [
             startTimestamp,
             endTimestampExclusive,
             rewardAmount: '5000000000', // 5000 USDT
-            excludelist: [],
           })
         },
       },
@@ -286,7 +285,6 @@ const campaigns: Campaign[] = [
             startTimestamp,
             endTimestampExclusive,
             rewardAmount: '10000000000', // 10000 USDT
-            excludelist: [],
           })
         },
       },

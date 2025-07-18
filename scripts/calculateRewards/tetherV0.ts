@@ -32,17 +32,6 @@ function parseArgs() {
       type: 'string',
       demandOption: true,
     })
-    .option('excludelist', {
-      description:
-        'Comma-separated list of CSV files with excluded addresses (e.g., file1.csv,file2.csv)',
-      type: 'array',
-      default: [],
-      coerce: (arg: string[]) => {
-        return arg
-          .flatMap((s) => s.split(',').map((item) => item.trim()))
-          .filter(Boolean)
-      },
-    })
     .strict()
     .parseSync()
 
@@ -56,7 +45,6 @@ function parseArgs() {
     startTimestamp: args['start-timestamp'],
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
-    excludelist: args.excludelist,
   }
 }
 
