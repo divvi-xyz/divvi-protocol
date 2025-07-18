@@ -7,7 +7,7 @@ import { filterExcludedReferrerIds } from '../utils/filterReferrerIds'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { calculateProportionalPrizeContest } from '../../src/proportionalPrizeContest'
 
-const REWARD_POOL_ADDRESS = '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3' // on Celo mainnet
+const REWARD_POOL_ADDRESS = '0xB575210cdF52B18000aE24Be4981e9ABC7716F98' // on Ethereum mainnet
 
 export function calculateRewardsTetherV0({
   kpiData,
