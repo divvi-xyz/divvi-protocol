@@ -1,15 +1,10 @@
 import yargs from 'yargs'
-import { parse } from 'csv-parse/sync'
-import { readFileSync } from 'fs'
-import { Address, parseEther } from 'viem'
+import { parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import {
-  filterIncludedReferrerIds,
-  filterExcludedReferrerIds,
-} from '../utils/filterReferrerIds'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { getReferrerMetricsFromKpi } from './getReferrerMetricsFromKpi'
+import { getDivviRewardsExcludedReferrers } from '../utils/divviRewardsExcludedReferrers'
 
 const REWARD_POOL_ADDRESS = '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3' // on Celo mainnet
 
@@ -17,10 +12,15 @@ export function calculateRewardsCeloPG({
   kpiData,
   rewardAmount,
   proportionLinear,
+  excludedReferrers,
 }: {
   kpiData: KpiRow[]
   rewardAmount: string
   proportionLinear: number
+  excludedReferrers: Record<
+    string,
+    { referrerId: string; shouldWarn?: boolean }
+  >
 }) {
   const totalRewardsForPeriod = new BigNumber(parseEther(rewardAmount))
   const totalLinearRewardsForPeriod =
@@ -29,11 +29,7 @@ export function calculateRewardsCeloPG({
     1 - proportionLinear,
   )
 
-  const {
-    referrerReferrals,
-    referrerKpis,
-    totalKpi: totalLinear,
-  } = getReferrerMetricsFromKpi(kpiData)
+  const { referrerReferrals, referrerKpis } = getReferrerMetricsFromKpi(kpiData)
 
   const referrerPowerKpis = Object.entries(referrerKpis).reduce(
     (acc, [referrerId, kpi]) => {
@@ -43,16 +39,42 @@ export function calculateRewardsCeloPG({
     {} as Record<string, BigNumber>,
   )
 
-  const totalPower = Object.values(referrerPowerKpis).reduce(
-    (sum, value) => sum.plus(value),
+  const totalLinear = Object.entries(referrerKpis).reduce(
+    (sum, [referrerId, kpi]) => {
+      if (referrerId.toLowerCase() in excludedReferrers) {
+        if (excludedReferrers[referrerId].shouldWarn) {
+          console.warn(
+            `⚠️ Flagged address ${referrerId} is a referrer, they will be excluded from campaign rewards.`,
+          )
+        } else {
+          console.log(
+            `Excluded referrer ${referrerId} kpi's are ignored for reward calculations.`,
+          )
+        }
+        return sum
+      }
+      return sum.plus(kpi)
+    },
+    BigNumber(0),
+  )
+  const totalPower = Object.entries(referrerPowerKpis).reduce(
+    (sum, [referrerId, kpi]) => {
+      if (referrerId.toLowerCase() in excludedReferrers) {
+        return sum
+      }
+      return sum.plus(kpi)
+    },
     BigNumber(0),
   )
 
   const rewards = Object.entries(referrerKpis).map(([referrerId, kpi]) => {
-    const linearProportion = BigNumber(kpi).div(totalLinear)
-    const powerProportion = BigNumber(referrerPowerKpis[referrerId]).div(
-      totalPower,
-    )
+    const isExcludedReferrer = referrerId.toLowerCase() in excludedReferrers
+    const linearProportion = isExcludedReferrer
+      ? BigNumber(0)
+      : BigNumber(kpi).div(totalLinear)
+    const powerProportion = isExcludedReferrer
+      ? BigNumber(0)
+      : BigNumber(referrerPowerKpis[referrerId]).div(totalPower)
 
     const linearReward = totalLinearRewardsForPeriod.times(linearProportion)
     const powerReward = totalPowerRewardsForPeriod.times(powerProportion)
@@ -105,28 +127,6 @@ function parseArgs() {
       type: 'number',
       default: 1,
     })
-    .option('builder-allowlist-file', {
-      alias: 'a',
-      description: 'a csv file of allowlisted builders',
-      type: 'string',
-    })
-    .option('excludelist', {
-      description:
-        'Comma-separated list of CSV files with excluded addresses (e.g., file1.csv,file2.csv)',
-      type: 'array',
-      default: [],
-      coerce: (arg: string[]) => {
-        return arg
-          .flatMap((s) => s.split(',').map((item) => item.trim()))
-          .filter(Boolean)
-      },
-    })
-    .option('fail-on-exclude', {
-      description:
-        'Fail if any of the excluded addresses are found in the referral events',
-      type: 'boolean',
-      default: false,
-    })
     .strict()
     .parseSync()
 
@@ -141,9 +141,6 @@ function parseArgs() {
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
     proportionLinear: args['proportion-linear'],
-    builderAllowListFile: args['builder-allowlist-file'],
-    excludelist: args.excludelist,
-    failOnExclude: args['fail-on-exclude'],
   }
 }
 
@@ -161,46 +158,21 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const proportionLinear = args.proportionLinear
   const kpiData = await resultDirectory.readKpi()
 
-  const excludeList = args.excludelist.flatMap((file) =>
-    parse(readFileSync(file, 'utf-8').toString(), {
-      skip_empty_lines: true,
-      columns: true,
-    }).map(({ referrerId }: { referrerId: string }) =>
-      referrerId.toLowerCase(),
-    ),
-  ) as string[]
-
-  const allowList = args.builderAllowListFile
-    ? (parse(readFileSync(args.builderAllowListFile, 'utf-8').toString(), {
-        skip_empty_lines: true,
-        columns: true,
-      }).map(({ referrerId }: { referrerId: Address }) =>
-        referrerId.toLowerCase(),
-      ) as Address[])
-    : undefined
-
-  const filteredKpiData = allowList
-    ? filterIncludedReferrerIds({
-        data: kpiData,
-        allowList,
-      })
-    : filterExcludedReferrerIds({
-        data: kpiData,
-        excludeList,
-        failOnExclude: args.failOnExclude,
-      })
+  const excludedReferrers = await getDivviRewardsExcludedReferrers()
+  await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
   const rewards = calculateRewardsCeloPG({
-    kpiData: filteredKpiData,
+    kpiData,
     rewardAmount,
     proportionLinear,
+    excludedReferrers,
   })
 
   const totalTransactionsPerReferrer: {
     [referrerId: string]: number
   } = {}
 
-  for (const { referrerId, metadata } of filteredKpiData) {
+  for (const { referrerId, metadata } of kpiData) {
     if (!metadata) continue
 
     totalTransactionsPerReferrer[referrerId] =
@@ -220,14 +192,6 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     startTimestamp,
     endTimestampExclusive,
   })
-
-  if (args.builderAllowListFile) {
-    const fileName = args.builderAllowListFile
-    await resultDirectory.writeIncludeList(fileName)
-    console.log(
-      `Saved include list ${fileName} to ${resultDirectory.includeListFilePath(fileName)}`,
-    )
-  }
 
   await resultDirectory.writeRewards(rewardsWithMetadata)
 }

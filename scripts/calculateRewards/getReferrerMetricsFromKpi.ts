@@ -3,7 +3,6 @@ import { KpiRow } from '../../src/resultDirectory'
 export function getReferrerMetricsFromKpi(kpi: KpiRow[]) {
   const referrerReferrals: Record<string, number> = {}
   const referrerKpis: Record<string, bigint> = {}
-  let totalKpi = BigInt(0)
 
   kpi.forEach((row) => {
     if (!(row.referrerId in referrerReferrals)) {
@@ -12,9 +11,7 @@ export function getReferrerMetricsFromKpi(kpi: KpiRow[]) {
     }
     referrerReferrals[row.referrerId]++
     referrerKpis[row.referrerId] += BigInt(row.kpi)
-
-    totalKpi += BigInt(row.kpi)
   })
 
-  return { referrerReferrals, referrerKpis, totalKpi }
+  return { referrerReferrals, referrerKpis }
 }

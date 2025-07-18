@@ -36,6 +36,7 @@ export function calculateRewards({
   return calculateSqrtProportionalPrizeContest({
     kpiData,
     rewards: totalRewardsForPeriod,
+    excludedReferrers: {},
   })
 }
 

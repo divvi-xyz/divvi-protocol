@@ -1,21 +1,12 @@
 import yargs from 'yargs'
-import { parse } from 'csv-parse/sync'
-import { readFileSync } from 'fs'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import { filterExcludedReferrerIds } from '../utils/filterReferrerIds'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
+import { getDivviRewardsExcludedReferrers } from '../utils/divviRewardsExcludedReferrers'
 
 const REWARD_POOL_ADDRESS = '0xA2a4C1eb286a2EfA470d42676081B771bbe9C1c8' // on Base mainnet
 const REWARD_AMOUNT = '1000000000' // 1000 USDC
-
-export function calculateRewardsBaseV0({ kpiData }: { kpiData: KpiRow[] }) {
-  return calculateSqrtProportionalPrizeContest({
-    kpiData,
-    rewards: new BigNumber(REWARD_AMOUNT),
-  })
-}
 
 function parseArgs() {
   const args = yargs
@@ -36,23 +27,6 @@ function parseArgs() {
       type: 'string',
       demandOption: true,
     })
-    .option('excludelist', {
-      description:
-        'Comma-separated list of CSV files with excluded addresses (e.g., file1.csv,file2.csv)',
-      type: 'array',
-      default: [],
-      coerce: (arg: string[]) => {
-        return arg
-          .flatMap((s) => s.split(',').map((item) => item.trim()))
-          .filter(Boolean)
-      },
-    })
-    .option('fail-on-exclude', {
-      description:
-        'Fail if any of the excluded addresses are found in the referral events',
-      type: 'boolean',
-      default: false,
-    })
     .strict()
     .parseSync()
 
@@ -65,15 +39,7 @@ function parseArgs() {
     }),
     startTimestamp: args['start-timestamp'],
     endTimestampExclusive: args['end-timestamp'],
-    excludelist: args.excludelist,
-    failOnExclude: args['fail-on-exclude'],
   }
-}
-
-interface KpiRow {
-  referrerId: string
-  userAddress: string
-  kpi: string
 }
 
 export async function main(args: ReturnType<typeof parseArgs>) {
@@ -82,30 +48,20 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const resultDirectory = args.resultDirectory
   const kpiData = await resultDirectory.readKpi()
 
-  const excludeList = args.excludelist.flatMap((file) =>
-    parse(readFileSync(file, 'utf-8').toString(), {
-      skip_empty_lines: true,
-      columns: true,
-    }).map(({ referrerId }: { referrerId: string }) =>
-      referrerId.toLowerCase(),
-    ),
-  ) as string[]
+  const excludedReferrers = await getDivviRewardsExcludedReferrers()
+  await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
-  const filteredKpiData = filterExcludedReferrerIds({
-    data: kpiData,
-    excludeList,
-    failOnExclude: args.failOnExclude,
-  })
-
-  const rewards = calculateRewardsBaseV0({
-    kpiData: filteredKpiData,
+  const rewards = calculateSqrtProportionalPrizeContest({
+    kpiData,
+    excludedReferrers,
+    rewards: new BigNumber(REWARD_AMOUNT),
   })
 
   const totalTransactionsPerReferrer: {
     [referrerId: string]: number
   } = {}
 
-  for (const { referrerId, metadata } of filteredKpiData) {
+  for (const { referrerId, metadata } of kpiData) {
     if (!metadata) continue
 
     totalTransactionsPerReferrer[referrerId] =

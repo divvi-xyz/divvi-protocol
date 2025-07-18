@@ -7,7 +7,6 @@ describe('getReferrerMetricsFromKpi', () => {
     expect(result).toEqual({
       referrerReferrals: {},
       referrerKpis: {},
-      totalKpi: BigInt(0),
     })
   })
 
@@ -31,7 +30,6 @@ describe('getReferrerMetricsFromKpi', () => {
         ref2: BigInt(200),
         ref3: BigInt(400),
       },
-      totalKpi: BigInt(1000),
     })
   })
 })
