@@ -44,11 +44,13 @@ describe('Tether V0 Protocol KPI Calculation', () => {
   const testAddress = '0x1234567890123456789012345678901234567890' as Address
   const startTimestamp = new Date('2024-01-01T00:00:00Z')
   const endTimestampExclusive = new Date('2024-01-31T23:59:59Z')
+  const testReferrerId = 'test-referrer-id'
 
   const defaultProps = {
     address: testAddress,
     startTimestamp,
     endTimestampExclusive,
+    referrerId: testReferrerId,
   }
 
   beforeEach(() => {
@@ -78,16 +80,19 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       const result = await calculateKpi(defaultProps)
 
       expect(result).toEqual({
-        kpi: 0,
-        metadata: {
-          [NetworkId['ethereum-mainnet']]: 0,
-          [NetworkId['avalanche-mainnet']]: 0,
-          [NetworkId['celo-mainnet']]: 0,
-          [NetworkId['unichain-mainnet']]: 0,
-          [NetworkId['ink-mainnet']]: 0,
-          [NetworkId['op-mainnet']]: 0,
-          [NetworkId['arbitrum-one']]: 0,
-          [NetworkId['berachain-mainnet']]: 0,
+        [testReferrerId]: {
+          referrerId: testReferrerId,
+          kpi: 0,
+          metadata: {
+            [NetworkId['ethereum-mainnet']]: 0,
+            [NetworkId['avalanche-mainnet']]: 0,
+            [NetworkId['celo-mainnet']]: 0,
+            [NetworkId['unichain-mainnet']]: 0,
+            [NetworkId['ink-mainnet']]: 0,
+            [NetworkId['op-mainnet']]: 0,
+            [NetworkId['arbitrum-one']]: 0,
+            [NetworkId['berachain-mainnet']]: 0,
+          },
         },
       })
     })
@@ -134,7 +139,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       const result = await calculateKpi(defaultProps)
 
-      expect(result.kpi).toBeGreaterThan(0)
+      expect(result[testReferrerId].kpi).toBeGreaterThan(0)
     })
 
     it('should not count transactions with transfer value below minimum threshold', async () => {
@@ -158,7 +163,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       const result = await calculateKpi(defaultProps)
 
-      expect(result.kpi).toBe(0)
+      expect(result[testReferrerId].kpi).toBe(0)
     })
 
     it('should count each transaction only once even if it has multiple transfer events', async () => {
@@ -195,7 +200,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       const result = await calculateKpi(defaultProps)
 
       // Should count as 1 transaction per network, not 2
-      expect(result.kpi).toBe(8)
+      expect(result[testReferrerId].kpi).toBe(8)
     })
 
     it('should not count transactions with net transfer value below minimum threshold', async () => {
@@ -234,7 +239,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       const result = await calculateKpi(defaultProps)
 
       // Should count as 0 transactions per network since the net transfer value is 0
-      expect(result.kpi).toBe(0)
+      expect(result[testReferrerId].kpi).toBe(0)
     })
 
     it('should handle both incoming and outgoing transfers', async () => {
@@ -273,7 +278,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       const result = await calculateKpi(defaultProps)
 
       // Should count both transactions (2 per network)
-      expect(result.kpi).toBe(16)
+      expect(result[testReferrerId].kpi).toBe(16)
     })
 
     it('should handle malformed log data gracefully', async () => {
@@ -298,7 +303,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       const result = await calculateKpi(defaultProps)
 
       // Should handle gracefully and return 0
-      expect(result.kpi).toBe(0)
+      expect(result[testReferrerId].kpi).toBe(0)
     })
   })
 })

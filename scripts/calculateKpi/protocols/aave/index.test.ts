@@ -182,12 +182,19 @@ describe('Aave revenue calculation', () => {
     // - Day 2-4 (reserve factor 50%): 300 = 400 * 0.75 * (0.50 / (1 - 0.50))
     // Total: 325
 
+    const testReferrerId = 'test-referrer-id'
     const revenue = await calculateKpi({
       address: mockUserAddress,
       startTimestamp: mockStartTimestamp,
       endTimestampExclusive: mockEndTimestamp,
+      referrerId: testReferrerId,
     })
 
-    expect(revenue).toEqual({ kpi: 1750 }) // Total revenue in USD ((1.425 * 1000) + (325 * 1))
+    expect(revenue).toEqual({
+      [testReferrerId]: {
+        referrerId: testReferrerId,
+        kpi: 1750, // Total revenue in USD ((1.425 * 1000) + (325 * 1))
+      },
+    })
   })
 })

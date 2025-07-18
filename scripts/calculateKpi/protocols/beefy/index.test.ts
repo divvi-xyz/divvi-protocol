@@ -236,10 +236,16 @@ describe('Beefy revenue calculation', () => {
         address: '0x123',
         startTimestamp: new Date(0),
         endTimestampExclusive: new Date(100),
+        referrerId: 'test-referrer-id',
       })
 
       // 160 USD from Arbitrum, 5 from Ethereum
-      expect(result).toEqual({ kpi: 165 })
+      expect(result).toEqual({
+        'test-referrer-id': {
+          referrerId: 'test-referrer-id',
+          kpi: 165,
+        },
+      })
     })
   })
 })
