@@ -18,7 +18,7 @@ export function calculateProportionalPrizeContest({
 
   let totalKpi = BigInt(0)
   for (const kpi of Object.values(referrerKpis)) {
-    totalKpi += BigInt(kpi)
+    totalKpi += kpi
   }
 
   const rewardsPerReferrer = Object.entries(referrerKpis).map(
@@ -76,7 +76,7 @@ export function calculateProportionalPrizeContestWithExcludedReferrers({
         )
       }
     } else {
-      totalKpi += BigInt(kpi)
+      totalKpi += kpi
     }
   }
 
