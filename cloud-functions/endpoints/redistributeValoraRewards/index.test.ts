@@ -39,6 +39,7 @@ process.env.VALORA_REWARDS_POOL_OWNER_PRIVATE_KEY =
 process.env.DIVVI_INDEXER_URL = 'https://test-indexer.example.com'
 process.env.ALCHEMY_KEY = 'test-alchemy-key'
 process.env.GCLOUD_PROJECT = 'divvi-staging'
+process.env.GCS_BUCKET = 'divvi-staging-bucket'
 
 const latestRewards = {
   filename:
