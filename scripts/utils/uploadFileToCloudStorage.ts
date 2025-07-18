@@ -37,9 +37,9 @@ export async function listGCSFiles(bucketName: string) {
 
   try {
     const response = await axios.get(url)
-    const items = response.data.items || []
+    const items: { name: string }[] = response.data.items || []
 
-    const files = items.map((item: { name: string }) => ({
+    const files = items.map((item) => ({
       name: item.name,
       url: `https://storage.googleapis.com/${bucketName}/${item.name}`,
     }))

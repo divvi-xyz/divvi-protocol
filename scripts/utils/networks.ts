@@ -1,5 +1,19 @@
 import { Address } from 'viem'
 import { NetworkId } from '../types'
+import {
+  arbitrum,
+  base,
+  celo,
+  optimism,
+  polygon,
+  lisk,
+  ink,
+  unichain,
+  avalanche,
+  berachain,
+  Chain,
+  mainnet,
+} from 'viem/chains'
 
 export const NETWORK_ID_TO_REGISTRY_ADDRESS = {
   [NetworkId['arbitrum-one']]: '0xBa9655677f4E42DD289F5b7888170bC0c7dA8Cdc',
@@ -33,3 +47,17 @@ export const NETWORK_ID_TO_HYPERSYNC_URL = {
   [NetworkId['berachain-mainnet']]: 'https://berachain.hypersync.xyz',
   [NetworkId['mantle-mainnet']]: 'https://mantle.hypersync.xyz',
 } as Partial<Record<NetworkId, string>>
+
+export const NETWORK_ID_TO_VIEM_CHAIN = {
+  [NetworkId['ethereum-mainnet']]: mainnet,
+  [NetworkId['arbitrum-one']]: arbitrum,
+  [NetworkId['base-mainnet']]: base,
+  [NetworkId['celo-mainnet']]: celo,
+  [NetworkId['op-mainnet']]: optimism,
+  [NetworkId['polygon-pos-mainnet']]: polygon,
+  [NetworkId['lisk-mainnet']]: lisk,
+  [NetworkId['ink-mainnet']]: ink,
+  [NetworkId['unichain-mainnet']]: unichain,
+  [NetworkId['avalanche-mainnet']]: avalanche,
+  [NetworkId['berachain-mainnet']]: berachain,
+} satisfies Record<NetworkId, Chain>
