@@ -2,7 +2,7 @@ import yargs from 'yargs'
 import { parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { ResultDirectory } from '../../src/resultDirectory'
-import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
+import { getReferrerMetricsFromKpi } from './getReferrerMetricsFromKpi'
 
 function parseArgs() {
   const args = yargs
@@ -28,9 +28,9 @@ function parseArgs() {
       type: 'string',
       demandOption: true,
     })
-    .option('reward-amount', {
+    .option('reward-rate', {
       alias: 'r',
-      description: 'the reward amount for this time period in CELO in decimals',
+      description: 'the reward rate for this time period in SLICES in decimals',
       type: 'string',
       demandOption: true,
     })
@@ -46,20 +46,37 @@ function parseArgs() {
     }),
     startTimestamp: args['start-timestamp'],
     endTimestampExclusive: args['end-timestamp'],
-    rewardAmount: args['reward-amount'],
+    rewardRate: args['reward-rate'],
   }
 }
 
 export async function main(args: ReturnType<typeof parseArgs>) {
   const resultDirectory = args.resultDirectory
-  const rewardAmount = args.rewardAmount
+  const rewardRate = args.rewardRate
   const kpiData = await resultDirectory.readKpi()
 
-  const slicesRewards = calculateSqrtProportionalPrizeContest({
-    kpiData,
-    rewards: new BigNumber(parseEther(rewardAmount)),
-    excludedReferrers: {},
-  })
+  const { referrerReferrals, referrerKpis } = getReferrerMetricsFromKpi(kpiData)
+
+  const referrerPowerKpis = Object.entries(referrerKpis).reduce(
+    (acc, [referrerId, kpi]) => {
+      acc[referrerId] = BigNumber(kpi).sqrt()
+      return acc
+    },
+    {} as Record<string, BigNumber>,
+  )
+
+  const slicesRewards = Object.entries(referrerPowerKpis).map(
+    ([referrerId, powerKpi]) => {
+      return {
+        referrerId,
+        kpi: referrerKpis[referrerId],
+        referralCount: referrerReferrals[referrerId],
+        rewardAmount: parseEther(
+          powerKpi.times(rewardRate).toFixed(0, BigNumber.ROUND_DOWN),
+        ),
+      }
+    },
+  )
 
   await resultDirectory.writeBuilderSlices(slicesRewards)
 }
