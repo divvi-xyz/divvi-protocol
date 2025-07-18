@@ -50,6 +50,10 @@ export class ResultDirectory {
     return path.join(this.resultsDirectory, 'rewards')
   }
 
+  get builderSlicesFileSuffix() {
+    return path.join(this.resultsDirectory, 'slices')
+  }
+
   get excludeListFileSuffix() {
     return path.join(this.resultsDirectory, 'exclude-list')
   }
@@ -123,5 +127,13 @@ export class ResultDirectory {
 
   writeIncludeList(fileName: string) {
     return copyFile(fileName, this.includeListFilePath(fileName))
+  }
+
+  async writeBuilderSlices(slices: any[]) {
+    await mkdir(dirname(this.rewardsFileSuffix), { recursive: true })
+    return await Promise.all([
+      this._writeCsv(this.builderSlicesFileSuffix, slices),
+      this._writeJson(this.builderSlicesFileSuffix, slices),
+    ])
   }
 }
