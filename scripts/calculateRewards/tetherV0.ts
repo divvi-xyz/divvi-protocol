@@ -1,26 +1,11 @@
 import yargs from 'yargs'
-import { parse } from 'csv-parse/sync'
-import { readFileSync } from 'fs'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import { filterExcludedReferrerIds } from '../utils/filterReferrerIds'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { calculateProportionalPrizeContest } from '../../src/proportionalPrizeContest'
+import { getDivviRewardsExcludedReferrers } from '../utils/divviRewardsExcludedReferrers'
 
 const REWARD_POOL_ADDRESS = '0xB575210cdF52B18000aE24Be4981e9ABC7716F98' // on Ethereum mainnet
-
-export function calculateRewardsTetherV0({
-  kpiData,
-  rewardAmount,
-}: {
-  kpiData: KpiRow[]
-  rewardAmount: string
-}) {
-  return calculateProportionalPrizeContest({
-    kpiData,
-    rewards: new BigNumber(rewardAmount),
-  })
-}
 
 function parseArgs() {
   const args = yargs
@@ -82,12 +67,6 @@ function parseArgs() {
   }
 }
 
-interface KpiRow {
-  referrerId: string
-  userAddress: string
-  kpi: string
-}
-
 export async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args.startTimestamp)
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
@@ -95,31 +74,20 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const rewardAmount = args.rewardAmount
   const kpiData = await resultDirectory.readKpi()
 
-  const excludeList = args.excludelist.flatMap((file) =>
-    parse(readFileSync(file, 'utf-8').toString(), {
-      skip_empty_lines: true,
-      columns: true,
-    }).map(({ referrerId }: { referrerId: string }) =>
-      referrerId.toLowerCase(),
-    ),
-  ) as string[]
+  const excludedReferrers = await getDivviRewardsExcludedReferrers()
+  await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
-  const filteredKpiData = filterExcludedReferrerIds({
-    data: kpiData,
-    excludeList,
-    failOnExclude: args.failOnExclude,
-  })
-
-  const rewards = calculateRewardsTetherV0({
-    kpiData: filteredKpiData,
-    rewardAmount,
+  const rewards = calculateProportionalPrizeContest({
+    kpiData,
+    rewards: new BigNumber(rewardAmount),
+    excludedReferrers,
   })
 
   const totalTransactionsPerReferrer: {
     [referrerId: string]: number
   } = {}
 
-  for (const { referrerId, metadata } of filteredKpiData) {
+  for (const { referrerId, metadata } of kpiData) {
     if (!metadata) continue
 
     totalTransactionsPerReferrer[referrerId] =
