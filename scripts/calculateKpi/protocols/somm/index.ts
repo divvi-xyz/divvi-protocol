@@ -7,7 +7,7 @@ import {
   calculateWeightedAveragePrice,
   getDailySnapshots,
 } from './dailySnapshots'
-import { KpiResult } from '../../../types'
+import { KpiResultByReferrerId } from '../../../types'
 
 const REWARDS_PERCENTAGE = 0.1 // 10%
 export const ONE_YEAR = 365 * 24 * 60 * 60 * 1000
@@ -211,18 +211,21 @@ function getTimeInRange(startTimestamp: Date, endTimestampExclusive: Date) {
  * @param params.address - User wallet address to calculate rewards for
  * @param params.startTimestamp - Start of time window for reward calculation (inclusive)
  * @param params.endTimestampExclusive - End of time window for reward calculation (exclusive)
+ * @param params.referrerId - Referrer identifier for result attribution
  *
- * @returns Promise resolving to total reward allocation in USD
+ * @returns Promise resolving to total reward allocation in USD per referrerId
  */
 export async function calculateKpi({
   address,
   startTimestamp,
   endTimestampExclusive,
+  referrerId,
 }: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<KpiResult> {
+  referrerId: string
+}): Promise<KpiResultByReferrerId> {
   if (!isAddress(address)) {
     throw new Error('Invalid address')
   }
@@ -240,5 +243,7 @@ export async function calculateKpi({
     })
     totalRevenue += vaultRevenue
   }
-  return { kpi: totalRevenue * REWARDS_PERCENTAGE }
+  return {
+    [referrerId]: { kpi: totalRevenue * REWARDS_PERCENTAGE, referrerId },
+  }
 }

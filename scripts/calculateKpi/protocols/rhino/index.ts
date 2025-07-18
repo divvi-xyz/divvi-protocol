@@ -6,7 +6,7 @@ import {
   BRIDGED_WITHDRAWAL_TOPIC,
 } from './constants'
 import { getTokenHistoricalPrice } from '../utils/getHistoricalTokenPrice'
-import { KpiResult, NetworkId } from '../../../types'
+import { KpiResultByReferrerId, NetworkId } from '../../../types'
 import { BridgeTransaction } from './types'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { Address, decodeEventLog, Hex, isAddress, zeroAddress } from 'viem'
@@ -215,18 +215,21 @@ export async function getTotalRevenueUsdFromBridges({
  * @param params.address - User wallet address to calculate bridge transaction volume for
  * @param params.startTimestamp - Start of time window for volume calculation (inclusive)
  * @param params.endTimestampExclusive - End of time window for volume calculation (exclusive)
+ * @param params.referrerId - Referrer identifier for result attribution
  *
- * @returns Promise resolving to total bridge transaction volume in USD
+ * @returns Promise resolving to total bridge transaction volume in USD per referrerId
  */
 export async function calculateKpi({
   address,
   startTimestamp,
   endTimestampExclusive,
+  referrerId,
 }: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<KpiResult> {
+  referrerId: string
+}): Promise<KpiResultByReferrerId> {
   if (!isAddress(address)) {
     throw new Error('Invalid address')
   }
@@ -257,5 +260,7 @@ export async function calculateKpi({
     )
   ).reduce((acc, curr) => acc + curr, 0) // Then sum across all networks
 
-  return { kpi: totalRevenueUsd }
+  return {
+    [referrerId]: { kpi: totalRevenueUsd, referrerId },
+  }
 }

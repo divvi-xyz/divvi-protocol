@@ -62,7 +62,7 @@ async function calculateKpiBatch({
           return null
         }
 
-        const { kpi, metadata } = await calculateKpiHandlers[protocol]({
+        const kpiByReferrerId = await calculateKpiHandlers[protocol]({
           address: userAddress,
           // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
           startTimestamp:
@@ -71,18 +71,17 @@ async function calculateKpiBatch({
               : startTimestamp,
           endTimestampExclusive,
           redis,
+          referrerId,
         })
 
-        return {
-          referrerId,
+        return Object.values(kpiByReferrerId).map((kpi) => ({
+          ...kpi,
           userAddress,
-          kpi,
-          metadata,
-        }
+        }))
       },
     )
 
-    const batchResults = await Promise.all(batchPromises)
+    const batchResults = (await Promise.all(batchPromises)).flat()
     results.push(
       ...batchResults.filter(
         (result): result is NonNullable<typeof result> => result !== null,

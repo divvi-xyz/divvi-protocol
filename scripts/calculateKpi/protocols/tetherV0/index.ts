@@ -1,5 +1,5 @@
 import { RedisClientType } from '@redis/client'
-import { KpiResult, NetworkId } from '../../../types'
+import { KpiResultByReferrerId, NetworkId } from '../../../types'
 import { getBlockRange } from '../utils/events'
 import {
   Address,
@@ -149,20 +149,23 @@ async function getEligibleTxCount({
  * @param params.startTimestamp - Start of time window for calculation (inclusive)
  * @param params.endTimestampExclusive - End of time window for calculation (exclusive)
  * @param params.redis - Optional Redis client for caching block ranges
+ * @param params.referrerId - Referrer identifier for result attribution
  *
- * @returns Promise resolving to total eligible transaction count and per-network breakdown
+ * @returns Promise resolving to total eligible transaction count and per-network breakdown per referrerId
  */
 export async function calculateKpi({
   address,
   startTimestamp,
   endTimestampExclusive,
   redis,
+  referrerId,
 }: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
   redis?: RedisClientType
-}): Promise<KpiResult> {
+  referrerId: string
+}): Promise<KpiResultByReferrerId> {
   const kpiPerNetwork: Partial<Record<NetworkId, number>> = {}
   let totalKpi = 0
 
@@ -192,5 +195,11 @@ export async function calculateKpi({
     ),
   )
 
-  return { kpi: totalKpi, metadata: kpiPerNetwork }
+  return {
+    [referrerId]: {
+      referrerId,
+      kpi: totalKpi,
+      metadata: kpiPerNetwork,
+    },
+  }
 }

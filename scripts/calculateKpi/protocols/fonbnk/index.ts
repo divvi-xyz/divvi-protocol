@@ -7,7 +7,7 @@ import {
 } from './constants'
 import { getFonbnkAssets, getPayoutWallets } from './helpers'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
-import { KpiResult, NetworkId } from '../../../types'
+import { KpiResultByReferrerId, NetworkId } from '../../../types'
 import { fetchTokenPrices } from '../utils/tokenPrices'
 import { getTokenPrice } from '../beefy'
 import { FonbnkTransaction, SUPPORTED_FONBNK_NETWORKS } from './types'
@@ -209,18 +209,21 @@ export async function getTotalRevenueUsdFromTransactions({
  * @param params.address - User wallet address to calculate transaction volume for
  * @param params.startTimestamp - Start of time window for volume calculation (inclusive)
  * @param params.endTimestampExclusive - End of time window for volume calculation (exclusive)
+ * @param params.referrerId - Referrer identifier for result attribution
  *
- * @returns Promise resolving to total cash-in transaction volume in USD
+ * @returns Promise resolving to KpiResultByReferrerId containing total cash-in transaction volume in USD per referrerId
  */
 export async function calculateKpi({
   address,
   startTimestamp,
   endTimestampExclusive,
+  referrerId,
 }: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<KpiResult> {
+  referrerId: string
+}): Promise<KpiResultByReferrerId> {
   if (!isAddress(address)) {
     throw new Error('Invalid address')
   }
@@ -262,5 +265,7 @@ export async function calculateKpi({
       totalRevenue += revenue
     }
   }
-  return { kpi: totalRevenue }
+  return {
+    [referrerId]: { kpi: totalRevenue, referrerId },
+  }
 }

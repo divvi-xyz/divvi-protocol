@@ -4,7 +4,7 @@ import {
   VaultInfo,
 } from './types'
 import { getStrategyContract } from '../utils/viem'
-import { KpiResult, TokenPriceData } from '../../../types'
+import { KpiResultByReferrerId, TokenPriceData } from '../../../types'
 import { getVaults } from './getVaults'
 import { fetchTokenPrices } from '../utils/tokenPrices'
 import { getErc20Contract } from '../../../utils'
@@ -208,18 +208,21 @@ export async function calculateVaultRevenue(
  * @param params.address - User wallet address to calculate vault management fees for
  * @param params.startTimestamp - Start of time window for revenue calculation (inclusive)
  * @param params.endTimestampExclusive - End of time window for revenue calculation (exclusive)
+ * @param params.referrerId - Referrer identifier for result attribution
  *
- * @returns Promise resolving to total vault management fee revenue in USD
+ * @returns Promise resolving to KpiResultByReferrerId containing total vault management fee revenue in USD per referrerId
  */
 export async function calculateKpi({
   address,
   startTimestamp,
   endTimestampExclusive,
+  referrerId,
 }: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<KpiResult> {
+  referrerId: string
+}): Promise<KpiResultByReferrerId> {
   const vaultsInfo = await getVaults(
     address,
     startTimestamp,
@@ -234,5 +237,7 @@ export async function calculateKpi({
     const vaultRevenue = await calculateVaultRevenue(vaultInfo)
     totalRevenue += vaultRevenue
   }
-  return { kpi: totalRevenue }
+  return {
+    [referrerId]: { kpi: totalRevenue, referrerId },
+  }
 }

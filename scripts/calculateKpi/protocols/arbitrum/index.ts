@@ -1,4 +1,4 @@
-import { KpiResult, NetworkId } from '../../../types'
+import { KpiResultByReferrerId, NetworkId } from '../../../types'
 import { getBlockRange } from '../utils/events'
 import { fetchNetworkMetrics } from '../utils/networks'
 
@@ -41,18 +41,21 @@ import { fetchNetworkMetrics } from '../utils/networks'
  * @param params.address - User wallet address to calculate gas usage for
  * @param params.startTimestamp - Start of time window for gas calculation (inclusive)
  * @param params.endTimestampExclusive - End of time window for gas calculation (exclusive)
+ * @param params.referrerId - Referrer identifier for result attribution
  *
- * @returns Promise resolving to total gas units consumed by user's transactions on Arbitrum
+ * @returns Promise resolving to total gas units consumed by user's transactions on Arbitrum per referrerId
  */
 export async function calculateKpi({
   address,
   startTimestamp,
   endTimestampExclusive,
+  referrerId,
 }: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<KpiResult> {
+  referrerId: string
+}): Promise<KpiResultByReferrerId> {
   const { startBlock, endBlockExclusive } = await getBlockRange({
     networkId: NetworkId['arbitrum-one'],
     startTimestamp,
@@ -65,5 +68,7 @@ export async function calculateKpi({
     startBlock,
     endBlockExclusive,
   })
-  return { kpi }
+  return {
+    [referrerId]: { kpi, referrerId },
+  }
 }
