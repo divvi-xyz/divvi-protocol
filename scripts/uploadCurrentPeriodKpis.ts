@@ -47,9 +47,6 @@ const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '25000',
             proportionLinear: 0.8,
-            builderAllowListFile: undefined,
-            excludelist: [],
-            failOnExclude: false,
           })
         },
       },
@@ -71,9 +68,6 @@ const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '50000',
             proportionLinear: 0.1,
-            builderAllowListFile: undefined,
-            excludelist: [],
-            failOnExclude: false,
           })
         },
       },
@@ -95,9 +89,6 @@ const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '75000',
             proportionLinear: 0.1,
-            builderAllowListFile: undefined,
-            excludelist: [],
-            failOnExclude: false,
           })
         },
       },
@@ -204,8 +195,6 @@ const campaigns: Campaign[] = [
             startTimestamp,
             endTimestampExclusive,
             proportionLinear: 1,
-            excludelist: [],
-            failOnExclude: false,
           })
         },
       },
@@ -226,8 +215,6 @@ const campaigns: Campaign[] = [
             startTimestamp,
             endTimestampExclusive,
             proportionLinear: 1,
-            excludelist: [],
-            failOnExclude: false,
           })
         },
       },
@@ -252,8 +239,6 @@ const campaigns: Campaign[] = [
             resultDirectory,
             startTimestamp,
             endTimestampExclusive,
-            excludelist: [],
-            failOnExclude: false,
           })
         },
       },

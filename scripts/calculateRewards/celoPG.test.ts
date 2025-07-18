@@ -29,6 +29,7 @@ describe('calculateRewardsCeloPG', () => {
       kpiData,
       rewardAmount,
       proportionLinear: 1,
+      excludedReferrers: {},
     })
 
     expect(rewards).toEqual([
@@ -52,17 +53,23 @@ describe('calculateRewardsCeloPG', () => {
       kpiData: [],
       rewardAmount,
       proportionLinear: 1,
+      excludedReferrers: {},
     })
 
     expect(rewards).toHaveLength(0)
   })
 
-  it('should handle single referrer case', () => {
+  it('should exclude referrers in excludedReferrers from receiving rewards', () => {
     const kpiData = [
       {
         referrerId: '0xreferrer1',
         userAddress: '0xuser1',
         kpi: '100',
+      },
+      {
+        referrerId: '0xreferrer2',
+        userAddress: '0xuser2',
+        kpi: '200',
       },
     ]
 
@@ -70,15 +77,20 @@ describe('calculateRewardsCeloPG', () => {
       kpiData,
       rewardAmount,
       proportionLinear: 1,
+      excludedReferrers: {
+        '0xreferrer1': { referrerId: '0xreferrer1' },
+      },
     })
 
     expect(rewards).toEqual([
       expect.objectContaining({
         referrerId: '0xreferrer1',
-        rewardAmount: new BigNumber(rewardAmountInEther).toFixed(
-          0,
-          BigNumber.ROUND_DOWN,
-        ),
+        rewardAmount: '0',
+        kpi: 100n,
+      }),
+      expect.objectContaining({
+        referrerId: '0xreferrer2',
+        rewardAmount: rewardAmountInEther,
       }),
     ])
   })

@@ -47,9 +47,6 @@ describe('uploadCurrentPeriodKpis', () => {
               endTimestampExclusive,
               rewardAmount: '25000',
               proportionLinear: 0.8,
-              excludelist: [],
-              failOnExclude: false,
-              builderAllowListFile: undefined,
             })
           },
         },
@@ -71,9 +68,6 @@ describe('uploadCurrentPeriodKpis', () => {
               endTimestampExclusive,
               rewardAmount: '50000',
               proportionLinear: 0.8,
-              excludelist: [],
-              failOnExclude: false,
-              builderAllowListFile: undefined,
             })
           },
         },
@@ -95,9 +89,6 @@ describe('uploadCurrentPeriodKpis', () => {
               endTimestampExclusive,
               rewardAmount: '75000',
               proportionLinear: 0.8,
-              excludelist: [],
-              failOnExclude: false,
-              builderAllowListFile: undefined,
             })
           },
         },

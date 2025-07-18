@@ -113,8 +113,9 @@ describe('calculateProportionalPrizeContest', () => {
 })
 
 describe('calculateSqrtProportionalPrizeContest', () => {
+  const rewards = new BigNumber('1000')
+
   it('should calculate rewards proportionally based on KPI raised to power', () => {
-    const rewards = new BigNumber('1000')
     const kpiData = [
       { referrerId: 'ref1', userAddress: 'user1', kpi: '1' },
       { referrerId: 'ref2', userAddress: 'user2', kpi: '8' },
@@ -124,8 +125,13 @@ describe('calculateSqrtProportionalPrizeContest', () => {
     const result = calculateSqrtProportionalPrizeContest({
       kpiData,
       rewards,
+      excludedReferrers: {},
     })
 
+    // ref1: sqrt(1) = 1, ref2: sqrt(8+8) = sqrt(16) = 4
+    // Total power: 1 + 4 = 5
+    // ref1: 1/5 = 20% of rewards = 200
+    // ref2: 4/5 = 80% of rewards = 800
     expect(result).to.deep.equal([
       {
         referrerId: 'ref1',
@@ -137,6 +143,79 @@ describe('calculateSqrtProportionalPrizeContest', () => {
         referrerId: 'ref2',
         rewardAmount: '800',
         kpi: 16n,
+        referralCount: 2,
+      },
+    ])
+  })
+
+  it('should exclude referrers in the excludedReferrers from receiving rewards', () => {
+    const result = calculateSqrtProportionalPrizeContest({
+      kpiData: [
+        { referrerId: 'ref1', userAddress: 'user1', kpi: '1' },
+        { referrerId: 'ref2', userAddress: 'user2', kpi: '8' },
+        { referrerId: 'ref2', userAddress: 'user3', kpi: '2' },
+        { referrerId: 'ref3', userAddress: 'user4', kpi: '16' },
+      ],
+      rewards,
+      excludedReferrers: {
+        ref2: { referrerId: 'ref2', shouldWarn: false },
+      },
+    })
+
+    // ref1: sqrt(1) = 1, ref2: excluded, ref3: sqrt(16) = 4
+    // Total power: 1 + 4 = 5 (ref2 excluded)
+    // ref1: 1/5 = 20% of rewards = 200
+    // ref2: 0% of rewards = 0 (excluded)
+    // ref3: 4/5 = 80% of rewards = 800
+    expect(result).to.deep.equal([
+      {
+        referrerId: 'ref1',
+        rewardAmount: '200',
+        kpi: 1n,
+        referralCount: 1,
+      },
+      {
+        referrerId: 'ref2',
+        rewardAmount: '0', // no rewards
+        kpi: 10n, // the kpi value is preserved
+        referralCount: 2,
+      },
+      {
+        referrerId: 'ref3',
+        rewardAmount: '800',
+        kpi: 16n,
+        referralCount: 1,
+      },
+    ])
+  })
+
+  it('should handle all referrers being excluded', () => {
+    const result = calculateSqrtProportionalPrizeContest({
+      kpiData: [
+        { referrerId: 'ref1', userAddress: 'user1', kpi: '1' },
+        { referrerId: 'ref2', userAddress: 'user2', kpi: '8' },
+        { referrerId: 'ref2', userAddress: 'user3', kpi: '2' },
+      ],
+      rewards,
+      excludedReferrers: {
+        ref1: { referrerId: 'ref1', shouldWarn: false },
+        ref2: { referrerId: 'ref2', shouldWarn: false },
+      },
+    })
+
+    // All referrers excluded, total power = 0
+    // All should get 0 rewards
+    expect(result).to.deep.equal([
+      {
+        referrerId: 'ref1',
+        rewardAmount: '0',
+        kpi: 1n,
+        referralCount: 1,
+      },
+      {
+        referrerId: 'ref2',
+        rewardAmount: '0',
+        kpi: 10n,
         referralCount: 2,
       },
     ])
