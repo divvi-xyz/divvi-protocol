@@ -58,6 +58,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const slicesRewards = calculateSqrtProportionalPrizeContest({
     kpiData,
     rewards: new BigNumber(parseEther(rewardAmount)),
+    excludedReferrers: {},
   })
 
   await resultDirectory.writeBuilderSlices(slicesRewards)
