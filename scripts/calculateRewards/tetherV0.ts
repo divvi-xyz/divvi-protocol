@@ -43,12 +43,6 @@ function parseArgs() {
           .filter(Boolean)
       },
     })
-    .option('fail-on-exclude', {
-      description:
-        'Fail if any of the excluded addresses are found in the referral events',
-      type: 'boolean',
-      default: false,
-    })
     .strict()
     .parseSync()
 
@@ -63,7 +57,6 @@ function parseArgs() {
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
     excludelist: args.excludelist,
-    failOnExclude: args['fail-on-exclude'],
   }
 }
 

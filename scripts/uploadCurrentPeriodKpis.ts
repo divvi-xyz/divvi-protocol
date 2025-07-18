@@ -266,7 +266,6 @@ const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '5000000000', // 5000 USDT
             excludelist: [],
-            failOnExclude: false,
           })
         },
       },
@@ -288,7 +287,6 @@ const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '10000000000', // 10000 USDT
             excludelist: [],
-            failOnExclude: false,
           })
         },
       },
