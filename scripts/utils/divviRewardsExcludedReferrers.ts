@@ -3,7 +3,7 @@ import * as sax from 'sax'
 import * as unzipper from 'unzipper'
 import { Address, isAddress } from 'viem'
 
-const valoraEntities: { referrerId: Address }[] = [
+const valoraEntities: { referrerId: Address; shouldWarn?: boolean }[] = [
   { referrerId: '0x9ecfe3ddfaf1bb9b55f56b84471406893c5e29ad' }, // Valora app
   // TODO: add VEarn app
 ]
@@ -68,7 +68,10 @@ export async function getDivviRewardsExcludedReferrers(): Promise<
     }
   > = {}
   valoraEntities.concat(ofacSdnAddresses).forEach((referrer) => {
-    excludedReferrersMap[referrer.referrerId] = referrer
+    excludedReferrersMap[referrer.referrerId.toLowerCase()] = {
+      referrerId: referrer.referrerId.toLowerCase(),
+      shouldWarn: !!referrer.shouldWarn,
+    }
   })
   return excludedReferrersMap
 }
