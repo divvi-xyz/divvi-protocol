@@ -404,7 +404,12 @@ export async function uploadCurrentPeriodKpis(
       })
       const rewardsFilePathCsv = join(outputDir, 'rewards.csv')
       const rewardsFilePathJson = join(outputDir, 'rewards.json')
-      campaignFilePaths.push(rewardsFilePathCsv, rewardsFilePathJson)
+      const safeTransactionsJson = join(outputDir, 'safe-transactions.json')
+      campaignFilePaths.push(
+        rewardsFilePathCsv,
+        rewardsFilePathJson,
+        safeTransactionsJson,
+      )
     }
 
     const validPaths = campaignFilePaths.filter((path) => path !== null)
