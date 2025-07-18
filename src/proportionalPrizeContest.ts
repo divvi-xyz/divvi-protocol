@@ -14,8 +14,12 @@ export function calculateProportionalPrizeContest({
   kpiData: KpiRow[]
   rewards: BigNumber
 }) {
-  const { referrerReferrals, referrerKpis, totalKpi } =
-    getReferrerMetricsFromKpi(kpiData)
+  const { referrerReferrals, referrerKpis } = getReferrerMetricsFromKpi(kpiData)
+
+  let totalKpi = BigInt(0)
+  for (const kpi of Object.values(referrerKpis)) {
+    totalKpi += kpi
+  }
 
   const rewardsPerReferrer = Object.entries(referrerKpis).map(
     ([referrerId, kpi]) => {
@@ -45,9 +49,17 @@ export function calculateProportionalPrizeContest({
 export function calculateSqrtProportionalPrizeContest({
   kpiData,
   rewards,
+  excludedReferrers,
 }: {
   kpiData: KpiRow[]
   rewards: BigNumber
+  excludedReferrers: Record<
+    string,
+    {
+      referrerId: string
+      shouldWarn?: boolean
+    }
+  >
 }) {
   const { referrerReferrals, referrerKpis } = getReferrerMetricsFromKpi(kpiData)
 
@@ -59,14 +71,33 @@ export function calculateSqrtProportionalPrizeContest({
     {} as Record<string, BigNumber>,
   )
 
-  const totalPower = Object.values(referrerPowerKpis).reduce(
-    (sum, value) => sum.plus(value),
+  const totalPower = Object.entries(referrerPowerKpis).reduce(
+    (sum, [referrerId, value]) => {
+      // exclude referrers in the exclude list
+      if (referrerId.toLowerCase() in excludedReferrers) {
+        if (excludedReferrers[referrerId].shouldWarn) {
+          console.warn(
+            `⚠️ Flagged address ${referrerId} is a referrer, they will be excluded from campaign rewards.`,
+          )
+        } else {
+          console.log(
+            `Excluded referrer ${referrerId} kpi's are ignored for reward calculations.`,
+          )
+        }
+        return sum
+      }
+
+      return sum.plus(value)
+    },
     BigNumber(0),
   )
 
   const rewardsPerReferrer = Object.entries(referrerPowerKpis).map(
     ([referrerId, powerKpi]) => {
-      const proportion = BigNumber(powerKpi).div(totalPower)
+      const proportion =
+        referrerId.toLowerCase() in excludedReferrers
+          ? BigNumber(0)
+          : BigNumber(powerKpi).div(totalPower)
       const rewardAmount = rewards.times(proportion)
 
       return {

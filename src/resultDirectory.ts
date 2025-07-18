@@ -50,8 +50,12 @@ export class ResultDirectory {
     return path.join(this.resultsDirectory, 'rewards')
   }
 
-  excludeListFilePath(fileName: string) {
-    return path.join(this.resultsDirectory, `exclude-${fileName}`)
+  get builderSlicesFileSuffix() {
+    return path.join(this.resultsDirectory, 'slices')
+  }
+
+  get excludeListFileSuffix() {
+    return path.join(this.resultsDirectory, 'exclude-list')
   }
 
   includeListFilePath(fileName: string) {
@@ -98,10 +102,18 @@ export class ResultDirectory {
   }
 
   async writeKpi(kpi: any[]) {
-    await mkdir(dirname(this.rewardsFileSuffix), { recursive: true })
+    await mkdir(dirname(this.kpiFileSuffix), { recursive: true })
     return await Promise.all([
       this._writeCsv(this.kpiFileSuffix, kpi),
       this._writeJson(this.kpiFileSuffix, kpi),
+    ])
+  }
+
+  async writeExcludeList(list: any[]) {
+    await mkdir(dirname(this.excludeListFileSuffix), { recursive: true })
+    return await Promise.all([
+      this._writeCsv(this.excludeListFileSuffix, list),
+      this._writeJson(this.excludeListFileSuffix, list),
     ])
   }
 
@@ -113,11 +125,15 @@ export class ResultDirectory {
     return (await this._readCsv(this.referralsFileSuffix)) as ReferralRow[]
   }
 
-  writeExcludeList(fileName: string) {
-    return copyFile(fileName, this.excludeListFilePath(fileName))
-  }
-
   writeIncludeList(fileName: string) {
     return copyFile(fileName, this.includeListFilePath(fileName))
+  }
+
+  async writeBuilderSlices(slices: any[]) {
+    await mkdir(dirname(this.rewardsFileSuffix), { recursive: true })
+    return await Promise.all([
+      this._writeCsv(this.builderSlicesFileSuffix, slices),
+      this._writeJson(this.builderSlicesFileSuffix, slices),
+    ])
   }
 }
