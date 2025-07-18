@@ -28,7 +28,7 @@ function parseArgs() {
     })
     .option('reward-amount', {
       alias: 'r',
-      description: 'the reward amount for this time period in CELO in decimals',
+      description: 'the reward amount for this time period in USDT with 6 decimals',
       type: 'string',
       demandOption: true,
     })
