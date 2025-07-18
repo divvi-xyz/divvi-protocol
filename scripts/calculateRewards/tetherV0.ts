@@ -2,7 +2,7 @@ import yargs from 'yargs'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { ResultDirectory } from '../../src/resultDirectory'
-import { calculateProportionalPrizeContest } from '../../src/proportionalPrizeContest'
+import { calculateProportionalPrizeContestWithExcludedReferrers } from '../../src/proportionalPrizeContest'
 import { getDivviRewardsExcludedReferrers } from '../utils/divviRewardsExcludedReferrers'
 
 const REWARD_POOL_ADDRESS = '0xB575210cdF52B18000aE24Be4981e9ABC7716F98' // on Ethereum mainnet
@@ -77,7 +77,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const excludedReferrers = await getDivviRewardsExcludedReferrers()
   await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
-  const rewards = calculateProportionalPrizeContest({
+  const rewards = calculateProportionalPrizeContestWithExcludedReferrers({
     kpiData,
     rewards: new BigNumber(rewardAmount),
     excludedReferrers,

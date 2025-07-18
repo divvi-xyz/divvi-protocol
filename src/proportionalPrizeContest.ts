@@ -10,6 +10,45 @@ interface KpiRow {
 export function calculateProportionalPrizeContest({
   kpiData,
   rewards,
+}: {
+  kpiData: KpiRow[]
+  rewards: BigNumber
+}) {
+  const { referrerReferrals, referrerKpis } = getReferrerMetricsFromKpi(kpiData)
+
+  let totalKpi = BigInt(0)
+  for (const kpi of Object.values(referrerKpis)) {
+    totalKpi += BigInt(kpi)
+  }
+
+  const rewardsPerReferrer = Object.entries(referrerKpis).map(
+    ([referrerId, kpi]) => {
+      if (totalKpi === BigInt(0)) {
+        return {
+          referrerId,
+          kpi: 0n,
+          referralCount: referrerReferrals[referrerId],
+          rewardAmount: '0',
+        }
+      }
+      return {
+        referrerId,
+        kpi,
+        referralCount: referrerReferrals[referrerId],
+        rewardAmount: rewards
+          .times(kpi)
+          .div(totalKpi)
+          .toFixed(0, BigNumber.ROUND_DOWN),
+      }
+    },
+  )
+
+  return rewardsPerReferrer
+}
+
+export function calculateProportionalPrizeContestWithExcludedReferrers({
+  kpiData,
+  rewards,
   excludedReferrers,
 }: {
   kpiData: KpiRow[]
