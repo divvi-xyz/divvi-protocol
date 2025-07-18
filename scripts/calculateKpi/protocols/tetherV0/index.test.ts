@@ -64,6 +64,12 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
   describe('calculateKpi', () => {
     it('should calculate KPI across all supported networks', async () => {
+      // Mock paginateQuery to return no transactions
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse([])
+        await onPage(mockResponse)
+      })
+
       await calculateKpi(defaultProps)
 
       // Verify getBlockRange was called for each network
@@ -79,6 +85,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       const result = await calculateKpi(defaultProps)
 
+      // Should return empty object when no eligible transactions
       expect(result).toEqual({
         [testReferrerId]: {
           referrerId: testReferrerId,
@@ -112,7 +119,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
     })
   })
 
-  describe('getEligibleTxCount', () => {
+  describe('getEligibleTxCountByReferrer', () => {
     const encodedValueAboveThreshold = ('0x' +
       BigNumber(2).shiftedBy(6).toString(16).padStart(64, '0')) as Hex
     const encodedValueBelowThreshold = ('0x' +
@@ -302,8 +309,63 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       const result = await calculateKpi(defaultProps)
 
-      // Should handle gracefully and return 0
+      // Should handle gracefully and return empty object
       expect(result[testReferrerId].kpi).toBe(0)
+    })
+
+    it('should handle multiple referrers when getReferrerIdFromTx returns different referrer IDs', async () => {
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse([
+          {
+            data: encodedValueAboveThreshold,
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xabc123',
+          },
+          {
+            data: encodedValueAboveThreshold,
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xdef456',
+          },
+        ])
+        await onPage(mockResponse)
+      })
+
+      // Mock getReferrerIdFromTx to return different referrer IDs based on transaction hash
+      const mockGetReferrerIdFromTx = jest.fn((transactionHash: string) => {
+        if (transactionHash === '0xabc123') {
+          return Promise.resolve(testReferrerId)
+        } else if (transactionHash === '0xdef456') {
+          return Promise.resolve('0xreferrer2')
+        }
+        return Promise.resolve(null)
+      })
+
+      const result = await calculateKpi({
+        ...defaultProps,
+        getReferrerIdFromTx: mockGetReferrerIdFromTx,
+      })
+
+      // Each referrer should have KPI of 8 (1 transaction per network)
+      expect(result[testReferrerId].kpi).toBe(8)
+      expect(result['0xreferrer2'].kpi).toBe(8)
+
+      // Verify referrer IDs are correct
+      expect(result[testReferrerId].referrerId).toBe(testReferrerId)
+      expect(result['0xreferrer2'].referrerId).toBe('0xreferrer2')
     })
   })
 })

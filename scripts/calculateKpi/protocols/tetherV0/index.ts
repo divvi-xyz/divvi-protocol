@@ -33,19 +33,34 @@ const networkToTokenAddress: Partial<Record<NetworkId, Address>> = {
     '0x779ded0c9e1022225f8e0630b35a9b54be713736',
 }
 
-async function getEligibleTxCount({
+async function _getReferrerIdFromTx(
+  _transactionHash: string,
+  _networkId: NetworkId,
+): Promise<null> {
+  // TODO: get divvi referral tag from tx calldata and parse to get referrerId
+  return null
+}
+
+async function getEligibleTxCountByReferrer({
   networkId,
   user,
   startBlock,
   endBlockExclusive,
   tokenAddress,
+  campaignReferrerId,
+  getReferrerIdFromTx,
 }: {
   networkId: NetworkId
   user: Address
   startBlock?: number
   endBlockExclusive?: number
   tokenAddress: Address
-}): Promise<number> {
+  campaignReferrerId: string
+  getReferrerIdFromTx: (
+    transactionHash: string,
+    networkId: NetworkId,
+  ) => Promise<string | null>
+}): Promise<Record<string, number>> {
   const client = getHyperSyncClient(networkId)
 
   const transactionValueByHash: Record<string, BigNumber> = {}
@@ -80,6 +95,7 @@ async function getEligibleTxCount({
     ...(endBlockExclusive && { toBlock: endBlockExclusive }),
   }
 
+  // Group each Transfer event to / from the user by transactionHash to get the net transfer value
   await paginateQuery(client, query, async (response) => {
     for (const { data, topics, transactionHash } of response.data.logs) {
       if (data && transactionHash) {
@@ -102,9 +118,21 @@ async function getEligibleTxCount({
     }
   })
 
-  return Object.values(transactionValueByHash).filter((value) =>
-    value.abs().gte(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT),
-  ).length
+  // Separate the eligible transactions by referrerId
+  const eligibleTxCountByReferrer: Record<string, number> = {}
+  for (const [transactionHash, value] of Object.entries(
+    transactionValueByHash,
+  )) {
+    if (value.abs().gte(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT)) {
+      const txReferrerId =
+        (await getReferrerIdFromTx(transactionHash, networkId)) ??
+        campaignReferrerId
+      eligibleTxCountByReferrer[txReferrerId] =
+        (eligibleTxCountByReferrer[txReferrerId] ?? 0) + 1
+    }
+  }
+
+  return eligibleTxCountByReferrer
 }
 
 /**
@@ -149,9 +177,9 @@ async function getEligibleTxCount({
  * @param params.startTimestamp - Start of time window for calculation (inclusive)
  * @param params.endTimestampExclusive - End of time window for calculation (exclusive)
  * @param params.redis - Optional Redis client for caching block ranges
- * @param params.referrerId - Referrer identifier for result attribution
+ * @param params.referrerId - Referrer identifier for result attribution (legacy parameter, now determined dynamically)
  *
- * @returns Promise resolving to total eligible transaction count and per-network breakdown per referrerId
+ * @returns Promise resolving to KPI results grouped by referrer ID with per-network breakdown
  */
 export async function calculateKpi({
   address,
@@ -159,15 +187,22 @@ export async function calculateKpi({
   endTimestampExclusive,
   redis,
   referrerId,
+  getReferrerIdFromTx = _getReferrerIdFromTx,
 }: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
   redis?: RedisClientType
   referrerId: string
+  getReferrerIdFromTx?: (
+    transactionHash: string,
+    networkId: NetworkId,
+  ) => Promise<string | null>
 }): Promise<KpiResultByReferrerId> {
-  const kpiPerNetwork: Partial<Record<NetworkId, number>> = {}
-  let totalKpi = 0
+  const kpiByReferrer: KpiResultByReferrerId = {}
+
+  // Initialize the campaign referrer with zero values
+  kpiByReferrer[referrerId] = { kpi: 0, referrerId, metadata: {} }
 
   await Promise.all(
     (Object.entries(networkToTokenAddress) as [NetworkId, Address][]).map(
@@ -179,27 +214,34 @@ export async function calculateKpi({
           redis,
         })
 
-        const eligibleTxCount = await getEligibleTxCount({
+        const eligibleTxCountByReferrer = await getEligibleTxCountByReferrer({
           networkId,
           user: address as Address,
           startBlock: blockRange.startBlock,
           endBlockExclusive: blockRange.endBlockExclusive,
           tokenAddress,
+          campaignReferrerId: referrerId,
+          getReferrerIdFromTx,
         })
-        if (kpiPerNetwork[networkId] === undefined) {
-          kpiPerNetwork[networkId] = 0
+
+        // Aggregate results by referrer
+        for (const [referrerId, txCount] of Object.entries(
+          eligibleTxCountByReferrer,
+        )) {
+          if (!(referrerId in kpiByReferrer)) {
+            kpiByReferrer[referrerId] = { kpi: 0, referrerId, metadata: {} }
+          }
+          kpiByReferrer[referrerId].kpi += txCount
+          kpiByReferrer[referrerId].metadata![networkId] = txCount
         }
-        kpiPerNetwork[networkId] += eligibleTxCount
-        totalKpi += eligibleTxCount
+
+        // Always ensure the campaign referrer has an entry for this network (even if 0)
+        if (!(networkId in kpiByReferrer[referrerId].metadata!)) {
+          kpiByReferrer[referrerId].metadata![networkId] = 0
+        }
       },
     ),
   )
 
-  return {
-    [referrerId]: {
-      referrerId,
-      kpi: totalKpi,
-      metadata: kpiPerNetwork,
-    },
-  }
+  return kpiByReferrer
 }
