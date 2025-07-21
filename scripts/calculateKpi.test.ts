@@ -66,7 +66,7 @@ describe('_calculateKpiBatch', () => {
       {
         referrerId: 'ref1',
         userAddress: '0x123',
-        timestamp: '2024-02-01T01:00:00Z',
+        timestamp: '2024-02-01T00:29:59Z',
       }, // After end date, accounting for the buffer
       {
         referrerId: 'ref2',
