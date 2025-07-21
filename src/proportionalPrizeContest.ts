@@ -14,36 +14,11 @@ export function calculateProportionalPrizeContest({
   kpiData: KpiRow[]
   rewards: BigNumber
 }) {
-  const { referrerReferrals, referrerKpis } = getReferrerMetricsFromKpi(kpiData)
-
-  let totalKpi = BigInt(0)
-  for (const kpi of Object.values(referrerKpis)) {
-    totalKpi += kpi
-  }
-
-  const rewardsPerReferrer = Object.entries(referrerKpis).map(
-    ([referrerId, kpi]) => {
-      if (totalKpi === BigInt(0)) {
-        return {
-          referrerId,
-          kpi: 0n,
-          referralCount: referrerReferrals[referrerId],
-          rewardAmount: '0',
-        }
-      }
-      return {
-        referrerId,
-        kpi,
-        referralCount: referrerReferrals[referrerId],
-        rewardAmount: rewards
-          .times(kpi)
-          .div(totalKpi)
-          .toFixed(0, BigNumber.ROUND_DOWN),
-      }
-    },
-  )
-
-  return rewardsPerReferrer
+  return calculateProportionalPrizeContestWithExcludedReferrers({
+    kpiData,
+    rewards,
+    excludedReferrers: {},
+  })
 }
 
 export function calculateProportionalPrizeContestWithExcludedReferrers({
