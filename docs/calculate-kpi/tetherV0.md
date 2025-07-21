@@ -11,10 +11,10 @@
 ### calculateKpi()
 
 ```ts
-function calculateKpi(params): Promise<KpiResult<string>>
+function calculateKpi(params): Promise<KpiResults>
 ```
 
-Defined in: [tetherV0/index.ts:155](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/tetherV0/index.ts#L155)
+Defined in: [tetherV0/index.ts:182](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/tetherV0/index.ts#L182)
 
 Calculates eligible transaction count for Tether (USDT) activity across multiple networks.
 
@@ -74,6 +74,10 @@ User wallet address to calculate transaction count for
 
 End of time window for calculation (exclusive)
 
+###### getReferrerIdFromTx?
+
+(`transactionHash`, `networkId`) => `Promise`\<`null` \| `string`\> = `_getReferrerIdFromTx`
+
 ###### redis?
 
 `RedisClientType`
@@ -88,6 +92,6 @@ Start of time window for calculation (inclusive)
 
 #### Returns
 
-`Promise`\<`KpiResult`\<`string`\>\>
+`Promise`\<`KpiResults`\>
 
-Promise resolving to total eligible transaction count and per-network breakdown
+Promise resolving to KPI results grouped by referrer ID with per-network breakdown
