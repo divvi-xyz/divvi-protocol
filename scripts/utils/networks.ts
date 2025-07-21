@@ -31,4 +31,5 @@ export const NETWORK_ID_TO_HYPERSYNC_URL = {
   [NetworkId['unichain-mainnet']]: 'https://unichain.hypersync.xyz',
   [NetworkId['avalanche-mainnet']]: 'https://avalanche.hypersync.xyz',
   [NetworkId['berachain-mainnet']]: 'https://berachain.hypersync.xyz',
+  [NetworkId['mantle-mainnet']]: 'https://mantle.hypersync.xyz',
 } as Partial<Record<NetworkId, string>>

@@ -12,6 +12,7 @@ import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV
 import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
 import { main as calculateRewardsBaseV0 } from './calculateRewards/baseV0'
 import { main as calculateRewardsTetherV0 } from './calculateRewards/tetherV0'
+import { main as calculateRewardsMantleV0 } from './calculateRewards/mantleV0'
 
 export interface Campaign {
   protocol: Protocol
@@ -285,6 +286,49 @@ const campaigns: Campaign[] = [
             startTimestamp,
             endTimestampExclusive,
             rewardAmount: '10000000000', // 10000 USDT
+          })
+        },
+      },
+    ],
+  },
+  {
+    protocol: 'mantle-v0',
+    rewardsPeriods: [
+      {
+        startTimestamp: '2025-08-01T00:00:00Z',
+        endTimestampExclusive: '2025-08-30T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardsMantleV0({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-08-30T00:00:00Z',
+        endTimestampExclusive: '2025-09-30T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardsMantleV0({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
           })
         },
       },
