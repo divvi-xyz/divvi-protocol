@@ -121,13 +121,12 @@ async function getEligibleTxCountByReferrer({
   for (const [transactionHash, value] of Object.entries(
     transactionValueByHash,
   )) {
-    const referrerId = await getReferrerIdFromTx(transactionHash, networkId)
-    if (
-      value.abs().gte(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT) &&
-      referrerId !== null
-    ) {
-      eligibleTxCountByReferrer[referrerId] =
-        (eligibleTxCountByReferrer[referrerId] ?? 0) + 1
+    if (value.abs().gte(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT)) {
+      const referrerId = await getReferrerIdFromTx(transactionHash, networkId)
+      if (referrerId !== null) {
+        eligibleTxCountByReferrer[referrerId] =
+          (eligibleTxCountByReferrer[referrerId] ?? 0) + 1
+      }
     }
   }
 

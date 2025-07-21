@@ -427,5 +427,97 @@ describe('Tether V0 Protocol KPI Calculation', () => {
         },
       ])
     })
+
+    it('should filter out transactions with null referrerId', async () => {
+      const mockGetReferrerIdFromTx = jest
+        .fn()
+        .mockImplementation((txHash: string) => {
+          if (txHash === '0xabc123') return 'referrer1'
+          if (txHash === '0xdef456') return null // This transaction should be filtered out
+          if (txHash === '0xghi789') return 'referrer2'
+          return null
+        })
+
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse([
+          {
+            data: encodedValueAboveThreshold,
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xabc123',
+          },
+          {
+            data: encodedValueAboveThreshold,
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xdef456', // This will return null referrerId
+          },
+          {
+            data: encodedValueAboveThreshold,
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xghi789',
+          },
+        ])
+        await onPage(mockResponse)
+      })
+
+      const result = await calculateKpi({
+        ...defaultProps,
+        getReferrerIdFromTx: mockGetReferrerIdFromTx,
+      })
+
+      // Should only include transactions with valid referrer IDs
+      expect(result).toEqual([
+        {
+          kpi: 8, // 1 transaction * 8 networks
+          referrerId: 'referrer1',
+          userAddress: testAddress,
+          metadata: {
+            'ethereum-mainnet': 1,
+            'avalanche-mainnet': 1,
+            'celo-mainnet': 1,
+            'unichain-mainnet': 1,
+            'ink-mainnet': 1,
+            'op-mainnet': 1,
+            'arbitrum-one': 1,
+            'berachain-mainnet': 1,
+          },
+        },
+        {
+          kpi: 8, // 1 transaction * 8 networks
+          referrerId: 'referrer2',
+          userAddress: testAddress,
+          metadata: {
+            'ethereum-mainnet': 1,
+            'avalanche-mainnet': 1,
+            'celo-mainnet': 1,
+            'unichain-mainnet': 1,
+            'ink-mainnet': 1,
+            'op-mainnet': 1,
+            'arbitrum-one': 1,
+            'berachain-mainnet': 1,
+          },
+        },
+      ])
+    })
   })
 })
