@@ -6,7 +6,7 @@ import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPri
 import { getDivviRewardsExcludedReferrers } from '../utils/divviRewardsExcludedReferrers'
 
 const REWARD_POOL_ADDRESS = '0x0000000000000000000000000000000000000000' // TODO: add reward pool address
-const REWARD_AMOUNT_PER_DISTRIBUTION = '0' // TODO: add reward amount per distribution
+const REWARD_AMOUNT_PER_DISTRIBUTION = '0' // TODO: add reward amount per distribution ($2.5k in $MNT)
 
 function parseArgs() {
   const args = yargs
