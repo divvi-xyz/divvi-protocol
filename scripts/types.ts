@@ -66,12 +66,18 @@ export interface KpiResult<T extends string = string> {
   metadata?: Record<T, number>
 }
 
+export type KpiResults<T extends string = string> = (KpiResult<T> & {
+  userAddress: string
+  referrerId: string
+})[]
+
 export type CalculateKpiFn<T extends string = string> = (params: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
+  referrerId: string
   redis?: RedisClientType
-}) => Promise<KpiResult<T>>
+}) => Promise<KpiResult<T> | KpiResults<T>>
 
 export interface ReferralEvent {
   userAddress: string
