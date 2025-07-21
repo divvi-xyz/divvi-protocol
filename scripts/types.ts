@@ -16,6 +16,7 @@ export const protocols = [
   'lisk-v0',
   'tether-v0',
   'base-v0',
+  'mantle-v0',
 ] as const
 export type Protocol = (typeof protocols)[number]
 
@@ -47,6 +48,7 @@ export enum NetworkId {
   'ink-mainnet' = 'ink-mainnet',
   'unichain-mainnet' = 'unichain-mainnet',
   'berachain-mainnet' = 'berachain-mainnet',
+  'mantle-mainnet' = 'mantle-mainnet',
 }
 
 export interface TokenPriceData {
