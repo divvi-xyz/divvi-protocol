@@ -66,7 +66,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
 
     totalTransactionsPerReferrer[referrerId] =
       (totalTransactionsPerReferrer[referrerId] ?? 0) +
-      (metadata['totalTransactions'] ?? 0)
+      (metadata.totalTransactions ?? 0)
   }
 
   const rewardsWithMetadata = rewards.map((reward) => ({
