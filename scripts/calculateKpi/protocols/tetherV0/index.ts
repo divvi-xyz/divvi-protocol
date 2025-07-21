@@ -219,7 +219,7 @@ export async function calculateKpi({
           getReferrerIdFromTx,
         })
 
-        // Aggregate results by referrer
+        // Aggregate results by referrer across the supported networks
         for (const [referrerId, txCount] of Object.entries(
           eligibleTxCountByReferrer,
         )) {
