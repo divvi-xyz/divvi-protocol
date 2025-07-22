@@ -11,6 +11,7 @@ import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
 import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV0'
 import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
 import { main as calculateRewardsBaseV0 } from './calculateRewards/baseV0'
+import { main as calculateRewardsTetherV0 } from './calculateRewards/tetherV0'
 import { main as calculateRewardsMantleV0 } from './calculateRewards/mantleV0'
 
 export interface Campaign {
@@ -240,6 +241,51 @@ const campaigns: Campaign[] = [
             resultDirectory,
             startTimestamp,
             endTimestampExclusive,
+          })
+        },
+      },
+    ],
+  },
+  {
+    protocol: 'tether-v0',
+    rewardsPeriods: [
+      {
+        startTimestamp: '2025-07-28T00:00:00Z',
+        endTimestampExclusive: '2025-08-30T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardsTetherV0({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '5000000000', // 5000 USDT
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-08-30T00:00:00Z',
+        endTimestampExclusive: '2025-09-30T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardsTetherV0({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '10000000000', // 10000 USDT
           })
         },
       },

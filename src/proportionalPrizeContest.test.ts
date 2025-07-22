@@ -17,6 +17,7 @@ describe('calculateProportionalPrizeContest', () => {
     const result = calculateProportionalPrizeContest({
       kpiData,
       rewards,
+      excludedReferrers: {},
     })
 
     // Total KPI: 600 (100 + 200 + 300)
@@ -48,6 +49,7 @@ describe('calculateProportionalPrizeContest', () => {
     const result = calculateProportionalPrizeContest({
       kpiData,
       rewards,
+      excludedReferrers: {},
     })
 
     // Only ref2 should get rewards since ref1 has zero KPI
@@ -78,6 +80,7 @@ describe('calculateProportionalPrizeContest', () => {
     const result = calculateProportionalPrizeContest({
       kpiData,
       rewards,
+      excludedReferrers: {},
     })
 
     expect(result).to.deep.equal([])
@@ -93,6 +96,7 @@ describe('calculateProportionalPrizeContest', () => {
     const result = calculateProportionalPrizeContest({
       kpiData,
       rewards,
+      excludedReferrers: {},
     })
 
     expect(result).to.deep.equal([
