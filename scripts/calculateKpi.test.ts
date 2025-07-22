@@ -61,12 +61,17 @@ describe('_calculateKpiBatch', () => {
     expect(mockHandler).toHaveBeenCalledTimes(3)
   })
 
-  it('should skip users with referral dates after end timestamp', async () => {
+  it('should skip users with referral dates at or after end timestamp', async () => {
     const eligibleUsers = [
       {
         referrerId: 'ref1',
         userAddress: '0x123',
-        timestamp: '2024-02-01T01:00:00Z',
+        timestamp: '2024-02-01T00:29:59Z',
+      }, // At end date, accounting for the buffer
+      {
+        referrerId: 'ref1',
+        userAddress: '0x123',
+        timestamp: '2024-02-01T00:30:00Z',
       }, // After end date, accounting for the buffer
       {
         referrerId: 'ref2',
@@ -105,6 +110,7 @@ describe('_calculateKpiBatch', () => {
       address: '0x123',
       startTimestamp: expectedStartTime,
       endTimestampExclusive,
+      referrerId: 'ref1',
     })
   })
 
@@ -126,6 +132,7 @@ describe('_calculateKpiBatch', () => {
       address: '0x123',
       startTimestamp,
       endTimestampExclusive,
+      referrerId: 'ref1',
     })
   })
 

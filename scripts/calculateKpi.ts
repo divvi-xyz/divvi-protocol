@@ -1,6 +1,6 @@
 import calculateKpiHandlers from './calculateKpi/protocols'
 import yargs from 'yargs'
-import { Protocol, protocols } from './types'
+import { KpiResults, Protocol, protocols } from './types'
 import { ResultDirectory } from '../src/resultDirectory'
 import { RedisClientType } from '@redis/client'
 import { closeRedisClient, getRedisClient } from '../src/redis'
@@ -9,13 +9,6 @@ import { closeRedisClient, getRedisClient } from '../src/redis'
 const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
 // Calculate KPIs for end users in batches to speed things up
 const BATCH_SIZE = 20
-
-interface KpiResult {
-  referrerId: string
-  userAddress: string
-  kpi: number
-  segmentedKpi?: { [key: string]: number }
-}
 
 interface ReferralData {
   referrerId: string
@@ -40,8 +33,8 @@ async function calculateKpiBatch({
   endTimestampExclusive: Date
   protocol: Protocol
   redis?: RedisClientType
-}): Promise<KpiResult[]> {
-  const results: KpiResult[] = []
+}): Promise<KpiResults> {
+  const results: KpiResults = []
 
   for (let i = 0; i < eligibleUsers.length; i += batchSize) {
     const batch = eligibleUsers.slice(i, i + batchSize)
@@ -55,14 +48,14 @@ async function calculateKpiBatch({
           Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
         )
 
-        if (referralTimestamp.getTime() > endTimestampExclusive.getTime()) {
+        if (referralTimestamp.getTime() >= endTimestampExclusive.getTime()) {
           console.log(
-            `Referral date is after end date, skipping ${userAddress} (registration tx date: ${timestamp}) for campaign ${protocol}`,
+            `Referral date is at or after end date (exclusive), skipping ${userAddress} (registration tx date: ${timestamp}) for campaign ${protocol}`,
           )
           return null
         }
 
-        const { kpi, metadata } = await calculateKpiHandlers[protocol]({
+        const calculatedKpi = await calculateKpiHandlers[protocol]({
           address: userAddress,
           // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
           startTimestamp:
@@ -71,18 +64,16 @@ async function calculateKpiBatch({
               : startTimestamp,
           endTimestampExclusive,
           redis,
+          referrerId,
         })
 
-        return {
-          referrerId,
-          userAddress,
-          kpi,
-          metadata,
-        }
+        return Array.isArray(calculatedKpi)
+          ? calculatedKpi
+          : [{ ...calculatedKpi, userAddress, referrerId }]
       },
     )
 
-    const batchResults = await Promise.all(batchPromises)
+    const batchResults = (await Promise.all(batchPromises)).flat()
     results.push(
       ...batchResults.filter(
         (result): result is NonNullable<typeof result> => result !== null,

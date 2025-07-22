@@ -2,8 +2,8 @@ import { z } from 'zod'
 import { loadSharedConfig } from '../../config/loadSharedConfig'
 import { createEndpoint } from '../../services/createEndpoint'
 import { runDivviRewards } from '../../../scripts/calculateRewards/divviIntegrationV1'
-import { isHex } from 'viem'
 import { logger } from '../../log'
+import { hexSchema } from '../../types'
 
 // The Cloud Function is run by GCP cloud scheduler every minute.
 // But internally, we run the rewards calculation every 15 seconds.
@@ -11,13 +11,6 @@ import { logger } from '../../log'
 const EXECUTION_TIME_LIMIT_MS = 55_000 // 55 seconds to leave buffer
 const EXECUTION_INTERVAL_MS = 15_000 // 15 seconds
 const EXECUTION_BUFFER_MS = 5_000 // 5 seconds
-
-const hexSchema = z.string().refine(
-  (val) => isHex(val),
-  (val) => ({
-    message: `Invalid hex string ${val}`,
-  }),
-)
 
 const requestSchema = z.object({
   method: z.custom((arg) => arg === 'POST', 'only POST requests are allowed'),

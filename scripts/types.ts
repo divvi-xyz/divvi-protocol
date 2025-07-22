@@ -32,17 +32,11 @@ export type MatcherFn = (
 
 export enum NetworkId {
   'celo-mainnet' = 'celo-mainnet',
-  'celo-alfajores' = 'celo-alfajores',
   'ethereum-mainnet' = 'ethereum-mainnet',
-  'ethereum-sepolia' = 'ethereum-sepolia',
   'arbitrum-one' = 'arbitrum-one',
-  'arbitrum-sepolia' = 'arbitrum-sepolia',
   'op-mainnet' = 'op-mainnet',
-  'op-sepolia' = 'op-sepolia',
   'polygon-pos-mainnet' = 'polygon-pos-mainnet',
-  'polygon-pos-amoy' = 'polygon-pos-amoy',
   'base-mainnet' = 'base-mainnet',
-  'base-sepolia' = 'base-sepolia',
   'lisk-mainnet' = 'lisk-mainnet',
   'avalanche-mainnet' = 'avalanche-mainnet',
   'ink-mainnet' = 'ink-mainnet',
@@ -68,12 +62,18 @@ export interface KpiResult<T extends string = string> {
   metadata?: Record<T, number>
 }
 
+export type KpiResults<T extends string = string> = (KpiResult<T> & {
+  userAddress: string
+  referrerId: string
+})[]
+
 export type CalculateKpiFn<T extends string = string> = (params: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
+  referrerId: string
   redis?: RedisClientType
-}) => Promise<KpiResult<T>>
+}) => Promise<KpiResult<T> | KpiResults<T>>
 
 export interface ReferralEvent {
   userAddress: string
