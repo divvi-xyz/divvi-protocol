@@ -60,6 +60,7 @@ jobs:
           node-version-file: 'package.json'
           check-latest: true
       - run: yarn
+      - run: yarn compile
       - run: yarn docs
       - name: Check for documentation changes
         id: docs-changes
