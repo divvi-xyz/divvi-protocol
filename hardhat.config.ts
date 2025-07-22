@@ -10,7 +10,6 @@ import './tasks/registry'
 import './tasks/rewardPool'
 import './tasks/mockToken'
 import './tasks/divviRegistry'
-import './tasks/dataAvailability'
 import './tasks/rewardPoolFactory'
 
 dotenv.config()
@@ -73,6 +72,11 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 1480,
     },
+    mantle: {
+      url: 'https://mantle-mainnet.g.alchemy.com/public',
+      accounts,
+      chainId: 5000,
+    },
   },
   etherscan: {
     apiKey: {
@@ -85,6 +89,7 @@ const config: HardhatUserConfig = {
       berachain: process.env.BERASCAN_API_KEY!,
       vana: process.env.VANASCAN_API_KEY!,
       polygon: process.env.POLYGONSCAN_API_KEY!,
+      mantle: process.env.MANTLESCAN_API_KEY!,
     },
     customChains: [
       {
@@ -117,6 +122,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://vanascan.io/api',
           browserURL: 'https://vanascan.io/',
+        },
+      },
+      {
+        network: 'mantle',
+        chainId: 5000,
+        urls: {
+          apiURL: 'https://api.etherscan.io/v2/api',
+          browserURL: 'https://mantlescan.xyz/',
         },
       },
     ],
