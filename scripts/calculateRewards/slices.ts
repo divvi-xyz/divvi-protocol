@@ -59,6 +59,12 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     kpiData,
     rewards: new BigNumber(parseEther(rewardAmount)),
     excludedReferrers: {},
+  }).map((reward) => {
+    // Round rewardAmount down to nearest 1e18
+    const amount = BigInt(reward.rewardAmount)
+    const oneEther = 10n ** 18n
+    const rounded = amount - (amount % oneEther)
+    return { ...reward, rewardAmount: rounded.toString() }
   })
 
   await resultDirectory.writeBuilderSlices(slicesRewards)
