@@ -48,9 +48,9 @@ async function calculateKpiBatch({
           Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
         )
 
-        if (referralTimestamp.getTime() > endTimestampExclusive.getTime()) {
+        if (referralTimestamp.getTime() >= endTimestampExclusive.getTime()) {
           console.log(
-            `Referral date is after end date, skipping ${userAddress} (registration tx date: ${timestamp}) for campaign ${protocol}`,
+            `Referral date is at or after end date (exclusive), skipping ${userAddress} (registration tx date: ${timestamp}) for campaign ${protocol}`,
           )
           return null
         }

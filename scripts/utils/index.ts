@@ -19,14 +19,16 @@ dotenv.config()
 // Make sure the alchemy key has all our supported networks enabled
 const ALCHEMY_KEY = process.env.ALCHEMY_KEY
 
-const NETWORK_ID_TO_ALCHEMY_RPC_URL = {
-  [NetworkId['ethereum-mainnet']]: 'https://eth-mainnet.g.alchemy.com/v2/',
-  [NetworkId['arbitrum-one']]: 'https://arb-mainnet.g.alchemy.com/v2/',
-  [NetworkId['op-mainnet']]: 'https://opt-mainnet.g.alchemy.com/v2/',
-  [NetworkId['polygon-pos-mainnet']]:
-    'https://polygon-mainnet.g.alchemy.com/v2/',
-  [NetworkId['base-mainnet']]: 'https://base-mainnet.g.alchemy.com/v2/',
-}
+export const NETWORK_ID_TO_ALCHEMY_RPC_URL: Partial<Record<NetworkId, string>> =
+  {
+    [NetworkId['ethereum-mainnet']]: 'https://eth-mainnet.g.alchemy.com/v2/',
+    [NetworkId['arbitrum-one']]: 'https://arb-mainnet.g.alchemy.com/v2/',
+    [NetworkId['op-mainnet']]: 'https://opt-mainnet.g.alchemy.com/v2/',
+    [NetworkId['polygon-pos-mainnet']]:
+      'https://polygon-mainnet.g.alchemy.com/v2/',
+    [NetworkId['base-mainnet']]: 'https://base-mainnet.g.alchemy.com/v2/',
+    [NetworkId['celo-mainnet']]: 'https://celo-mainnet.g.alchemy.com/v2/',
+  }
 
 const NETWORK_ID_TO_VIEM_CLIENT = {
   [NetworkId['ethereum-mainnet']]: createPublicClient({
