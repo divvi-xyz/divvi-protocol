@@ -2,7 +2,7 @@ import yargs from 'yargs'
 import { formatEther, parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import { calculateProportionalPrizeContestNoExcludedReferrers } from '../../src/proportionalPrizeContest'
+import { calculateProportionalPrizeContest } from '../../src/proportionalPrizeContest'
 import { ResultDirectory, KpiRow } from '../../src/resultDirectory'
 
 // proof-of-impact campaign parameters
@@ -35,9 +35,10 @@ export function calculateRewardsProofOfImpact({
   )
   const totalRewardsForPeriod = timeDiff.times(rewardsPerMillisecond)
 
-  return calculateProportionalPrizeContestNoExcludedReferrers({
+  return calculateProportionalPrizeContest({
     kpiData,
     rewards: totalRewardsForPeriod,
+    excludedReferrers: {},
   }).map((row) => ({
     ...row,
     rewardAmountDecimal: formatEther(BigInt(row.rewardAmount)),

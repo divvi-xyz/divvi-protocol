@@ -7,20 +7,6 @@ interface KpiRow {
   kpi: string
 }
 
-export function calculateProportionalPrizeContestNoExcludedReferrers({
-  kpiData,
-  rewards,
-}: {
-  kpiData: KpiRow[]
-  rewards: BigNumber
-}) {
-  return calculateProportionalPrizeContest({
-    kpiData,
-    rewards,
-    excludedReferrers: {},
-  })
-}
-
 export function calculateProportionalPrizeContest({
   kpiData,
   rewards,
