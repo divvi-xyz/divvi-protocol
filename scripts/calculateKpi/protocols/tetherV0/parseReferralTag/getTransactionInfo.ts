@@ -1,22 +1,15 @@
 import {
-  Hex,
-  TransactionReceiptNotFoundError,
-  TransactionNotFoundError,
-  Hash,
   Address,
+  Hex,
+  PublicClient,
+  TransactionNotFoundError,
+  TransactionReceiptNotFoundError,
+  Hash,
 } from 'viem'
-import { NetworkId } from '../../../types'
-import { getViemPublicClient } from '../../../utils'
-import { getUserOperations } from './getUserOperations'
-import { parseReferral, ParseReferralParams } from './parseReferral'
+import { getUserOperations, UserOperationWithHash } from './getUserOperations'
 
-type UserOperationWithHash = {
-  userOpHash: Hash
-  sender: Address
-  calldata: Hex
-}
-
-type TransactionInfo = {
+// Discriminated union for transaction info
+export type TransactionInfo = {
   type: 'transaction'
   hash: Hash
   from: Address
@@ -36,13 +29,13 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function getTransactionInfo({
+export async function getTransactionInfo({
   publicClient,
   txHash,
   delayFn = delay, // facilitates testing
   skipRetries = false,
 }: {
-  publicClient: ReturnType<typeof getViemPublicClient>
+  publicClient: PublicClient
   txHash: Hex
   delayFn?: (ms: number) => Promise<void>
   skipRetries?: boolean
@@ -115,43 +108,4 @@ async function getTransactionInfo({
       await delayFn(retryDelay)
     }
   }
-}
-
-export async function getReferrerIdFromTx(
-  txHash: Hex,
-  networkId: NetworkId,
-  skipRetries: boolean,
-): Promise<null | string> {
-  const publicClient = getViemPublicClient(networkId)
-
-  const transactionInfo = await getTransactionInfo({
-    publicClient,
-    txHash,
-    skipRetries,
-  })
-
-  const userOperation =
-    transactionInfo.transactionType === 'account-abstraction-bundle'
-      ? transactionInfo.userOperations[0]
-      : undefined
-  const parseReferralParams: ParseReferralParams = userOperation
-    ? {
-        referralType: 'onchain',
-        data: userOperation.calldata,
-        user: userOperation.sender,
-      }
-    : {
-        referralType: 'onchain',
-        data: transactionInfo.calldata,
-        user: transactionInfo.from,
-      }
-
-  const { referral, error } = parseReferral(parseReferralParams)
-
-  if (referral) {
-    return referral.consumer
-  }
-
-  console.warn('No referral found for tx', txHash, error)
-  return null
 }

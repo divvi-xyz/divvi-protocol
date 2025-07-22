@@ -5,7 +5,7 @@ import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { getHyperSyncClient } from '../../../utils'
 import { BigNumber } from 'bignumber.js'
 import { calculateKpi } from './index'
-import { getReferrerIdFromTx } from './getReferrerIdFromTx'
+import { getReferrerIdFromTx } from './parseReferralTag/getReferrerIdFromTx'
 
 // Mock dependencies
 jest.mock('../utils/events')

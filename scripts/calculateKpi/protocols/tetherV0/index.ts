@@ -13,7 +13,7 @@ import { LogField, TransactionField } from '@envio-dev/hypersync-client'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { getHyperSyncClient } from '../../../utils'
 import { BigNumber } from 'bignumber.js'
-import { getReferrerIdFromTx } from './getReferrerIdFromTx'
+import { getReferrerIdFromTx } from './parseReferralTag/getReferrerIdFromTx'
 
 const MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT = BigNumber(1).shiftedBy(6)
 const transferEventSigHash = toEventSelector(
