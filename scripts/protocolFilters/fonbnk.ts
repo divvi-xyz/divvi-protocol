@@ -9,11 +9,11 @@ import {
   getPayoutWallets,
 } from '../calculateKpi/protocols/fonbnk/helpers'
 import { SUPPORTED_FONBNK_NETWORKS } from '../calculateKpi/protocols/fonbnk/types'
-import { ReferralEvent } from '../types'
+import { MatcherFn } from '../types'
 import { getBlock, getHyperSyncClient } from '../utils'
 import { paginateQuery } from '../utils/hypersyncPagination'
 
-export async function filter(event: ReferralEvent): Promise<boolean> {
+export const filter: MatcherFn = async (event) => {
   if (!isAddress(event.userAddress)) {
     throw new Error(`Invalid user address: ${event.userAddress}`)
   }

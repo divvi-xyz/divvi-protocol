@@ -1,17 +1,28 @@
 import { _calculateKpiBatch } from './calculateKpi'
 
+const mockHandler = jest.fn()
 jest.mock('./calculateKpi/protocols', () => ({
   __esModule: true,
-  default: {},
+  default: {
+    'celo-transactions': (...args: unknown[]) => mockHandler(...args),
+  },
 }))
 
 describe('_calculateKpiBatch', () => {
-  const mockHandler = jest.fn().mockImplementation(async ({ address }) => {
-    return address === '0x123' ? 100 : 50
+  mockHandler.mockImplementation(async ({ address }) => {
+    return { kpi: address === '0x123' ? 100 : 50 }
   })
 
   const startTimestamp = new Date('2024-01-01T00:00:00Z')
   const endTimestampExclusive = new Date('2024-01-31T23:59:59Z')
+  const defaultArgs = {
+    eligibleUsers: [],
+    handler: mockHandler,
+    batchSize: 2,
+    startTimestamp,
+    endTimestampExclusive,
+    protocol: 'celo-transactions' as const,
+  }
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -37,11 +48,9 @@ describe('_calculateKpiBatch', () => {
     ]
 
     const results = await _calculateKpiBatch({
+      ...defaultArgs,
       eligibleUsers,
-      handler: mockHandler,
       batchSize: 2, // less than the number of eligible users
-      startTimestamp,
-      endTimestampExclusive,
     })
 
     expect(results).toEqual([
@@ -52,12 +61,17 @@ describe('_calculateKpiBatch', () => {
     expect(mockHandler).toHaveBeenCalledTimes(3)
   })
 
-  it('should skip users with referral dates after end timestamp', async () => {
+  it('should skip users with referral dates at or after end timestamp', async () => {
     const eligibleUsers = [
       {
         referrerId: 'ref1',
         userAddress: '0x123',
-        timestamp: '2024-02-01T01:00:00Z',
+        timestamp: '2024-02-01T00:29:59Z',
+      }, // At end date, accounting for the buffer
+      {
+        referrerId: 'ref1',
+        userAddress: '0x123',
+        timestamp: '2024-02-01T00:30:00Z',
       }, // After end date, accounting for the buffer
       {
         referrerId: 'ref2',
@@ -67,11 +81,8 @@ describe('_calculateKpiBatch', () => {
     ]
 
     const results = await _calculateKpiBatch({
+      ...defaultArgs,
       eligibleUsers,
-      handler: mockHandler,
-      batchSize: 2,
-      startTimestamp,
-      endTimestampExclusive,
     })
 
     expect(results).toEqual([
@@ -92,16 +103,14 @@ describe('_calculateKpiBatch', () => {
     ]
 
     await _calculateKpiBatch({
+      ...defaultArgs,
       eligibleUsers,
-      handler: mockHandler,
-      batchSize: 2,
-      startTimestamp,
-      endTimestampExclusive,
     })
     expect(mockHandler).toHaveBeenCalledWith({
       address: '0x123',
       startTimestamp: expectedStartTime,
       endTimestampExclusive,
+      referrerId: 'ref1',
     })
   })
 
@@ -116,32 +125,33 @@ describe('_calculateKpiBatch', () => {
     ]
 
     await _calculateKpiBatch({
+      ...defaultArgs,
       eligibleUsers,
-      handler: mockHandler,
-      batchSize: 2,
-      startTimestamp,
-      endTimestampExclusive,
     })
     expect(mockHandler).toHaveBeenCalledWith({
       address: '0x123',
       startTimestamp,
       endTimestampExclusive,
+      referrerId: 'ref1',
     })
   })
 
   it('should handle empty user list', async () => {
     const results = await _calculateKpiBatch({
+      ...defaultArgs,
       eligibleUsers: [],
-      handler: mockHandler,
-      batchSize: 2,
-      startTimestamp,
-      endTimestampExclusive,
     })
 
     expect(results).toHaveLength(0)
   })
 
-  it('should handle handler errors gracefully', async () => {
+  it('should fail the whole function if there is an error for any user', async () => {
+    mockHandler.mockImplementation(async ({ address }) => {
+      if (address === '0x123') {
+        throw new Error('Handler error')
+      }
+      return { kpi: 100 }
+    })
     const eligibleUsers = [
       {
         referrerId: 'ref1',
@@ -157,16 +167,8 @@ describe('_calculateKpiBatch', () => {
 
     await expect(
       _calculateKpiBatch({
+        ...defaultArgs,
         eligibleUsers,
-        handler: async ({ address }) => {
-          if (address === '0x123') {
-            throw new Error('Handler error')
-          }
-          return 100
-        },
-        batchSize: 2,
-        startTimestamp,
-        endTimestampExclusive,
       }),
     ).rejects.toThrow('Handler error')
   })

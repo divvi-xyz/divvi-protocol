@@ -39,18 +39,18 @@ describe('calculateRewardsProofOfImpact', () => {
     })
 
     expect(rewards).toEqual([
-      {
+      expect.objectContaining({
         referrerId: '0xreferrer1',
         rewardAmount: expectedTotalRewardsForPeriod
           .times(0.3)
           .toFixed(0, BigNumber.ROUND_DOWN),
-      },
-      {
+      }),
+      expect.objectContaining({
         referrerId: '0xreferrer2',
         rewardAmount: expectedTotalRewardsForPeriod
           .times(0.7)
           .toFixed(0, BigNumber.ROUND_DOWN),
-      },
+      }),
     ])
   })
 
@@ -80,13 +80,13 @@ describe('calculateRewardsProofOfImpact', () => {
     })
 
     expect(rewards).toEqual([
-      {
+      expect.objectContaining({
         referrerId: '0xreferrer1',
         rewardAmount: expectedTotalRewardsForPeriod.toFixed(
           0,
           BigNumber.ROUND_DOWN,
         ),
-      },
+      }),
     ])
   })
 })

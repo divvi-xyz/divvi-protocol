@@ -1,23 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {AccessControlDefaultAdminRulesUpgradeable} from '@openzeppelin/contracts-upgradeable/access/extensions/AccessControlDefaultAdminRulesUpgradeable.sol';
-import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
+import {ReentrancyGuard} from '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 /**
- * @title Divvi Reward Pool
+ * @title Divvi RewardPool
  * @custom:security-contact security@valora.xyz
  */
-contract RewardPool is
-  Initializable,
-  AccessControlDefaultAdminRulesUpgradeable,
-  UUPSUpgradeable,
-  ReentrancyGuardUpgradeable
-{
+contract RewardPool is AccessControl, ReentrancyGuard {
   using SafeERC20 for IERC20;
 
   // Constants
@@ -25,15 +18,21 @@ contract RewardPool is
     0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   bytes32 public constant MANAGER_ROLE = keccak256('MANAGER_ROLE');
 
-  // Init variables
+  // Data structures
+  struct RewardData {
+    address user;
+    uint256 amount;
+    bytes32 idempotencyKey;
+  }
+
+  // State variables
   address public poolToken;
   bool public isNativeToken;
   bytes32 public rewardFunctionId;
-
-  // State variables
   uint256 public timelock;
   uint256 public totalPendingRewards;
   mapping(address => uint256) public pendingRewards;
+  mapping(bytes32 => bool) public processedIdempotencyKeys;
 
   // Events
   event PoolInitialized(
@@ -49,14 +48,25 @@ contract RewardPool is
     uint256 amount,
     uint256[] rewardFunctionArgs
   );
+  event AddRewardWithIdempotency(
+    address indexed user,
+    uint256 amount,
+    bytes32 indexed idempotencyKey,
+    uint256[] rewardFunctionArgs
+  );
+  event AddRewardSkipped(
+    address indexed user,
+    uint256 amount,
+    bytes32 indexed idempotencyKey
+  );
   event ClaimReward(address indexed user, uint256 amount);
   event RescueToken(address token, uint256 amount);
 
   // Errors
   error AmountMismatch(uint256 expected, uint256 received);
   error AmountMustBeGreaterThanZero();
-  error ArraysLengthMismatch(uint256 usersLength, uint256 amountsLength);
   error CannotRescuePoolToken();
+  error EmptyIdempotencyKey(uint256 index);
   error InsufficientPoolBalance(uint256 requested, uint256 available);
   error InsufficientRewardBalance(uint256 requested, uint256 available);
   error NativeTokenNotAccepted();
@@ -76,18 +86,16 @@ contract RewardPool is
   error UseDepositFunction();
   error ZeroAddressNotAllowed(uint256 index);
   error RewardAmountMustBeGreaterThanZero(uint256 index);
+  error AlreadyInitialized();
 
-  /// @custom:oz-upgrades-unsafe-allow constructor
-  constructor() {
-    _disableInitializers();
-  }
+  // This is needed to prevent the implementation from being initialized
+  bool private initialized;
 
   /**
    * @dev Initializes the contract
    * @param _poolToken Address of the token used for rewards
    * @param _rewardFunctionId Bytes32 identifier of the reward function (e.g. git commit hash)
    * @param _owner Address that will have DEFAULT_ADMIN_ROLE
-   * @param _changeDefaultAdminDelay The delay between admin change steps
    * @param _manager Address that will have MANAGER_ROLE
    * @param _timelock Timestamp when manager withdrawals will be allowed
    */
@@ -95,14 +103,44 @@ contract RewardPool is
     address _poolToken,
     bytes32 _rewardFunctionId,
     address _owner,
-    uint48 _changeDefaultAdminDelay,
     address _manager,
     uint256 _timelock
-  ) public initializer {
-    __AccessControlDefaultAdminRules_init(_changeDefaultAdminDelay, _owner);
-    __UUPSUpgradeable_init();
-    __ReentrancyGuard_init();
+  ) external {
+    if (initialized) revert AlreadyInitialized();
+    initialized = true;
 
+    _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+    _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+    _grantRole(MANAGER_ROLE, _manager);
+
+    poolToken = _poolToken;
+    isNativeToken = (_poolToken == NATIVE_TOKEN_ADDRESS);
+    rewardFunctionId = _rewardFunctionId;
+
+    _setTimelock(_timelock);
+
+    emit PoolInitialized(_poolToken, _rewardFunctionId, _timelock);
+  }
+
+  /**
+   * @dev Constructor for direct deployment
+   * @param _poolToken Address of the token used for rewards
+   * @param _rewardFunctionId Bytes32 identifier of the reward function (e.g. git commit hash)
+   * @param _owner Address that will have DEFAULT_ADMIN_ROLE
+   * @param _manager Address that will have MANAGER_ROLE
+   * @param _timelock Timestamp when manager withdrawals will be allowed
+   */
+  constructor(
+    address _poolToken,
+    bytes32 _rewardFunctionId,
+    address _owner,
+    address _manager,
+    uint256 _timelock
+  ) {
+    initialized = true;
+
+    _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+    _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
     _grantRole(MANAGER_ROLE, _manager);
 
     poolToken = _poolToken;
@@ -170,31 +208,56 @@ contract RewardPool is
   }
 
   /**
-   * @dev Increases amounts available for users to claim
-   * @param users Array of user addresses
-   * @param amounts Array of amounts to allocate for each user
+   * @dev Increases amounts available for users to claim with idempotency protection
+   * @param rewards Array of reward items to process
    * @param rewardFunctionArgs Arguments used to calculate rewards
    * @notice Allowed only for address with DEFAULT_ADMIN_ROLE
    */
   function addRewards(
-    address[] calldata users,
-    uint256[] calldata amounts,
+    RewardData[] calldata rewards,
     uint256[] calldata rewardFunctionArgs
   ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    uint256 usersLength = users.length;
-    uint256 amountsLength = amounts.length;
-    if (usersLength != amountsLength)
-      revert ArraysLengthMismatch(usersLength, amountsLength);
+    for (uint256 i = 0; i < rewards.length; i++) {
+      RewardData calldata reward = rewards[i];
 
-    for (uint256 i = 0; i < usersLength; i++) {
-      if (users[i] == address(0)) revert ZeroAddressNotAllowed(i);
-      if (amounts[i] == 0) revert RewardAmountMustBeGreaterThanZero(i);
+      if (reward.user == address(0)) revert ZeroAddressNotAllowed(i);
+      if (reward.amount == 0) revert RewardAmountMustBeGreaterThanZero(i);
+      if (reward.idempotencyKey == bytes32(0)) revert EmptyIdempotencyKey(i);
 
-      pendingRewards[users[i]] += amounts[i];
-      totalPendingRewards += amounts[i];
+      if (!processedIdempotencyKeys[reward.idempotencyKey]) {
+        processedIdempotencyKeys[reward.idempotencyKey] = true;
 
-      emit AddReward(users[i], amounts[i], rewardFunctionArgs);
+        // Update pending rewards and total
+        pendingRewards[reward.user] += reward.amount;
+        totalPendingRewards += reward.amount;
+
+        // Old event for backwards compatibility
+        emit AddReward(reward.user, reward.amount, rewardFunctionArgs);
+        emit AddRewardWithIdempotency(
+          reward.user,
+          reward.amount,
+          reward.idempotencyKey,
+          rewardFunctionArgs
+        );
+      } else {
+        emit AddRewardSkipped(
+          reward.user,
+          reward.amount,
+          reward.idempotencyKey
+        );
+      }
     }
+  }
+
+  /**
+   * @dev Check if an idempotency key has been processed
+   * @param idempotencyKey The key to check
+   * @return bool indicating if the key has been processed
+   */
+  function isIdempotencyKeyProcessed(
+    bytes32 idempotencyKey
+  ) external view returns (bool) {
+    return processedIdempotencyKeys[idempotencyKey];
   }
 
   /**
@@ -275,13 +338,4 @@ contract RewardPool is
   receive() external payable {
     revert UseDepositFunction();
   }
-
-  /**
-   * @dev Function required to authorize contract upgrades
-   * @param newImplementation Address of the new implementation contract
-   * @notice Allowed only address with DEFAULT_ADMIN_ROLE
-   */
-  function _authorizeUpgrade(
-    address newImplementation
-  ) internal override onlyRole(DEFAULT_ADMIN_ROLE) {} // solhint-disable-line no-empty-blocks
 }

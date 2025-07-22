@@ -1,22 +1,14 @@
 import calculateKpiHandlers from './calculateKpi/protocols'
-import { parse } from 'csv-parse/sync'
-import { stringify } from 'csv-stringify/sync'
-import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import yargs from 'yargs'
-import { protocols } from './types'
-import { toPeriodFolderName } from './utils/dateFormatting'
-import { dirname, join } from 'path'
+import { KpiResults, Protocol, protocols } from './types'
+import { ResultDirectory } from '../src/resultDirectory'
+import { RedisClientType } from '@redis/client'
+import { closeRedisClient, getRedisClient } from '../src/redis'
 
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
 // Calculate KPIs for end users in batches to speed things up
-const BATCH_SIZE = 10
-
-interface KpiResult {
-  referrerId: string
-  userAddress: string
-  kpi: number
-}
+const BATCH_SIZE = 20
 
 interface ReferralData {
   referrerId: string
@@ -30,44 +22,40 @@ export const _calculateKpiBatch = calculateKpiBatch
 async function calculateKpiBatch({
   eligibleUsers,
   batchSize,
-  handler,
   startTimestamp,
   endTimestampExclusive,
+  protocol,
+  redis,
 }: {
   eligibleUsers: ReferralData[]
   batchSize: number
-  handler: (params: {
-    address: string
-    startTimestamp: Date
-    endTimestampExclusive: Date
-  }) => Promise<number>
   startTimestamp: Date
   endTimestampExclusive: Date
-}): Promise<KpiResult[]> {
-  const results: KpiResult[] = []
+  protocol: Protocol
+  redis?: RedisClientType
+}): Promise<KpiResults> {
+  const results: KpiResults = []
 
   for (let i = 0; i < eligibleUsers.length; i += batchSize) {
     const batch = eligibleUsers.slice(i, i + batchSize)
     console.log(
-      `Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)}`,
+      `Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)} for campaign ${protocol}`,
     )
 
     const batchPromises = batch.map(
       async ({ referrerId, userAddress, timestamp }) => {
-        console.log(`Calculating KPI for ${userAddress}`)
-
         const referralTimestamp = new Date(
           Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
         )
 
-        if (referralTimestamp.getTime() > endTimestampExclusive.getTime()) {
+        if (referralTimestamp.getTime() >= endTimestampExclusive.getTime()) {
           console.log(
-            `Referral date is after end date, skipping ${userAddress} (registration tx date: ${timestamp})`,
+            `Referral date is at or after end date (exclusive), skipping ${userAddress} (registration tx date: ${timestamp}) for campaign ${protocol}`,
           )
           return null
         }
 
-        const kpi = await handler({
+        const calculatedKpi = await calculateKpiHandlers[protocol]({
           address: userAddress,
           // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
           startTimestamp:
@@ -75,17 +63,17 @@ async function calculateKpiBatch({
               ? referralTimestamp
               : startTimestamp,
           endTimestampExclusive,
+          redis,
+          referrerId,
         })
 
-        return {
-          referrerId,
-          userAddress,
-          kpi,
-        }
+        return Array.isArray(calculatedKpi)
+          ? calculatedKpi
+          : [{ ...calculatedKpi, userAddress, referrerId }]
       },
     )
 
-    const batchResults = await Promise.all(batchPromises)
+    const batchResults = (await Promise.all(batchPromises)).flat()
     results.push(
       ...batchResults.filter(
         (result): result is NonNullable<typeof result> => result !== null,
@@ -100,44 +88,28 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
   const startTimestamp = new Date(args.startTimestamp)
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const protocol = args.protocol
+  const resultDirectory = args.resultDirectory
 
-  const folderPath = join(
-    args.datadir,
-    protocol,
-    toPeriodFolderName({
-      startTimestamp,
-      endTimestampExclusive,
-    }),
-  )
+  const eligibleUsers = await resultDirectory.readReferrals()
 
-  const inputFile = join(folderPath, 'referrals.csv')
-  const outputFile = join(folderPath, 'kpi.csv')
-
-  const eligibleUsers: ReferralData[] = parse(
-    readFileSync(inputFile, 'utf-8').toString(),
-    {
-      skip_empty_lines: true,
-      delimiter: ',',
-      columns: true,
-    },
-  )
-  const handler = calculateKpiHandlers[protocol]
+  const redis = args.redisConnection
+    ? await getRedisClient(args.redisConnection)
+    : undefined
 
   const allResults = await calculateKpiBatch({
     eligibleUsers,
     batchSize: BATCH_SIZE,
-    handler,
+    protocol,
     startTimestamp,
     endTimestampExclusive,
+    redis,
   })
 
-  // Create directory if it doesn't exist
-  mkdirSync(dirname(outputFile), { recursive: true })
-  writeFileSync(outputFile, stringify(allResults, { header: true }), {
-    encoding: 'utf-8',
-  })
+  await resultDirectory.writeKpi(allResults)
 
-  console.log(`Wrote results to ${outputFile}`)
+  console.log(`Wrote results to ${resultDirectory.kpiFileSuffix}.csv`)
+
+  await closeRedisClient()
 }
 
 async function getArgs() {
@@ -165,13 +137,26 @@ async function getArgs() {
     .option('datadir', {
       description: 'Directory to save data',
       default: 'rewards',
+    })
+    .option('redis-connection', {
+      type: 'string',
+      description:
+        'redis connection string, to run locally use redis://127.0.0.1:6379',
     }).argv
 
-  return {
+  const resultDirectory = new ResultDirectory({
     datadir: argv['datadir'],
+    name: argv['protocol'],
+    startTimestamp: new Date(argv['start-timestamp']),
+    endTimestampExclusive: new Date(argv['end-timestamp']),
+  })
+
+  return {
+    resultDirectory,
     protocol: argv['protocol'],
     startTimestamp: argv['start-timestamp'],
     endTimestampExclusive: argv['end-timestamp'],
+    redisConnection: argv['redis-connection'],
   }
 }
 

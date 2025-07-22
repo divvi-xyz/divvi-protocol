@@ -5,6 +5,7 @@ import { BlockField, LogField, Query } from '@envio-dev/hypersync-client'
 import { paginateEventsQuery } from './hypersyncPagination'
 import { divviRegistryAbi } from '../../abis/DivviRegistry'
 import { getFirstBlockAtOrAfterTimestamp } from '../calculateKpi/protocols/utils/events'
+import { RedisClientType } from '@redis/client'
 
 const REGISTRY_CONTRACT_ADDRESS = '0xedb51a8c390fc84b1c2a40e0ae9c9882fa7b7277'
 const STAGING_REGISTRY_CONTRACT_ADDRESS =
@@ -17,6 +18,8 @@ const REWARDS_PROVIDERS: Partial<Record<Protocol, Address>> = {
   'celo-transactions': '0x5f0a55FaD9424ac99429f635dfb9bF20c3360Ab8', // celo proof of impact
   'celo-pg': '0x0423189886D7966f0DD7E7d256898DAeEE625dca',
   'scout-game-v0': '0xC95876688026BE9d6fA7a7c33328bD013efFa2Bb',
+  'lisk-v0': '0x7bEb0e14F8D2e6f6678Cc30d867787B384b19e20',
+  'base-v0': '0xce56ed47c8f2ee8714087c9e48924b1a30bc455c',
 }
 
 // Remove duplicate events, keeping only the earliest event for each user
@@ -40,6 +43,7 @@ export async function fetchReferralEvents(
   referrerIds?: Address[],
   useStaging = false,
   endTimestampExclusive?: Date,
+  redis?: RedisClientType,
 ): Promise<ReferralEvent[]> {
   const referralEvents: ReferralEvent[] = []
   console.log('Fetching referral events for protocol:', protocol)
@@ -64,6 +68,7 @@ export async function fetchReferralEvents(
     ? await getFirstBlockAtOrAfterTimestamp(
         REGISTRY_NETWORK_ID,
         endTimestampExclusive,
+        redis,
       )
     : undefined
 

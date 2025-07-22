@@ -1,4 +1,4 @@
-# Funding Layer
+# Divvi Protocol
 
 ## Setup
 
@@ -100,6 +100,18 @@ Calculating KPI for 0x15B5f5FE55704140ce5057d85c28f8b237c1Bc53 (1/1)
 Wrote results to rewards/beefy/2025-05-08T00:00:00.000Z_2025-05-16T00:00:00.000Z/kpi.csv
 ```
 
+Calculating KPIs requires fetching the user's referral timestamp, which is slow due to rate limits. If running KPI calculations frequently, it may help to use Redis. Locally, run in a separate terminal:
+
+```bash
+docker-compose up
+```
+
+Then add the redis url to the above command:
+
+```bash
+$ yarn ts-node ./scripts/calculateKpi.ts --protocol beefy --startTimestamp 2025-05-08T00:00:00Z --endTimestamp 2025-05-16T00:00:00Z --redis-connection=redis://127.0.0.1:6379
+```
+
 ### Referrer User Count
 
 Fetch the count of users referred for a specific protocol. If no network IDs or referrer IDs are passed, get the user count for all referrers across all supported networks for that protocol.
@@ -158,7 +170,19 @@ yarn hardhat divvi-registry:upgrade \
     --network op \
     --use-defender \
     --defender-deploy-salt <SALT> \
-    --proxy-address <PROXY_ADDRESS>
+    --defender-upgrade-approval-process-id 8bc61a25-72ed-41df-8370-7aa94526f1cb \
+    --proxy-address 0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277
+```
+
+To upgrade the staging DivviRegistry, run:
+
+```bash
+yarn hardhat divvi-registry:upgrade \
+    --network op \
+    --use-defender \
+    --defender-deploy-salt <SALT> \
+    --defender-upgrade-approval-process-id f1d0a27d-c2f1-4f87-b36c-d3c308283702 \
+    --proxy-address 0x2f5E320698dB89CbefB810Fa19264103d99aAFB1
 ```
 
 ### Metadata of upgradable contracts

@@ -1,9 +1,9 @@
-import { ReferralEvent } from '../types'
+import { MatcherFn } from '../types'
 import { fetchWithBackoff } from '../utils/fetchWithBackoff'
 
 // The user has to have made at least one transaction on Beefy Finance
 // and all transactions have to be after the referral timestamp
-export async function filter(event: ReferralEvent): Promise<boolean> {
+export const filter: MatcherFn = async (event) => {
   const transactions = await fetchInvestorTimeline(event.userAddress)
   return (
     transactions.every(

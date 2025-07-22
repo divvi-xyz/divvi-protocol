@@ -1,24 +1,21 @@
 import yargs from 'yargs'
-import { parse } from 'csv-parse/sync'
-import { readFileSync } from 'fs'
 import { formatEther, parseEther } from 'viem'
 import BigNumber from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import { toPeriodFolderName } from '../utils/dateFormatting'
-import { join } from 'path'
-import { calculateProportionalPrizeContest } from './proportionalPrizeContest'
+import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
+import { KpiRow, ResultDirectory } from '../../src/resultDirectory'
 
-const scoutGameStartTimestamp = new Date('Tue Jun 03 2025 07:00:00 GMT+0000')
+const scoutGameStartTimestamp = new Date('Tue Jun 03 2025 00:00:00 GMT+0000')
 const scoutGameEndTimestampExclusive = new Date(
-  'Fri Jul 02 2025 07:00:00 GMT+0000',
+  'Fri Jul 02 2025 00:00:00 GMT+0000',
 )
 
 const totalRewards = parseEther('180000')
 const REWARD_POOL_ADDRESS = '0x6F599b879541d289e344e325f4D9badf8c5bB49E' // on Base
 
 const rewardsPerMillisecond = new BigNumber(totalRewards).div(
-  new BigNumber(scoutGameStartTimestamp.getTime()).minus(
-    new BigNumber(scoutGameEndTimestampExclusive.getTime()),
+  new BigNumber(scoutGameEndTimestampExclusive.getTime()).minus(
+    new BigNumber(scoutGameStartTimestamp.getTime()),
   ),
 )
 
@@ -36,14 +33,15 @@ export function calculateRewards({
   )
   const totalRewardsForPeriod = timeDiff.times(rewardsPerMillisecond)
 
-  return calculateProportionalPrizeContest({
+  return calculateSqrtProportionalPrizeContest({
     kpiData,
     rewards: totalRewardsForPeriod,
+    excludedReferrers: {},
   })
 }
 
 function parseArgs() {
-  return yargs
+  const args = yargs
     .option('datadir', {
       description: 'the directory to store the results',
       type: 'string',
@@ -65,40 +63,51 @@ function parseArgs() {
     })
     .strict()
     .parseSync()
-}
 
-interface KpiRow {
-  referrerId: string
-  userAddress: string
-  kpi: string
-}
-
-async function main(args: ReturnType<typeof parseArgs>) {
-  const startTimestamp = new Date(args['start-timestamp'])
-  const endTimestampExclusive = new Date(args['end-timestamp'])
-
-  const folderPath = join(
-    args.datadir,
-    'scout-game-v0',
-    toPeriodFolderName({
-      startTimestamp,
-      endTimestampExclusive,
+  return {
+    resultDirectory: new ResultDirectory({
+      datadir: args.datadir,
+      name: 'scout-game-v0',
+      startTimestamp: new Date(args['start-timestamp']),
+      endTimestampExclusive: new Date(args['end-timestamp']),
     }),
-  )
-  const inputPath = join(folderPath, 'kpi.csv')
-  const outputPath = join(folderPath, 'safe-transactions.json')
+    startTimestamp: new Date(args['start-timestamp']),
+    endTimestampExclusive: new Date(args['end-timestamp']),
+  }
+}
 
-  const kpiData = parse(readFileSync(inputPath, 'utf-8').toString(), {
-    skip_empty_lines: true,
-    delimiter: ',',
-    columns: true,
-  }) as KpiRow[]
+export async function main(args: ReturnType<typeof parseArgs>) {
+  const { resultDirectory, startTimestamp, endTimestampExclusive } = args
+
+  const kpiData = await resultDirectory.readKpi()
 
   const rewards = calculateRewards({
     kpiData,
     startTimestamp,
     endTimestampExclusive,
   })
+
+  const segmentedKpiPerReferrer: {
+    [referrerId: string]: { [key: string]: bigint }
+  } = {}
+
+  for (const { referrerId, metadata } of kpiData) {
+    if (!metadata) continue
+
+    if (!segmentedKpiPerReferrer[referrerId]) {
+      segmentedKpiPerReferrer[referrerId] = {}
+    }
+
+    for (const [key, value] of Object.entries(metadata)) {
+      segmentedKpiPerReferrer[referrerId][key] =
+        (segmentedKpiPerReferrer[referrerId][key] ?? 0n) + BigInt(value)
+    }
+  }
+
+  const rewardsWithSegmentedKpi = rewards.map((reward) => ({
+    ...reward,
+    ...segmentedKpiPerReferrer[reward.referrerId],
+  }))
 
   console.log(
     'rewards:',
@@ -109,12 +118,14 @@ async function main(args: ReturnType<typeof parseArgs>) {
   )
 
   createAddRewardSafeTransactionJSON({
-    filePath: outputPath,
+    filePath: resultDirectory.safeTransactionsFilePath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
     rewards,
     startTimestamp,
     endTimestampExclusive,
   })
+
+  resultDirectory.writeRewards(rewardsWithSegmentedKpi)
 }
 
 // Only run main if this file is being executed directly

@@ -10,20 +10,20 @@ describe('filter', () => {
     protocol: 'celo-transactions',
   } as ReferralEvent
 
-  it('returns true if no allowlist is passed in', async () => {
+  it('returns true if no allowList is passed in', async () => {
     const result = await filter(event)
     expect(result).toBe(true)
   })
 
-  it('returns true if referrerId is in builderAllowList', async () => {
-    const builderAllowList: Address[] = ['0x456', '0x789']
-    const result = await filter(event, builderAllowList)
+  it('returns true if referrerId is in allowList', async () => {
+    const allowList: Address[] = ['0x456', '0x789']
+    const result = await filter(event, { allowList })
     expect(result).toBe(true)
   })
 
-  it('returns false if referrerId is not in builderAllowList', async () => {
-    const builderAllowList: Address[] = ['0x789', '0xabc']
-    const result = await filter(event, builderAllowList)
+  it('returns false if referrerId is not in allowList', async () => {
+    const allowList: Address[] = ['0x789', '0xabc']
+    const result = await filter(event, { allowList })
     expect(result).toBe(false)
   })
 })

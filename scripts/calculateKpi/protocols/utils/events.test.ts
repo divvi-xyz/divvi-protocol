@@ -8,6 +8,7 @@ import { NetworkId } from '../../../types'
 import { BlockTimestampData } from '../types'
 import { getViemPublicClient } from '../../../utils'
 import { erc20Abi, GetContractReturnType } from 'viem'
+import { RedisClientType } from '@redis/client'
 
 // This makes memoize(fn) return fn, effectively disabling memoization
 // so it doesn't interfere with the tests.
@@ -37,7 +38,7 @@ describe('On-chain event helpers', () => {
         .get(`/block/arbitrum/1736525692`)
         .reply(200, mockBlockTimestamp)
 
-      const timestamp = new Date(1736525692000)
+      const timestamp = 1736525692
       const result = await getNearestBlock(networkId, timestamp)
 
       expect(result).toEqual(mockBlockTimestamp)
@@ -132,6 +133,96 @@ describe('On-chain event helpers', () => {
       ).rejects.toThrow(
         `Calculated startBlock (height: 10) is not strictly less than calculated endBlockExclusive (height: 10).`,
       )
+    })
+
+    describe('with Redis', () => {
+      let mockRedis: jest.Mocked<RedisClientType>
+
+      beforeEach(() => {
+        jest.clearAllMocks()
+        mockRedis = {
+          get: jest.fn(),
+          set: jest.fn(),
+        } as unknown as jest.Mocked<RedisClientType>
+      })
+
+      it('should use cached block number from Redis when available', async () => {
+        mockRedis.get.mockResolvedValueOnce('100')
+        mockRedis.get.mockResolvedValueOnce('200')
+
+        const startTimestamp = new Date(1000000)
+        const endTimestampExclusive = new Date(2000000)
+
+        // no need to use nock to mock the response since we're using the cached block numbers
+        const result = await getBlockRange({
+          networkId,
+          startTimestamp,
+          endTimestampExclusive,
+          redis: mockRedis,
+        })
+
+        expect(mockRedis.get).toHaveBeenCalledWith(`block-at-1000-${networkId}`)
+        expect(mockRedis.get).toHaveBeenCalledWith(`block-at-2000-${networkId}`)
+        expect(result).toEqual({ startBlock: 100, endBlockExclusive: 200 })
+      })
+
+      it('should cache block number in Redis when not found in cache', async () => {
+        mockRedis.get.mockResolvedValue(null)
+
+        nock('https://coins.llama.fi')
+          .get('/block/arbitrum/1000')
+          .reply(200, { height: 10, timestamp: 1000 })
+        nock('https://coins.llama.fi')
+          .get('/block/arbitrum/2000')
+          .reply(200, { height: 20, timestamp: 2000 })
+
+        const startTimestamp = new Date(1000000)
+        const endTimestampExclusive = new Date(2000000)
+
+        const result = await getBlockRange({
+          networkId,
+          startTimestamp,
+          endTimestampExclusive,
+          redis: mockRedis,
+        })
+
+        expect(mockRedis.get).toHaveBeenCalledWith(`block-at-1000-${networkId}`)
+        expect(mockRedis.get).toHaveBeenCalledWith(`block-at-2000-${networkId}`)
+        expect(mockRedis.set).toHaveBeenCalledWith(
+          `block-at-1000-${networkId}`,
+          10,
+          { EX: 60 * 60 * 24 * 90 },
+        )
+        expect(mockRedis.set).toHaveBeenCalledWith(
+          `block-at-2000-${networkId}`,
+          20,
+          { EX: 60 * 60 * 24 * 90 },
+        )
+        expect(result).toEqual({ startBlock: 10, endBlockExclusive: 20 })
+      })
+
+      it('should handle Redis errors gracefully and fall back to API calls', async () => {
+        mockRedis.get.mockRejectedValue(new Error('Redis error'))
+
+        nock('https://coins.llama.fi')
+          .get('/block/arbitrum/1000')
+          .reply(200, { height: 10, timestamp: 1000 })
+        nock('https://coins.llama.fi')
+          .get('/block/arbitrum/2000')
+          .reply(200, { height: 20, timestamp: 2000 })
+
+        const startTimestamp = new Date(1000000)
+        const endTimestampExclusive = new Date(2000000)
+
+        const result = await getBlockRange({
+          networkId,
+          startTimestamp,
+          endTimestampExclusive,
+          redis: mockRedis,
+        })
+
+        expect(result).toEqual({ startBlock: 10, endBlockExclusive: 20 })
+      })
     })
   })
 
