@@ -121,6 +121,27 @@ Fetch the count of users referred for a specific protocol. If no network IDs or 
 yarn ts-node ./scripts/referrerUserCount.ts --protocol Beefy --referrerIds app1 app2 app3 --networkIds celo-mainnet base-mainnet
 ```
 
+### Example Data Availability Contract Upload
+
+Our example Data Availability contract (located on Op Mainnet at [0x2Bcbfc02AAa1dB9798179902DeE48F268C8DD3CC](https://optimistic.etherscan.io/address/0x2bcbfc02aaa1db9798179902dee48f268c8dd3cc))
+tracks the number of Celo transfers users have made over a period of time. The script found in `scripts/dataAvailability/getTokenTransfers.ts` calculates this data for a specified time range
+and uploads it to a specified contract. It can be invoked with:
+
+```bash
+yarn ts-node scripts/dataAvailability/getTokenTransfers.ts --token-address 0x471EcE3750Da237f93B8E339c536989b8978a438 \
+  --network celo-mainnet
+  --start-block 34304880
+  --end-block 34304900
+  --output-file out.csv
+  --data-availability-address=<DATA_AVAILABILITY_CONTRACT_ADDRESS>
+  --upload
+```
+
+Raw objective function data will always be output to `--output-file`. If `--upload` is set, the script will additionally upload the data to the specified contract,
+using the account stored in the `MNEMONIC` environment variable.
+
+More context on this script and how it can be used/modified can be found in the [risc0-example](https://github.com/divvi-xyz/risc0-example) repo.
+
 ## Contracts
 
 This repository contains the contract(s) necessary to support the Divvi protocol v0.
@@ -184,6 +205,17 @@ yarn hardhat divvi-registry:upgrade \
     --defender-upgrade-approval-process-id f1d0a27d-c2f1-4f87-b36c-d3c308283702 \
     --proxy-address 0x2f5E320698dB89CbefB810Fa19264103d99aAFB1
 ```
+
+To deploy DataAvailability, run:
+
+```bash
+yarn hardhat data-availability:deploy --network op \
+  --owner-address <OWNER_ADDRESS> \
+  --image-id <IMAGE_ID> \
+  --verifier-address 0x0b144e07a0826182b6b59788c34b32bfa86fb711
+```
+
+More context is provided in the [risc0-example](https://github.com/divvi-xyz/risc0-example) repo.
 
 ### Metadata of upgradable contracts
 
