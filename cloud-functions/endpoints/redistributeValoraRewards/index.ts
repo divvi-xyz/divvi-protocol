@@ -4,11 +4,14 @@ import { createEndpoint } from '../../services/createEndpoint'
 import { hexSchema } from '../../types'
 import { GraphQLClient, gql } from 'graphql-request'
 import { campaigns, Campaign } from '../../../src/campaigns'
-import { Address, isAddressEqual } from 'viem'
+import { Address, Hex, isAddressEqual } from 'viem'
 import { getViemPublicClient } from '../../../scripts/utils'
 import { rewardPoolAbi } from '../../../abis/RewardPool'
 import { proposeSafeClaimRewardTx } from './proposeSafeClaimRewardTx'
 import { logger } from '../../log'
+import { listGCSFiles } from '../../../scripts/utils/uploadFileToCloudStorage'
+import { distributeRewards } from './distributeRewards'
+import { getLatestRewards } from './getLatestRewards'
 
 const requestSchema = z.object({
   method: z.custom((arg) => arg === 'POST', 'only POST requests are allowed'),
@@ -23,6 +26,7 @@ const loadConfig = () =>
     VALORA_REWARDS_POOL_OWNER_PRIVATE_KEY: hexSchema,
     DIVVI_INDEXER_URL: z.string().url(),
     ALCHEMY_KEY: z.string(),
+    BUCKET_NAME: z.string(),
   })
 
 async function fetchRewardsProviders({
@@ -61,19 +65,23 @@ async function processCampaignRewards({
   campaign,
   config,
   rewardsProvider,
+  gcsFiles,
 }: {
   campaign: Campaign | undefined
   config: ReturnType<typeof loadConfig>
   rewardsProvider: Address
+  gcsFiles: { name: string; url: string }[]
 }): Promise<{
   rewardsProvider: Address
   rewardPoolAddress: string | null
   pendingRewards: string | null
   claimRewardsSafeTxUrl: string | null
+  distributeRewardsTxHash: Hex | null
   error?: string
 }> {
   let pendingRewards: string | null = null
   let claimRewardsSafeTxUrl: string | null = null
+  let distributeRewardsTxHash: Hex | null = null
   let error: string | undefined = undefined
   const rewardPoolAddress = campaign ? campaign.rewardsPoolAddress : null
 
@@ -100,46 +108,65 @@ async function processCampaignRewards({
 
       // Propose Safe tx to claim rewards if pendingRewards > 0
       if (rewards > BigInt(0)) {
-        try {
-          claimRewardsSafeTxUrl = await proposeSafeClaimRewardTx({
-            safeAddress: config.VALORA_DIVVI_IDENTIFIER,
-            rewardPoolAddress: campaign.rewardsPoolAddress,
-            pendingRewards: rewards,
-            networkId: campaign.networkId,
-            alchemyKey: config.ALCHEMY_KEY,
-          })
+        // Find the latest rewards file for this campaign
+        const { filename, rewardAmounts } = await getLatestRewards({
+          gcsFiles,
+          protocol: campaign.protocol,
+        })
 
-          logger.info(
-            {
-              rewardsProvider,
-              rewardPoolAddress,
-              claimRewardsSafeTxUrl,
-            },
-            `Proposed Safe transaction to claim rewards for ${rewardsProvider}`,
+        const valoraRewardsFromGcs =
+          rewardAmounts.find(
+            (reward) =>
+              reward.referrerId.toLowerCase() ===
+              config.VALORA_DIVVI_IDENTIFIER.toLowerCase(),
+          )?.rewardAmount ?? null
+
+        // If the rewards from the GCS file don't match the pending rewards, there are some inconsistencies, so throw an error
+        if (valoraRewardsFromGcs !== pendingRewards) {
+          throw new Error(
+            `Rewards mismatch: ${valoraRewardsFromGcs} !== ${pendingRewards}`,
           )
-        } catch (safeError) {
-          logger.warn(
-            {
-              err: safeError,
-              campaign,
-            },
-            `Failed to propose Safe transaction for ${rewardsProvider}`,
-          )
-          error = `Failed to propose Safe transaction for ${rewardsProvider}: ${safeError instanceof Error ? safeError.message : String(safeError)}`
-          claimRewardsSafeTxUrl = null
         }
+
+        // Propose Safe tx to claim rewards if pendingRewards > 0
+        claimRewardsSafeTxUrl = await proposeSafeClaimRewardTx({
+          safeAddress: config.VALORA_DIVVI_IDENTIFIER,
+          rewardPoolAddress: campaign.rewardsPoolAddress,
+          pendingRewards: rewards,
+          networkId: campaign.networkId,
+          alchemyKey: config.ALCHEMY_KEY,
+        })
+
+        logger.info(
+          {
+            rewardsProvider,
+            rewardPoolAddress,
+            claimRewardsSafeTxUrl,
+          },
+          `Proposed Safe transaction to claim rewards for ${rewardsProvider}`,
+        )
+
+        // Distribute rewards
+        distributeRewardsTxHash = await distributeRewards({
+          campaign,
+          rewardAmounts,
+          valoraDivviIdentifier: config.VALORA_DIVVI_IDENTIFIER,
+          valoraRewards: rewards,
+          valoraRewardsPoolOwnerPrivateKey:
+            config.VALORA_REWARDS_POOL_OWNER_PRIVATE_KEY,
+          alchemyKey: config.ALCHEMY_KEY,
+          rewardsFilename: filename,
+        })
       }
-    } catch (processError) {
+    } catch (err) {
       logger.warn(
         {
-          err: processError,
+          err,
           campaign,
         },
         `Failed to process rewards for ${rewardsProvider}`,
       )
-      error = `Failed to process rewards for ${rewardsProvider}: ${processError instanceof Error ? processError.message : String(processError)}`
-      pendingRewards = null
-      claimRewardsSafeTxUrl = null
+      error = `Failed to process rewards for ${rewardsProvider}: ${err instanceof Error ? err.message : String(err)}`
     }
   }
 
@@ -148,6 +175,7 @@ async function processCampaignRewards({
     rewardPoolAddress,
     pendingRewards,
     claimRewardsSafeTxUrl,
+    distributeRewardsTxHash,
     ...(error && { error }),
   }
 }
@@ -162,6 +190,7 @@ export const redistributeValoraRewards = createEndpoint(
         indexerUrl: config.DIVVI_INDEXER_URL,
         rewardsConsumer: config.VALORA_DIVVI_IDENTIFIER,
       })
+      const gcsFiles = await listGCSFiles(config.BUCKET_NAME)
       const result = await Promise.all(
         providers.map(async (rewardsProvider) => {
           const campaign = campaigns.find((c) =>
@@ -171,6 +200,7 @@ export const redistributeValoraRewards = createEndpoint(
             campaign,
             config,
             rewardsProvider,
+            gcsFiles,
           })
         }),
       )
