@@ -95,7 +95,7 @@
     "hardhat-gas-reporter": "^2.2.2",
     "jest": "^30.0.0",
     "knip": "^5.46.2",
-    "nock": "^14.0.2",
+    "nock": "^14.0.5",
     "patch-package": "^8.0.0",
     "prettier": "^3.6.2",
     "prettier-plugin-solidity": "^1.4.3",

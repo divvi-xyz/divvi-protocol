@@ -5,6 +5,11 @@ import { proposeSafeClaimRewardTx } from './proposeSafeClaimRewardTx'
 import { redistributeValoraRewards } from './index'
 import { getTestServer } from '../../../test/helpers'
 import { NetworkId } from '../../../scripts/types'
+import { distributeRewards } from './distributeRewards'
+import { listGCSFiles } from '../../../scripts/utils/uploadFileToCloudStorage'
+import { getLatestRewards } from './getLatestRewards'
+import { campaigns } from '../../../src/campaigns'
+import { Address } from 'viem'
 
 // Mock external dependencies
 jest.mock('graphql-request', () => ({
@@ -13,19 +18,50 @@ jest.mock('graphql-request', () => ({
 }))
 jest.mock('../../../scripts/utils')
 jest.mock('./proposeSafeClaimRewardTx')
+jest.mock('./distributeRewards')
+jest.mock('../../../scripts/utils/uploadFileToCloudStorage')
+jest.mock('./getLatestRewards')
 
 const mockGraphQLClient = jest.mocked(GraphQLClient)
 const mockGetViemPublicClient = jest.mocked(getViemPublicClient)
 const mockProposeSafeClaimRewardTx = jest.mocked(proposeSafeClaimRewardTx)
+const mockDistributeRewards = jest.mocked(distributeRewards)
+const mockListGCSFiles = jest.mocked(listGCSFiles)
+const mockGetLatestRewards = jest.mocked(getLatestRewards)
+
+const valoraDivviIdentifier =
+  '0x1234567890123456789012345678901234567890' as Address
 
 // Mock environment variables
-process.env.VALORA_DIVVI_IDENTIFIER =
-  '0x1234567890123456789012345678901234567890'
+process.env.VALORA_DIVVI_IDENTIFIER = valoraDivviIdentifier
 process.env.VALORA_REWARDS_POOL_OWNER_PRIVATE_KEY =
   '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
 process.env.DIVVI_INDEXER_URL = 'https://test-indexer.example.com'
 process.env.ALCHEMY_KEY = 'test-alchemy-key'
 process.env.GCLOUD_PROJECT = 'divvi-staging'
+process.env.BUCKET_NAME = 'divvi-staging-bucket'
+
+const latestRewards = {
+  filename:
+    'kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
+  rewardAmounts: [
+    {
+      referrerId: valoraDivviIdentifier,
+      rewardAmount: '1000000',
+    },
+    {
+      referrerId: '0x1234567890123456789012345678901234567891' as Address,
+      rewardAmount: '2000000',
+    },
+  ],
+}
+
+const mockGcsFiles = [
+  {
+    name: 'kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
+    url: 'https://storage.googleapis.com/divvi-staging/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
+  },
+]
 
 describe('redistributeValoraRewards', () => {
   let mockClient: jest.Mocked<GraphQLClient>
@@ -47,6 +83,15 @@ describe('redistributeValoraRewards', () => {
     mockGetViemPublicClient.mockReturnValue(
       mockViemClient as unknown as ReturnType<typeof getViemPublicClient>,
     )
+
+    mockListGCSFiles.mockResolvedValue(mockGcsFiles)
+    mockGetLatestRewards.mockResolvedValue(latestRewards)
+    mockProposeSafeClaimRewardTx.mockResolvedValue(
+      'https://app.safe.global/transactions/tx?safe=celo:0x1234567890123456789012345678901234567890&id=0xabc123',
+    )
+    mockDistributeRewards.mockResolvedValue(
+      '0xabcdef1234567890123456789012345678901234567890123456789012345678',
+    )
   })
 
   describe('POST /', () => {
@@ -55,11 +100,11 @@ describe('redistributeValoraRewards', () => {
       mockClient.request.mockResolvedValue({
         DivviRegistry_RewardsAgreementRegistered: [
           {
-            rewardsConsumer: '0x1234567890123456789012345678901234567890',
+            rewardsConsumer: valoraDivviIdentifier,
             rewardsProvider: '0x0423189886d7966f0dd7e7d256898daeee625dca',
           },
           {
-            rewardsConsumer: '0x1234567890123456789012345678901234567890',
+            rewardsConsumer: valoraDivviIdentifier,
             rewardsProvider: '0xc95876688026be9d6fa7a7c33328bd013effa2bb',
           },
         ],
@@ -69,11 +114,6 @@ describe('redistributeValoraRewards', () => {
       mockViemClient.readContract
         .mockResolvedValueOnce(BigInt(1000000)) // First provider has rewards
         .mockResolvedValueOnce(BigInt(0)) // Second provider has no rewards
-
-      // Mock Safe transaction proposal
-      mockProposeSafeClaimRewardTx.mockResolvedValue(
-        'https://app.safe.global/transactions/tx?safe=celo:0x1234567890123456789012345678901234567890&id=0xabc123',
-      )
 
       const server = getTestServer(redistributeValoraRewards)
       const response = await request(server).post('/').expect(200)
@@ -86,12 +126,15 @@ describe('redistributeValoraRewards', () => {
             pendingRewards: '1000000',
             claimRewardsSafeTxUrl:
               'https://app.safe.global/transactions/tx?safe=celo:0x1234567890123456789012345678901234567890&id=0xabc123',
+            distributeRewardsTxHash:
+              '0xabcdef1234567890123456789012345678901234567890123456789012345678',
           },
           {
             rewardsProvider: '0xc95876688026be9d6fa7a7c33328bd013effa2bb',
             rewardPoolAddress: '0x6f599b879541d289e344e325f4d9badf8c5bb49e',
             pendingRewards: '0',
             claimRewardsSafeTxUrl: null,
+            distributeRewardsTxHash: null,
           },
         ],
       })
@@ -100,18 +143,38 @@ describe('redistributeValoraRewards', () => {
       expect(mockClient.request).toHaveBeenCalledWith(
         expect.arrayContaining([expect.stringContaining('RewardsAgreement')]),
         {
-          rewardsConsumer: '0x1234567890123456789012345678901234567890',
+          rewardsConsumer: valoraDivviIdentifier,
         },
       )
+
+      // Verify getLatestRewards was called
+      expect(mockGetLatestRewards).toHaveBeenCalledTimes(1)
+      expect(mockGetLatestRewards).toHaveBeenCalledWith({
+        gcsFiles: mockGcsFiles,
+        protocol: 'celo-pg',
+      })
 
       // Verify Safe transaction was proposed for provider with rewards
       expect(mockProposeSafeClaimRewardTx).toHaveBeenCalledTimes(1)
       expect(mockProposeSafeClaimRewardTx).toHaveBeenCalledWith({
-        safeAddress: '0x1234567890123456789012345678901234567890',
+        safeAddress: valoraDivviIdentifier,
         rewardPoolAddress: '0xc273fb49c5c291f7c697d0fcef8ce34e985008f3',
         pendingRewards: BigInt(1000000),
         networkId: NetworkId['celo-mainnet'],
         alchemyKey: 'test-alchemy-key',
+      })
+
+      // Verify rewards were distributed
+      expect(mockDistributeRewards).toHaveBeenCalledTimes(1)
+      expect(mockDistributeRewards).toHaveBeenCalledWith({
+        campaign: campaigns[0],
+        rewardAmounts: latestRewards.rewardAmounts,
+        valoraDivviIdentifier,
+        valoraRewards: BigInt(1000000),
+        valoraRewardsPoolOwnerPrivateKey:
+          '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+        alchemyKey: 'test-alchemy-key',
+        rewardsFilename: latestRewards.filename,
       })
     })
 
@@ -120,7 +183,7 @@ describe('redistributeValoraRewards', () => {
       mockClient.request.mockResolvedValue({
         DivviRegistry_RewardsAgreementRegistered: [
           {
-            rewardsConsumer: '0x1234567890123456789012345678901234567890',
+            rewardsConsumer: valoraDivviIdentifier,
             rewardsProvider: '0x9999999999999999999999999999999999999999', // Unknown provider
           },
         ],
@@ -136,12 +199,14 @@ describe('redistributeValoraRewards', () => {
             rewardPoolAddress: null,
             pendingRewards: null,
             claimRewardsSafeTxUrl: null,
+            distributeRewardsTxHash: null,
           },
         ],
       })
 
-      // Verify no Safe transaction was proposed
+      // Verify no Safe transaction was proposed and no rewards were distributed
       expect(mockProposeSafeClaimRewardTx).not.toHaveBeenCalled()
+      expect(mockDistributeRewards).not.toHaveBeenCalled()
     })
 
     it('should handle empty rewards providers list', async () => {
@@ -166,7 +231,7 @@ describe('redistributeValoraRewards', () => {
       mockClient.request.mockResolvedValue({
         DivviRegistry_RewardsAgreementRegistered: [
           {
-            rewardsConsumer: '0x1234567890123456789012345678901234567890',
+            rewardsConsumer: valoraDivviIdentifier,
             rewardsProvider: '0x0423189886d7966f0dd7e7d256898daeee625dca',
           },
         ],
@@ -187,6 +252,7 @@ describe('redistributeValoraRewards', () => {
             rewardPoolAddress: '0xc273fb49c5c291f7c697d0fcef8ce34e985008f3',
             pendingRewards: null,
             claimRewardsSafeTxUrl: null,
+            distributeRewardsTxHash: null,
             error:
               'Failed to process rewards for 0x0423189886d7966f0dd7e7d256898daeee625dca: Contract read failed',
           },
@@ -197,12 +263,44 @@ describe('redistributeValoraRewards', () => {
       expect(mockProposeSafeClaimRewardTx).not.toHaveBeenCalled()
     })
 
+    it('should handle errors when rewards mismatch from GCS file', async () => {
+      // Mock GraphQL response
+      mockClient.request.mockResolvedValue({
+        DivviRegistry_RewardsAgreementRegistered: [
+          {
+            rewardsConsumer: valoraDivviIdentifier,
+            rewardsProvider: '0x0423189886d7966f0dd7e7d256898daeee625dca',
+          },
+        ],
+      })
+
+      // Mock pending rewards
+      mockViemClient.readContract.mockResolvedValue(BigInt(500000)) // does not match the rewards in the GCS file
+
+      const server = getTestServer(redistributeValoraRewards)
+      const response = await request(server).post('/').expect(200)
+
+      expect(response.body).toEqual({
+        rewards: [
+          {
+            rewardsProvider: '0x0423189886d7966f0dd7e7d256898daeee625dca',
+            rewardPoolAddress: '0xc273fb49c5c291f7c697d0fcef8ce34e985008f3',
+            pendingRewards: '500000',
+            claimRewardsSafeTxUrl: null,
+            distributeRewardsTxHash: null,
+            error:
+              'Failed to process rewards for 0x0423189886d7966f0dd7e7d256898daeee625dca: Rewards mismatch: 1000000 !== 500000',
+          },
+        ],
+      })
+    })
+
     it('should handle errors when proposing Safe transaction', async () => {
       // Mock GraphQL response
       mockClient.request.mockResolvedValue({
         DivviRegistry_RewardsAgreementRegistered: [
           {
-            rewardsConsumer: '0x1234567890123456789012345678901234567890',
+            rewardsConsumer: valoraDivviIdentifier,
             rewardsProvider: '0x0423189886d7966f0dd7e7d256898daeee625dca',
           },
         ],
@@ -226,15 +324,63 @@ describe('redistributeValoraRewards', () => {
             rewardPoolAddress: '0xc273fb49c5c291f7c697d0fcef8ce34e985008f3',
             pendingRewards: '1000000',
             claimRewardsSafeTxUrl: null,
+            distributeRewardsTxHash: null,
             error:
-              'Failed to propose Safe transaction for 0x0423189886d7966f0dd7e7d256898daeee625dca: Safe transaction failed',
+              'Failed to process rewards for 0x0423189886d7966f0dd7e7d256898daeee625dca: Safe transaction failed',
           },
         ],
       })
 
       // Verify Safe transaction was attempted
       expect(mockProposeSafeClaimRewardTx).toHaveBeenCalledWith({
-        safeAddress: '0x1234567890123456789012345678901234567890',
+        safeAddress: valoraDivviIdentifier,
+        rewardPoolAddress: '0xc273fb49c5c291f7c697d0fcef8ce34e985008f3',
+        pendingRewards: BigInt(1000000),
+        networkId: NetworkId['celo-mainnet'],
+        alchemyKey: 'test-alchemy-key',
+      })
+    })
+
+    it('should handle errors when distributing rewards', async () => {
+      // Mock GraphQL response
+      mockClient.request.mockResolvedValue({
+        DivviRegistry_RewardsAgreementRegistered: [
+          {
+            rewardsConsumer: valoraDivviIdentifier,
+            rewardsProvider: '0x0423189886d7966f0dd7e7d256898daeee625dca',
+          },
+        ],
+      })
+
+      // Mock pending rewards
+      mockViemClient.readContract.mockResolvedValue(BigInt(1000000))
+
+      // Mock error when distributing rewards
+      mockDistributeRewards.mockRejectedValue(
+        new Error('Distribute rewards failed'),
+      )
+
+      const server = getTestServer(redistributeValoraRewards)
+      const response = await request(server).post('/').expect(200)
+
+      expect(response.body).toEqual({
+        rewards: [
+          {
+            rewardsProvider: '0x0423189886d7966f0dd7e7d256898daeee625dca',
+            rewardPoolAddress: '0xc273fb49c5c291f7c697d0fcef8ce34e985008f3',
+            pendingRewards: '1000000',
+            claimRewardsSafeTxUrl:
+              'https://app.safe.global/transactions/tx?safe=celo:0x1234567890123456789012345678901234567890&id=0xabc123',
+            distributeRewardsTxHash: null,
+            error:
+              'Failed to process rewards for 0x0423189886d7966f0dd7e7d256898daeee625dca: Distribute rewards failed',
+          },
+        ],
+      })
+
+      // Verify Safe transaction was attempted
+      expect(mockProposeSafeClaimRewardTx).toHaveBeenCalledWith({
+        safeAddress: valoraDivviIdentifier,
         rewardPoolAddress: '0xc273fb49c5c291f7c697d0fcef8ce34e985008f3',
         pendingRewards: BigInt(1000000),
         networkId: NetworkId['celo-mainnet'],
@@ -247,15 +393,15 @@ describe('redistributeValoraRewards', () => {
       mockClient.request.mockResolvedValue({
         DivviRegistry_RewardsAgreementRegistered: [
           {
-            rewardsConsumer: '0x1234567890123456789012345678901234567890',
+            rewardsConsumer: valoraDivviIdentifier,
             rewardsProvider: '0x0423189886d7966f0dd7e7d256898daeee625dca',
           },
           {
-            rewardsConsumer: '0x1234567890123456789012345678901234567890',
+            rewardsConsumer: valoraDivviIdentifier,
             rewardsProvider: '0xc95876688026be9d6fa7a7c33328bd013effa2bb',
           },
           {
-            rewardsConsumer: '0x1234567890123456789012345678901234567890',
+            rewardsConsumer: valoraDivviIdentifier,
             rewardsProvider: '0x9999999999999999999999999999999999999999', // Unknown provider
           },
         ],
@@ -265,6 +411,7 @@ describe('redistributeValoraRewards', () => {
       mockViemClient.readContract
         .mockResolvedValueOnce(BigInt(1000000)) // First provider has rewards
         .mockRejectedValueOnce(new Error('Contract read failed')) // Second provider fails
+      mockGetLatestRewards.mockResolvedValue(latestRewards)
 
       // Mock Safe transaction proposal
       mockProposeSafeClaimRewardTx.mockResolvedValue(
@@ -282,12 +429,15 @@ describe('redistributeValoraRewards', () => {
             pendingRewards: '1000000',
             claimRewardsSafeTxUrl:
               'https://app.safe.global/transactions/tx?safe=celo:0x1234567890123456789012345678901234567890&id=0xabc123',
+            distributeRewardsTxHash:
+              '0xabcdef1234567890123456789012345678901234567890123456789012345678',
           },
           {
             rewardsProvider: '0xc95876688026be9d6fa7a7c33328bd013effa2bb',
             rewardPoolAddress: '0x6f599b879541d289e344e325f4d9badf8c5bb49e',
             pendingRewards: null,
             claimRewardsSafeTxUrl: null,
+            distributeRewardsTxHash: null,
             error:
               'Failed to process rewards for 0xc95876688026be9d6fa7a7c33328bd013effa2bb: Contract read failed',
           },
@@ -296,6 +446,7 @@ describe('redistributeValoraRewards', () => {
             rewardPoolAddress: null,
             pendingRewards: null,
             claimRewardsSafeTxUrl: null,
+            distributeRewardsTxHash: null,
           },
         ],
       })
