@@ -13,6 +13,7 @@ import { LogField, TransactionField } from '@envio-dev/hypersync-client'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { getHyperSyncClient } from '../../../utils'
 import { BigNumber } from 'bignumber.js'
+import { getReferrerIdFromTx } from './getReferrerIdFromTx'
 
 const MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT = BigNumber(1).shiftedBy(6)
 const transferEventSigHash = toEventSelector(
@@ -33,31 +34,18 @@ const networkToTokenAddress: Partial<Record<NetworkId, Address>> = {
     '0x779ded0c9e1022225f8e0630b35a9b54be713736',
 }
 
-async function _getReferrerIdFromTx(
-  _transactionHash: string,
-  _networkId: NetworkId,
-): Promise<null> {
-  // TODO: get divvi referral tag from tx calldata and parse to get referrerId
-  return null
-}
-
 async function getEligibleTxCountByReferrer({
   networkId,
   user,
   startBlock,
   endBlockExclusive,
   tokenAddress,
-  getReferrerIdFromTx,
 }: {
   networkId: NetworkId
   user: Address
   startBlock?: number
   endBlockExclusive?: number
   tokenAddress: Address
-  getReferrerIdFromTx: (
-    transactionHash: string,
-    networkId: NetworkId,
-  ) => Promise<string | null>
 }): Promise<Record<string, number>> {
   const client = getHyperSyncClient(networkId)
 
@@ -175,7 +163,6 @@ async function getEligibleTxCountByReferrer({
  * @param params.startTimestamp - Start of time window for calculation (inclusive)
  * @param params.endTimestampExclusive - End of time window for calculation (exclusive)
  * @param params.redis - Optional Redis client for caching block ranges
- * @param params.referrerId - Referrer identifier for result attribution (legacy parameter, now determined dynamically)
  *
  * @returns Promise resolving to KPI results grouped by referrer ID with per-network breakdown
  */
@@ -184,7 +171,6 @@ export async function calculateKpi({
   startTimestamp,
   endTimestampExclusive,
   redis,
-  getReferrerIdFromTx = _getReferrerIdFromTx,
 }: {
   address: string
   startTimestamp: Date
@@ -216,7 +202,6 @@ export async function calculateKpi({
           startBlock: blockRange.startBlock,
           endBlockExclusive: blockRange.endBlockExclusive,
           tokenAddress,
-          getReferrerIdFromTx,
         })
 
         // Aggregate results by referrer across the supported networks

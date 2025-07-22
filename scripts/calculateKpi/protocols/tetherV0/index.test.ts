@@ -5,15 +5,18 @@ import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { getHyperSyncClient } from '../../../utils'
 import { BigNumber } from 'bignumber.js'
 import { calculateKpi } from './index'
+import { getReferrerIdFromTx } from './getReferrerIdFromTx'
 
 // Mock dependencies
 jest.mock('../utils/events')
 jest.mock('../../../utils/hypersyncPagination')
 jest.mock('../../../utils')
+jest.mock('./getReferrerIdFromTx')
 
 const mockGetBlockRange = jest.mocked(getBlockRange)
 const mockPaginateQuery = jest.mocked(paginateQuery)
 const mockGetHyperSyncClient = jest.mocked(getHyperSyncClient)
+const mockGetReferrerIdFromTx = jest.mocked(getReferrerIdFromTx)
 
 // Mock the memoize function to disable memoization in tests
 jest.mock('@github/memoize', () => ({
@@ -36,7 +39,6 @@ describe('Tether V0 Protocol KPI Calculation', () => {
   const mockClient = {
     get: jest.fn(),
   } as unknown as ReturnType<typeof getHyperSyncClient>
-  const mockGetReferrerIdFromTx = jest.fn()
 
   const transferEventSigHash = toEventSelector(
     'Transfer(address,address,uint256)',
@@ -122,10 +124,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
         await onPage(mockResponse)
       })
 
-      const result = await calculateKpi({
-        ...defaultProps,
-        getReferrerIdFromTx: mockGetReferrerIdFromTx,
-      })
+      const result = await calculateKpi(defaultProps)
 
       expect(result[0].kpi).toBeGreaterThan(0)
     })
@@ -149,10 +148,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
         await onPage(mockResponse)
       })
 
-      const result = await calculateKpi({
-        ...defaultProps,
-        getReferrerIdFromTx: mockGetReferrerIdFromTx,
-      })
+      const result = await calculateKpi(defaultProps)
 
       expect(result.length).toBe(0)
     })
@@ -188,10 +184,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
         await onPage(mockResponse)
       })
 
-      const result = await calculateKpi({
-        ...defaultProps,
-        getReferrerIdFromTx: mockGetReferrerIdFromTx,
-      })
+      const result = await calculateKpi(defaultProps)
 
       // Should count as 1 transaction per network, not 2
       expect(result[0].kpi).toBe(8)
@@ -230,10 +223,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
         await onPage(mockResponse)
       })
 
-      const result = await calculateKpi({
-        ...defaultProps,
-        getReferrerIdFromTx: mockGetReferrerIdFromTx,
-      })
+      const result = await calculateKpi(defaultProps)
 
       // Should count as 0 transactions per network since the net transfer value is 0
       expect(result.length).toBe(0)
@@ -272,10 +262,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
         await onPage(mockResponse)
       })
 
-      const result = await calculateKpi({
-        ...defaultProps,
-        getReferrerIdFromTx: mockGetReferrerIdFromTx,
-      })
+      const result = await calculateKpi(defaultProps)
 
       // Should count both transactions (2 per network)
       expect(result[0].kpi).toBe(16)
@@ -300,24 +287,20 @@ describe('Tether V0 Protocol KPI Calculation', () => {
         await onPage(mockResponse)
       })
 
-      const result = await calculateKpi({
-        ...defaultProps,
-        getReferrerIdFromTx: mockGetReferrerIdFromTx,
-      })
+      const result = await calculateKpi(defaultProps)
 
       // Should handle gracefully and return empty array
       expect(result).toEqual([])
     })
 
     it('should group results by multiple referrers', async () => {
-      const mockGetReferrerIdFromTx = jest
-        .fn()
-        .mockImplementation((txHash: Hex) => {
-          if (txHash === '0xabc123') return 'referrer1'
-          if (txHash === '0xdef456') return 'referrer2'
-          if (txHash === '0xghi789') return 'referrer3'
-          if (txHash === '0xjkl012') return 'referrer1'
-        })
+      mockGetReferrerIdFromTx.mockImplementation(async (txHash: string) => {
+        if (txHash === '0xabc123') return 'referrer1'
+        if (txHash === '0xdef456') return 'referrer2'
+        if (txHash === '0xghi789') return 'referrer3'
+        if (txHash === '0xjkl012') return 'referrer1'
+        return null
+      })
 
       mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
         const mockResponse = makeQueryResponse([
@@ -373,10 +356,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
         await onPage(mockResponse)
       })
 
-      const result = await calculateKpi({
-        ...defaultProps,
-        getReferrerIdFromTx: mockGetReferrerIdFromTx,
-      })
+      const result = await calculateKpi(defaultProps)
 
       // Should group by referrer ID: referrer1 has 2 transactions, referrer2 has 1, referrer3 has 1
       expect(result).toEqual([
@@ -429,14 +409,12 @@ describe('Tether V0 Protocol KPI Calculation', () => {
     })
 
     it('should filter out transactions with null referrerId', async () => {
-      const mockGetReferrerIdFromTx = jest
-        .fn()
-        .mockImplementation((txHash: string) => {
-          if (txHash === '0xabc123') return 'referrer1'
-          if (txHash === '0xdef456') return null // This transaction should be filtered out
-          if (txHash === '0xghi789') return 'referrer2'
-          return null
-        })
+      mockGetReferrerIdFromTx.mockImplementation(async (txHash: string) => {
+        if (txHash === '0xabc123') return 'referrer1'
+        if (txHash === '0xdef456') return null // This transaction should be filtered out
+        if (txHash === '0xghi789') return 'referrer2'
+        return null
+      })
 
       mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
         const mockResponse = makeQueryResponse([
@@ -480,10 +458,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
         await onPage(mockResponse)
       })
 
-      const result = await calculateKpi({
-        ...defaultProps,
-        getReferrerIdFromTx: mockGetReferrerIdFromTx,
-      })
+      const result = await calculateKpi(defaultProps)
 
       // Should only include transactions with valid referrer IDs
       expect(result).toEqual([
