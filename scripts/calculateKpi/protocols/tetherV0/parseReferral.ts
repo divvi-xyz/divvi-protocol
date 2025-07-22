@@ -1,4 +1,5 @@
 import { Address, bytesToHex, decodeAbiParameters, Hex, hexToBytes } from 'viem'
+import { alignMagicPrefixAndPadHex } from './alignMagicPrefixAndPadHex'
 
 const SUPPORTED_FORMAT_IDS = [1] as const
 // Magic prefix is keccak256("divvi").slice(2, 10)
@@ -121,23 +122,6 @@ export type ParseReferralParams = {
   referralType: 'onchain'
   data: Hex
   user: Address
-}
-
-export function alignMagicPrefixAndPadHex(hexWithPrefix: Hex): Hex {
-  let hex = hexWithPrefix.slice(2)
-
-  // Align magic prefix if present and misaligned
-  const prefixIndex = hex.indexOf(DIVVI_MAGIC_PREFIX)
-  if (prefixIndex !== -1 && prefixIndex % 2 === 1) {
-    hex = `0${hex}`
-  }
-
-  // Ensure even length
-  if (hex.length % 2 === 1) {
-    hex = `${hex}0`
-  }
-
-  return `0x${hex}`
 }
 
 /**
