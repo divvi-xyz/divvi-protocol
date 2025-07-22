@@ -110,6 +110,7 @@ describe('_calculateKpiBatch', () => {
       address: '0x123',
       startTimestamp: expectedStartTime,
       endTimestampExclusive,
+      referrerId: 'ref1',
     })
   })
 
@@ -131,6 +132,7 @@ describe('_calculateKpiBatch', () => {
       address: '0x123',
       startTimestamp,
       endTimestampExclusive,
+      referrerId: 'ref1',
     })
   })
 
