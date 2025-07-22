@@ -16,6 +16,7 @@ export const protocols = [
   'lisk-v0',
   'tether-v0',
   'base-v0',
+  'mantle-v0',
 ] as const
 export type Protocol = (typeof protocols)[number]
 
@@ -31,22 +32,17 @@ export type MatcherFn = (
 
 export enum NetworkId {
   'celo-mainnet' = 'celo-mainnet',
-  'celo-alfajores' = 'celo-alfajores',
   'ethereum-mainnet' = 'ethereum-mainnet',
-  'ethereum-sepolia' = 'ethereum-sepolia',
   'arbitrum-one' = 'arbitrum-one',
-  'arbitrum-sepolia' = 'arbitrum-sepolia',
   'op-mainnet' = 'op-mainnet',
-  'op-sepolia' = 'op-sepolia',
   'polygon-pos-mainnet' = 'polygon-pos-mainnet',
-  'polygon-pos-amoy' = 'polygon-pos-amoy',
   'base-mainnet' = 'base-mainnet',
-  'base-sepolia' = 'base-sepolia',
   'lisk-mainnet' = 'lisk-mainnet',
   'avalanche-mainnet' = 'avalanche-mainnet',
   'ink-mainnet' = 'ink-mainnet',
   'unichain-mainnet' = 'unichain-mainnet',
   'berachain-mainnet' = 'berachain-mainnet',
+  'mantle-mainnet' = 'mantle-mainnet',
 }
 
 export interface TokenPriceData {

@@ -1,0 +1,20 @@
+diff --git a/node_modules/@safe-global/types-kit/dist/src/index.d.ts b/node_modules/@safe-global/types-kit/dist/src/index.d.ts
+index a234d05..c14dd1a 100644
+--- a/node_modules/@safe-global/types-kit/dist/src/index.d.ts
++++ b/node_modules/@safe-global/types-kit/dist/src/index.d.ts
+@@ -10,9 +10,9 @@ export * from './contracts/SafeWebAuthnSharedSigner';
+ export * from './contracts/common/BaseContract';
+ export * from './contracts/assets';
+ export * from './types';
+-declare module 'abitype' {
+-    interface Register {
+-        AddressType: string;
+-    }
+-}
++// declare module 'abitype' {
++//     interface Register {
++//         AddressType: string;
++//     }
++// }
+ //# sourceMappingURL=index.d.ts.map
+\ No newline at end of file

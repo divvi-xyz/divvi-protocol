@@ -15,6 +15,7 @@
 - [celoTransactions](celoTransactions.md)
 - [fonbnk](fonbnk.md)
 - [liskV0](liskV0.md)
+- [mantleV0](mantleV0.md)
 - [rhino](rhino.md)
 - [scoutGameV0](scoutGameV0.md)
 - [somm](somm.md)
