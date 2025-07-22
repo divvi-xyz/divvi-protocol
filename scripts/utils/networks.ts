@@ -13,6 +13,7 @@ import {
   berachain,
   Chain,
   mainnet,
+  mantle,
 } from 'viem/chains'
 
 export const NETWORK_ID_TO_REGISTRY_ADDRESS = {
@@ -46,7 +47,7 @@ export const NETWORK_ID_TO_HYPERSYNC_URL = {
   [NetworkId['avalanche-mainnet']]: 'https://avalanche.hypersync.xyz',
   [NetworkId['berachain-mainnet']]: 'https://berachain.hypersync.xyz',
   [NetworkId['mantle-mainnet']]: 'https://mantle.hypersync.xyz',
-} as Partial<Record<NetworkId, string>>
+} satisfies Record<NetworkId, string>
 
 export const NETWORK_ID_TO_VIEM_CHAIN = {
   [NetworkId['ethereum-mainnet']]: mainnet,
@@ -60,4 +61,5 @@ export const NETWORK_ID_TO_VIEM_CHAIN = {
   [NetworkId['unichain-mainnet']]: unichain,
   [NetworkId['avalanche-mainnet']]: avalanche,
   [NetworkId['berachain-mainnet']]: berachain,
+  [NetworkId['mantle-mainnet']]: mantle,
 } satisfies Record<NetworkId, Chain>
