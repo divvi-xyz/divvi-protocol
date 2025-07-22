@@ -11,7 +11,7 @@ import { getReferrerIdFromTx } from './parseReferralTag/getReferrerIdFromTx'
 jest.mock('../utils/events')
 jest.mock('../../../utils/hypersyncPagination')
 jest.mock('../../../utils')
-jest.mock('./getReferrerIdFromTx')
+jest.mock('./parseReferralTag/getReferrerIdFromTx')
 
 const mockGetBlockRange = jest.mocked(getBlockRange)
 const mockPaginateQuery = jest.mocked(paginateQuery)
