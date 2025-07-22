@@ -90,7 +90,7 @@ const config: HardhatUserConfig = {
       berachain: process.env.BERASCAN_API_KEY!,
       vana: process.env.VANASCAN_API_KEY!,
       polygon: process.env.POLYGONSCAN_API_KEY!,
-      mantle: process.env.MANTLESCAN_API_KEY!,
+      mantle: process.env.ETHERSCAN_API_KEY!,
     },
     customChains: [
       {
