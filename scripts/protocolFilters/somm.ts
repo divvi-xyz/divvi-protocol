@@ -1,12 +1,12 @@
 import { erc20Abi, formatUnits, getContract, isAddress } from 'viem'
-import { getEvents } from '../calculateRevenue/protocols/somm/getEvents'
-import { getVaults } from '../calculateRevenue/protocols/somm/getVaults'
-import { ReferralEvent } from '../types'
+import { getEvents } from '../calculateKpi/protocols/somm/getEvents'
+import { getVaults } from '../calculateKpi/protocols/somm/getVaults'
 import { getViemPublicClient } from '../utils'
+import { MatcherFn } from '../types'
 
 // The user has to have done at least one TVL event on Somm
 // and their TVL at the time of the referral must be 0
-export async function filter(event: ReferralEvent): Promise<boolean> {
+export const filter: MatcherFn = async (event) => {
   let numTvlEvents = 0
 
   const vaultsInfo = await getVaults()
@@ -31,7 +31,7 @@ export async function filter(event: ReferralEvent): Promise<boolean> {
       address,
       vaultInfo,
       startTimestamp: eventDate,
-      endTimestamp: nowDate,
+      endTimestampExclusive: nowDate,
     })
     numTvlEvents += tvlEvents.length
     const tvlAtReferral =

@@ -87,9 +87,12 @@ describe('DataAvailability', () => {
 
     it('should not allow revoking uploader role from owner', async () => {
       const { dataAvailability, owner } = await deployDataAvailabilityContract()
-      await expect(
-        dataAvailability.revokeUploaderRole(owner.address),
-      ).to.be.revertedWith('Cannot revoke uploader role from owner')
+      await expect(dataAvailability.revokeUploaderRole(owner.address))
+        .to.be.revertedWithCustomError(
+          dataAvailability,
+          'CannotRemoveUploaderFromOwner',
+        )
+        .withArgs(owner.address)
     })
   })
 
@@ -168,7 +171,12 @@ describe('DataAvailability', () => {
         (
           dataAvailability.connect(uploader) as typeof dataAvailability
         ).uploadData(timestamp, users, values2),
-      ).to.be.revertedWith('User already has data at this timestamp')
+      )
+        .to.be.revertedWithCustomError(
+          dataAvailability,
+          'UserHasDataAtTimestamp',
+        )
+        .withArgs(extraUser.address, timestamp)
 
       // Verify the user's last timestamp is still correct
       expect(
@@ -212,9 +220,9 @@ describe('DataAvailability', () => {
         (
           dataAvailability.connect(uploader) as typeof dataAvailability
         ).uploadData(timestamp2, users, values),
-      ).to.be.revertedWith(
-        'Timestamp must be greater than or equal to most recent timestamp',
       )
+        .to.be.revertedWithCustomError(dataAvailability, 'TimestampTooEarly')
+        .withArgs(timestamp2, timestamp1)
     })
 
     it('should calculate correct rolling hash', async () => {
@@ -388,9 +396,9 @@ describe('DataAvailability', () => {
       )
       const seal = hre.ethers.randomBytes(32)
 
-      await expect(
-        dataAvailability.verify(journalData, seal),
-      ).to.be.revertedWith('No data for provided timestamp')
+      await expect(dataAvailability.verify(journalData, seal))
+        .to.be.revertedWithCustomError(dataAvailability, 'NoDataForTimestamp')
+        .withArgs(timestamp)
     })
 
     it('should not verify data with incorrect hash', async () => {
@@ -414,9 +422,12 @@ describe('DataAvailability', () => {
       )
       const seal = hre.ethers.randomBytes(32)
 
-      await expect(
-        dataAvailability.verify(journalData, seal),
-      ).to.be.revertedWith('Journal hash does not match on-chain hash')
+      await expect(dataAvailability.verify(journalData, seal))
+        .to.be.revertedWithCustomError(dataAvailability, 'HashMismatch')
+        .withArgs(
+          hre.ethers.ZeroHash,
+          await dataAvailability.getHash(timestamp),
+        )
     })
 
     it('should not verify already verified data', async () => {
@@ -444,9 +455,9 @@ describe('DataAvailability', () => {
       await dataAvailability.verify(journalData, seal)
 
       // Second verification should fail
-      await expect(
-        dataAvailability.verify(journalData, seal),
-      ).to.be.revertedWith('Data for timestamp already verified')
+      await expect(dataAvailability.verify(journalData, seal))
+        .to.be.revertedWithCustomError(dataAvailability, 'DataAlreadyVerified')
+        .withArgs(timestamp)
     })
 
     it('should not allow uploading data for verified timestamp', async () => {
@@ -478,9 +489,12 @@ describe('DataAvailability', () => {
         (
           dataAvailability.connect(uploader) as typeof dataAvailability
         ).uploadData(timestamp, newUsers, newValues),
-      ).to.be.revertedWith(
-        'Data cannot be updated for timestamp after verification',
       )
+        .to.be.revertedWithCustomError(
+          dataAvailability,
+          'CannotUploadAfterVerification',
+        )
+        .withArgs(timestamp)
     })
   })
 })

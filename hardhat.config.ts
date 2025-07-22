@@ -11,6 +11,7 @@ import './tasks/rewardPool'
 import './tasks/mockToken'
 import './tasks/divviRegistry'
 import './tasks/dataAvailability'
+import './tasks/rewardPoolFactory'
 
 dotenv.config()
 
@@ -38,7 +39,7 @@ const config: HardhatUserConfig = {
       chainId: 42220,
     },
     mainnet: {
-      url: 'https://rpc.ankr.com/eth',
+      url: `https://eth-mainnet.g.alchemy.com/public`,
       accounts,
       chainId: 1,
     },
@@ -53,7 +54,7 @@ const config: HardhatUserConfig = {
       chainId: 10,
     },
     base: {
-      url: 'https://rpc.ankr.com/base',
+      url: 'https://base-rpc.publicnode.com',
       accounts,
       chainId: 8453,
     },

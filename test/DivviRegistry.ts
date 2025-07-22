@@ -5,11 +5,18 @@ import {
   impersonateAccount,
 } from '@nomicfoundation/hardhat-network-helpers'
 import { type HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
+import { ethers } from 'ethers'
 
 const CONTRACT_NAME = 'DivviRegistry'
 
 // Trusted forwarder for meta-transactions
 const TRUSTED_FORWARDER = '0x0000000000000000000000072057edf0200a2de2'
+
+// Function signatures for overloaded function
+const BATCH_REGISTER_REFERRAL_V1 =
+  'batchRegisterReferral((address,address,address,bytes32,string)[])'
+const BATCH_REGISTER_REFERRAL_V2 =
+  'batchRegisterReferral((address,address,address,(bytes32,string),(uint8,bytes,bytes,string))[])'
 
 describe(CONTRACT_NAME, function () {
   async function deployDivviRegistryContract() {
@@ -423,7 +430,7 @@ describe(CONTRACT_NAME, function () {
             executeAs(
               registry,
               owner,
-              'batchRegisterReferral',
+              BATCH_REGISTER_REFERRAL_V1,
               [referrals],
               useMetaTx,
             ),
@@ -484,7 +491,7 @@ describe(CONTRACT_NAME, function () {
           await executeAs(
             registry,
             owner,
-            'batchRegisterReferral',
+            BATCH_REGISTER_REFERRAL_V1,
             [initialReferral],
             useMetaTx,
           )
@@ -511,7 +518,7 @@ describe(CONTRACT_NAME, function () {
             executeAs(
               registry,
               owner,
-              'batchRegisterReferral',
+              BATCH_REGISTER_REFERRAL_V1,
               [mixedReferrals],
               useMetaTx,
             ),
@@ -574,7 +581,7 @@ describe(CONTRACT_NAME, function () {
             executeAs(
               registry,
               owner,
-              'batchRegisterReferral',
+              BATCH_REGISTER_REFERRAL_V1,
               [invalidConsumerReferral],
               useMetaTx,
             ),
@@ -632,7 +639,7 @@ describe(CONTRACT_NAME, function () {
             executeAs(
               registry,
               owner,
-              'batchRegisterReferral',
+              BATCH_REGISTER_REFERRAL_V1,
               [noAgreementReferral],
               useMetaTx,
             ),
@@ -671,7 +678,7 @@ describe(CONTRACT_NAME, function () {
             executeAs(
               registry,
               owner,
-              'batchRegisterReferral',
+              BATCH_REGISTER_REFERRAL_V1,
               [referrals],
               useMetaTx,
             ),
@@ -688,6 +695,378 @@ describe(CONTRACT_NAME, function () {
               provider.address,
             ),
           ).to.be.false
+        })
+      })
+    }
+  })
+
+  describe('Batch Referral Registration (V2 Structs)', function () {
+    let provider: HardhatEthersSigner
+    let consumer: HardhatEthersSigner
+    let user: HardhatEthersSigner
+    let registry: Awaited<
+      ReturnType<typeof deployDivviRegistryContract>
+    >['registry']
+    let owner: Awaited<ReturnType<typeof deployDivviRegistryContract>>['owner']
+
+    const user2 = ethers.Wallet.createRandom()
+
+    beforeEach(async function () {
+      const deployed = await deployDivviRegistryContract()
+      registry = deployed.registry
+      owner = deployed.owner
+      provider = deployed.provider
+      consumer = deployed.consumer
+      user = deployed.extraUser
+
+      // Setup entities and agreement
+      await (
+        registry.connect(provider) as typeof registry
+      ).registerRewardsEntity(false)
+      await (
+        registry.connect(consumer) as typeof registry
+      ).registerRewardsEntity(false)
+      await (
+        registry.connect(provider) as typeof registry
+      ).registerAgreementAsProvider(consumer.address)
+
+      // Grant registrar role to owner
+      const registrarRole = await registry.REFERRAL_REGISTRAR_ROLE()
+      await (registry.connect(owner) as typeof registry).grantRole(
+        registrarRole,
+        owner.address,
+      )
+    })
+
+    for (const useMetaTx of [false, true]) {
+      describe(`via ${useMetaTx ? 'meta-transaction' : 'direct call'}`, function () {
+        it('should register a mixed batch of on-chain and off-chain referrals', async function () {
+          // 1. EOA-signed referral
+          const eoaMessage = `referral for ${user.address}`
+          const eoaSignature = await user.signMessage(eoaMessage)
+          const eoaReferral = {
+            user: user.address,
+            rewardsProvider: provider.address,
+            rewardsConsumer: consumer.address,
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(eoaMessage),
+              signature: eoaSignature,
+              chainId: 'eip155:1',
+            },
+          }
+
+          // 2. Smart wallet off-chain referral (signature already verified by backend)
+          const smartWalletAddress =
+            '0x1234567890123456789012345678901234567890'
+          const scwMessage = `referral for ${smartWalletAddress}`
+          const scwSignature = '0x' + '00'.repeat(65) // Dummy signature (verified by backend)
+          const scwReferral = {
+            user: smartWalletAddress,
+            rewardsProvider: provider.address,
+            rewardsConsumer: consumer.address,
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(scwMessage),
+              signature: scwSignature,
+              chainId: 'eip155:10',
+            },
+          }
+
+          // 3. On-chain (tx-based) referral
+          const txHash =
+            '0x1234567890123456789012345678901234567890123456789012345678901234'
+          const onChainReferral = {
+            user: user2.address,
+            rewardsProvider: provider.address,
+            rewardsConsumer: consumer.address,
+            onchainTx: { txHash: txHash, chainId: 'eip155:1' },
+            offchainMessage: {
+              messageType: 0, // NONE
+              message: '0x',
+              signature: '0x',
+              chainId: '',
+            },
+          }
+
+          const referrals = [eoaReferral, scwReferral, onChainReferral]
+
+          // Execute and check events
+          const tx = executeAs(
+            registry,
+            owner,
+            BATCH_REGISTER_REFERRAL_V2,
+            [referrals],
+            useMetaTx,
+          )
+
+          await expect(tx)
+            .to.emit(registry, 'ReferralRegistered')
+            .withArgs(
+              user.address,
+              provider.address,
+              consumer.address,
+              'eip155:1',
+              ethers.ZeroHash,
+            )
+          await expect(tx)
+            .to.emit(registry, 'ReferralRegistered')
+            .withArgs(
+              smartWalletAddress,
+              provider.address,
+              consumer.address,
+              'eip155:10',
+              ethers.ZeroHash,
+            )
+          await expect(tx)
+            .to.emit(registry, 'ReferralRegistered')
+            .withArgs(
+              user2.address,
+              provider.address,
+              consumer.address,
+              'eip155:1',
+              txHash,
+            )
+
+          // Check final state
+          expect(
+            await registry.isUserReferredToProvider(
+              user.address,
+              provider.address,
+            ),
+          ).to.be.true
+          expect(
+            await registry.isUserReferredToProvider(
+              smartWalletAddress,
+              provider.address,
+            ),
+          ).to.be.true
+          expect(
+            await registry.isUserReferredToProvider(
+              user2.address,
+              provider.address,
+            ),
+          ).to.be.true
+        })
+
+        it('should handle a mixed batch of success and duplicate referrals', async function () {
+          // 1. Pre-register `user` to test duplication
+          const initialMessage = `initial referral for ${user.address}`
+          const initialSignature = await user.signMessage(initialMessage)
+          const initialReferral = {
+            user: user.address,
+            rewardsProvider: provider.address,
+            rewardsConsumer: consumer.address,
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(initialMessage),
+              signature: initialSignature,
+              chainId: 'eip155:1',
+            },
+          }
+          await executeAs(
+            registry,
+            owner,
+            BATCH_REGISTER_REFERRAL_V2,
+            [[initialReferral]],
+            useMetaTx,
+          )
+
+          // 2. Prepare the mixed batch
+          // a. Successful new referral
+          const successMessage = `new referral for ${user2.address}`
+          const successSignature = await user2.signMessage(successMessage)
+          const successReferral = {
+            user: user2.address,
+            rewardsProvider: provider.address,
+            rewardsConsumer: consumer.address,
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(successMessage),
+              signature: successSignature,
+              chainId: 'eip155:1',
+            },
+          }
+
+          // b. Duplicate referral (using initial data)
+          const duplicateReferral = initialReferral
+
+          const mixedReferrals = [successReferral, duplicateReferral]
+
+          // Execute and check events
+          const tx = executeAs(
+            registry,
+            owner,
+            BATCH_REGISTER_REFERRAL_V2,
+            [mixedReferrals],
+            useMetaTx,
+          )
+
+          await expect(tx)
+            .to.emit(registry, 'ReferralRegistered')
+            .withArgs(
+              user2.address,
+              provider.address,
+              consumer.address,
+              'eip155:1',
+              ethers.ZeroHash,
+            )
+          await expect(tx).to.emit(registry, 'ReferralSkipped').withArgs(
+            user.address,
+            provider.address,
+            consumer.address,
+            'eip155:1',
+            ethers.ZeroHash,
+            3, // USER_ALREADY_REFERRED
+          )
+
+          // Check final state
+          expect(
+            await registry.isUserReferredToProvider(
+              user2.address,
+              provider.address,
+            ),
+          ).to.be.true // The new one is registered
+          expect(
+            await registry.isUserReferredToProvider(
+              user.address,
+              provider.address,
+            ),
+          ).to.be.true // The old one is still registered
+        })
+
+        it('should skip a referral if an entity does not exist', async function () {
+          const unregisteredConsumer = ethers.Wallet.createRandom()
+          const message = `referral for ${user.address}`
+          const signature = await user.signMessage(message)
+
+          const referral = {
+            user: user.address,
+            rewardsProvider: provider.address,
+            rewardsConsumer: unregisteredConsumer.address, // Not registered
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(message),
+              signature: signature,
+              chainId: 'eip155:1',
+            },
+          }
+
+          await expect(
+            executeAs(
+              registry,
+              owner,
+              BATCH_REGISTER_REFERRAL_V2,
+              [[referral]],
+              useMetaTx,
+            ),
+          )
+            .to.emit(registry, 'ReferralSkipped')
+            .withArgs(
+              user.address,
+              provider.address,
+              unregisteredConsumer.address,
+              'eip155:1',
+              ethers.ZeroHash,
+              1, // ENTITY_NOT_FOUND
+            )
+
+          expect(
+            await registry.isUserReferredToProvider(
+              user.address,
+              provider.address,
+            ),
+          ).to.be.false
+        })
+
+        it('should skip a referral if an agreement does not exist', async function () {
+          // Register extraUser as an entity but create no agreement with provider
+          const otherConsumer = ethers.Wallet.createRandom()
+          await setBalance(otherConsumer.address, hre.ethers.parseEther('1.0'))
+          const otherConsumerSigner = await hre.ethers.getImpersonatedSigner(
+            otherConsumer.address,
+          )
+          await (
+            registry.connect(otherConsumerSigner) as typeof registry
+          ).registerRewardsEntity(false)
+
+          const message = `referral for ${user.address}`
+          const signature = await user.signMessage(message)
+
+          const referral = {
+            user: user.address,
+            rewardsProvider: provider.address,
+            rewardsConsumer: otherConsumer.address, // No agreement
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(message),
+              signature: signature,
+              chainId: 'eip155:1',
+            },
+          }
+
+          await expect(
+            executeAs(
+              registry,
+              owner,
+              BATCH_REGISTER_REFERRAL_V2,
+              [[referral]],
+              useMetaTx,
+            ),
+          )
+            .to.emit(registry, 'ReferralSkipped')
+            .withArgs(
+              user.address,
+              provider.address,
+              otherConsumer.address,
+              'eip155:1',
+              ethers.ZeroHash,
+              2, // AGREEMENT_NOT_FOUND
+            )
+
+          expect(
+            await registry.isUserReferredToProvider(
+              user.address,
+              provider.address,
+            ),
+          ).to.be.false
+        })
+
+        it('should revert when caller does not have REFERRAL_REGISTRAR_ROLE', async function () {
+          const message = 'a message'
+          const signature = await user.signMessage(message)
+          const referral = {
+            user: user.address,
+            rewardsProvider: provider.address,
+            rewardsConsumer: consumer.address,
+            onchainTx: { txHash: ethers.ZeroHash, chainId: '' },
+            offchainMessage: {
+              messageType: 1, // ETH_SIGNED_MESSAGE
+              message: ethers.toUtf8Bytes(message),
+              signature: signature,
+              chainId: 'eip155:1',
+            },
+          }
+
+          // Attemp call from `user` who does not have the role
+          await expect(
+            executeAs(
+              registry,
+              user,
+              BATCH_REGISTER_REFERRAL_V2,
+              [[referral]],
+              useMetaTx,
+            ),
+          ).to.be.revertedWithCustomError(
+            registry,
+            'AccessControlUnauthorizedAccount',
+          )
         })
       })
     }

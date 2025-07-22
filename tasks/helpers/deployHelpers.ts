@@ -25,11 +25,13 @@ type DefenderConfig = WithDefender | WithoutDefender
 type WithDefender = {
   useDefender: true
   defenderDeploySalt?: string
+  defenderUpgradeApprovalProcessId?: string // if not provided, will use the default approval process set in Defender
 }
 
 type WithoutDefender = {
   useDefender?: false
   defenderDeploySalt?: never
+  approvalProcessId?: never
 }
 
 // Contract deployment helper
@@ -131,6 +133,8 @@ export async function deployContract(
   console.log(
     `yarn hardhat verify ${contractAddress} --network ${hre.network.name} ${proxyAddress ? '' : constructorArgs.join(' ')}`,
   )
+
+  return contractAddress || proxyAddress
 }
 
 // Contract upgrade helper
@@ -146,6 +150,10 @@ export async function upgradeContract(
 
   if (config?.useDefender) {
     console.log(`Upgrading ${contractName} with OpenZeppelin Defender`)
+    console.log(
+      'Approval process ID:',
+      config.defenderUpgradeApprovalProcessId || 'default',
+    )
     console.log(`Proxy Address: ${proxyAddress}`)
 
     const currentImplementationAddress = await getImplementationAddress(
@@ -158,6 +166,7 @@ export async function upgradeContract(
       proxyAddress,
       Contract,
       {
+        approvalProcessId: config.defenderUpgradeApprovalProcessId,
         salt: config.defenderDeploySalt,
       },
     )
@@ -184,7 +193,7 @@ export async function upgradeContract(
       proxyAddress,
     )
   }
-  console.log(`✅ Updraded!`)
+  console.log(`✅ Upgraded!`)
   console.log('New Implementation Address:', newImplementationAddress)
 
   console.log('\nTo verify the new implementation contract, run:')

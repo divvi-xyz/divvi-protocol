@@ -7,7 +7,7 @@ module.exports = {
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: 'tsconfig.json' }],
   },
-  testPathIgnorePatterns: ['dist'],
+  testPathIgnorePatterns: ['dist/'],
   setupFiles: ['<rootDir>/jest.setup.js'],
   collectCoverageFrom: ['./src/**/*.ts'],
   coveragePathIgnorePatterns: ['/node_modules/'],

@@ -17,7 +17,37 @@ The Registry contract is deployed on all supported networks. The contract and ow
 
 ## DivviRegistry Contract (v1)
 
-The DivviRegistry contract is upgradable and deployed on Optimism only.
+The DivviRegistry contract is upgradable. Both staging and production contracts are deployed on Optimism only.
 
-Proxy address:[0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277](https://optimistic.etherscan.io/address/0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277)
+### Production
+
+Proxy address: [0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277](https://optimistic.etherscan.io/address/0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277)
+
 Owner address: [0xfC95675a6bB93406C0CbBa9403a084Dd8D566F06](https://app.safe.global/home?safe=oeth:0xfC95675a6bB93406C0CbBa9403a084Dd8D566F06)
+
+## Staging
+
+Proxy address: [0x2f5E320698dB89CbefB810Fa19264103d99aAFB1](https://optimistic.etherscan.io/address/0x2f5E320698dB89CbefB810Fa19264103d99aAFB1)
+
+Owner address: [0x8CA1cCe5c6420502d61e56eE69521b7F03eEFc8C](https://app.safe.global/home?safe=oeth:0x8CA1cCe5c6420502d61e56eE69521b7F03eEFc8C)
+
+## Reward Pool Contract
+
+The Reward Pool contracts can be deployed on multiple networks multiple times. E.g. one per specific campaign.
+
+### Staging
+
+List of staging contracts:
+
+| Network | Reward Token  | Proxy address                                                                                                          | Multisig Address (has both Owner and Manager roles)                                                                                    |
+| ------- | ------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Celo    | CELO (native) | [`0xecd6580636d0c7c93f60892daabd96af3a17e37b`](https://celoscan.io/address/0xecd6580636d0c7c93f60892daabd96af3a17e37b) | [`0x215bde0ec16d1358139f624d522361c431413754`](https://app.safe.global/home?safe=celo:celo:0x215bde0ec16d1358139f624d522361c431413754) |
+
+## RewardPoolFactory Contract
+
+The RewardPoolFactory contract is upgradeable; it is currently deployed on the following networks.
+
+| Network  | Proxy address                                                                                                           | Multisig Address (has Owner role)                                                                                                                |
+| -------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Base     | [`0xBF90d4BCbb74a5a58D6F8A31649D379E185F927C`](https://basescan.org/address/0xBF90d4BCbb74a5a58D6F8A31649D379E185F927C) | [`0xfC95675a6bB93406C0CbBa9403a084Dd8D566F06`](https://app.safe.global/transactions/tx?safe=base:0xfC95675a6bB93406C0CbBa9403a084Dd8D566F06)     |
+| Ethereum | [`0x1C4f9b95016F0910f0489bC7Bd8b90EC0A51E417`](https://etherscan.io/address/0x1C4f9b95016F0910f0489bC7Bd8b90EC0A51E417) | [`0xfC95675a6bB93406C0CbBa9403a084Dd8D566F06`](https://app.safe.global/transactions/history?safe=eth:0xfC95675a6bB93406C0CbBa9403a084Dd8D566F06) |

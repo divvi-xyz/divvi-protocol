@@ -18,8 +18,12 @@ const MOCK_REWARD_FUNCTION_ID = hre.ethers.zeroPadValue(
 const MOCK_REWARD_FUNCTION_ARGS = [1000, 2000]
 const WEEK_IN_SECONDS = 60 * 60 * 24 * 7
 const TIMELOCK = WEEK_IN_SECONDS
-const ADMIN_CHANGE_DELAY = WEEK_IN_SECONDS
 const MANAGER_CAPITAL = hre.ethers.parseEther('1000')
+
+// Helper function to generate idempotency keys for testing
+function generateTestIdempotencyKey(user: string, nonce: number = 0): string {
+  return hre.ethers.keccak256(hre.ethers.toUtf8Bytes(`${user}-${nonce}`))
+}
 
 describe(CONTRACT_NAME, function () {
   async function deployRewardPoolContract({
@@ -41,29 +45,24 @@ describe(CONTRACT_NAME, function () {
         ? NATIVE_TOKEN_ADDRESS
         : await mockERC20.getAddress()
 
-    const proxy = await hre.upgrades.deployProxy(
-      RewardPool,
-      [
-        tokenAddress,
-        MOCK_REWARD_FUNCTION_ID,
-        owner.address,
-        ADMIN_CHANGE_DELAY,
-        manager.address,
-        (await time.latest()) + TIMELOCK,
-      ],
-      { kind: 'uups' },
+    const implementation = await RewardPool.deploy(
+      tokenAddress,
+      MOCK_REWARD_FUNCTION_ID,
+      owner.address,
+      manager.address,
+      (await time.latest()) + TIMELOCK,
     )
-    await proxy.waitForDeployment()
+    await implementation.waitForDeployment()
 
     // Mint tokens to manager for deposits
     await mockERC20.mint(manager.address, MANAGER_CAPITAL)
 
     // Approve tokens for deposit
     const mockToken = mockERC20.connect(manager) as typeof mockERC20
-    await mockToken.approve(await proxy.getAddress(), MANAGER_CAPITAL)
+    await mockToken.approve(await implementation.getAddress(), MANAGER_CAPITAL)
 
     return {
-      rewardPool: proxy,
+      rewardPool: implementation,
       mockERC20,
       deployer,
       owner,
@@ -150,6 +149,26 @@ describe(CONTRACT_NAME, function () {
             MOCK_REWARD_FUNCTION_ID,
             currentTimelock,
           )
+      })
+
+      it(`reverts when trying to initialize after deployment with ${tokenType} token`, async function () {
+        const { rewardPool, mockERC20, owner, manager } =
+          await loadFixture(deployFixture)
+
+        const tokenAddress =
+          tokenType === 'native'
+            ? NATIVE_TOKEN_ADDRESS
+            : await mockERC20.getAddress()
+
+        await expect(
+          rewardPool.initialize(
+            tokenAddress,
+            MOCK_REWARD_FUNCTION_ID,
+            owner.address,
+            manager.address,
+            (await time.latest()) + TIMELOCK,
+          ),
+        ).to.be.revertedWithCustomError(rewardPool, 'AlreadyInitialized')
       })
     })
   })
@@ -352,41 +371,76 @@ describe(CONTRACT_NAME, function () {
       pool = rewardPool.connect(owner) as typeof rewardPool
     })
 
-    it('allows owner to add rewards', async function () {
-      // Add rewards
-      const users = [user1.address, user2.address]
-      const amounts = [hre.ethers.parseEther('10'), hre.ethers.parseEther('20')]
+    it('allows owner to add rewards with idempotency', async function () {
+      // Prepare reward data
+      const rewards = [
+        {
+          user: user1.address,
+          amount: hre.ethers.parseEther('10'),
+          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
+        },
+        {
+          user: user2.address,
+          amount: hre.ethers.parseEther('20'),
+          idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
+        },
+      ]
 
-      await expect(pool.addRewards(users, amounts, MOCK_REWARD_FUNCTION_ARGS))
+      await expect(pool.addRewards(rewards, MOCK_REWARD_FUNCTION_ARGS))
         .to.emit(rewardPool, 'AddReward')
-        .withArgs(user1.address, amounts[0], MOCK_REWARD_FUNCTION_ARGS)
+        .withArgs(user1.address, rewards[0].amount, MOCK_REWARD_FUNCTION_ARGS)
+        .to.emit(rewardPool, 'AddRewardWithIdempotency')
+        .withArgs(
+          user1.address,
+          rewards[0].amount,
+          rewards[0].idempotencyKey,
+          MOCK_REWARD_FUNCTION_ARGS,
+        )
         .to.emit(rewardPool, 'AddReward')
-        .withArgs(user2.address, amounts[1], MOCK_REWARD_FUNCTION_ARGS)
+        .withArgs(user2.address, rewards[1].amount, MOCK_REWARD_FUNCTION_ARGS)
+        .to.emit(rewardPool, 'AddRewardWithIdempotency')
+        .withArgs(
+          user2.address,
+          rewards[1].amount,
+          rewards[1].idempotencyKey,
+          MOCK_REWARD_FUNCTION_ARGS,
+        )
+
       expect(await rewardPool.pendingRewards(user1.address)).to.equal(
-        amounts[0],
+        rewards[0].amount,
       )
       expect(await rewardPool.pendingRewards(user2.address)).to.equal(
-        amounts[1],
+        rewards[1].amount,
       )
       expect(await rewardPool.totalPendingRewards()).to.equal(
-        amounts[0] + amounts[1],
+        rewards[0].amount + rewards[1].amount,
       )
+
+      // Check idempotency keys are marked as processed
+      expect(
+        await rewardPool.isIdempotencyKeyProcessed(rewards[0].idempotencyKey),
+      ).to.be.true
+      expect(
+        await rewardPool.isIdempotencyKeyProcessed(rewards[1].idempotencyKey),
+      ).to.be.true
     })
 
-    it('allows adding multiple rewards for the same user', async function () {
+    it('allows adding multiple rewards for the same user with different idempotency keys', async function () {
       // First reward
-      await pool.addRewards(
-        [user1.address],
-        [hre.ethers.parseEther('10')],
-        MOCK_REWARD_FUNCTION_ARGS,
-      )
+      const firstReward = {
+        user: user1.address,
+        amount: hre.ethers.parseEther('10'),
+        idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
+      }
+      await pool.addRewards([firstReward], MOCK_REWARD_FUNCTION_ARGS)
 
-      // Second reward
-      await pool.addRewards(
-        [user1.address],
-        [hre.ethers.parseEther('15')],
-        MOCK_REWARD_FUNCTION_ARGS,
-      )
+      // Second reward with different idempotency key
+      const secondReward = {
+        user: user1.address,
+        amount: hre.ethers.parseEther('15'),
+        idempotencyKey: generateTestIdempotencyKey(user1.address, 2),
+      }
+      await pool.addRewards([secondReward], MOCK_REWARD_FUNCTION_ARGS)
 
       expect(await rewardPool.pendingRewards(user1.address)).to.equal(
         hre.ethers.parseEther('25'),
@@ -396,34 +450,58 @@ describe(CONTRACT_NAME, function () {
       )
     })
 
-    it('reverts when users and amounts arrays have different lengths', async function () {
-      await expect(
-        pool.addRewards(
-          [user1.address, user2.address],
-          [hre.ethers.parseEther('10')],
+    it('skips rewards with duplicate idempotency keys', async function () {
+      const reward = {
+        user: user1.address,
+        amount: hre.ethers.parseEther('10'),
+        idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
+      }
+
+      // First call - should process the reward
+      await expect(pool.addRewards([reward], MOCK_REWARD_FUNCTION_ARGS))
+        .to.emit(rewardPool, 'AddReward')
+        .withArgs(user1.address, reward.amount, MOCK_REWARD_FUNCTION_ARGS)
+        .to.emit(rewardPool, 'AddRewardWithIdempotency')
+        .withArgs(
+          user1.address,
+          reward.amount,
+          reward.idempotencyKey,
           MOCK_REWARD_FUNCTION_ARGS,
-        ),
+        )
+
+      // Second call with same idempotency key - should skip
+      await expect(pool.addRewards([reward], MOCK_REWARD_FUNCTION_ARGS))
+        .to.emit(rewardPool, 'AddRewardSkipped')
+        .withArgs(user1.address, reward.amount, reward.idempotencyKey)
+        .to.not.emit(rewardPool, 'AddReward')
+
+      // Should only have the reward from the first call
+      expect(await rewardPool.pendingRewards(user1.address)).to.equal(
+        reward.amount,
       )
-        .to.be.revertedWithCustomError(rewardPool, 'ArraysLengthMismatch')
-        .withArgs(2, 1)
+      expect(await rewardPool.totalPendingRewards()).to.equal(reward.amount)
     })
 
     it('reverts when zero address is provided as user', async function () {
-      await expect(
-        pool.addRewards(
-          [hre.ethers.ZeroAddress],
-          [hre.ethers.parseEther('10')],
-          MOCK_REWARD_FUNCTION_ARGS,
-        ),
-      )
+      const reward = {
+        user: hre.ethers.ZeroAddress,
+        amount: hre.ethers.parseEther('10'),
+        idempotencyKey: generateTestIdempotencyKey(hre.ethers.ZeroAddress, 1),
+      }
+
+      await expect(pool.addRewards([reward], MOCK_REWARD_FUNCTION_ARGS))
         .to.be.revertedWithCustomError(rewardPool, 'ZeroAddressNotAllowed')
         .withArgs(0)
     })
 
     it('reverts when zero amount is provided', async function () {
-      await expect(
-        pool.addRewards([user1.address], [0], MOCK_REWARD_FUNCTION_ARGS),
-      )
+      const reward = {
+        user: user1.address,
+        amount: 0,
+        idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
+      }
+
+      await expect(pool.addRewards([reward], MOCK_REWARD_FUNCTION_ARGS))
         .to.be.revertedWithCustomError(
           rewardPool,
           'RewardAmountMustBeGreaterThanZero',
@@ -431,19 +509,82 @@ describe(CONTRACT_NAME, function () {
         .withArgs(0)
     })
 
+    it('reverts when empty idempotency key is provided', async function () {
+      const reward = {
+        user: user1.address,
+        amount: hre.ethers.parseEther('10'),
+        idempotencyKey: hre.ethers.ZeroHash,
+      }
+
+      await expect(pool.addRewards([reward], MOCK_REWARD_FUNCTION_ARGS))
+        .to.be.revertedWithCustomError(rewardPool, 'EmptyIdempotencyKey')
+        .withArgs(0)
+    })
+
     it('reverts when non-owner tries to add rewards', async function () {
       // Connect with stranger
       const poolWithStranger = rewardPool.connect(stranger) as typeof rewardPool
 
+      const reward = {
+        user: user1.address,
+        amount: hre.ethers.parseEther('10'),
+        idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
+      }
+
       await expect(
-        poolWithStranger.addRewards(
-          [user1.address],
-          [hre.ethers.parseEther('10')],
-          MOCK_REWARD_FUNCTION_ARGS,
-        ),
+        poolWithStranger.addRewards([reward], MOCK_REWARD_FUNCTION_ARGS),
       ).to.be.revertedWithCustomError(
         rewardPool,
         'AccessControlUnauthorizedAccount',
+      )
+    })
+
+    it('processes mixed batch with new and duplicate idempotency keys', async function () {
+      const reward1 = {
+        user: user1.address,
+        amount: hre.ethers.parseEther('10'),
+        idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
+      }
+      const reward2 = {
+        user: user2.address,
+        amount: hre.ethers.parseEther('20'),
+        idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
+      }
+
+      // First batch - process both
+      await pool.addRewards([reward1, reward2], MOCK_REWARD_FUNCTION_ARGS)
+
+      // Second batch - mix of new and duplicate
+      const reward3 = {
+        user: user1.address,
+        amount: hre.ethers.parseEther('15'),
+        idempotencyKey: generateTestIdempotencyKey(user1.address, 2), // New key
+      }
+
+      await expect(
+        pool.addRewards([reward1, reward3], MOCK_REWARD_FUNCTION_ARGS),
+      )
+        .to.emit(rewardPool, 'AddRewardSkipped') // reward1 duplicate
+        .withArgs(user1.address, reward1.amount, reward1.idempotencyKey)
+        .to.emit(rewardPool, 'AddReward') // reward3 new
+        .withArgs(user1.address, reward3.amount, MOCK_REWARD_FUNCTION_ARGS)
+        .to.emit(rewardPool, 'AddRewardWithIdempotency') // reward3 new
+        .withArgs(
+          user1.address,
+          reward3.amount,
+          reward3.idempotencyKey,
+          MOCK_REWARD_FUNCTION_ARGS,
+        )
+
+      // Should have rewards from first batch plus the new reward3
+      expect(await rewardPool.pendingRewards(user1.address)).to.equal(
+        reward1.amount + reward3.amount,
+      )
+      expect(await rewardPool.pendingRewards(user2.address)).to.equal(
+        reward2.amount,
+      )
+      expect(await rewardPool.totalPendingRewards()).to.equal(
+        reward1.amount + reward2.amount + reward3.amount,
       )
     })
   })
@@ -487,11 +628,12 @@ describe(CONTRACT_NAME, function () {
           ) as typeof rewardPool
 
           // Add rewards
-          await poolWithOwner.addRewards(
-            [user1.address],
-            [rewardAmount],
-            MOCK_REWARD_FUNCTION_ARGS,
-          )
+          const reward = {
+            user: user1.address,
+            amount: rewardAmount,
+            idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
+          }
+          await poolWithOwner.addRewards([reward], MOCK_REWARD_FUNCTION_ARGS)
 
           // Connect with user
           poolWithUser = rewardPool.connect(user1) as typeof rewardPool
@@ -741,146 +883,6 @@ describe(CONTRACT_NAME, function () {
           )
         })
       })
-    })
-  })
-
-  describe('Upgrade', function () {
-    it('allows admin to upgrade the contract', async function () {
-      const { rewardPool, mockERC20, owner } = await loadFixture(
-        deployERC20RewardPoolContract,
-      )
-
-      const proxyAddress = await rewardPool.getAddress()
-
-      // Get current implementation address
-      const currentImplementationAddress =
-        await hre.upgrades.erc1967.getImplementationAddress(proxyAddress)
-
-      // Deploy new implementation
-      const RewardPoolV2 = await hre.ethers.getContractFactory(
-        CONTRACT_NAME,
-        owner,
-      )
-      const upgradedPool = await hre.upgrades.upgradeProxy(
-        proxyAddress,
-        RewardPoolV2,
-        { kind: 'uups', redeployImplementation: 'always' },
-      )
-
-      // Get new implementation address
-      const newImplementationAddress =
-        await hre.upgrades.erc1967.getImplementationAddress(proxyAddress)
-
-      // Verify implementation changed
-      expect(newImplementationAddress).to.not.equal(
-        currentImplementationAddress,
-      )
-
-      // Verify state was preserved
-      expect(await upgradedPool.poolToken()).to.equal(
-        await mockERC20.getAddress(),
-      )
-      expect(await upgradedPool.rewardFunctionId()).to.equal(
-        MOCK_REWARD_FUNCTION_ID,
-      )
-    })
-
-    it('reverts when deployer tries to upgrade', async function () {
-      const { rewardPool, deployer } = await loadFixture(
-        deployERC20RewardPoolContract,
-      )
-
-      const proxyAddress = await rewardPool.getAddress()
-
-      // Deploy new implementation
-      const RewardPoolV2 = await hre.ethers.getContractFactory(
-        CONTRACT_NAME,
-        deployer,
-      )
-
-      // Try to upgrade proxy
-      await expect(
-        hre.upgrades.upgradeProxy(proxyAddress, RewardPoolV2, {
-          kind: 'uups',
-          redeployImplementation: 'always',
-        }),
-      ).to.be.rejectedWith('AccessControlUnauthorizedAccount')
-    })
-
-    it('reverts when non-admin tries to upgrade', async function () {
-      const { rewardPool, stranger } = await loadFixture(
-        deployERC20RewardPoolContract,
-      )
-
-      // Deploy new implementation
-      const RewardPoolV2 = await hre.ethers.getContractFactory(CONTRACT_NAME)
-      const rewardPoolV2 = await RewardPoolV2.deploy()
-      await rewardPoolV2.waitForDeployment()
-
-      // Connect with stranger
-      const poolWithStranger = rewardPool.connect(stranger) as typeof rewardPool
-
-      // Try to update proxy
-      await expect(
-        poolWithStranger.upgradeToAndCall(
-          await rewardPoolV2.getAddress(),
-          '0x',
-        ),
-      ).to.be.rejectedWith('AccessControlUnauthorizedAccount')
-    })
-  })
-
-  describe('Admin change', function () {
-    it('DEFAULT_ADMIN_ROLE transfer works with delay', async function () {
-      const { rewardPool, owner, stranger } = await loadFixture(
-        deployERC20RewardPoolContract,
-      )
-
-      // Check that owner is the current admin
-      expect(
-        await rewardPool.hasRole(
-          await rewardPool.DEFAULT_ADMIN_ROLE(),
-          owner.address,
-        ),
-      ).to.be.true
-
-      // Connect with owner
-      const poolWithOwner = rewardPool.connect(owner) as typeof rewardPool
-
-      // Begin the admin transfer process
-      await poolWithOwner.beginDefaultAdminTransfer(stranger.address)
-
-      // Connect with new admin account and try to accept too early
-      const rewardPoolWithStranger = rewardPool.connect(
-        stranger,
-      ) as typeof rewardPool
-
-      await expect(
-        rewardPoolWithStranger.acceptDefaultAdminTransfer(),
-      ).to.be.revertedWithCustomError(
-        rewardPool,
-        'AccessControlEnforcedDefaultAdminDelay',
-      )
-
-      // Wait out the delay
-      await mine(10, { interval: ADMIN_CHANGE_DELAY })
-
-      // Accept the transfer
-      await rewardPoolWithStranger.acceptDefaultAdminTransfer()
-
-      // Verify admin role has been transferred
-      expect(
-        await rewardPool.hasRole(
-          await rewardPool.DEFAULT_ADMIN_ROLE(),
-          stranger.address,
-        ),
-      ).to.be.true
-      expect(
-        await rewardPool.hasRole(
-          await rewardPool.DEFAULT_ADMIN_ROLE(),
-          owner.address,
-        ),
-      ).to.be.false
     })
   })
 })

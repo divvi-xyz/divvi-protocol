@@ -1,9 +1,12 @@
-import { writeFileSync } from 'fs'
+import { writeFileSync, mkdirSync } from 'fs'
 import yargs from 'yargs'
-import { supportedNetworkIds } from './utils/networks'
 import { protocolFilters } from './protocolFilters'
 import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
 import { Protocol, protocols } from './types'
+import { stringify } from 'csv-stringify/sync'
+import { toPeriodFolderName } from './utils/dateFormatting'
+import { dirname, join } from 'path'
+import { closeRedisClient, getRedisClient } from '../src/redis'
 
 async function getArgs() {
   const argv = await yargs
@@ -13,40 +16,96 @@ async function getArgs() {
       demandOption: true,
       choices: protocols,
     })
-    .option('output-file', {
-      alias: 'o',
-      description: 'output file',
+    .option('datadir', {
+      description: 'Directory to save data',
+      default: 'rewards',
+    })
+    .option('start-timestamp', {
+      alias: 's',
+      description:
+        'Start timestamp (inclusive) (new Date() compatible epoch milliseconds or string)',
       type: 'string',
+      demandOption: true,
+    })
+    .option('end-timestamp', {
+      alias: 'e',
+      description:
+        'End timestamp (exclusive) (new Date() compatible epoch milliseconds or string)',
+      type: 'string',
+      demandOption: true,
+    })
+    .option('use-staging', {
+      description: 'use staging registry contract',
+      type: 'boolean',
+      default: false,
+    })
+    .option('redis-connection', {
+      type: 'string',
+      description:
+        'redis connection string, to run locally use redis://127.0.0.1:6379',
     }).argv
+
+  const outputDir = join(
+    argv['datadir'],
+    argv['protocol'],
+    toPeriodFolderName({
+      startTimestamp: new Date(argv['start-timestamp']),
+      endTimestampExclusive: new Date(argv['end-timestamp']),
+    }),
+  )
 
   return {
     protocol: argv['protocol'] as Protocol,
     protocolFilter: protocolFilters[argv['protocol'] as Protocol],
-    output: argv['output-file'] ?? `${argv['protocol']}-referrals.csv`,
+    outputDir,
+    useStaging: argv['use-staging'],
+    startTimestamp: argv['start-timestamp'],
+    endTimestampExclusive: argv['end-timestamp'],
+    redisConnection: argv['redis-connection'],
   }
 }
 
-async function main() {
-  const args = await getArgs()
+export async function fetchReferrals(
+  args: Awaited<ReturnType<typeof getArgs>>,
+) {
+  const redis = args.redisConnection
+    ? await getRedisClient(args.redisConnection)
+    : undefined
 
+  const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const referralEvents = await fetchReferralEvents(
-    supportedNetworkIds,
     args.protocol,
+    undefined,
+    args.useStaging,
+    endTimestampExclusive,
+    redis,
   )
   const uniqueEvents = removeDuplicates(referralEvents)
 
   const filteredEvents = await args.protocolFilter(uniqueEvents)
-  const output = filteredEvents
-    .map(
-      (event) => `${event.referrerId},${event.userAddress},${event.timestamp}`,
-    )
-    .join('\n')
+  const outputEvents = filteredEvents.map((event) => ({
+    referrerId: event.referrerId,
+    userAddress: event.userAddress,
+    timestamp: new Date(event.timestamp * 1000).toISOString(),
+  }))
 
-  writeFileSync(args.output, output)
-  console.log(`Wrote results to ${args.output}`)
+  const outputFile = join(args.outputDir, 'referrals.csv')
+
+  // Create directory if it doesn't exist
+  mkdirSync(dirname(outputFile), { recursive: true })
+  writeFileSync(outputFile, stringify(outputEvents, { header: true }), {
+    encoding: 'utf-8',
+  })
+  console.log(`Wrote results to ${outputFile}`)
+
+  await closeRedisClient()
 }
 
-main().catch((error) => {
-  console.error(error)
-  process.exitCode = 1
-})
+if (require.main === module) {
+  getArgs()
+    .then(fetchReferrals)
+    .catch((error) => {
+      console.error(error)
+      process.exitCode = 1
+    })
+}
