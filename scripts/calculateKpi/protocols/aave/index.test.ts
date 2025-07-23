@@ -1,5 +1,5 @@
 import { Address } from 'viem'
-import BigNumber from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 import { NetworkId } from '../../../types'
 import { RAY, rayMul } from './math'
 import { fetchBlockchainData } from './blockchainData'

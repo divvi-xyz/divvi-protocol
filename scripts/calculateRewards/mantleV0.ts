@@ -1,5 +1,5 @@
 import yargs from 'yargs'
-import BigNumber from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
