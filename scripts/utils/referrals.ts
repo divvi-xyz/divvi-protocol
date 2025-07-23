@@ -21,6 +21,7 @@ const REWARDS_PROVIDERS: Partial<Record<Protocol, Address>> = {
   'lisk-v0': '0x7bEb0e14F8D2e6f6678Cc30d867787B384b19e20',
   'base-v0': '0xce56ed47c8f2ee8714087c9e48924b1a30bc455c',
   'tether-v0': '0xe451b7Cd488aD2Bf6bfdECD7702a2967329cC1D0',
+  'mantle-v0': '0xf0A028C70ba0339efe93Ea2E0bE346eCbCd5c487',
 }
 
 // Remove duplicate events, keeping only the earliest event for each user
