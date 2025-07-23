@@ -157,9 +157,6 @@ export function calculateSqrtProportionalPriceByUser({
     return sum.plus(kpi)
   }, BigNumber(0))
 
-  console.log('userPowerKpis', userPowerKpis)
-  console.log('totalPower', totalPower)
-
   const rewardsPerUser = Object.entries(userPowerKpis).map(
     ([userAddress, powerKpi]) => {
       const proportion = totalPower.isZero()
