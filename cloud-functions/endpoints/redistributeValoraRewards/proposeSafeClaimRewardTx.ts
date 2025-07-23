@@ -4,6 +4,7 @@ import { NetworkId } from '../../../scripts/types'
 import Safe from '@safe-global/protocol-kit'
 import { OperationType } from '@safe-global/types-kit'
 import { NETWORK_ID_TO_ALCHEMY_RPC_URL } from '../../../scripts/utils'
+import { logger } from '../../log'
 
 const NETWORK_ID_TO_SAFE_CONFIG: Partial<
   Record<
@@ -53,12 +54,14 @@ export async function proposeSafeClaimRewardTx({
   pendingRewards,
   networkId,
   alchemyKey,
+  dryRun,
 }: {
   safeAddress: Address
   rewardPoolAddress: string
   pendingRewards: bigint
   networkId: NetworkId
   alchemyKey: string
+  dryRun: boolean
 }) {
   const safeConfig = NETWORK_ID_TO_SAFE_CONFIG[networkId]
   const alchemyRpcUrl = NETWORK_ID_TO_ALCHEMY_RPC_URL[networkId]
@@ -96,30 +99,61 @@ export async function proposeSafeClaimRewardTx({
 
   const safeTxHash = await protocolKit.getTransactionHash(safeTx)
 
-  // 3. Propose transaction to Safe Transaction Service
-  const response = await fetch(
-    `${safeConfig.apiUrl}/v2/safes/${safeAddress}/multisig-transactions/`,
+  logger.info(
     {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...safeTransactionData,
-        baseGas: safeTx.data.baseGas,
-        gasPrice: safeTx.data.gasPrice,
-        nonce: safeTx.data.nonce,
-        safeTxGas: safeTx.data.safeTxGas,
-        contractTransactionHash: safeTxHash,
-        sender: (await getSafeOwners(safeAddress, networkId))[0], // this can be any signer on the safe, so pick the first one
-      }),
+      safeTxHash,
+      safeAddress,
+      networkId,
+      safeTx,
+      rewardPoolAddress,
+      pendingRewards,
     },
+    'Created Safe Claim Reward Tx',
   )
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`)
+  // 3. Propose transaction to Safe Transaction Service
+  if (!dryRun) {
+    const response = await fetch(
+      `${safeConfig.apiUrl}/v2/safes/${safeAddress}/multisig-transactions/`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...safeTransactionData,
+          baseGas: safeTx.data.baseGas,
+          gasPrice: safeTx.data.gasPrice,
+          nonce: safeTx.data.nonce,
+          safeTxGas: safeTx.data.safeTxGas,
+          contractTransactionHash: safeTxHash,
+          sender: (await getSafeOwners(safeAddress, networkId))[0], // this can be any signer on the safe, so pick the first one
+        }),
+      },
+    )
+
+    if (!response.ok) {
+      throw new Error(
+        `HTTP error! status: ${response.status}: ${await response.text()}`,
+      )
+    }
+    const safeTxUrl = `https://app.safe.global/transactions/tx?safe=${safeConfig.shortName}:${safeAddress}&id=${safeTxHash}`
+
+    logger.info(
+      {
+        response,
+        safeTxHash,
+        safeAddress,
+        networkId,
+        rewardPoolAddress,
+        pendingRewards,
+        safeTxUrl,
+      },
+      'Proposed Safe Claim Reward Tx',
+    )
+    return safeTxUrl
   }
-  return `https://app.safe.global/transactions/tx?safe=${safeConfig.shortName}:${safeAddress}&id=${safeTxHash}`
+  return null
 }
 
 async function getSafeOwners(

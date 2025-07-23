@@ -31,6 +31,7 @@ jobs:
           node-version-file: 'package.json'
           check-latest: true
       - run: yarn
+      - run: yarn compile
       - run: yarn typecheck
       - run: yarn format:check
       - run: yarn lint
@@ -59,6 +60,7 @@ jobs:
           node-version-file: 'package.json'
           check-latest: true
       - run: yarn
+      - run: yarn compile
       - run: yarn docs
       - name: Check for documentation changes
         id: docs-changes
@@ -134,3 +136,9 @@ jobs:
           yarn deploy:production:internal-single rewardDivviEthCc2025IntegrationV1 \
             --env-vars-file=cloud-functions/endpoints/rewardDivviEthCc2025IntegrationV1/config-production.yaml \
             --set-secrets REWARD_POOL_OWNER_PRIVATE_KEY=ETHCC2025_REWARD_POOL_OWNER_PRIVATE_KEY:latest
+      - name: Deploy redistributeValoraRewards
+        run: |
+          yarn deploy:production:internal-single redistributeValoraRewards \
+            --env-vars-file=cloud-functions/endpoints/redistributeValoraRewards/config-production.yaml \
+            --set-secrets VALORA_REWARDS_POOL_OWNER_PRIVATE_KEY=ETHCC2025_REWARD_POOL_OWNER_PRIVATE_KEY:latest \
+            --set-secrets ALCHEMY_KEY=ALCHEMY_API_KEY:latest

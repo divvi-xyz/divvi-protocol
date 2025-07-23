@@ -38,6 +38,7 @@ export function calculateRewardsProofOfImpact({
   return calculateProportionalPrizeContest({
     kpiData,
     rewards: totalRewardsForPeriod,
+    excludedReferrers: {},
   }).map((row) => ({
     ...row,
     rewardAmountDecimal: formatEther(BigInt(row.rewardAmount)),
