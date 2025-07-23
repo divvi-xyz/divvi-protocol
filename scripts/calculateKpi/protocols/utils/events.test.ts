@@ -24,6 +24,7 @@ const networkId = NetworkId['arbitrum-one']
 
 describe('On-chain event helpers', () => {
   beforeEach(() => {
+    // eslint-disable-next-line import/no-named-as-default-member
     nock.cleanAll()
     jest.clearAllMocks()
   })

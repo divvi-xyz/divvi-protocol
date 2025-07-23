@@ -4,6 +4,7 @@ import { NetworkId } from '../../../types'
 
 describe('getVaults', () => {
   afterEach(() => {
+    // eslint-disable-next-line import/no-named-as-default-member
     nock.cleanAll()
   })
 
