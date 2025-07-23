@@ -1,5 +1,5 @@
 import { RedisClientType } from '@redis/client'
-import { KpiResult, KpiResults, NetworkId } from '../../../types'
+import { KpiResults, NetworkId } from '../../../types'
 import { getBlockRange } from '../utils/events'
 import {
   Address,
@@ -181,10 +181,7 @@ export async function calculateKpi({
     networkId: NetworkId,
   ) => Promise<string | null>
 }): Promise<KpiResults> {
-  const kpiByReferrer: Record<
-    string,
-    KpiResult & { referrerId: string; userAddress: string }
-  > = {}
+  const kpiByReferrer: Record<string, KpiResults[number]> = {}
 
   await Promise.all(
     (Object.entries(networkToTokenAddress) as [NetworkId, Address][]).map(
