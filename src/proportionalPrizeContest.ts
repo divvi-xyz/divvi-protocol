@@ -1,11 +1,7 @@
 import { BigNumber } from 'bignumber.js'
 import { getReferrerMetricsFromKpi } from '../scripts/calculateRewards/getReferrerMetricsFromKpi'
-
-interface KpiRow {
-  referrerId: string
-  userAddress: string
-  kpi: string
-}
+import { KpiRow } from './resultDirectory'
+import { getUserMetricsFromKpi } from './getUserMetricsFromKpi'
 
 export function calculateProportionalPrizeContest({
   kpiData,
@@ -138,4 +134,47 @@ export function calculateSqrtProportionalPrizeContest({
   )
 
   return rewardsPerReferrer
+}
+
+export function calculateSqrtProportionalPriceByUser({
+  kpiData,
+  rewards,
+}: {
+  kpiData: KpiRow[]
+  rewards: BigNumber
+}) {
+  const { userKpis, userReferrals } = getUserMetricsFromKpi(kpiData)
+
+  const userPowerKpis = Object.entries(userKpis).reduce(
+    (acc, [userAddress, kpi]) => {
+      acc[userAddress] = BigNumber(kpi).sqrt()
+      return acc
+    },
+    {} as Record<string, BigNumber>,
+  )
+
+  const totalPower = Object.entries(userPowerKpis).reduce((sum, [_, kpi]) => {
+    return sum.plus(kpi)
+  }, BigNumber(0))
+
+  console.log('userPowerKpis', userPowerKpis)
+  console.log('totalPower', totalPower)
+
+  const rewardsPerUser = Object.entries(userPowerKpis).map(
+    ([userAddress, powerKpi]) => {
+      const proportion = totalPower.isZero()
+        ? BigNumber(0)
+        : BigNumber(powerKpi).div(totalPower)
+      const rewardAmount = rewards.times(proportion)
+
+      return {
+        userAddress,
+        kpi: userKpis[userAddress],
+        referralCount: userReferrals[userAddress],
+        rewardAmount: rewardAmount.toFixed(0, BigNumber.ROUND_DOWN),
+      }
+    },
+  )
+
+  return rewardsPerUser
 }
