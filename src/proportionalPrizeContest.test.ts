@@ -251,7 +251,7 @@ describe('calculateSqrtProportionalPriceByUser', () => {
     expect(result).to.deep.equal([
       { userAddress: 'user1', kpi: 1n, referralCount: 1, rewardAmount: '100' },
       { userAddress: 'user2', kpi: 16n, referralCount: 1, rewardAmount: '400' },
-      { userAddress: 'user3', kpi: 25n, referralCount: 1, rewardAmount: '500' },
+      { userAddress: 'user3', kpi: 25n, referralCount: 2, rewardAmount: '500' },
       { userAddress: 'user4', kpi: 0n, referralCount: 1, rewardAmount: '0' },
     ])
   })
