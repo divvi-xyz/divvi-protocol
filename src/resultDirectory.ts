@@ -51,7 +51,7 @@ export class ResultDirectory {
   }
 
   get builderSlicesFileSuffix() {
-    return path.join(this.resultsDirectory, 'slices')
+    return path.join(this.resultsDirectory, 'builder-slices')
   }
 
   get excludeListFileSuffix() {

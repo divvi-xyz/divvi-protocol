@@ -1,4 +1,3 @@
-import { NetworkId } from '../../../types'
 import { getBlockRange } from '../utils/events'
 import { Address, Hex, pad, toEventSelector } from 'viem'
 import { QueryResponse, Log } from '@envio-dev/hypersync-client'
@@ -6,15 +5,18 @@ import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { getHyperSyncClient } from '../../../utils'
 import { BigNumber } from 'bignumber.js'
 import { calculateKpi } from './index'
+import { getReferrerIdFromTx } from './getReferrerIdFromTx'
 
 // Mock dependencies
 jest.mock('../utils/events')
 jest.mock('../../../utils/hypersyncPagination')
 jest.mock('../../../utils')
+jest.mock('./getReferrerIdFromTx')
 
 const mockGetBlockRange = jest.mocked(getBlockRange)
 const mockPaginateQuery = jest.mocked(paginateQuery)
 const mockGetHyperSyncClient = jest.mocked(getHyperSyncClient)
+const mockGetReferrerIdFromTx = jest.mocked(getReferrerIdFromTx)
 
 // Mock the memoize function to disable memoization in tests
 jest.mock('@github/memoize', () => ({
@@ -58,6 +60,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       startBlock: 1000,
       endBlockExclusive: 2000,
     })
+    mockGetReferrerIdFromTx.mockResolvedValue('test-referrer')
   })
 
   describe('calculateKpi', () => {
@@ -77,19 +80,8 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       const result = await calculateKpi(defaultProps)
 
-      expect(result).toEqual({
-        kpi: 0,
-        metadata: {
-          [NetworkId['ethereum-mainnet']]: 0,
-          [NetworkId['avalanche-mainnet']]: 0,
-          [NetworkId['celo-mainnet']]: 0,
-          [NetworkId['unichain-mainnet']]: 0,
-          [NetworkId['ink-mainnet']]: 0,
-          [NetworkId['op-mainnet']]: 0,
-          [NetworkId['arbitrum-one']]: 0,
-          [NetworkId['berachain-mainnet']]: 0,
-        },
-      })
+      // Should return empty array when no eligible transactions
+      expect(result).toEqual([])
     })
 
     it('should throw errors from getBlockRange', async () => {
@@ -134,7 +126,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       const result = await calculateKpi(defaultProps)
 
-      expect(result.kpi).toBeGreaterThan(0)
+      expect(result[0].kpi).toBeGreaterThan(0)
     })
 
     it('should not count transactions with transfer value below minimum threshold', async () => {
@@ -158,7 +150,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       const result = await calculateKpi(defaultProps)
 
-      expect(result.kpi).toBe(0)
+      expect(result.length).toBe(0)
     })
 
     it('should count each transaction only once even if it has multiple transfer events', async () => {
@@ -195,7 +187,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       const result = await calculateKpi(defaultProps)
 
       // Should count as 1 transaction per network, not 2
-      expect(result.kpi).toBe(8)
+      expect(result[0].kpi).toBe(8)
     })
 
     it('should not count transactions with net transfer value below minimum threshold', async () => {
@@ -234,7 +226,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       const result = await calculateKpi(defaultProps)
 
       // Should count as 0 transactions per network since the net transfer value is 0
-      expect(result.kpi).toBe(0)
+      expect(result.length).toBe(0)
     })
 
     it('should handle both incoming and outgoing transfers', async () => {
@@ -273,7 +265,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       const result = await calculateKpi(defaultProps)
 
       // Should count both transactions (2 per network)
-      expect(result.kpi).toBe(16)
+      expect(result[0].kpi).toBe(16)
     })
 
     it('should handle malformed log data gracefully', async () => {
@@ -297,8 +289,210 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       const result = await calculateKpi(defaultProps)
 
-      // Should handle gracefully and return 0
-      expect(result.kpi).toBe(0)
+      // Should handle gracefully and return empty array
+      expect(result).toEqual([])
+    })
+
+    it('should group results by multiple referrers', async () => {
+      mockGetReferrerIdFromTx.mockImplementation(async (txHash: string) => {
+        if (txHash === '0xabc123') return 'referrer1'
+        if (txHash === '0xdef456') return 'referrer2'
+        if (txHash === '0xghi789') return 'referrer3'
+        if (txHash === '0xjkl012') return 'referrer1'
+        return null
+      })
+
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse([
+          {
+            data: encodedValueAboveThreshold,
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xabc123',
+          },
+          {
+            data: encodedValueAboveThreshold,
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xdef456',
+          },
+          {
+            data: encodedValueAboveThreshold,
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xghi789',
+          },
+          {
+            data: encodedValueAboveThreshold,
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xjkl012',
+          },
+        ])
+        await onPage(mockResponse)
+      })
+
+      const result = await calculateKpi(defaultProps)
+
+      // Should group by referrer ID: referrer1 has 2 transactions, referrer2 has 1, referrer3 has 1
+      expect(result).toEqual([
+        {
+          kpi: 16, // 2 transactions * 8 networks
+          referrerId: 'referrer1',
+          userAddress: testAddress,
+          metadata: {
+            'ethereum-mainnet': 2,
+            'avalanche-mainnet': 2,
+            'celo-mainnet': 2,
+            'unichain-mainnet': 2,
+            'ink-mainnet': 2,
+            'op-mainnet': 2,
+            'arbitrum-one': 2,
+            'berachain-mainnet': 2,
+          },
+        },
+        {
+          kpi: 8, // 1 transaction * 8 networks
+          referrerId: 'referrer2',
+          userAddress: testAddress,
+          metadata: {
+            'ethereum-mainnet': 1,
+            'avalanche-mainnet': 1,
+            'celo-mainnet': 1,
+            'unichain-mainnet': 1,
+            'ink-mainnet': 1,
+            'op-mainnet': 1,
+            'arbitrum-one': 1,
+            'berachain-mainnet': 1,
+          },
+        },
+        {
+          kpi: 8, // 1 transaction * 8 networks
+          referrerId: 'referrer3',
+          userAddress: testAddress,
+          metadata: {
+            'ethereum-mainnet': 1,
+            'avalanche-mainnet': 1,
+            'celo-mainnet': 1,
+            'unichain-mainnet': 1,
+            'ink-mainnet': 1,
+            'op-mainnet': 1,
+            'arbitrum-one': 1,
+            'berachain-mainnet': 1,
+          },
+        },
+      ])
+    })
+
+    it('should filter out transactions with null referrerId', async () => {
+      mockGetReferrerIdFromTx.mockImplementation(async (txHash: string) => {
+        if (txHash === '0xabc123') return 'referrer1'
+        if (txHash === '0xdef456') return null // This transaction should be filtered out
+        if (txHash === '0xghi789') return 'referrer2'
+        return null
+      })
+
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse([
+          {
+            data: encodedValueAboveThreshold,
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xabc123',
+          },
+          {
+            data: encodedValueAboveThreshold,
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xdef456', // This will return null referrerId
+          },
+          {
+            data: encodedValueAboveThreshold,
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xghi789',
+          },
+        ])
+        await onPage(mockResponse)
+      })
+
+      const result = await calculateKpi(defaultProps)
+
+      // Should only include transactions with valid referrer IDs
+      expect(result).toEqual([
+        {
+          kpi: 8, // 1 transaction * 8 networks
+          referrerId: 'referrer1',
+          userAddress: testAddress,
+          metadata: {
+            'ethereum-mainnet': 1,
+            'avalanche-mainnet': 1,
+            'celo-mainnet': 1,
+            'unichain-mainnet': 1,
+            'ink-mainnet': 1,
+            'op-mainnet': 1,
+            'arbitrum-one': 1,
+            'berachain-mainnet': 1,
+          },
+        },
+        {
+          kpi: 8, // 1 transaction * 8 networks
+          referrerId: 'referrer2',
+          userAddress: testAddress,
+          metadata: {
+            'ethereum-mainnet': 1,
+            'avalanche-mainnet': 1,
+            'celo-mainnet': 1,
+            'unichain-mainnet': 1,
+            'ink-mainnet': 1,
+            'op-mainnet': 1,
+            'arbitrum-one': 1,
+            'berachain-mainnet': 1,
+          },
+        },
+      ])
     })
   })
 })

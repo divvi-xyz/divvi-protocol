@@ -9,7 +9,11 @@ import {
 import { Campaign } from '../../../src/campaigns'
 import { privateKeyToAccount } from 'viem/accounts'
 import { NETWORK_ID_TO_VIEM_CHAIN } from '../../../scripts/utils/networks'
-import { NETWORK_ID_TO_ALCHEMY_RPC_URL } from '../../../scripts/utils'
+import {
+  getViemPublicClient,
+  NETWORK_ID_TO_ALCHEMY_RPC_URL,
+} from '../../../scripts/utils'
+import { logger } from '../../log'
 
 const IDEMPOTENT_REWARD_POOL_ABI = [
   {
@@ -57,6 +61,7 @@ export async function distributeRewards({
   valoraRewardsPoolOwnerPrivateKey,
   alchemyKey,
   rewardsFilename,
+  dryRun,
 }: {
   campaign: Campaign
   rewardAmounts: Array<{
@@ -68,6 +73,7 @@ export async function distributeRewards({
   valoraRewardsPoolOwnerPrivateKey: Hex
   alchemyKey: string
   rewardsFilename: string
+  dryRun: boolean
 }) {
   if (!campaign.valoraRewardsPoolAddress) {
     throw new Error('Valora rewards pool address is not set')
@@ -86,8 +92,10 @@ export async function distributeRewards({
   const rewardAmount =
     valoraRewards / BigInt(nonValoraReferrersWithRewards.length)
 
+  const account = privateKeyToAccount(valoraRewardsPoolOwnerPrivateKey)
+
   const walletClient = createWalletClient({
-    account: privateKeyToAccount(valoraRewardsPoolOwnerPrivateKey),
+    account,
     chain: NETWORK_ID_TO_VIEM_CHAIN[campaign.networkId],
     transport: http(NETWORK_ID_TO_ALCHEMY_RPC_URL[campaign.networkId], {
       fetchOptions: {
@@ -98,7 +106,9 @@ export async function distributeRewards({
     }),
   })
 
-  const txHash = await walletClient.writeContract({
+  const publicClient = getViemPublicClient(campaign.networkId)
+
+  const { request } = await publicClient.simulateContract({
     address: campaign.valoraRewardsPoolAddress,
     abi: IDEMPOTENT_REWARD_POOL_ABI,
     functionName: 'addRewards',
@@ -115,5 +125,44 @@ export async function distributeRewards({
     ],
   })
 
-  return txHash
+  logger.info(
+    {
+      campaign,
+      request,
+    },
+    'Simulated distribute rewards transaction',
+  )
+
+  if (!dryRun) {
+    const txHash = await walletClient.writeContract(request)
+
+    logger.info(
+      {
+        campaign,
+        txHash,
+      },
+      `Created distribute rewards transaction`,
+    )
+
+    const receipt = await publicClient.waitForTransactionReceipt({
+      hash: txHash,
+    })
+
+    logger.info(
+      {
+        campaign,
+        txHash,
+        status: receipt.status,
+      },
+      `Distribute rewards transaction confirmed`,
+    )
+
+    if (receipt.status !== 'success') {
+      throw new Error(`Distribute Transaction failed: ${receipt.status}`)
+    }
+
+    return txHash
+  }
+
+  return null
 }

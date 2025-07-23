@@ -2,6 +2,7 @@ import { Address, Hex, createWalletClient, keccak256, toBytes } from 'viem'
 import { NetworkId } from '../../../scripts/types'
 import { Campaign } from '../../../src/campaigns'
 import { distributeRewards } from './distributeRewards'
+import { getViemPublicClient } from '../../../scripts/utils'
 
 // Mock viem modules
 jest.mock('viem', () => ({
@@ -9,9 +10,19 @@ jest.mock('viem', () => ({
   createWalletClient: jest.fn(),
 }))
 
+jest.mock('../../../scripts/utils', () => ({
+  ...jest.requireActual('../../../scripts/utils'),
+  getViemPublicClient: jest.fn(),
+}))
+
 describe('distributeRewards', () => {
   const mockWalletClient = {
     writeContract: jest.fn(),
+  }
+
+  const mockPublicClient = {
+    simulateContract: jest.fn(),
+    waitForTransactionReceipt: jest.fn(),
   }
 
   const campaign: Campaign = {
@@ -66,6 +77,19 @@ describe('distributeRewards', () => {
       .mockReturnValue(
         mockWalletClient as unknown as ReturnType<typeof createWalletClient>,
       )
+
+    jest
+      .mocked(getViemPublicClient)
+      .mockReturnValue(
+        mockPublicClient as unknown as ReturnType<typeof getViemPublicClient>,
+      )
+
+    mockPublicClient.simulateContract.mockResolvedValue({
+      request: 'mockRequest',
+    })
+    mockPublicClient.waitForTransactionReceipt.mockResolvedValue({
+      status: 'success',
+    })
   })
 
   describe('success cases', () => {
@@ -82,10 +106,11 @@ describe('distributeRewards', () => {
         valoraRewardsPoolOwnerPrivateKey,
         alchemyKey,
         rewardsFilename,
+        dryRun: false,
       })
 
       expect(result).toBe(expectedTxHash)
-      expect(mockWalletClient.writeContract).toHaveBeenCalledWith({
+      expect(mockPublicClient.simulateContract).toHaveBeenCalledWith({
         address: campaign.valoraRewardsPoolAddress,
         abi: expect.any(Object),
         functionName: 'addRewards',
@@ -105,6 +130,47 @@ describe('distributeRewards', () => {
           [],
         ],
       })
+      expect(mockWalletClient.writeContract).toHaveBeenCalledWith('mockRequest')
+      expect(mockPublicClient.waitForTransactionReceipt).toHaveBeenCalledWith({
+        hash: expectedTxHash,
+      })
+    })
+
+    it('should simulate and return null when in dry run mode', async () => {
+      const result = await distributeRewards({
+        campaign,
+        rewardAmounts: mockRewardAmounts,
+        valoraDivviIdentifier,
+        valoraRewards,
+        valoraRewardsPoolOwnerPrivateKey,
+        alchemyKey,
+        rewardsFilename,
+        dryRun: true,
+      })
+
+      expect(result).toBe(null)
+      expect(mockPublicClient.simulateContract).toHaveBeenCalledWith({
+        address: campaign.valoraRewardsPoolAddress,
+        abi: expect.any(Object),
+        functionName: 'addRewards',
+        args: [
+          [
+            {
+              user: '0x1111111111111111111111111111111111111111',
+              amount: BigInt(2500000), // 5000000 / 2 (only 2 non-Valora referrers with rewards > 0)
+              idempotencyKey: referrer1IdempotencyKey,
+            },
+            {
+              user: '0x2222222222222222222222222222222222222222',
+              amount: BigInt(2500000),
+              idempotencyKey: referrer2IdempotencyKey,
+            },
+          ],
+          [],
+        ],
+      })
+      expect(mockWalletClient.writeContract).not.toHaveBeenCalled()
+      expect(mockPublicClient.waitForTransactionReceipt).not.toHaveBeenCalled()
     })
 
     it('should handle single non-Valora referrer with rewards', async () => {
@@ -134,10 +200,11 @@ describe('distributeRewards', () => {
         valoraRewardsPoolOwnerPrivateKey,
         alchemyKey,
         rewardsFilename,
+        dryRun: false,
       })
 
       expect(result).toBe(expectedTxHash)
-      expect(mockWalletClient.writeContract).toHaveBeenCalledWith({
+      expect(mockPublicClient.simulateContract).toHaveBeenCalledWith({
         address: campaign.valoraRewardsPoolAddress,
         abi: expect.any(Array),
         functionName: 'addRewards',
@@ -151,6 +218,10 @@ describe('distributeRewards', () => {
           ],
           [],
         ],
+      })
+      expect(mockWalletClient.writeContract).toHaveBeenCalledWith('mockRequest')
+      expect(mockPublicClient.waitForTransactionReceipt).toHaveBeenCalledWith({
+        hash: expectedTxHash,
       })
     })
   })
@@ -171,6 +242,7 @@ describe('distributeRewards', () => {
           valoraRewardsPoolOwnerPrivateKey,
           alchemyKey,
           rewardsFilename,
+          dryRun: false,
         }),
       ).rejects.toThrow('Valora rewards pool address is not set')
     })
@@ -188,6 +260,7 @@ describe('distributeRewards', () => {
           valoraRewardsPoolOwnerPrivateKey,
           alchemyKey,
           rewardsFilename,
+          dryRun: false,
         }),
       ).rejects.toThrow('Transaction failed')
     })
@@ -220,8 +293,28 @@ describe('distributeRewards', () => {
           valoraRewardsPoolOwnerPrivateKey,
           alchemyKey,
           rewardsFilename,
+          dryRun: false,
         }),
       ).rejects.toThrow('No non-valora referrers with rewards')
+    })
+
+    it('should throw error when transaction is not successful', async () => {
+      mockPublicClient.waitForTransactionReceipt.mockResolvedValue({
+        status: 'reverted',
+      })
+
+      await expect(
+        distributeRewards({
+          campaign,
+          rewardAmounts: mockRewardAmounts,
+          valoraDivviIdentifier,
+          valoraRewards,
+          valoraRewardsPoolOwnerPrivateKey,
+          alchemyKey,
+          rewardsFilename,
+          dryRun: false,
+        }),
+      ).rejects.toThrow('Distribute Transaction failed: reverted')
     })
   })
 })

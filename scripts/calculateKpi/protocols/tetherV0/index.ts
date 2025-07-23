@@ -1,5 +1,5 @@
 import { RedisClientType } from '@redis/client'
-import { KpiResult, NetworkId } from '../../../types'
+import { KpiResults, NetworkId } from '../../../types'
 import { getBlockRange } from '../utils/events'
 import {
   Address,
@@ -13,6 +13,7 @@ import { LogField, TransactionField } from '@envio-dev/hypersync-client'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { getHyperSyncClient } from '../../../utils'
 import { BigNumber } from 'bignumber.js'
+import { getReferrerIdFromTx } from './getReferrerIdFromTx'
 
 const MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT = BigNumber(1).shiftedBy(6)
 const transferEventSigHash = toEventSelector(
@@ -33,7 +34,7 @@ const networkToTokenAddress: Partial<Record<NetworkId, Address>> = {
     '0x779ded0c9e1022225f8e0630b35a9b54be713736',
 }
 
-async function getEligibleTxCount({
+async function getEligibleTxCountByReferrer({
   networkId,
   user,
   startBlock,
@@ -45,7 +46,7 @@ async function getEligibleTxCount({
   startBlock?: number
   endBlockExclusive?: number
   tokenAddress: Address
-}): Promise<number> {
+}): Promise<Record<string, number>> {
   const client = getHyperSyncClient(networkId)
 
   const transactionValueByHash: Record<string, BigNumber> = {}
@@ -80,6 +81,7 @@ async function getEligibleTxCount({
     ...(endBlockExclusive && { toBlock: endBlockExclusive }),
   }
 
+  // Group each Transfer event to / from the user by transactionHash to get the net transfer value
   await paginateQuery(client, query, async (response) => {
     for (const { data, topics, transactionHash } of response.data.logs) {
       if (data && transactionHash) {
@@ -102,9 +104,21 @@ async function getEligibleTxCount({
     }
   })
 
-  return Object.values(transactionValueByHash).filter((value) =>
-    value.abs().gte(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT),
-  ).length
+  // Separate the eligible transactions by referrerId
+  const eligibleTxCountByReferrer: Record<string, number> = {}
+  for (const [transactionHash, value] of Object.entries(
+    transactionValueByHash,
+  )) {
+    if (value.abs().gte(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT)) {
+      const referrerId = await getReferrerIdFromTx(transactionHash, networkId)
+      if (referrerId !== null) {
+        eligibleTxCountByReferrer[referrerId] =
+          (eligibleTxCountByReferrer[referrerId] ?? 0) + 1
+      }
+    }
+  }
+
+  return eligibleTxCountByReferrer
 }
 
 /**
@@ -150,7 +164,7 @@ async function getEligibleTxCount({
  * @param params.endTimestampExclusive - End of time window for calculation (exclusive)
  * @param params.redis - Optional Redis client for caching block ranges
  *
- * @returns Promise resolving to total eligible transaction count and per-network breakdown
+ * @returns Promise resolving to KPI results grouped by referrer ID with per-network breakdown
  */
 export async function calculateKpi({
   address,
@@ -162,9 +176,12 @@ export async function calculateKpi({
   startTimestamp: Date
   endTimestampExclusive: Date
   redis?: RedisClientType
-}): Promise<KpiResult> {
-  const kpiPerNetwork: Partial<Record<NetworkId, number>> = {}
-  let totalKpi = 0
+  getReferrerIdFromTx?: (
+    transactionHash: string,
+    networkId: NetworkId,
+  ) => Promise<string | null>
+}): Promise<KpiResults> {
+  const kpiByReferrer: Record<string, KpiResults[number]> = {}
 
   await Promise.all(
     (Object.entries(networkToTokenAddress) as [NetworkId, Address][]).map(
@@ -176,21 +193,32 @@ export async function calculateKpi({
           redis,
         })
 
-        const eligibleTxCount = await getEligibleTxCount({
+        const eligibleTxCountByReferrer = await getEligibleTxCountByReferrer({
           networkId,
           user: address as Address,
           startBlock: blockRange.startBlock,
           endBlockExclusive: blockRange.endBlockExclusive,
           tokenAddress,
         })
-        if (kpiPerNetwork[networkId] === undefined) {
-          kpiPerNetwork[networkId] = 0
+
+        // Aggregate results by referrer across the supported networks
+        for (const [referrerId, txCount] of Object.entries(
+          eligibleTxCountByReferrer,
+        )) {
+          if (!(referrerId in kpiByReferrer)) {
+            kpiByReferrer[referrerId] = {
+              kpi: 0,
+              referrerId,
+              userAddress: address,
+              metadata: {},
+            }
+          }
+          kpiByReferrer[referrerId].kpi += txCount
+          kpiByReferrer[referrerId].metadata![networkId] = txCount
         }
-        kpiPerNetwork[networkId] += eligibleTxCount
-        totalKpi += eligibleTxCount
       },
     ),
   )
 
-  return { kpi: totalKpi, metadata: kpiPerNetwork }
+  return Object.values(kpiByReferrer)
 }

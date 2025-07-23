@@ -78,6 +78,11 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 5000,
     },
+    morph: {
+      url: 'https://rpc-quicknode.morphl2.io',
+      accounts,
+      chainId: 2818,
+    },
   },
   etherscan: {
     apiKey: {
@@ -91,6 +96,7 @@ const config: HardhatUserConfig = {
       vana: process.env.VANASCAN_API_KEY!,
       polygon: process.env.POLYGONSCAN_API_KEY!,
       mantle: process.env.ETHERSCAN_API_KEY!,
+      morph: 'anything', // Per https://docs.morphl2.io/docs/build-on-morph/build-on-morph/verify-your-smart-contracts#verify-with-hardhat
     },
     customChains: [
       {
@@ -131,6 +137,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: 'https://api.etherscan.io/v2/api',
           browserURL: 'https://mantlescan.xyz/',
+        },
+      },
+      {
+        network: 'morph',
+        chainId: 2818,
+        urls: {
+          apiURL: 'https://explorer-api.morphl2.io/api? ',
+          browserURL: 'https://explorer.morphl2.io/',
         },
       },
     ],
