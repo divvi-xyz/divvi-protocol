@@ -162,6 +162,7 @@ describe('redistributeValoraRewards', () => {
         pendingRewards: BigInt(1000000),
         networkId: NetworkId['celo-mainnet'],
         alchemyKey: 'test-alchemy-key',
+        dryRun: false,
       })
 
       // Verify rewards were distributed
@@ -175,6 +176,7 @@ describe('redistributeValoraRewards', () => {
           '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
         alchemyKey: 'test-alchemy-key',
         rewardsFilename: latestRewards.filename,
+        dryRun: false,
       })
     })
 
@@ -338,6 +340,7 @@ describe('redistributeValoraRewards', () => {
         pendingRewards: BigInt(1000000),
         networkId: NetworkId['celo-mainnet'],
         alchemyKey: 'test-alchemy-key',
+        dryRun: false,
       })
     })
 
@@ -385,6 +388,7 @@ describe('redistributeValoraRewards', () => {
         pendingRewards: BigInt(1000000),
         networkId: NetworkId['celo-mainnet'],
         alchemyKey: 'test-alchemy-key',
+        dryRun: false,
       })
     })
 
@@ -476,6 +480,82 @@ describe('redistributeValoraRewards', () => {
       // The endpoint should handle this gracefully and return an error response
       // Since the error is thrown in the handler, it should result in a 500 status
       await request(server).post('/').expect(500)
+    })
+
+    it('should pass down dryRun flag', async () => {
+      // Mock GraphQL response
+      mockClient.request.mockResolvedValue({
+        DivviRegistry_RewardsAgreementRegistered: [
+          {
+            rewardsConsumer: valoraDivviIdentifier,
+            rewardsProvider: '0x0423189886d7966f0dd7e7d256898daeee625dca',
+          },
+        ],
+      })
+
+      mockProposeSafeClaimRewardTx.mockResolvedValue(null)
+      mockDistributeRewards.mockResolvedValue(null)
+
+      // Mock pending rewards
+      mockViemClient.readContract.mockResolvedValueOnce(BigInt(1000000)) // First provider has rewards
+
+      const server = getTestServer(redistributeValoraRewards)
+      const response = await request(server)
+        .post('/')
+        .send({ dryRun: true })
+        .expect(200)
+
+      expect(response.body).toEqual({
+        rewards: [
+          {
+            rewardsProvider: '0x0423189886d7966f0dd7e7d256898daeee625dca',
+            rewardPoolAddress: '0xc273fb49c5c291f7c697d0fcef8ce34e985008f3',
+            pendingRewards: '1000000',
+            claimRewardsSafeTxUrl: null,
+            distributeRewardsTxHash: null,
+          },
+        ],
+      })
+
+      // Verify GraphQL query was called
+      expect(mockClient.request).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.stringContaining('RewardsAgreement')]),
+        {
+          rewardsConsumer: valoraDivviIdentifier,
+        },
+      )
+
+      // Verify getLatestRewards was called
+      expect(mockGetLatestRewards).toHaveBeenCalledTimes(1)
+      expect(mockGetLatestRewards).toHaveBeenCalledWith({
+        gcsFiles: mockGcsFiles,
+        protocol: 'celo-pg',
+      })
+
+      // Verify Safe transaction was proposed for provider with rewards
+      expect(mockProposeSafeClaimRewardTx).toHaveBeenCalledTimes(1)
+      expect(mockProposeSafeClaimRewardTx).toHaveBeenCalledWith({
+        safeAddress: valoraDivviIdentifier,
+        rewardPoolAddress: '0xc273fb49c5c291f7c697d0fcef8ce34e985008f3',
+        pendingRewards: BigInt(1000000),
+        networkId: NetworkId['celo-mainnet'],
+        alchemyKey: 'test-alchemy-key',
+        dryRun: true,
+      })
+
+      // Verify rewards were distributed
+      expect(mockDistributeRewards).toHaveBeenCalledTimes(1)
+      expect(mockDistributeRewards).toHaveBeenCalledWith({
+        campaign: campaigns[0],
+        rewardAmounts: latestRewards.rewardAmounts,
+        valoraDivviIdentifier,
+        valoraRewards: BigInt(1000000),
+        valoraRewardsPoolOwnerPrivateKey:
+          '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+        alchemyKey: 'test-alchemy-key',
+        rewardsFilename: latestRewards.filename,
+        dryRun: true,
+      })
     })
   })
 })

@@ -16,7 +16,7 @@ import { getLatestRewards } from './getLatestRewards'
 const requestSchema = z.object({
   method: z.custom((arg) => arg === 'POST', 'only POST requests are allowed'),
   body: z.object({
-    // Nothing for now
+    dryRun: z.boolean().optional().default(false),
   }),
 })
 
@@ -66,11 +66,13 @@ async function processCampaignRewards({
   config,
   rewardsProvider,
   gcsFiles,
+  dryRun,
 }: {
   campaign: Campaign | undefined
   config: ReturnType<typeof loadConfig>
   rewardsProvider: Address
   gcsFiles: { name: string; url: string }[]
+  dryRun: boolean
 }): Promise<{
   rewardsProvider: Address
   rewardPoolAddress: string | null
@@ -135,16 +137,8 @@ async function processCampaignRewards({
           pendingRewards: rewards,
           networkId: campaign.networkId,
           alchemyKey: config.ALCHEMY_KEY,
+          dryRun,
         })
-
-        logger.info(
-          {
-            rewardsProvider,
-            rewardPoolAddress,
-            claimRewardsSafeTxUrl,
-          },
-          `Proposed Safe transaction to claim rewards for ${rewardsProvider}`,
-        )
 
         // Distribute rewards
         distributeRewardsTxHash = await distributeRewards({
@@ -156,6 +150,7 @@ async function processCampaignRewards({
             config.VALORA_REWARDS_POOL_OWNER_PRIVATE_KEY,
           alchemyKey: config.ALCHEMY_KEY,
           rewardsFilename: filename,
+          dryRun,
         })
       }
     } catch (err) {
@@ -185,7 +180,7 @@ export const redistributeValoraRewards = createEndpoint(
   {
     loadConfig,
     requestSchema,
-    handler: async ({ res, config, parsedRequest: _parsedRequest }) => {
+    handler: async ({ res, config, parsedRequest }) => {
       const providers = await fetchRewardsProviders({
         indexerUrl: config.DIVVI_INDEXER_URL,
         rewardsConsumer: config.VALORA_DIVVI_IDENTIFIER,
@@ -201,6 +196,7 @@ export const redistributeValoraRewards = createEndpoint(
             config,
             rewardsProvider,
             gcsFiles,
+            dryRun: parsedRequest.body.dryRun,
           })
         }),
       )

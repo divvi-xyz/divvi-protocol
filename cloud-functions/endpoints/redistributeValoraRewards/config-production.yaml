@@ -1,0 +1,4 @@
+GCLOUD_PROJECT: 'divvi-production'
+VALORA_DIVVI_IDENTIFIER: '0x9eCfE3dDFAf1BB9B55f56b84471406893c5E29ad'
+DIVVI_INDEXER_URL: 'https://indexer.hyperindex.xyz/5184fc5/v1/graphql'
+BUCKET_NAME: 'divvi-campaign-data-production'

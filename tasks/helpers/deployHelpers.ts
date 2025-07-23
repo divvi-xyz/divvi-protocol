@@ -14,6 +14,7 @@ export const SUPPORTED_NETWORKS = [
   'base',
   'berachain',
   'vana',
+  'morph',
 ]
 
 type BaseDeployConfig = {

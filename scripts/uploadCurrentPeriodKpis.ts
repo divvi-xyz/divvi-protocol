@@ -11,7 +11,9 @@ import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
 import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV0'
 import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
 import { main as calculateRewardsBaseV0 } from './calculateRewards/baseV0'
+import { main as calculateRewardsTetherV0 } from './calculateRewards/tetherV0'
 import { main as calculateRewardsMantleV0 } from './calculateRewards/mantleV0'
+import { main as calculateRewardSlices } from './calculateRewards/slices'
 
 export interface Campaign {
   protocol: Protocol
@@ -19,6 +21,11 @@ export interface Campaign {
     startTimestamp: string
     endTimestampExclusive: string
     calculateRewards?: (args: {
+      resultDirectory: ResultDirectory
+      startTimestamp: string
+      endTimestampExclusive: string
+    }) => Promise<void>
+    calculateRewardSlices?: (args: {
       resultDirectory: ResultDirectory
       startTimestamp: string
       endTimestampExclusive: string
@@ -50,6 +57,22 @@ const campaigns: Campaign[] = [
             proportionLinear: 0.8,
           })
         },
+        calculateRewardSlices: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardSlices({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '100000',
+          })
+        },
       },
       {
         startTimestamp: '2025-06-01T00:00:00Z',
@@ -69,6 +92,22 @@ const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '50000',
             proportionLinear: 0.1,
+          })
+        },
+        calculateRewardSlices: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardSlices({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '200000',
           })
         },
       },
@@ -240,6 +279,51 @@ const campaigns: Campaign[] = [
             resultDirectory,
             startTimestamp,
             endTimestampExclusive,
+          })
+        },
+      },
+    ],
+  },
+  {
+    protocol: 'tether-v0',
+    rewardsPeriods: [
+      {
+        startTimestamp: '2025-07-28T00:00:00Z',
+        endTimestampExclusive: '2025-08-30T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardsTetherV0({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '5000000000', // 5000 USDT
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-08-30T00:00:00Z',
+        endTimestampExclusive: '2025-09-30T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }: {
+          resultDirectory: ResultDirectory
+          startTimestamp: string
+          endTimestampExclusive: string
+        }) => {
+          await calculateRewardsTetherV0({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '10000000000', // 10000 USDT
           })
         },
       },
@@ -453,6 +537,19 @@ export async function uploadCurrentPeriodKpis(
         rewardsFilePathCsv,
         rewardsFilePathJson,
         safeTransactionsJson,
+      )
+    }
+
+    if (currentPeriod.calculateRewardSlices) {
+      await currentPeriod.calculateRewardSlices({
+        resultDirectory,
+        startTimestamp: currentPeriod.startTimestamp,
+        endTimestampExclusive: currentPeriod.endTimestampExclusive,
+      })
+
+      campaignFilePaths.push(
+        `${resultDirectory.builderSlicesFileSuffix}.json`,
+        `${resultDirectory.builderSlicesFileSuffix}.csv`,
       )
     }
 
