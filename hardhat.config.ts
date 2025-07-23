@@ -90,7 +90,7 @@ const config: HardhatUserConfig = {
       berachain: process.env.BERASCAN_API_KEY!,
       vana: process.env.VANASCAN_API_KEY!,
       polygon: process.env.POLYGONSCAN_API_KEY!,
-      morph: 'anything',
+      morph: 'anything', // Per https://docs.morphl2.io/docs/build-on-morph/build-on-morph/verify-your-smart-contracts#verify-with-hardhat
     },
     customChains: [
       {
