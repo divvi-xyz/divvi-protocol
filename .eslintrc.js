@@ -17,6 +17,8 @@ module.exports = {
         caughtErrorsIgnorePattern: '^_',
       },
     ],
+    'import/no-named-as-default': 'off',
+    'import/no-named-as-default-member': 'off',
   },
   parser: '@typescript-eslint/parser',
   plugins: ['@typescript-eslint', 'import'],
