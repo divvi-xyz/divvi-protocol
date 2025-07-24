@@ -29,12 +29,10 @@ export async function getReferrerIdFromTx(
       : undefined
   const parseReferralParams: ParseReferralParams = userOperation
     ? {
-        referralType: 'onchain',
         data: userOperation.calldata,
         user: userOperation.sender,
       }
     : {
-        referralType: 'onchain',
         data: transactionInfo.calldata,
         user: transactionInfo.from,
       }
