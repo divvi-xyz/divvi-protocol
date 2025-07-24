@@ -1,4 +1,4 @@
-import BigNumber from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 import { calculateRewardsLiskV0 } from './liskV0'
 import { parseEther } from 'viem'
 

@@ -2,7 +2,7 @@ import {
   calculateRewardsProofOfImpact,
   _rewardsPerMillisecond,
 } from './proofOfImpact'
-import BigNumber from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 
 describe('calculateRewardsProofOfImpact', () => {
   const startTimestamp = new Date('2025-05-08')

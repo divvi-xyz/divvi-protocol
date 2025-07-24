@@ -1,6 +1,6 @@
 import yargs from 'yargs'
 import { parseEther } from 'viem'
-import BigNumber from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
 
