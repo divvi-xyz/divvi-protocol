@@ -133,15 +133,19 @@ export class ResultDirectory {
     return copyFile(fileName, this.includeListFilePath(fileName))
   }
 
-  async writeSlices(slices: any[], type: 'builder' | 'user') {
-    const suffix =
-      type === 'builder'
-        ? this.builderSlicesFileSuffix
-        : this.userSlicesFileSuffix
-    await mkdir(dirname(suffix), { recursive: true })
+  async writeBuilderSlices(slices: any[]) {
+    await mkdir(dirname(this.builderSlicesFileSuffix), { recursive: true })
     return await Promise.all([
-      this._writeCsv(suffix, slices),
-      this._writeJson(suffix, slices),
+      this._writeCsv(this.builderSlicesFileSuffix, slices),
+      this._writeJson(this.builderSlicesFileSuffix, slices),
+    ])
+  }
+
+  async writeUserSlices(slices: any[]) {
+    await mkdir(dirname(this.userSlicesFileSuffix), { recursive: true })
+    return await Promise.all([
+      this._writeCsv(this.userSlicesFileSuffix, slices),
+      this._writeJson(this.userSlicesFileSuffix, slices),
     ])
   }
 }

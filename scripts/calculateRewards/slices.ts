@@ -84,7 +84,11 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     return { ...reward, rewardAmount: rounded.toString() }
   })
 
-  await resultDirectory.writeSlices(slicesRewards, args.rewardType)
+  if (args.rewardType === 'builder') {
+    await resultDirectory.writeBuilderSlices(slicesRewards)
+  } else {
+    await resultDirectory.writeUserSlices(slicesRewards)
+  }
 }
 
 // Only run main if this file is being executed directly
