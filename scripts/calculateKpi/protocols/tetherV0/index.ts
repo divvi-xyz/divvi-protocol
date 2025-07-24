@@ -13,7 +13,7 @@ import { LogField, TransactionField } from '@envio-dev/hypersync-client'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { getHyperSyncClient } from '../../../utils'
 import { BigNumber } from 'bignumber.js'
-import { getReferrerIdFromTx } from './getReferrerIdFromTx'
+import { getReferrerIdFromTx } from './parseReferralTag/getReferrerIdFromTx'
 
 const MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT = BigNumber(1).shiftedBy(6)
 const transferEventSigHash = toEventSelector(
@@ -55,12 +55,12 @@ async function getEligibleTxCountByReferrer({
     transactions: [{ from: [user] }],
     logs: [
       {
-        contractAddress: tokenAddress,
+        address: [tokenAddress],
         // transfer from user
         topics: [[transferEventSigHash], [pad(user, { size: 32 })], [], []],
       },
       {
-        contractAddress: tokenAddress,
+        address: [tokenAddress],
         // transfer to user
         topics: [[transferEventSigHash], [], [pad(user, { size: 32 })], []],
       },
@@ -110,7 +110,11 @@ async function getEligibleTxCountByReferrer({
     transactionValueByHash,
   )) {
     if (value.abs().gte(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT)) {
-      const referrerId = await getReferrerIdFromTx(transactionHash, networkId)
+      const referrerId = await getReferrerIdFromTx(
+        transactionHash as Hex,
+        networkId,
+        true,
+      )
       if (referrerId !== null) {
         eligibleTxCountByReferrer[referrerId] =
           (eligibleTxCountByReferrer[referrerId] ?? 0) + 1
