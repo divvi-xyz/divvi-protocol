@@ -14,6 +14,7 @@ export type ParseReferralErrorType =
   | 'unsupported-formatId'
   | 'abi-decode-failed'
   | 'user-mismatch'
+  | 'no-referral'
 
 export type ParsedReferral = {
   user: Address
@@ -29,51 +30,36 @@ export type ParseReferralResult =
       error: { type: ParseReferralErrorType; message: string }
     }
 
-type ReferralType = 'onchain' | 'offchain'
-
 function createTooShortError(
-  referralType: ReferralType,
   tagFormatId?: SupportedFormatId,
 ): ParseReferralResult {
-  const sourceType =
-    referralType === 'onchain' ? 'transaction calldata' : 'signed message data'
   return {
     tagFormatId: tagFormatId ?? undefined,
     error: {
       type: 'too-short',
-      message: `Invalid Divvi referral data: The ${sourceType} is too short (less than 4 bytes) to contain the required Divvi referral tag. This usually means the Divvi referral tag was not included, or the data itself is incomplete.`,
+      message: `Invalid Divvi referral data: The transaction calldata is too short (less than 4 bytes) to contain the required Divvi referral tag. This usually means the Divvi referral tag was not included, or the data itself is incomplete.`,
     },
   }
 }
 
 function createLengthMismatchError(
-  referralType: ReferralType,
   tagFormatId?: SupportedFormatId,
 ): ParseReferralResult {
-  const message =
-    referralType === 'onchain'
-      ? 'Invalid Divvi referral data: The length encoded in the referral data suffix (last 4 bytes) is greater than the total data length. This suggests the referral data may be corrupted or was not correctly included. Please verify your `@divvi/referral-sdk` integration.'
-      : 'Invalid Divvi referral data: The payload length specified in the referral tag header exceeds the available data length. This suggests the referral tag was truncated or corrupted during processing. Please verify your `@divvi/referral-sdk` integration and ensure the complete referral tag was included.'
-
   return {
     tagFormatId: tagFormatId ?? undefined,
     error: {
       type: 'length-mismatch',
-      message,
+      message:
+        'Invalid Divvi referral data: The length encoded in the referral data suffix (last 4 bytes) is greater than the total data length. This suggests the referral data may be corrupted or was not correctly included. Please verify your `@divvi/referral-sdk` integration.',
     },
   }
 }
 
-function createUnsupportedFormatError(
-  referralType: ReferralType,
-  formatId?: number,
-): ParseReferralResult {
+function createUnsupportedFormatError(formatId?: number): ParseReferralResult {
   const message =
     formatId !== undefined
       ? `The format ID '${formatId}' found in the referral data is not recognized. This might indicate an issue with the \`@divvi/referral-sdk\` version or corruption of the referral data. Supported format IDs are: ${SUPPORTED_FORMAT_IDS.join(', ')}. Please check your \`@divvi/referral-sdk\` integration and version.`
-      : referralType === 'offchain' && formatId === 0
-        ? 'Format 0 is not supported for offchain referrals. Only format 1 and above are supported for offchain referrals. Please use a newer version of `@divvi/referral-sdk` that supports format 1+ for offchain referrals.'
-        : 'Unsupported referral format detected. Please check your `@divvi/referral-sdk` integration and version.'
+      : 'Unsupported referral format detected. Please check your `@divvi/referral-sdk` integration and version.'
 
   return {
     tagFormatId:
@@ -89,7 +75,6 @@ function createUnsupportedFormatError(
 }
 
 function createUserMismatchError(
-  _referralType: ReferralType,
   tagFormatId: SupportedFormatId,
   details: { expected: Address; found: Address },
 ): ParseReferralResult {
@@ -103,7 +88,6 @@ function createUserMismatchError(
 }
 
 function createAbiDecodeError(
-  _referralType: ReferralType,
   tagFormatId: SupportedFormatId,
 ): ParseReferralResult {
   const contextMessage =
@@ -119,22 +103,21 @@ function createAbiDecodeError(
 }
 
 export type ParseReferralParams = {
-  referralType: 'onchain'
   data: Hex
   user: Address
 }
 
 /**
- * Parse referral data from either onchain transactions or offchain signed messages.
+ * Parse referral data from either onchain transactions.
  */
 export function parseReferral(
   params: ParseReferralParams,
 ): ParseReferralResult {
-  const { referralType, data, user } = params
+  const { data, user } = params
 
   const dataBytes = hexToBytes(data)
   if (dataBytes.length < 4) {
-    return createTooShortError(referralType)
+    return createTooShortError()
   }
 
   // 1. Find the magic prefix, with aligned data for better for more resilient parsing
@@ -153,27 +136,30 @@ export function parseReferral(
       switch (formatIdByte) {
         case 1:
           return parseFormat1({
-            referralType,
             dataBytes: alignedDataBytes,
             user,
             magicStartIndex, // position of the magic prefix in the aligned data
           })
         default:
-          return createUnsupportedFormatError(referralType, formatIdByte)
+          return createUnsupportedFormatError(formatIdByte)
       }
     }
   }
 
-  return createUnsupportedFormatError(referralType)
+  return {
+    tagFormatId: undefined,
+    error: {
+      type: 'no-referral',
+      message: 'No referral tag found in the transaction data',
+    },
+  }
 }
 
 function parseFormat1({
-  referralType,
   dataBytes,
   user,
   magicStartIndex,
 }: {
-  referralType: ReferralType
   dataBytes: Uint8Array
   user: Address | undefined
   magicStartIndex: number
@@ -182,7 +168,7 @@ function parseFormat1({
 
   if (tagBytes.length < 7) {
     // minimum header size: magic(4) + formatId(1) + payloadLen(2)
-    return createTooShortError(referralType, 1)
+    return createTooShortError(1)
   }
 
   // Parse format 1 header: magic(4) + formatId(1) + payloadLen(2)
@@ -190,7 +176,7 @@ function parseFormat1({
   const payloadLength = parseInt(bytesToHex(payloadLengthBytes), 16)
 
   if (tagBytes.length < 7 + payloadLength) {
-    return createLengthMismatchError(referralType, 1)
+    return createLengthMismatchError(1)
   }
 
   // Extract payload
@@ -205,7 +191,7 @@ function parseFormat1({
 
     // Validate user matches
     if (user && payloadUser.toLowerCase() !== user.toLowerCase()) {
-      return createUserMismatchError(referralType, 1, {
+      return createUserMismatchError(1, {
         expected: user,
         found: payloadUser,
       })
@@ -221,6 +207,6 @@ function parseFormat1({
       tagFormatId: 1,
     }
   } catch (error) {
-    return createAbiDecodeError(referralType, 1)
+    return createAbiDecodeError(1)
   }
 }
