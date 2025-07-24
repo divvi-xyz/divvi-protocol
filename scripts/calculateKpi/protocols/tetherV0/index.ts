@@ -55,12 +55,12 @@ async function getEligibleTxCountByReferrer({
     transactions: [{ from: [user] }],
     logs: [
       {
-        contractAddress: tokenAddress,
+        address: [tokenAddress],
         // transfer from user
         topics: [[transferEventSigHash], [pad(user, { size: 32 })], [], []],
       },
       {
-        contractAddress: tokenAddress,
+        address: [tokenAddress],
         // transfer to user
         topics: [[transferEventSigHash], [], [pad(user, { size: 32 })], []],
       },
