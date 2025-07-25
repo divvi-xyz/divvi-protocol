@@ -168,7 +168,23 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     endTimestampExclusive,
   })
 
-  await resultDirectory.writeRewards(rewards)
+  const totalTransactionsPerReferrer: {
+    [referrerId: string]: number
+  } = {}
+  for (const { referrerId, metadata } of kpiData) {
+    if (!metadata) continue
+
+    totalTransactionsPerReferrer[referrerId] =
+      (totalTransactionsPerReferrer[referrerId] ?? 0) +
+      (metadata['totalTransactions'] ?? 0)
+  }
+
+  const rewardsWithMetadata = rewards.map((reward) => ({
+    ...reward,
+    totalTransactions: totalTransactionsPerReferrer[reward.referrerId],
+  }))
+
+  await resultDirectory.writeRewards(rewardsWithMetadata)
 }
 
 // Only run main if this file is being executed directly
