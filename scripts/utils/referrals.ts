@@ -7,14 +7,15 @@ import { divviRegistryAbi } from '../../abis/DivviRegistry'
 import { getFirstBlockAtOrAfterTimestamp } from '../calculateKpi/protocols/utils/events'
 import { RedisClientType } from '@redis/client'
 
-const REGISTRY_CONTRACT_ADDRESS = '0xedb51a8c390fc84b1c2a40e0ae9c9882fa7b7277'
+export const REGISTRY_CONTRACT_ADDRESS =
+  '0xedb51a8c390fc84b1c2a40e0ae9c9882fa7b7277'
 const STAGING_REGISTRY_CONTRACT_ADDRESS =
   '0x2f5E320698dB89CbefB810Fa19264103d99aAFB1'
 const REGISTRY_NETWORK_ID = NetworkId['op-mainnet']
 
 const REGISTRY_START_BLOCK = 134945942 // Block where the registry contract was deployed
 
-const REWARDS_PROVIDERS: Partial<Record<Protocol, Address>> = {
+export const REWARDS_PROVIDERS: Partial<Record<Protocol, Address>> = {
   'celo-transactions': '0x5f0a55FaD9424ac99429f635dfb9bF20c3360Ab8', // celo proof of impact
   'celo-pg': '0x0423189886D7966f0DD7E7d256898DAeEE625dca',
   'scout-game-v0': '0xC95876688026BE9d6fA7a7c33328bD013efFa2Bb',

@@ -2,7 +2,7 @@ import { getBlockRange } from '../utils/events'
 import { Address, Hex, pad, toEventSelector } from 'viem'
 import { QueryResponse, Log } from '@envio-dev/hypersync-client'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
-import { getHyperSyncClient } from '../../../utils'
+import { getHyperSyncClient, getViemPublicClient } from '../../../utils'
 import { BigNumber } from 'bignumber.js'
 import { calculateKpi } from './index'
 import { getReferrerIdFromTx } from './parseReferralTag/getReferrerIdFromTx'
@@ -40,6 +40,11 @@ describe('Tether V0 Protocol KPI Calculation', () => {
     get: jest.fn(),
   } as unknown as ReturnType<typeof getHyperSyncClient>
 
+  const mockReadContract = jest.fn()
+  jest.mocked(getViemPublicClient).mockReturnValue({
+    readContract: mockReadContract,
+  } as unknown as ReturnType<typeof getViemPublicClient>)
+
   const transferEventSigHash = toEventSelector(
     'Transfer(address,address,uint256)',
   )
@@ -61,6 +66,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       endBlockExclusive: 2000,
     })
     mockGetReferrerIdFromTx.mockResolvedValue('test-referrer')
+    mockReadContract.mockResolvedValue(true)
   })
 
   describe('calculateKpi', () => {
@@ -266,6 +272,76 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       // Should count both transactions (2 per network)
       expect(result[0].kpi).toBe(16)
+    })
+
+    it('should filter out referrers who have not registered agreements with the campaign', async () => {
+      // Mock getReferrerIdFromTx to return different referrers
+      mockGetReferrerIdFromTx.mockImplementation(async (txHash: string) => {
+        if (txHash === '0xabc123') return 'registered-referrer'
+        if (txHash === '0xdef456') return 'unregistered-referrer'
+        return null
+      })
+
+      // Mock registry contract to return false for unregistered referrer
+      mockReadContract.mockImplementation(
+        async (args: { args: [string, string] }) => {
+          if (args.args[1] === 'unregistered-referrer') {
+            return false
+          }
+          return true
+        },
+      )
+
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse([
+          {
+            data: encodedValueAboveThreshold,
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xabc123',
+          },
+          {
+            data: encodedValueAboveThreshold,
+            topics: [
+              transferEventSigHash,
+              pad(testAddress, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xdef456',
+          },
+        ])
+        await onPage(mockResponse)
+      })
+
+      const result = await calculateKpi(defaultProps)
+
+      // Should only include the registered referrer
+      expect(result).toEqual([
+        {
+          kpi: 8, // 1 transaction * 8 networks
+          referrerId: 'registered-referrer',
+          userAddress: testAddress,
+          metadata: {
+            'ethereum-mainnet': 1,
+            'avalanche-mainnet': 1,
+            'celo-mainnet': 1,
+            'unichain-mainnet': 1,
+            'ink-mainnet': 1,
+            'op-mainnet': 1,
+            'arbitrum-one': 1,
+            'berachain-mainnet': 1,
+          },
+        },
+      ])
     })
 
     it('should handle malformed log data gracefully', async () => {
