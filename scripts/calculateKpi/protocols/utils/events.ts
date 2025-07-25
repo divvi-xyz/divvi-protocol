@@ -9,9 +9,9 @@ import Bottleneck from 'bottleneck'
 
 const DEFI_LLAMA_API_URL = 'https://coins.llama.fi'
 
-const NETWORK_ID_TO_DEFI_LLAMA_CHAIN: Partial<{
+const NETWORK_ID_TO_DEFI_LLAMA_CHAIN: {
   [networkId in NetworkId]: string // eslint-disable-line @typescript-eslint/no-unused-vars
-}> = {
+} = {
   [NetworkId['ethereum-mainnet']]: 'ethereum',
   [NetworkId['arbitrum-one']]: 'arbitrum',
   [NetworkId['op-mainnet']]: 'optimism',
