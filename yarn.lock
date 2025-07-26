@@ -2204,7 +2204,7 @@
   resolved "https://registry.yarnpkg.com/@redis/bloom/-/bloom-5.6.1.tgz#c77dee0167351d6415b112e1bcb41be1b1461077"
   integrity sha512-5/22U76IMEfn6TeZ+uvjXspHw+ykBF0kpBa8xouzeHaQMXs/auqBUOEYzU2VKYDvnd2RSpPTyIg82oB7PpUgLg==
 
-"@redis/client@5.6.1", "@redis/client@^5.6.0":
+"@redis/client@5.6.1", "@redis/client@^5.6.1":
   version "5.6.1"
   resolved "https://registry.yarnpkg.com/@redis/client/-/client-5.6.1.tgz#12df9692548b553b0b841a58d3aa319469906b0d"
   integrity sha512-bWHmSFIJ5w1Y4aHsYs46XMDHKQsBHFRhNcllYaBxz2Zl+lu+gbm5yI9BqxvKh48bLTs/Wx1Kns0gN2WIasE8MA==
