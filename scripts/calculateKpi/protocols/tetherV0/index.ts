@@ -11,9 +11,14 @@ import {
 } from 'viem'
 import { LogField, TransactionField } from '@envio-dev/hypersync-client'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
-import { getHyperSyncClient } from '../../../utils'
+import { getHyperSyncClient, getViemPublicClient } from '../../../utils'
 import { BigNumber } from 'bignumber.js'
 import { getReferrerIdFromTx } from './parseReferralTag/getReferrerIdFromTx'
+import { divviRegistryAbi } from '../../../../abis/DivviRegistry'
+import {
+  REGISTRY_CONTRACT_ADDRESS,
+  REWARDS_PROVIDERS,
+} from '../../../utils/referrals'
 
 const MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT = BigNumber(1).shiftedBy(6)
 const transferEventSigHash = toEventSelector(
@@ -186,6 +191,10 @@ export async function calculateKpi({
   ) => Promise<string | null>
 }): Promise<KpiResults> {
   const kpiByReferrer: Record<string, KpiResults[number]> = {}
+  const campaignEntityId = REWARDS_PROVIDERS['tether-v0']
+  if (!campaignEntityId) {
+    throw new Error('Tether V0 rewards provider not found')
+  }
 
   await Promise.all(
     (Object.entries(networkToTokenAddress) as [NetworkId, Address][]).map(
@@ -224,5 +233,25 @@ export async function calculateKpi({
     ),
   )
 
-  return Object.values(kpiByReferrer)
+  // There is an edge case where a builder could add a divvi referral tag but have not signed up for the campaign.
+  // We should exclude any referrers that have not registered agreements with the campaign on DivviRegistry.
+  const publicClientOptimism = getViemPublicClient(NetworkId['op-mainnet'])
+  const registeredReferrers = new Set<string>()
+  await Promise.all(
+    (Object.keys(kpiByReferrer) as Address[]).map(async (referrerId) => {
+      const hasAgreement = await publicClientOptimism.readContract({
+        address: REGISTRY_CONTRACT_ADDRESS,
+        abi: divviRegistryAbi,
+        functionName: 'hasAgreement',
+        args: [campaignEntityId, referrerId],
+      })
+      if (hasAgreement) {
+        registeredReferrers.add(referrerId.toLowerCase())
+      }
+    }),
+  )
+
+  return Object.values(kpiByReferrer).filter((kpi) =>
+    registeredReferrers.has(kpi.referrerId.toLowerCase()),
+  )
 }
