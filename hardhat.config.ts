@@ -85,25 +85,19 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    apiKey: {
-      alfajores: process.env.CELOSCAN_API_KEY!,
-      celo: process.env.CELOSCAN_API_KEY!,
-      arbitrumOne: process.env.ARBISCAN_API_KEY!,
-      mainnet: process.env.ETHERSCAN_API_KEY!,
-      optimisticEthereum: process.env.OPSCAN_API_KEY!,
-      base: process.env.BASESCAN_API_KEY!,
-      berachain: process.env.BERASCAN_API_KEY!,
-      vana: process.env.VANASCAN_API_KEY!,
-      polygon: process.env.POLYGONSCAN_API_KEY!,
-      mantle: process.env.ETHERSCAN_API_KEY!,
-      morph: 'anything', // Per https://docs.morphl2.io/docs/build-on-morph/build-on-morph/verify-your-smart-contracts#verify-with-hardhat
-    },
+    apiKey: process.env.ETHERSCAN_API_KEY!,
+    // If using Vana or Morph, uncomment the following
+    // This is needed because of the update to Etherscan API v2 and implications on the hardhat-verify package
+    // apiKey: {
+    //   vana: process.env.VANASCAN_API_KEY!,
+    //   morph: 'anything', // Per https://docs.morphl2.io/docs/build-on-morph/build-on-morph/verify-your-smart-contracts#verify-with-hardhat
+    // },
     customChains: [
       {
         network: 'alfajores',
         chainId: 44787,
         urls: {
-          apiURL: 'https://api-alfajores.celoscan.io/api',
+          apiURL: 'https://api.etherscan.io/v2/api',
           browserURL: 'https://alfajores.celoscan.io',
         },
       },
@@ -111,7 +105,7 @@ const config: HardhatUserConfig = {
         network: 'celo',
         chainId: 42220,
         urls: {
-          apiURL: 'https://api.celoscan.io/api',
+          apiURL: 'https://api.etherscan.io/v2/api',
           browserURL: 'https://celoscan.io/',
         },
       },
@@ -119,7 +113,7 @@ const config: HardhatUserConfig = {
         network: 'berachain',
         chainId: 80094,
         urls: {
-          apiURL: 'https://api.berascan.com/api',
+          apiURL: 'https://api.etherscan.io/v2/api',
           browserURL: 'https://berascan.com/',
         },
       },
