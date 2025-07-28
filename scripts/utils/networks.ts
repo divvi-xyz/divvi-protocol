@@ -13,6 +13,7 @@ import {
   Chain,
   mainnet,
   mantle,
+  morph,
 } from 'viem/chains'
 
 export const supportedNetworkIds = [
@@ -37,6 +38,7 @@ export const NETWORK_ID_TO_HYPERSYNC_URL = {
   [NetworkId['avalanche-mainnet']]: 'https://avalanche.hypersync.xyz',
   [NetworkId['berachain-mainnet']]: 'https://berachain.hypersync.xyz',
   [NetworkId['mantle-mainnet']]: 'https://mantle.hypersync.xyz',
+  [NetworkId['morph-mainnet']]: 'https://morph.hypersync.xyz',
 } satisfies Record<NetworkId, string>
 
 export const NETWORK_ID_TO_VIEM_CHAIN = {
@@ -52,4 +54,5 @@ export const NETWORK_ID_TO_VIEM_CHAIN = {
   [NetworkId['avalanche-mainnet']]: avalanche,
   [NetworkId['berachain-mainnet']]: berachain,
   [NetworkId['mantle-mainnet']]: mantle,
+  [NetworkId['morph-mainnet']]: morph,
 } satisfies Record<NetworkId, Chain>
