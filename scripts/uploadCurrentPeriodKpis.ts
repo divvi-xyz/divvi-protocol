@@ -8,22 +8,24 @@ import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import yargs from 'yargs'
 import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
-import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV0'
 import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
-import { main as calculateRewardsBaseV0 } from './calculateRewards/baseV0'
-import { main as calculateRewardsTetherV0 } from './calculateRewards/tetherV0'
-import { main as calculateRewardsMantleV0 } from './calculateRewards/mantleV0'
 import { main as calculateRewardSlices } from './calculateRewards/slices'
+import { calculateSqrtProportionalRewards } from './calculateRewards/sqrtProportionalRewards'
+import { calculateLinearProportionalRewards } from './calculateRewards/linearProportionalRewards'
 
 export interface Campaign {
   protocol: Protocol
   rewardsPeriods: {
     startTimestamp: string
     endTimestampExclusive: string
+    rewardPoolAddress: string
+    rewardAmountInWei: string
     calculateRewards?: (args: {
       resultDirectory: ResultDirectory
       startTimestamp: string
       endTimestampExclusive: string
+      rewardPoolAddress: string
+      rewardAmountInWei: string
     }) => Promise<void>
     calculateRewardSlices?: (args: {
       resultDirectory: ResultDirectory
@@ -40,6 +42,8 @@ const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-05-15T00:00:00Z',
         endTimestampExclusive: '2025-06-01T00:00:00Z',
+        rewardPoolAddress: '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3',
+        rewardAmountInWei: '25000000000000000000000',
         calculateRewards: async ({
           resultDirectory,
           startTimestamp,
@@ -48,6 +52,8 @@ const campaigns: Campaign[] = [
           resultDirectory: ResultDirectory
           startTimestamp: string
           endTimestampExclusive: string
+          rewardPoolAddress: string
+          rewardAmountInWei: string
         }) => {
           await calculateRewardsCeloPG({
             resultDirectory,
@@ -78,6 +84,8 @@ const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-06-01T00:00:00Z',
         endTimestampExclusive: '2025-07-01T00:00:00Z',
+        rewardPoolAddress: '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3',
+        rewardAmountInWei: '50000000000000000000000',
         calculateRewards: async ({
           resultDirectory,
           startTimestamp,
@@ -86,6 +94,8 @@ const campaigns: Campaign[] = [
           resultDirectory: ResultDirectory
           startTimestamp: string
           endTimestampExclusive: string
+          rewardPoolAddress: string
+          rewardAmountInWei: string
         }) => {
           await calculateRewardsCeloPG({
             resultDirectory,
@@ -116,6 +126,8 @@ const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-07-01T00:00:00Z',
         endTimestampExclusive: '2025-08-01T00:00:00Z',
+        rewardPoolAddress: '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3',
+        rewardAmountInWei: '75000000000000000000000',
         calculateRewards: async ({
           resultDirectory,
           startTimestamp,
@@ -124,6 +136,8 @@ const campaigns: Campaign[] = [
           resultDirectory: ResultDirectory
           startTimestamp: string
           endTimestampExclusive: string
+          rewardPoolAddress: string
+          rewardAmountInWei: string
         }) => {
           await calculateRewardsCeloPG({
             resultDirectory,
@@ -137,92 +151,13 @@ const campaigns: Campaign[] = [
     ],
   },
   {
-    protocol: 'scout-game-v0',
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-06-03T00:00:00Z',
-        endTimestampExclusive: '2025-06-10T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
-        }) => {
-          await calculateRewardsScoutGame({
-            resultDirectory,
-            startTimestamp: new Date(startTimestamp),
-            endTimestampExclusive: new Date(endTimestampExclusive),
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-06-10T00:00:00Z',
-        endTimestampExclusive: '2025-06-17T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
-        }) => {
-          await calculateRewardsScoutGame({
-            resultDirectory,
-            startTimestamp: new Date(startTimestamp),
-            endTimestampExclusive: new Date(endTimestampExclusive),
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-06-17T00:00:00Z',
-        endTimestampExclusive: '2025-06-24T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
-        }) => {
-          await calculateRewardsScoutGame({
-            resultDirectory,
-            startTimestamp: new Date(startTimestamp),
-            endTimestampExclusive: new Date(endTimestampExclusive),
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-06-24T00:00:00Z',
-        endTimestampExclusive: '2025-07-01T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
-        }) => {
-          await calculateRewardsScoutGame({
-            resultDirectory,
-            startTimestamp: new Date(startTimestamp),
-            endTimestampExclusive: new Date(endTimestampExclusive),
-          })
-        },
-      },
-    ],
-  },
-  {
     protocol: 'lisk-v0',
     rewardsPeriods: [
       {
         startTimestamp: '2025-06-05T00:00:00Z',
         endTimestampExclusive: '2025-07-01T00:00:00Z',
+        rewardPoolAddress: '0xBBF7B15C819102B137A96703E63eCF1c3d57CC68',
+        rewardAmountInWei: '15000000000000000000000',
         calculateRewards: async ({
           resultDirectory,
           startTimestamp,
@@ -243,6 +178,8 @@ const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-07-01T00:00:00Z',
         endTimestampExclusive: '2025-08-01T00:00:00Z',
+        rewardPoolAddress: '0xBBF7B15C819102B137A96703E63eCF1c3d57CC68',
+        rewardAmountInWei: '15000000000000000000000',
         calculateRewards: async ({
           resultDirectory,
           startTimestamp,
@@ -268,21 +205,9 @@ const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-06-30T00:00:00Z',
         endTimestampExclusive: '2025-08-01T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
-        }) => {
-          await calculateRewardsBaseV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-          })
-        },
+        rewardPoolAddress: '0xA2a4C1eb286a2EfA470d42676081B771bbe9C1c8',
+        rewardAmountInWei: '1000000000',
+        calculateRewards: calculateSqrtProportionalRewards,
       },
     ],
   },
@@ -292,42 +217,16 @@ const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-07-28T00:00:00Z',
         endTimestampExclusive: '2025-08-30T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
-        }) => {
-          await calculateRewardsTetherV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '5000000000', // 5000 USDT
-          })
-        },
+        rewardPoolAddress: '0xB575210cdF52B18000aE24Be4981e9ABC7716F98',
+        rewardAmountInWei: '5000000000',
+        calculateRewards: calculateLinearProportionalRewards,
       },
       {
         startTimestamp: '2025-08-30T00:00:00Z',
         endTimestampExclusive: '2025-09-30T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
-        }) => {
-          await calculateRewardsTetherV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '10000000000', // 10000 USDT
-          })
-        },
+        rewardPoolAddress: '0xB575210cdF52B18000aE24Be4981e9ABC7716F98',
+        rewardAmountInWei: '10000000000',
+        calculateRewards: calculateLinearProportionalRewards,
       },
     ],
   },
@@ -337,40 +236,16 @@ const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-08-01T00:00:00Z',
         endTimestampExclusive: '2025-08-30T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
-        }) => {
-          await calculateRewardsMantleV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-          })
-        },
+        rewardPoolAddress: '0xb5dB5E98B41bF6081Da271eaC95C70d46D5B5Ed2',
+        rewardAmountInWei: '0', // TODO: add reward amount per distribution ($2.5k in $MNT) once funded
+        calculateRewards: calculateSqrtProportionalRewards,
       },
       {
         startTimestamp: '2025-08-30T00:00:00Z',
         endTimestampExclusive: '2025-09-30T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
-        }) => {
-          await calculateRewardsMantleV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-          })
-        },
+        rewardPoolAddress: '0xb5dB5E98B41bF6081Da271eaC95C70d46D5B5Ed2',
+        rewardAmountInWei: '0', // TODO: add reward amount per distribution ($2.5k in $MNT) once funded
+        calculateRewards: calculateSqrtProportionalRewards,
       },
     ],
   },
@@ -531,6 +406,8 @@ export async function uploadCurrentPeriodKpis(
         resultDirectory,
         startTimestamp: currentPeriod.startTimestamp,
         endTimestampExclusive: currentPeriod.endTimestampExclusive,
+        rewardPoolAddress: currentPeriod.rewardPoolAddress,
+        rewardAmountInWei: currentPeriod.rewardAmountInWei,
       })
       const rewardsFilePathCsv = join(outputDir, 'rewards.csv')
       const rewardsFilePathJson = join(outputDir, 'rewards.json')
