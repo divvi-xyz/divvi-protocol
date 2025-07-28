@@ -86,7 +86,7 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY!,
-    // If using Vana or Morph, uncomment the following
+    // If using Vana or Morph, uncomment the following, and comment out the apiKey above
     // This is needed because of the update to Etherscan API v2 and implications on the hardhat-verify package
     // apiKey: {
     //   vana: process.env.VANASCAN_API_KEY!,
