@@ -68,30 +68,14 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 137,
     },
-    vana: {
-      url: 'https://rpc.vana.org',
-      accounts,
-      chainId: 1480,
-    },
     mantle: {
       url: 'https://mantle-mainnet.g.alchemy.com/public',
       accounts,
       chainId: 5000,
     },
-    morph: {
-      url: 'https://rpc-quicknode.morphl2.io',
-      accounts,
-      chainId: 2818,
-    },
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY!,
-    // If using Vana or Morph, uncomment the following, and comment out the apiKey above
-    // This is needed because of the update to Etherscan API v2 and implications on the hardhat-verify package
-    // apiKey: {
-    //   vana: process.env.VANASCAN_API_KEY!,
-    //   morph: 'anything', // Per https://docs.morphl2.io/docs/build-on-morph/build-on-morph/verify-your-smart-contracts#verify-with-hardhat
-    // },
     customChains: [
       {
         network: 'alfajores',
@@ -118,27 +102,11 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        network: 'vana',
-        chainId: 1480,
-        urls: {
-          apiURL: 'https://vanascan.io/api',
-          browserURL: 'https://vanascan.io/',
-        },
-      },
-      {
         network: 'mantle',
         chainId: 5000,
         urls: {
           apiURL: 'https://api.etherscan.io/v2/api',
           browserURL: 'https://mantlescan.xyz/',
-        },
-      },
-      {
-        network: 'morph',
-        chainId: 2818,
-        urls: {
-          apiURL: 'https://explorer-api.morphl2.io/api? ',
-          browserURL: 'https://explorer.morphl2.io/',
         },
       },
     ],
