@@ -1,6 +1,6 @@
 import memoize from '@github/memoize'
 import { Address } from 'viem'
-import BigNumber from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 import { NetworkId } from '../../../../types'
 import { getViemPublicClient } from '../../../../utils'
 import { oracleAbi } from '../../../../abis/aave/oracle'

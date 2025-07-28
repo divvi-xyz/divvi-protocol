@@ -71,6 +71,7 @@ const campaigns: Campaign[] = [
             startTimestamp,
             endTimestampExclusive,
             rewardAmount: '100000',
+            rewardType: 'builder',
           })
         },
       },
@@ -108,6 +109,7 @@ const campaigns: Campaign[] = [
             startTimestamp,
             endTimestampExclusive,
             rewardAmount: '200000',
+            rewardType: 'builder',
           })
         },
       },

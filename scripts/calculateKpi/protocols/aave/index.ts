@@ -1,5 +1,5 @@
 import { Address } from 'viem'
-import BigNumber from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 import { SUPPORTED_NETWORKS, SupportedNetwork } from './config'
 import { RAY, rayDiv, rayMul } from './math'
 import { calculateOverlap, createSegments } from './utils'

@@ -1,6 +1,6 @@
 import yargs from 'yargs'
 import { formatEther, parseEther } from 'viem'
-import BigNumber from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
 import { KpiRow, ResultDirectory } from '../../src/resultDirectory'

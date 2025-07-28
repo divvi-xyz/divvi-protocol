@@ -1,8 +1,11 @@
 import yargs from 'yargs'
 import { parseEther } from 'viem'
-import BigNumber from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 import { ResultDirectory } from '../../src/resultDirectory'
-import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
+import {
+  calculateSqrtProportionalPriceByUser,
+  calculateSqrtProportionalPrizeContest,
+} from '../../src/proportionalPrizeContest'
 
 function parseArgs() {
   const args = yargs
@@ -34,6 +37,13 @@ function parseArgs() {
       type: 'string',
       demandOption: true,
     })
+    .option('reward-type', {
+      alias: 't',
+      description: 'the type of reward to calculate',
+      type: 'string',
+      demandOption: true,
+      choices: ['builder', 'user'],
+    })
     .strict()
     .parseSync()
 
@@ -47,6 +57,7 @@ function parseArgs() {
     startTimestamp: args['start-timestamp'],
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
+    rewardType: args['reward-type'] as 'builder' | 'user',
   }
 }
 
@@ -55,7 +66,12 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const rewardAmount = args.rewardAmount
   const kpiData = await resultDirectory.readKpi()
 
-  const slicesRewards = calculateSqrtProportionalPrizeContest({
+  const rewardsFunction =
+    args.rewardType === 'builder'
+      ? calculateSqrtProportionalPrizeContest
+      : calculateSqrtProportionalPriceByUser
+
+  const slicesRewards = rewardsFunction({
     kpiData,
     rewards: new BigNumber(parseEther(rewardAmount)),
     excludedReferrers: {},
@@ -68,7 +84,11 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     return { ...reward, rewardAmount: rounded.toString() }
   })
 
-  await resultDirectory.writeBuilderSlices(slicesRewards)
+  if (args.rewardType === 'builder') {
+    await resultDirectory.writeBuilderSlices(slicesRewards)
+  } else {
+    await resultDirectory.writeUserSlices(slicesRewards)
+  }
 }
 
 // Only run main if this file is being executed directly

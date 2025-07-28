@@ -1,17 +1,13 @@
 import { NetworkId } from '../types'
 import { registryContractAbi } from '../../abis/Registry'
 import ERC20Abi from '../abis/ERC20'
-import { mainnet, arbitrum, optimism, polygon, base, celo } from 'viem/chains'
-import {
-  createPublicClient,
-  http,
-  getContract,
-  Address,
-  PublicClient,
-} from 'viem'
+import { createPublicClient, http, getContract, Address } from 'viem'
 import memoize from '@github/memoize'
 import * as dotenv from 'dotenv'
-import { NETWORK_ID_TO_HYPERSYNC_URL } from './networks'
+import {
+  NETWORK_ID_TO_HYPERSYNC_URL,
+  NETWORK_ID_TO_VIEM_CHAIN,
+} from './networks'
 import { HypersyncClient } from '@envio-dev/hypersync-client'
 
 dotenv.config()
@@ -19,98 +15,52 @@ dotenv.config()
 // Make sure the alchemy key has all our supported networks enabled
 const ALCHEMY_KEY = process.env.ALCHEMY_KEY
 
-export const NETWORK_ID_TO_ALCHEMY_RPC_URL: Partial<Record<NetworkId, string>> =
-  {
-    [NetworkId['ethereum-mainnet']]: 'https://eth-mainnet.g.alchemy.com/v2/',
-    [NetworkId['arbitrum-one']]: 'https://arb-mainnet.g.alchemy.com/v2/',
-    [NetworkId['op-mainnet']]: 'https://opt-mainnet.g.alchemy.com/v2/',
-    [NetworkId['polygon-pos-mainnet']]:
-      'https://polygon-mainnet.g.alchemy.com/v2/',
-    [NetworkId['base-mainnet']]: 'https://base-mainnet.g.alchemy.com/v2/',
-    [NetworkId['celo-mainnet']]: 'https://celo-mainnet.g.alchemy.com/v2/',
-  }
-
-const NETWORK_ID_TO_VIEM_CLIENT = {
-  [NetworkId['ethereum-mainnet']]: createPublicClient({
-    chain: mainnet,
-    batch: { multicall: true },
-    transport: ALCHEMY_KEY
-      ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['ethereum-mainnet']], {
-          fetchOptions: {
-            headers: {
-              Authorization: `Bearer ${ALCHEMY_KEY}`,
-            },
-          },
-        })
-      : http(),
-  }),
-  [NetworkId['arbitrum-one']]: createPublicClient({
-    chain: arbitrum,
-    batch: { multicall: true },
-    transport: ALCHEMY_KEY
-      ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['arbitrum-one']], {
-          fetchOptions: {
-            headers: {
-              Authorization: `Bearer ${ALCHEMY_KEY}`,
-            },
-          },
-        })
-      : http(),
-  }),
-  [NetworkId['op-mainnet']]: createPublicClient({
-    chain: optimism,
-    batch: { multicall: true },
-    transport: ALCHEMY_KEY
-      ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['op-mainnet']], {
-          fetchOptions: {
-            headers: {
-              Authorization: `Bearer ${ALCHEMY_KEY}`,
-            },
-          },
-        })
-      : http(),
-  }),
-  [NetworkId['celo-mainnet']]: createPublicClient({
-    chain: celo,
-    transport: http(),
-  }),
-  [NetworkId['polygon-pos-mainnet']]: createPublicClient({
-    chain: polygon,
-    batch: { multicall: true },
-    transport: ALCHEMY_KEY
-      ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['polygon-pos-mainnet']], {
-          fetchOptions: {
-            headers: {
-              Authorization: `Bearer ${ALCHEMY_KEY}`,
-            },
-          },
-        })
-      : http(),
-  }),
-  [NetworkId['base-mainnet']]: createPublicClient({
-    chain: base,
-    batch: { multicall: true },
-    transport: ALCHEMY_KEY
-      ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[NetworkId['base-mainnet']], {
-          fetchOptions: {
-            headers: {
-              Authorization: `Bearer ${ALCHEMY_KEY}`,
-            },
-          },
-        })
-      : http(),
-  }),
-} as unknown as Partial<Record<NetworkId, PublicClient>>
+export const NETWORK_ID_TO_ALCHEMY_RPC_URL: Record<
+  NetworkId,
+  string | undefined
+> = {
+  [NetworkId['ethereum-mainnet']]: 'https://eth-mainnet.g.alchemy.com/v2/',
+  [NetworkId['arbitrum-one']]: 'https://arb-mainnet.g.alchemy.com/v2/',
+  [NetworkId['op-mainnet']]: 'https://opt-mainnet.g.alchemy.com/v2/',
+  [NetworkId['polygon-pos-mainnet']]:
+    'https://polygon-mainnet.g.alchemy.com/v2/',
+  [NetworkId['base-mainnet']]: 'https://base-mainnet.g.alchemy.com/v2/',
+  [NetworkId['celo-mainnet']]: 'https://celo-mainnet.g.alchemy.com/v2/',
+  [NetworkId['lisk-mainnet']]: undefined, // Lisk is not supported by Alchemy at the time of writing
+  [NetworkId['avalanche-mainnet']]: 'https://avax-mainnet.g.alchemy.com/v2/',
+  [NetworkId['ink-mainnet']]: 'https://ink-mainnet.g.alchemy.com/v2/',
+  [NetworkId['unichain-mainnet']]: 'https://unichain-mainnet.g.alchemy.com/v2/',
+  [NetworkId['berachain-mainnet']]:
+    'https://berachain-mainnet.g.alchemy.com/v2/',
+  [NetworkId['mantle-mainnet']]: 'https://mantle-mainnet.g.alchemy.com/v2/',
+}
 
 /**
  * Gets a public Viem client for a given NetworkId
  */
 export function getViemPublicClient(networkId: NetworkId) {
-  const client = NETWORK_ID_TO_VIEM_CLIENT[networkId]
-  if (!client) {
-    throw new Error(`No viem client found for networkId: ${networkId}`)
+  // there are some networks that don't fit the usual viem client pattern
+  // so we handle them separately
+  if (networkId === NetworkId['celo-mainnet']) {
+    return createPublicClient({
+      chain: NETWORK_ID_TO_VIEM_CHAIN[networkId],
+      transport: http(),
+    })
   }
-  return client
+
+  return createPublicClient({
+    chain: NETWORK_ID_TO_VIEM_CHAIN[networkId],
+    batch: { multicall: true },
+    transport: ALCHEMY_KEY
+      ? http(NETWORK_ID_TO_ALCHEMY_RPC_URL[networkId], {
+          fetchOptions: {
+            headers: {
+              Authorization: `Bearer ${ALCHEMY_KEY}`,
+            },
+          },
+        })
+      : http(),
+  })
 }
 
 // Hypersync Client Factory (Lazy Singleton)

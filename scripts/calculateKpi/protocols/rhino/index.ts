@@ -11,7 +11,7 @@ import { BridgeTransaction } from './types'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { Address, decodeEventLog, Hex, isAddress, zeroAddress } from 'viem'
 import { getBlockRange } from '../utils/events'
-import BigNumber from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 import { rhinoFiBridgeAbi } from '../../../abis/RhinoFiBridge'
 
 /**

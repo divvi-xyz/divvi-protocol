@@ -1,11 +1,11 @@
 import yargs from 'yargs'
-import BigNumber from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
 import { getDivviRewardsExcludedReferrers } from '../utils/divviRewardsExcludedReferrers'
 
-const REWARD_POOL_ADDRESS = '0x0000000000000000000000000000000000000000' // TODO: add reward pool address
+const REWARD_POOL_ADDRESS = '0xb5dB5E98B41bF6081Da271eaC95C70d46D5B5Ed2' // on mantle mainnet
 const REWARD_AMOUNT_PER_DISTRIBUTION = '0' // TODO: add reward amount per distribution ($2.5k in $MNT)
 
 function parseArgs() {

@@ -1,7 +1,8 @@
 import { expect } from 'chai'
-import BigNumber from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 import {
   calculateProportionalPrizeContest,
+  calculateSqrtProportionalPriceByUser,
   calculateSqrtProportionalPrizeContest,
 } from './proportionalPrizeContest'
 
@@ -222,6 +223,53 @@ describe('calculateSqrtProportionalPrizeContest', () => {
         kpi: 10n,
         referralCount: 2,
       },
+    ])
+  })
+})
+
+describe('calculateSqrtProportionalPriceByUser', () => {
+  it('should calculate rewards proportionally based on KPI raised to power', () => {
+    const kpiData = [
+      { referrerId: 'ref1', userAddress: 'user1', kpi: '1' },
+      { referrerId: 'ref1', userAddress: 'user2', kpi: '16' },
+      { referrerId: 'ref1', userAddress: 'user3', kpi: '12' },
+      { referrerId: 'ref2', userAddress: 'user3', kpi: '13' },
+      { referrerId: 'ref2', userAddress: 'user4', kpi: '0' },
+    ]
+
+    const result = calculateSqrtProportionalPriceByUser({
+      kpiData,
+      rewards: new BigNumber('1000'),
+    })
+
+    // user1: sqrt(1) = 1, user2: sqrt(16) = 4, user3: sqrt(12+13) = 5, user4: sqrt(0) = 0
+    // Total power: 1 + 4 + 5 + 0 = 10
+    // user1: 1/10 = 10% of rewards = 100
+    // user2: 4/10 = 40% of rewards = 400
+    // user3: 5/10 = 50% of rewards = 500
+    // user4: 0/10 = 0% of rewards = 0
+    expect(result).to.deep.equal([
+      { userAddress: 'user1', kpi: 1n, referralCount: 1, rewardAmount: '100' },
+      { userAddress: 'user2', kpi: 16n, referralCount: 1, rewardAmount: '400' },
+      { userAddress: 'user3', kpi: 25n, referralCount: 2, rewardAmount: '500' },
+      { userAddress: 'user4', kpi: 0n, referralCount: 1, rewardAmount: '0' },
+    ])
+  })
+
+  it('should handle all users having zero KPI', () => {
+    const kpiData = [
+      { referrerId: 'ref1', userAddress: 'user1', kpi: '0' },
+      { referrerId: 'ref1', userAddress: 'user2', kpi: '0' },
+    ]
+
+    const result = calculateSqrtProportionalPriceByUser({
+      kpiData,
+      rewards: new BigNumber('1000'),
+    })
+
+    expect(result).to.deep.equal([
+      { userAddress: 'user1', kpi: 0n, referralCount: 1, rewardAmount: '0' },
+      { userAddress: 'user2', kpi: 0n, referralCount: 1, rewardAmount: '0' },
     ])
   })
 })
