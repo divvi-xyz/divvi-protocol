@@ -12,7 +12,7 @@ yarn install
 yarn test
 ```
 
-Note: When running any hardhat command, you need to specify the config file. For Vana and Morph, use `--config hardhat.v1.config.ts`, for all other chains use `--config hardhat.v2.config.ts`
+Note: When running any hardhat command for Vana and Morph, you need to specify the config file, use `--config hardhat.v1.config.ts`.
 
 ## Local testnet
 
