@@ -125,7 +125,7 @@ export async function fetchReferrals(
       users: new Set(uniqueEvents.map((event) => event.userAddress)),
       startTimestamp,
       endTimestampExclusive,
-      redis
+      redis,
     })
     qualifyingEvents = qualifyingReferralEvents
   }
