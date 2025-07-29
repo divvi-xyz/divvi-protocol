@@ -24,6 +24,7 @@ const NETWORK_ID_TO_DEFI_LLAMA_CHAIN: {
   [NetworkId['avalanche-mainnet']]: 'avax',
   [NetworkId['berachain-mainnet']]: 'berachain',
   [NetworkId['mantle-mainnet']]: 'mantle',
+  [NetworkId['morph-mainnet']]: 'morph',
 }
 
 /**
