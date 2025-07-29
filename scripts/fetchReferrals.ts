@@ -8,6 +8,7 @@ import { toPeriodFolderName } from './utils/dateFormatting'
 import { dirname, join } from 'path'
 import { closeRedisClient, getRedisClient } from '../src/redis'
 import { findQualifyingNetworkReferral } from './findQualifyingReferral/qualifyingNetworkReferral'
+import { RedisClientType } from '@redis/client'
 
 const protocolToQualifyingReferralFinder: Partial<
   Record<
@@ -16,10 +17,12 @@ const protocolToQualifyingReferralFinder: Partial<
       users,
       startTimestamp,
       endTimestampExclusive,
+      redis,
     }: {
       users: Set<string>
       startTimestamp: Date
       endTimestampExclusive: Date
+      redis?: RedisClientType
     }) => Promise<ReferralEvent[]>
   >
 > = {
@@ -122,6 +125,7 @@ export async function fetchReferrals(
       users: new Set(uniqueEvents.map((event) => event.userAddress)),
       startTimestamp,
       endTimestampExclusive,
+      redis
     })
     qualifyingEvents = qualifyingReferralEvents
   }
