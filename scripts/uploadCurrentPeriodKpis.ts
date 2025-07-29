@@ -53,12 +53,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
-          rewardPoolAddress: string
-          rewardAmountInWei: string
         }) => {
           await calculateRewardsCeloPG({
             resultDirectory,
@@ -72,10 +66,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardSlices({
             resultDirectory,
@@ -95,12 +85,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
-          rewardPoolAddress: string
-          rewardAmountInWei: string
         }) => {
           await calculateRewardsCeloPG({
             resultDirectory,
@@ -114,10 +98,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardSlices({
             resultDirectory,
@@ -137,12 +117,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
-          rewardPoolAddress: string
-          rewardAmountInWei: string
         }) => {
           await calculateRewardsCeloPG({
             resultDirectory,
@@ -168,10 +142,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsLiskV0({
             resultDirectory,
@@ -190,10 +160,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsLiskV0({
             resultDirectory,
@@ -254,6 +220,25 @@ const campaigns: Campaign[] = [
         endTimestampExclusive: '2025-09-30T00:00:00Z',
         rewardPoolAddress: '0xb5dB5E98B41bF6081Da271eaC95C70d46D5B5Ed2',
         rewardAmountInWei: '0', // TODO: add reward amount per distribution ($2.5k in $MNT) once funded
+        calculateRewards: calculateSqrtProportionalRewards,
+      },
+    ],
+  },
+  {
+    protocol: 'morph',
+    rewardsPeriods: [
+      {
+        startTimestamp: '2025-08-01T00:00:00Z',
+        endTimestampExclusive: '2025-08-30T00:00:00Z',
+        rewardPoolAddress: '0x0000000000000000000000000000000000000000', // on Morph mainnet (TODO: fill this in after ENG-527 is done)
+        rewardAmountInWei: '0', // TODO: add reward amount per distribution ($15k in $MNT) once funded
+        calculateRewards: calculateSqrtProportionalRewards,
+      },
+      {
+        startTimestamp: '2025-08-30T00:00:00Z',
+        endTimestampExclusive: '2025-09-30T00:00:00Z',
+        rewardPoolAddress: '0x0000000000000000000000000000000000000000', // on Morph mainnet (TODO: fill this in after ENG-527 is done)
+        rewardAmountInWei: '0', // TODO: add reward amount per distribution ($15k in $MNT) once funded
         calculateRewards: calculateSqrtProportionalRewards,
       },
     ],
