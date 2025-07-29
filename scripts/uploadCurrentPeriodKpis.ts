@@ -1,7 +1,6 @@
-import { Protocol } from './types'
+import { CalculateKpiFn, NetworkId, Protocol } from './types'
 import { fetchReferrals } from './fetchReferrals'
 import { protocolFilters } from './protocolFilters'
-import { calculateKpi } from './calculateKpi'
 import { join } from 'path'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
@@ -12,9 +11,14 @@ import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
 import { main as calculateRewardSlices } from './calculateRewards/slices'
 import { calculateSqrtProportionalRewards } from './calculateRewards/sqrtProportionalRewards'
 import { calculateLinearProportionalRewards } from './calculateRewards/linearProportionalRewards'
+import { calculateTxKpi } from './calculateKpi/txKpi'
+import { _calculateKpiBatch } from './calculateKpi'
+import { closeRedisClient, getRedisClient } from '../src/redis'
+import { calculateKpi as calculateKpiTetherV0 } from './calculateKpi/protocols/tetherV0'
 
 export interface Campaign {
   protocol: Protocol
+  calculateKpi?: CalculateKpiFn
   rewardsPeriods: {
     startTimestamp: string
     endTimestampExclusive: string
@@ -38,6 +42,7 @@ export interface Campaign {
 const campaigns: Campaign[] = [
   {
     protocol: 'celo-pg',
+    calculateKpi: (params) => calculateTxKpi({ ...params, networkId: NetworkId['celo-mainnet'] }),
     rewardsPeriods: [
       {
         startTimestamp: '2025-05-15T00:00:00Z',
@@ -152,6 +157,7 @@ const campaigns: Campaign[] = [
   },
   {
     protocol: 'lisk-v0',
+    calculateKpi: (params) => calculateTxKpi({ ...params, networkId: NetworkId['lisk-mainnet'] }),
     rewardsPeriods: [
       {
         startTimestamp: '2025-06-05T00:00:00Z',
@@ -201,6 +207,7 @@ const campaigns: Campaign[] = [
   },
   {
     protocol: 'base-v0',
+    calculateKpi: (params) => calculateTxKpi({ ...params, networkId: NetworkId['base-mainnet'] }),
     rewardsPeriods: [
       {
         startTimestamp: '2025-06-30T00:00:00Z',
@@ -213,6 +220,7 @@ const campaigns: Campaign[] = [
   },
   {
     protocol: 'tether-v0',
+    calculateKpi: calculateKpiTetherV0,
     rewardsPeriods: [
       {
         startTimestamp: '2025-07-28T00:00:00Z',
@@ -232,6 +240,7 @@ const campaigns: Campaign[] = [
   },
   {
     protocol: 'mantle-v0',
+    calculateKpi: (params) => calculateTxKpi({ ...params, networkId: NetworkId['mantle-mainnet'] }),
     rewardsPeriods: [
       {
         startTimestamp: '2025-08-01T00:00:00Z',
@@ -385,13 +394,26 @@ export async function uploadCurrentPeriodKpis(
     )
 
     const calculateKpiStartTime = Date.now()
-    await calculateKpi({
-      resultDirectory,
+
+    if (!campaign.calculateKpi) {
+      console.log(`Campaign ${campaign.protocol} does not have a calculateKpi function, skipping`)
+      continue
+    }
+
+    const redis = args.redisConnection ? await getRedisClient(args.redisConnection) : undefined
+
+    const allKpi = await _calculateKpiBatch({
+      eligibleUsers: [],
+      batchSize: 1000,
+      startTimestamp: new Date(currentPeriod.startTimestamp),
+      endTimestampExclusive: new Date(currentPeriod.endTimestampExclusive),
       protocol: campaign.protocol,
-      startTimestamp: currentPeriod.startTimestamp,
-      endTimestampExclusive,
-      redisConnection: args.redisConnection,
+      kpiFunction: campaign.calculateKpi,
+      redis,
     })
+    await resultDirectory.writeKpi(allKpi)
+    console.log(`Wrote results to ${resultDirectory.kpiFileSuffix}.csv`)
+    await closeRedisClient()
     console.log(
       `🍾 Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,
     )
