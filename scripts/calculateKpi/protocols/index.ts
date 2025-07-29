@@ -14,6 +14,7 @@ import { calculateKpi as calculateKpiLiskV0 } from './liskV0'
 import { calculateKpi as calculateKpiTetherV0 } from './tetherV0'
 import { calculateKpi as calculateKpiBaseV0 } from './baseV0'
 import { calculateKpi as calculateKpiMantleV0 } from './mantleV0'
+import { calculateKpi as calculateKpiMorph } from './morph'
 
 /**
  * Central registry of KPI calculation handlers for all supported protocols.
@@ -55,6 +56,7 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   'tether-v0': calculateKpiTetherV0,
   'base-v0': calculateKpiBaseV0,
   'mantle-v0': calculateKpiMantleV0,
+  morph: calculateKpiMorph,
 }
 
 export default calculateKpiHandlers

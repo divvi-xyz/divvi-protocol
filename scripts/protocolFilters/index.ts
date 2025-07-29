@@ -20,6 +20,7 @@ import { filter as filterLiskV0 } from './lisk-v0'
 import { filter as filterTetherV0 } from './tether-v0'
 import { filter as filterBaseV0 } from './baseV0'
 import { filter as filterMantleV0 } from './mantleV0'
+import { filter as filterMorph } from './morph'
 
 export const protocolFilters: Record<Protocol, FilterFn> = {
   beefy: _createFilter(filterBeefy),
@@ -37,6 +38,7 @@ export const protocolFilters: Record<Protocol, FilterFn> = {
   'tether-v0': _createFilter(filterTetherV0),
   'base-v0': _createFilter(filterBaseV0),
   'mantle-v0': _createFilter(filterMantleV0),
+  morph: _createFilter(filterMorph),
 }
 
 const BATCH_SIZE = 20
