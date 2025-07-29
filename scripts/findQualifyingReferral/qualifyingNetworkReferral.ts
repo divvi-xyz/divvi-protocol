@@ -37,13 +37,17 @@ export async function findQualifyingNetworkReferral({
       ...(endBlockExclusive && { toBlock: endBlockExclusive }),
     }
     await paginateQuery(client, query, async (response) => {
-      for (let i=0; i<response.data.transactions.length; i++) {
+      for (let i = 0; i < response.data.transactions.length; i++) {
         const tx = response.data.transactions[i]
         const block = response.data.blocks[i]
         if (!tx.hash || !block.timestamp) {
-            continue
+          continue
         }
-        const referrerId = await getReferrerIdFromTx(tx.hash as Hex, networkId, true)
+        const referrerId = await getReferrerIdFromTx(
+          tx.hash as Hex,
+          networkId,
+          true,
+        )
         if (referrerId !== null) {
           qualifyingReferrals.push({
             userAddress: user,

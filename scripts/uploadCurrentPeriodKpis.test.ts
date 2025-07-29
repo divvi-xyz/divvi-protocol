@@ -129,6 +129,7 @@ describe('uploadCurrentPeriodKpis', () => {
       {
         inputCalculationTimestamp: '2025-05-20T12:30:00Z',
         expectedCalculationTimestampExclusive: '2025-05-20T12:00:00.000Z', // rounded to the nearest previous hour
+        expectedCampaignStartTimestamp: '2025-05-15T00:00:00Z',
         expectedPeriodStartTimestamp: '2025-05-15T00:00:00Z',
         expectedPeriodEndTimestampExclusive: '2025-06-01T00:00:00Z',
         testCase: 'the middle of a campaign',
@@ -136,6 +137,7 @@ describe('uploadCurrentPeriodKpis', () => {
       {
         inputCalculationTimestamp: '2025-06-01T00:30:00Z',
         expectedCalculationTimestampExclusive: '2025-06-01T00:00:00.000Z', // rounded to the nearest previous hour, end of a period
+        expectedCampaignStartTimestamp: '2025-05-15T00:00:00Z',
         expectedPeriodStartTimestamp: '2025-05-15T00:00:00Z',
         expectedPeriodEndTimestampExclusive: '2025-06-01T00:00:00Z',
         testCase: 'a period boundary',
@@ -143,6 +145,7 @@ describe('uploadCurrentPeriodKpis', () => {
       {
         inputCalculationTimestamp: '2025-08-01T00:30:00Z',
         expectedCalculationTimestampExclusive: '2025-08-01T00:00:00.000Z', // rounded to the nearest previous hour, end of a last period
+        expectedCampaignStartTimestamp: '2025-05-15T00:00:00Z',
         expectedPeriodStartTimestamp: '2025-07-01T00:00:00Z',
         expectedPeriodEndTimestampExclusive: '2025-08-01T00:00:00Z',
         testCase: 'the end of the campaign',
@@ -152,6 +155,7 @@ describe('uploadCurrentPeriodKpis', () => {
       async ({
         inputCalculationTimestamp,
         expectedCalculationTimestampExclusive,
+        expectedCampaignStartTimestamp,
         expectedPeriodStartTimestamp,
         expectedPeriodEndTimestampExclusive,
       }) => {
@@ -167,7 +171,7 @@ describe('uploadCurrentPeriodKpis', () => {
         expect(mockFetchReferrals).toHaveBeenCalledWith(
           expect.objectContaining({
             protocol: 'celo-pg',
-            startTimestamp: expectedPeriodStartTimestamp,
+            startTimestamp: expectedCampaignStartTimestamp,
             endTimestampExclusive: expectedCalculationTimestampExclusive,
           }),
         )

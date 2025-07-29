@@ -23,9 +23,21 @@ const protocolToQualifyingReferralFinder: Partial<
     }) => Promise<ReferralEvent[]>
   >
 > = {
-  'base-v0': (args) => findQualifyingNetworkReferral({...args, networkId: NetworkId['base-mainnet']}),
-  'mantle-v0': (args) => findQualifyingNetworkReferral({...args, networkId: NetworkId['mantle-mainnet']}),
-  'morph': (args) => findQualifyingNetworkReferral({...args, networkId: NetworkId['morph-mainnet']}),
+  'base-v0': (args) =>
+    findQualifyingNetworkReferral({
+      ...args,
+      networkId: NetworkId['base-mainnet'],
+    }),
+  'mantle-v0': (args) =>
+    findQualifyingNetworkReferral({
+      ...args,
+      networkId: NetworkId['mantle-mainnet'],
+    }),
+  morph: (args) =>
+    findQualifyingNetworkReferral({
+      ...args,
+      networkId: NetworkId['morph-mainnet'],
+    }),
 }
 
 async function getArgs() {
