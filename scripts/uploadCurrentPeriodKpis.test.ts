@@ -32,6 +32,8 @@ describe('uploadCurrentPeriodKpis', () => {
         {
           startTimestamp: '2025-05-15T00:00:00Z',
           endTimestampExclusive: '2025-06-01T00:00:00Z',
+          rewardPoolAddress: '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3',
+        rewardAmountInWei: '25000000000000000000000',
           calculateRewards: async ({
             resultDirectory,
             startTimestamp,
@@ -53,6 +55,8 @@ describe('uploadCurrentPeriodKpis', () => {
         {
           startTimestamp: '2025-06-01T00:00:00Z',
           endTimestampExclusive: '2025-07-01T00:00:00Z',
+          rewardPoolAddress: '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3',
+        rewardAmountInWei: '50000000000000000000000',
           calculateRewards: async ({
             resultDirectory,
             startTimestamp,
@@ -74,6 +78,8 @@ describe('uploadCurrentPeriodKpis', () => {
         {
           startTimestamp: '2025-07-01T00:00:00Z',
           endTimestampExclusive: '2025-08-01T00:00:00Z',
+          rewardPoolAddress: '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3',
+        rewardAmountInWei: '75000000000000000000000',
           calculateRewards: async ({
             resultDirectory,
             startTimestamp,
@@ -100,6 +106,8 @@ describe('uploadCurrentPeriodKpis', () => {
         {
           startTimestamp: '2025-06-01T00:00:00Z',
           endTimestampExclusive: '2025-07-01T00:00:00Z',
+          rewardPoolAddress: '0x6F599b879541d289e344e325f4D9badf8c5bB49E',
+        rewardAmountInWei: '10000000000000000000000',
         },
       ],
     },
@@ -109,6 +117,8 @@ describe('uploadCurrentPeriodKpis', () => {
         {
           startTimestamp: '2025-06-14T00:00:00Z',
           endTimestampExclusive: '2025-06-21T00:00:00Z',
+          rewardPoolAddress: '0x6F599b879541d289e344e325f4D9badf8c5bB49E',
+        rewardAmountInWei: '10000000000000000000000',
         },
       ],
     },
