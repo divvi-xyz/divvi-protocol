@@ -33,6 +33,7 @@ export const NETWORK_ID_TO_ALCHEMY_RPC_URL: Record<
   [NetworkId['berachain-mainnet']]:
     'https://berachain-mainnet.g.alchemy.com/v2/',
   [NetworkId['mantle-mainnet']]: 'https://mantle-mainnet.g.alchemy.com/v2/',
+  [NetworkId['morph-mainnet']]: undefined, // Morph is not supported by Alchemy at the time of writing
 }
 
 /**
