@@ -460,7 +460,7 @@ export async function uploadCurrentPeriodKpis(
     const fetchReferralsStartTime = Date.now()
     await fetchReferrals({
       protocol: campaign.protocol,
-      startTimestamp: currentPeriod.startTimestamp,
+      startTimestamp: campaign.rewardsPeriods[0].startTimestamp,
       endTimestampExclusive,
       outputDir,
       useStaging: false,
