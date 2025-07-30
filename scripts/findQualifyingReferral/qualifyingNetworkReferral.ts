@@ -1,12 +1,17 @@
-import { BlockField, TransactionField } from '@envio-dev/hypersync-client'
+import {
+  BlockField,
+  TransactionField,
+} from '@envio-dev/hypersync-client'
 import { getBlockRange } from '../calculateKpi/protocols/utils/events'
 import { NetworkId, ReferralEvent } from '../types'
 import { getHyperSyncClient } from '../utils'
 import { paginateQuery } from '../utils/hypersyncPagination'
 import { getReferrerIdFromTx } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getReferrerIdFromTx'
-import { Hex } from 'viem'
+import { Address, Hex } from 'viem'
 import { RedisClientType } from '@redis/client'
 import Bottleneck from 'bottleneck'
+import { TransactionInfo } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getTransactionInfo'
+import { getUserOperations } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getUserOperations'
 
 const limiter = new Bottleneck({
   reservoir: 200, // initial number of available requests
@@ -32,7 +37,21 @@ async function findQualifyingNetworkReferralForUser({
     transactions: [{ from: [user] }],
     fieldSelection: {
       block: [BlockField.Timestamp],
-      transaction: [TransactionField.Hash],
+      transaction: [
+        TransactionField.Hash,
+        TransactionField.From,
+        TransactionField.To,
+        TransactionField.Input,
+      ],
+      /*
+      logs: [
+        LogField.Topic0,
+        LogField.Topic1,
+        LogField.Topic2,
+        LogField.Topic3,
+        LogField.Data,
+      ],
+      */
     },
     fromBlock: startBlock ?? 0,
     ...(endBlockExclusive && { toBlock: endBlockExclusive }),
@@ -41,13 +60,46 @@ async function findQualifyingNetworkReferralForUser({
     for (let i = 0; i < response.data.transactions.length; i++) {
       const tx = response.data.transactions[i]
       const block = response.data.blocks[i]
+
       if (!tx.hash || !block.timestamp) {
         continue
       }
+
+      let transactionInfo: TransactionInfo | null = null
+      // Try to extract UserOperations to determine transaction type
+      const userOperations = getUserOperations({
+        to: tx.to as Address,
+        calldata: tx.input as Hex,
+        logs: [], //response.data.logs[i],
+      })
+      if (userOperations.length > 0) {
+        // This is an Account Abstraction transaction
+        transactionInfo = {
+          hash: tx.hash as Hex,
+          type: 'transaction',
+          transactionType: 'account-abstraction-bundle',
+          from: tx.from as Address,
+          to: tx.to as Address,
+          calldata: tx.input as Hex,
+          userOperations,
+        }
+      } else {
+        // This is a regular transaction
+        transactionInfo = {
+          hash: tx.hash as Hex,
+          type: 'transaction',
+          transactionType: 'regular',
+          from: tx.from as Address,
+          to: tx.to as Address,
+          calldata: tx.input as Hex,
+        }
+      }
+
       const referrerId = await getReferrerIdFromTx(
         tx.hash as Hex,
         networkId,
         true,
+        transactionInfo,
       )
       if (referrerId !== null) {
         qualifyingNetworkReferral = {
