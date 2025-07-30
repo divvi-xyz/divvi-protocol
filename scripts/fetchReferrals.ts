@@ -10,8 +10,6 @@ import { closeRedisClient, getRedisClient } from '../src/redis'
 import { findQualifyingNetworkReferral } from './findQualifyingReferral/qualifyingNetworkReferral'
 import { RedisClientType } from '@redis/client'
 
-// @ts-expect-error unused pending optimization
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const protocolToQualifyingReferralFinder: Partial<
   Record<
     Protocol,
@@ -120,9 +118,12 @@ export async function fetchReferrals(
   )
   const uniqueEvents = removeDuplicates(referralEvents)
   let qualifyingEvents = uniqueEvents
+
   // TODO: we'll enable this after optimizing the hypersync query
-  const findQualifyingReferrals = null // protocolToQualifyingReferralFinder[args.protocol]
-  if (findQualifyingReferrals) {
+  // eslint-disable-next-line no-constant-condition
+  if (args.protocol in protocolToQualifyingReferralFinder && false) {
+    const findQualifyingReferrals =
+      protocolToQualifyingReferralFinder[args.protocol]!
     const qualifyingReferralEvents = await findQualifyingReferrals({
       users: new Set(uniqueEvents.map((event) => event.userAddress)),
       startTimestamp,
