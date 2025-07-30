@@ -1,7 +1,4 @@
-import {
-  BlockField,
-  TransactionField,
-} from '@envio-dev/hypersync-client'
+import { BlockField, TransactionField } from '@envio-dev/hypersync-client'
 import { getBlockRange } from '../calculateKpi/protocols/utils/events'
 import { NetworkId, ReferralEvent } from '../types'
 import { getHyperSyncClient } from '../utils'
@@ -14,8 +11,8 @@ import { TransactionInfo } from '../calculateKpi/protocols/tetherV0/parseReferra
 import { getUserOperations } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getUserOperations'
 
 const limiter = new Bottleneck({
-  reservoir: 200, // initial number of available requests
-  reservoirRefreshAmount: 200, // how many tokens to add on refresh
+  reservoir: 1000, // initial number of available requests
+  reservoirRefreshAmount: 1000, // how many tokens to add on refresh
   reservoirRefreshInterval: 60 * 1000, // refresh every 60 seconds
   minTime: 0, // no minimum time between requests
 })
@@ -37,31 +34,21 @@ async function findQualifyingNetworkReferralForUser({
     transactions: [{ from: [user] }],
     fieldSelection: {
       block: [BlockField.Timestamp],
-      transaction: [
-        TransactionField.Hash,
-        TransactionField.From,
-        TransactionField.To,
-        TransactionField.Input,
-      ],
-      /*
-      logs: [
-        LogField.Topic0,
-        LogField.Topic1,
-        LogField.Topic2,
-        LogField.Topic3,
-        LogField.Data,
-      ],
-      */
+      transaction: [TransactionField.Hash, TransactionField.Input],
     },
-    fromBlock: startBlock ?? 0,
-    ...(endBlockExclusive && { toBlock: endBlockExclusive }),
+    fromBlock: startBlock,
+    toBlock: endBlockExclusive,
   }
   await paginateQuery(client, query, async (response) => {
     for (let i = 0; i < response.data.transactions.length; i++) {
       const tx = response.data.transactions[i]
       const block = response.data.blocks[i]
+      if (!tx || !block) {
+        // was seeing weird behavior where response.data.blocks[i] was undefined, the last entry of blocks was missing??
+        continue
+      }
 
-      if (!tx.hash || !block.timestamp) {
+      if (!tx.hash || !tx.input || !block.timestamp) {
         continue
       }
 
@@ -78,8 +65,8 @@ async function findQualifyingNetworkReferralForUser({
           hash: tx.hash as Hex,
           type: 'transaction',
           transactionType: 'account-abstraction-bundle',
-          from: tx.from as Address,
-          to: tx.to as Address,
+          from: user as Address,
+          to: user as Address, // does not matter, isn't used in getReferrerIdFromTx
           calldata: tx.input as Hex,
           userOperations,
         }
@@ -89,8 +76,8 @@ async function findQualifyingNetworkReferralForUser({
           hash: tx.hash as Hex,
           type: 'transaction',
           transactionType: 'regular',
-          from: tx.from as Address,
-          to: tx.to as Address,
+          from: user as Address,
+          to: user as Address, // does not matter, isn't used in getReferrerIdFromTx
           calldata: tx.input as Hex,
         }
       }
@@ -139,7 +126,7 @@ export async function findQualifyingNetworkReferral({
   })
 
   const qualifyingReferrals: ReferralEvent[] = []
-  const batchSize = 20
+  const batchSize = 50
   const usersArray = Array.from(users)
   for (let i = 0; i < usersArray.length; i += batchSize) {
     const batch = usersArray.slice(i, i + batchSize)
