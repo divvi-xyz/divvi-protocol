@@ -43,7 +43,7 @@ export function calculateRewardsLiskV0({
   const totalLinear = Object.entries(referrerKpis).reduce(
     (sum, [referrerId, kpi]) => {
       if (referrerId.toLowerCase() in excludedReferrers) {
-        if (excludedReferrers[referrerId].shouldWarn) {
+        if (excludedReferrers[referrerId.toLowerCase()].shouldWarn) {
           console.warn(
             `⚠️ Flagged address ${referrerId} is a referrer, they will be excluded from campaign rewards.`,
           )
