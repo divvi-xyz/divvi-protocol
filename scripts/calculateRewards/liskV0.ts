@@ -65,7 +65,9 @@ export function calculateRewardsLiskV0({
       maximumRewardAmount,
     )
     rewardsRemaining = rewardsRemaining.minus(rewardAmount)
-    kpiSumRemaining = kpiSumRemaining.minus(kpi)
+    if (!isExcludedReferrer) {
+      kpiSumRemaining = kpiSumRemaining.minus(kpi)
+    }
 
     const rewardRow = {
       referrerId,
