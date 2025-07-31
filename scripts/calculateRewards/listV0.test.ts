@@ -26,7 +26,6 @@ describe('calculateRewardsLiskV0', () => {
 
     const rewards = calculateRewardsLiskV0({
       kpiData,
-      proportionLinear: 1,
       excludedReferrers: {},
     })
 
@@ -49,7 +48,6 @@ describe('calculateRewardsLiskV0', () => {
   it('should handle empty KPI data', () => {
     const rewards = calculateRewardsLiskV0({
       kpiData: [],
-      proportionLinear: 1,
       excludedReferrers: {},
     })
 
@@ -72,7 +70,6 @@ describe('calculateRewardsLiskV0', () => {
 
     const rewards = calculateRewardsLiskV0({
       kpiData,
-      proportionLinear: 1,
       excludedReferrers: {
         '0xreferrer1': { referrerId: '0xreferrer1' },
       },
