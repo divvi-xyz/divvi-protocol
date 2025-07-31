@@ -197,7 +197,6 @@ const campaigns: Campaign[] = [
             resultDirectory,
             startTimestamp,
             endTimestampExclusive,
-            proportionLinear: 1,
           })
         },
       },
@@ -213,7 +212,6 @@ const campaigns: Campaign[] = [
             resultDirectory,
             startTimestamp,
             endTimestampExclusive,
-            proportionLinear: 1,
           })
         },
       },
