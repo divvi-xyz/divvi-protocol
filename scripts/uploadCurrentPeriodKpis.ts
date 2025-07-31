@@ -197,6 +197,7 @@ const campaigns: Campaign[] = [
             resultDirectory,
             startTimestamp,
             endTimestampExclusive,
+            maximumRewardProportion: new BigNumber(0.2),
           })
         },
       },
@@ -212,6 +213,7 @@ const campaigns: Campaign[] = [
             resultDirectory,
             startTimestamp,
             endTimestampExclusive,
+            maximumRewardProportion: new BigNumber(0.2),
           })
         },
       },
