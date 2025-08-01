@@ -34,7 +34,11 @@ async function findQualifyingNetworkReferralForUser({
     transactions: [{ from: [user] }],
     fieldSelection: {
       block: [BlockField.Timestamp],
-      transaction: [TransactionField.Hash, TransactionField.Input, TransactionField.To],
+      transaction: [
+        TransactionField.Hash,
+        TransactionField.Input,
+        TransactionField.To,
+      ],
     },
     fromBlock: startBlock,
     toBlock: endBlockExclusive,
