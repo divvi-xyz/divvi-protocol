@@ -55,7 +55,10 @@ export async function getDivviRewardsExcludedReferrers(): Promise<
     }
   >
 > {
-  const ofacSdnAddresses = await getOfacSdnAddresses()
+  // TODO: The fetch to get OFAC SDN addresses is disabled for now because it
+  // intermittently fails with 403.
+  const ofacSdnAddresses: { referrerId: Address; shouldWarn: boolean }[] = []
+  // const ofacSdnAddresses = await getOfacSdnAddresses()
 
   const excludedReferrersMap: Record<
     string,
