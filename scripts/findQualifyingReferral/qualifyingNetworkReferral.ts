@@ -34,7 +34,7 @@ async function findQualifyingNetworkReferralForUser({
     transactions: [{ from: [user] }],
     fieldSelection: {
       block: [BlockField.Timestamp],
-      transaction: [TransactionField.Hash, TransactionField.Input],
+      transaction: [TransactionField.Hash, TransactionField.Input, TransactionField.To],
     },
     fromBlock: startBlock,
     toBlock: endBlockExclusive,
@@ -57,7 +57,8 @@ async function findQualifyingNetworkReferralForUser({
       const userOperations = getUserOperations({
         to: tx.to as Address,
         calldata: tx.input as Hex,
-        logs: [], //response.data.logs[i],
+        // TODO: convert hypersync logs to viem logs
+        logs: [],
       })
       if (userOperations.length > 0) {
         // This is an Account Abstraction transaction
