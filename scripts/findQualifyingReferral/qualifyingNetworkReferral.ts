@@ -6,38 +6,40 @@ import { paginateQuery } from '../utils/hypersyncPagination'
 import { getReferrerIdFromTx } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getReferrerIdFromTx'
 import { Address, Hex } from 'viem'
 import { RedisClientType } from '@redis/client'
-import Bottleneck from 'bottleneck'
+// import Bottleneck from 'bottleneck'
 import { TransactionInfo } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getTransactionInfo'
 import { getUserOperations } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getUserOperations'
 
-const limiter = new Bottleneck({
-  reservoir: 1000, // initial number of available requests
-  reservoirRefreshAmount: 1000, // how many tokens to add on refresh
-  reservoirRefreshInterval: 60 * 1000, // refresh every 60 seconds
-  minTime: 0, // no minimum time between requests
-})
+// const limiter = new Bottleneck({
+//   reservoir: 1000, // initial number of available requests
+//   reservoirRefreshAmount: 1000, // how many tokens to add on refresh
+//   reservoirRefreshInterval: 60 * 1000, // refresh every 60 seconds
+//   minTime: 0, // no minimum time between requests
+// })
 
-async function findQualifyingNetworkReferralForUser({
-  user,
+async function findQualifyingNetworkReferralForUsers({
+  users,
   startBlock,
   endBlockExclusive,
   networkId,
 }: {
-  user: string
+  users: string[]
   startBlock: number
   endBlockExclusive: number
   networkId: NetworkId
 }) {
   const client = getHyperSyncClient(networkId)
-  let qualifyingNetworkReferral: ReferralEvent | null = null
+
+  const qualifyingNetworkReferrals: Record<string, ReferralEvent> = {}
   const query = {
-    transactions: [{ from: [user] }],
+    transactions: [{ from: users }],
     fieldSelection: {
       block: [BlockField.Timestamp],
       transaction: [
         TransactionField.Hash,
         TransactionField.Input,
         TransactionField.To,
+        TransactionField.From,
       ],
     },
     fromBlock: startBlock ?? 0,
@@ -47,12 +49,18 @@ async function findQualifyingNetworkReferralForUser({
     for (let i = 0; i < response.data.transactions.length; i++) {
       const tx = response.data.transactions[i]
       const block = response.data.blocks[i]
-      if (!block || !tx) {
-        // should never happen
+      if (!tx || !block) {
+        // was seeing weird behavior where response.data.blocks[i] was undefined, the last entry of blocks was missing??
         continue
       }
 
-      if (!tx.hash || !tx.input || !block.timestamp) {
+      if (!tx.hash || !tx.input || !block.timestamp || !tx.from) {
+        continue
+      }
+
+      const user = tx.from.toLowerCase() as Address
+
+      if (qualifyingNetworkReferrals[user]) {
         continue
       }
 
@@ -70,7 +78,7 @@ async function findQualifyingNetworkReferralForUser({
           hash: tx.hash as Hex,
           type: 'transaction',
           transactionType: 'account-abstraction-bundle',
-          from: user as Address,
+          from: user,
           to: tx.to as Address,
           calldata: tx.input as Hex,
           userOperations,
@@ -81,7 +89,7 @@ async function findQualifyingNetworkReferralForUser({
           hash: tx.hash as Hex,
           type: 'transaction',
           transactionType: 'regular',
-          from: user as Address,
+          from: user,
           to: tx.to as Address,
           calldata: tx.input as Hex,
         }
@@ -94,21 +102,25 @@ async function findQualifyingNetworkReferralForUser({
         transactionInfo,
       )
       if (referrerId !== null) {
-        qualifyingNetworkReferral = {
+        qualifyingNetworkReferrals[user] = {
           userAddress: user,
           timestamp: block.timestamp,
           referrerId,
         }
-        return true
+
+        if (Object.keys(qualifyingNetworkReferrals).length === users.length) {
+          // found qualifying referrals for all users, stop
+          return true
+        }
       }
     }
   })
-  return qualifyingNetworkReferral
+  return Object.values(qualifyingNetworkReferrals)
 }
 
-const findQualifyingNetworkReferralForUserLimited = limiter.wrap(
-  findQualifyingNetworkReferralForUser,
-)
+// const findQualifyingNetworkReferralForUsersLimited = limiter.wrap(
+//   findQualifyingNetworkReferralForUsers,
+// )
 
 export async function findQualifyingNetworkReferral({
   users,
@@ -141,20 +153,28 @@ export async function findQualifyingNetworkReferral({
       'of',
       Math.ceil(usersArray.length / batchSize),
     )
-    await Promise.all(
-      batch.map(async (user) => {
-        const qualifyingNetworkReferral =
-          await findQualifyingNetworkReferralForUserLimited({
-            user,
-            startBlock,
-            endBlockExclusive,
-            networkId,
-          })
-        if (qualifyingNetworkReferral) {
-          qualifyingReferrals.push(qualifyingNetworkReferral)
-        }
-      }),
+    qualifyingReferrals.push(
+      ...(await findQualifyingNetworkReferralForUsers({
+        users: batch,
+        startBlock,
+        endBlockExclusive,
+        networkId,
+      })),
     )
+    // await Promise.all(
+    //   batch.map(async (user) => {
+    //     const qualifyingNetworkReferral =
+    //       await findQualifyingNetworkReferralForUserLimited({
+    //         user,
+    //         startBlock,
+    //         endBlockExclusive,
+    //         networkId,
+    //       })
+    //     if (qualifyingNetworkReferral) {
+    //       qualifyingReferrals.push(qualifyingNetworkReferral)
+    //     }
+    //   }),
+    // )
   }
   return qualifyingReferrals
 }
