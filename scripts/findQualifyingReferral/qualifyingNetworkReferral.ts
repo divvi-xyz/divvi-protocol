@@ -6,16 +6,16 @@ import { paginateQuery } from '../utils/hypersyncPagination'
 import { getReferrerIdFromTx } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getReferrerIdFromTx'
 import { Address, Hex } from 'viem'
 import { RedisClientType } from '@redis/client'
-// import Bottleneck from 'bottleneck'
+import Bottleneck from 'bottleneck'
 import { TransactionInfo } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getTransactionInfo'
 import { getUserOperations } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getUserOperations'
 
-// const limiter = new Bottleneck({
-//   reservoir: 1000, // initial number of available requests
-//   reservoirRefreshAmount: 1000, // how many tokens to add on refresh
-//   reservoirRefreshInterval: 60 * 1000, // refresh every 60 seconds
-//   minTime: 0, // no minimum time between requests
-// })
+const limiter = new Bottleneck({
+  reservoir: 1000, // initial number of available requests
+  reservoirRefreshAmount: 1000, // how many tokens to add on refresh
+  reservoirRefreshInterval: 60 * 1000, // refresh every 60 seconds
+  minTime: 0, // no minimum time between requests
+})
 
 async function findQualifyingNetworkReferralForUsers({
   users,
@@ -124,9 +124,9 @@ async function findQualifyingNetworkReferralForUsers({
   return Object.values(qualifyingNetworkReferrals)
 }
 
-// const findQualifyingNetworkReferralForUsersLimited = limiter.wrap(
-//   findQualifyingNetworkReferralForUsers,
-// )
+const findQualifyingNetworkReferralForUsersLimited = limiter.wrap(
+  findQualifyingNetworkReferralForUsers,
+)
 
 export async function findQualifyingNetworkReferral({
   users,
@@ -149,38 +149,34 @@ export async function findQualifyingNetworkReferral({
   })
 
   const qualifyingReferrals: ReferralEvent[] = []
-  const batchSize = 50
+  const requestsPerBatch = 50 // number of parallel requests
+  const usersPerRequest = 100 // number of users per hypersync request
   const usersArray = Array.from(users)
-  for (let i = 0; i < usersArray.length; i += batchSize) {
-    const batch = usersArray.slice(i, i + batchSize)
+  for (
+    let i = 0;
+    i < usersArray.length;
+    i += requestsPerBatch * usersPerRequest
+  ) {
+    const userGroups = Array.from({ length: requestsPerBatch }, (_, j) =>
+      usersArray.slice(i + j * usersPerRequest, i + (j + 1) * usersPerRequest),
+    ).filter((group) => group.length > 0)
     console.log(
       'Processing user batch',
-      i / batchSize + 1,
+      i / (requestsPerBatch * usersPerRequest) + 1,
       'of',
-      Math.ceil(usersArray.length / batchSize),
+      Math.ceil(usersArray.length / (requestsPerBatch * usersPerRequest)),
     )
-    qualifyingReferrals.push(
-      ...(await findQualifyingNetworkReferralForUsers({
-        users: batch,
-        startBlock,
-        endBlockExclusive,
-        networkId,
-      })),
+    const qualifyingNetworkReferrals = await Promise.all(
+      userGroups.map((users) =>
+        findQualifyingNetworkReferralForUsersLimited({
+          users,
+          startBlock,
+          endBlockExclusive,
+          networkId,
+        }),
+      ),
     )
-    // await Promise.all(
-    //   batch.map(async (user) => {
-    //     const qualifyingNetworkReferral =
-    //       await findQualifyingNetworkReferralForUserLimited({
-    //         user,
-    //         startBlock,
-    //         endBlockExclusive,
-    //         networkId,
-    //       })
-    //     if (qualifyingNetworkReferral) {
-    //       qualifyingReferrals.push(qualifyingNetworkReferral)
-    //     }
-    //   }),
-    // )
+    qualifyingReferrals.push(...qualifyingNetworkReferrals.flat())
   }
   return qualifyingReferrals
 }
