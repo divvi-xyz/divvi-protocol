@@ -34,27 +34,33 @@ async function findQualifyingNetworkReferralForUsers({
   const query = {
     transactions: [{ from: users }],
     fieldSelection: {
-      block: [BlockField.Timestamp],
+      block: [BlockField.Timestamp, BlockField.Number],
       transaction: [
         TransactionField.Hash,
         TransactionField.Input,
         TransactionField.To,
         TransactionField.From,
+        TransactionField.BlockNumber,
       ],
     },
     fromBlock: startBlock ?? 0,
     ...(endBlockExclusive && { toBlock: endBlockExclusive }),
   }
   await paginateQuery(client, query, async (response) => {
-    for (let i = 0; i < response.data.transactions.length; i++) {
-      const tx = response.data.transactions[i]
-      const block = response.data.blocks[i]
-      if (!tx || !block) {
-        // was seeing weird behavior where response.data.blocks[i] was undefined, the last entry of blocks was missing??
-        continue
+    const blockTimestamps = new Map(
+      response.data.blocks.map((block) => [block.number, block.timestamp]),
+    )
+
+    for (const tx of response.data.transactions) {
+      const blockTimestamp = blockTimestamps.get(tx.blockNumber)
+      if (!blockTimestamp) {
+        // should never happen
+        throw new Error(
+          `Block timestamp not found for block number ${tx.blockNumber}`,
+        )
       }
 
-      if (!tx.hash || !tx.input || !block.timestamp || !tx.from) {
+      if (!tx.hash || !tx.input || !tx.from) {
         continue
       }
 
@@ -104,7 +110,7 @@ async function findQualifyingNetworkReferralForUsers({
       if (referrerId !== null) {
         qualifyingNetworkReferrals[user] = {
           userAddress: user,
-          timestamp: block.timestamp,
+          timestamp: blockTimestamp,
           referrerId,
         }
 
