@@ -2,7 +2,10 @@ import { BlockField, TransactionField } from '@envio-dev/hypersync-client'
 import { getBlockRange } from '../calculateKpi/protocols/utils/events'
 import { NetworkId, ReferralEvent } from '../types'
 import { getHyperSyncClient } from '../utils'
-import { paginateQuery } from '../utils/hypersyncPagination'
+import {
+  paginateEventsQuery,
+  paginateQuery,
+} from '../utils/hypersyncPagination'
 import { getReferrerIdFromTx } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getReferrerIdFromTx'
 import { Address, Hex } from 'viem'
 import { RedisClientType } from '@redis/client'
@@ -43,13 +46,15 @@ async function findQualifyingNetworkReferralForUser({
     fromBlock: startBlock,
     toBlock: endBlockExclusive,
   }
-  await paginateQuery(client, query, async (response) => {
-    for (let i = 0; i < response.data.transactions.length; i++) {
-      const tx = response.data.transactions[i]
-      const block = response.data.blocks[i]
-      if (!tx || !block) {
-        // was seeing weird behavior where response.data.blocks[i] was undefined, the last entry of blocks was missing??
-        continue
+  await paginateEventsQuery(client, query, async (response) => {
+    for (const event of response.data) {
+      const tx = event.transaction
+      const block = event.block
+      if (!block || !tx) {
+        // should never happen
+        throw new Error(
+          `Block or transaction data is missing in the event response: ${JSON.stringify(event)}`,
+        )
       }
 
       if (!tx.hash || !tx.input || !block.timestamp) {
