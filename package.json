@@ -108,7 +108,7 @@
     "tsc-watch": "^7.1.1",
     "typedoc": "^0.28.5",
     "typedoc-plugin-markdown": "^4.6.4",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.2",
     "unzipper": "^0.12.3",
     "yargs": "^17.7.2"
   },
