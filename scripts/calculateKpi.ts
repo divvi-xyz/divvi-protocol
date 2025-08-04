@@ -1,6 +1,6 @@
 import calculateKpiHandlers from './calculateKpi/protocols'
 import yargs from 'yargs'
-import { CalculateKpiFn, KpiResults, Protocol, protocols } from './types'
+import { KpiResults, Protocol, protocols } from './types'
 import { ResultDirectory } from '../src/resultDirectory'
 import { RedisClientType } from '@redis/client'
 import { closeRedisClient, getRedisClient } from '../src/redis'

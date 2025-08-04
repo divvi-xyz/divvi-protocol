@@ -5,6 +5,7 @@ import { calculateKpi } from './calculateKpi'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
+
 // Mock all the dependencies
 jest.mock('./fetchReferrals')
 jest.mock('./calculateKpi')

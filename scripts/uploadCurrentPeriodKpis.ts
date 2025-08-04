@@ -378,7 +378,6 @@ export async function uploadCurrentPeriodKpis(
       endTimestampExclusive,
       redisConnection: args.redisConnection,
     })
-
     console.log(
       `🍾 Calculated kpi's for campaign ${campaign.protocol} in ${Date.now() - calculateKpiStartTime}ms`,
     )
