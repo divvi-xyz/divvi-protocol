@@ -25,7 +25,6 @@ async function calculateKpiBatch({
   startTimestamp,
   endTimestampExclusive,
   protocol,
-  kpiFunction,
   redis,
 }: {
   eligibleUsers: ReferralData[]
@@ -33,7 +32,6 @@ async function calculateKpiBatch({
   startTimestamp: Date
   endTimestampExclusive: Date
   protocol: Protocol
-  kpiFunction: CalculateKpiFn
   redis?: RedisClientType
 }): Promise<KpiResults> {
   const results: KpiResults = []
@@ -57,7 +55,7 @@ async function calculateKpiBatch({
           return null
         }
 
-        const calculatedKpi = await kpiFunction({
+        const calculatedKpi = await calculateKpiHandlers[protocol]({
           address: userAddress,
           // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
           startTimestamp:
@@ -102,7 +100,6 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
     eligibleUsers,
     batchSize: BATCH_SIZE,
     protocol,
-    kpiFunction: calculateKpiHandlers[protocol],
     startTimestamp,
     endTimestampExclusive,
     redis,

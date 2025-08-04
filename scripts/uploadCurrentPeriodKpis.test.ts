@@ -1,13 +1,10 @@
 import { it } from '@jest/globals'
 import { Campaign, uploadCurrentPeriodKpis } from './uploadCurrentPeriodKpis'
 import { fetchReferrals } from './fetchReferrals'
-import { _calculateKpiBatch } from './calculateKpi'
+import { calculateKpi } from './calculateKpi'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
-import { calculateTxKpi } from './calculateKpi/txKpi'
-import { NetworkId } from './types'
-
 // Mock all the dependencies
 jest.mock('./fetchReferrals')
 jest.mock('./calculateKpi')
@@ -22,7 +19,7 @@ jest.mock('./calculateKpi/protocols', () => ({
 }))
 
 const mockFetchReferrals = jest.mocked(fetchReferrals)
-const mockCalculateKpiBatch = jest.mocked(_calculateKpiBatch)
+const mockCalculateKpi = jest.mocked(calculateKpi)
 const mockUploadFilesToGCS = jest.mocked(uploadFilesToGCS)
 const mockCalculateRewardsCeloPG = jest.mocked(calculateRewardsCeloPG)
 
@@ -30,8 +27,6 @@ describe('uploadCurrentPeriodKpis', () => {
   const mockCampaigns: Campaign[] = [
     {
       protocol: 'celo-pg',
-      calculateKpi: (params) =>
-        calculateTxKpi({ ...params, networkId: NetworkId['celo-mainnet'] }),
       rewardsPeriods: [
         {
           startTimestamp: '2025-05-15T00:00:00Z',
@@ -191,7 +186,7 @@ describe('uploadCurrentPeriodKpis', () => {
         )
 
         // Should call calculateKpi with the same timestamps
-        expect(mockCalculateKpiBatch).toHaveBeenCalledWith(
+        expect(mockCalculateKpi).toHaveBeenCalledWith(
           expect.objectContaining({
             protocol: 'celo-pg',
             startTimestamp: expectedPeriodStartTimestamp,

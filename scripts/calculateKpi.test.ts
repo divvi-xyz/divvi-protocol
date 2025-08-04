@@ -22,7 +22,6 @@ describe('_calculateKpiBatch', () => {
     startTimestamp,
     endTimestampExclusive,
     protocol: 'celo-transactions' as const,
-    kpiFunction: mockHandler,
   }
 
   beforeEach(() => {
