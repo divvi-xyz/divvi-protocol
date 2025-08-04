@@ -44,7 +44,7 @@
     "@envio-dev/hypersync-client": "^0.6.5",
     "@github/memoize": "^1.1.5",
     "@google-cloud/storage": "^7.16.0",
-    "@redis/client": "^5.6.1",
+    "@redis/client": "^5.7.0",
     "@safe-global/protocol-kit": "^6.1.0",
     "@safe-global/types-kit": "^3.0.0",
     "@valora/http-handler": "^0.0.1",
@@ -53,7 +53,7 @@
     "dotenv": "^17.2.1",
     "graphql": "^16.11.0",
     "graphql-request": "^7.2.0",
-    "redis": "^5.6.1",
+    "redis": "^5.7.0",
     "viem": "^2.33.1",
     "zod": "^3.25.76"
   },
@@ -108,7 +108,7 @@
     "tsc-watch": "^7.1.1",
     "typedoc": "^0.28.5",
     "typedoc-plugin-markdown": "^4.6.4",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.2",
     "unzipper": "^0.12.3",
     "yargs": "^17.7.2"
   },
