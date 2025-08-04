@@ -43,7 +43,8 @@ export interface Campaign {
 const campaigns: Campaign[] = [
   {
     protocol: 'celo-pg',
-    calculateKpi: (params) => calculateTxKpi({ ...params, networkId: NetworkId['celo-mainnet'] }),
+    calculateKpi: (params) =>
+      calculateTxKpi({ ...params, networkId: NetworkId['celo-mainnet'] }),
     rewardsPeriods: [
       {
         startTimestamp: '2025-05-15T00:00:00Z',
@@ -132,7 +133,8 @@ const campaigns: Campaign[] = [
   },
   {
     protocol: 'lisk-v0',
-    calculateKpi: (params) => calculateTxKpi({ ...params, networkId: NetworkId['lisk-mainnet'] }),
+    calculateKpi: (params) =>
+      calculateTxKpi({ ...params, networkId: NetworkId['lisk-mainnet'] }),
     rewardsPeriods: [
       {
         startTimestamp: '2025-06-05T00:00:00Z',
@@ -174,7 +176,8 @@ const campaigns: Campaign[] = [
   },
   {
     protocol: 'base-v0',
-    calculateKpi: (params) => calculateTxKpi({ ...params, networkId: NetworkId['base-mainnet'] }),
+    calculateKpi: (params) =>
+      calculateTxKpi({ ...params, networkId: NetworkId['base-mainnet'] }),
     rewardsPeriods: [
       {
         startTimestamp: '2025-06-30T00:00:00Z',
@@ -207,7 +210,8 @@ const campaigns: Campaign[] = [
   },
   {
     protocol: 'mantle-v0',
-    calculateKpi: (params) => calculateTxKpi({ ...params, networkId: NetworkId['mantle-mainnet'] }),
+    calculateKpi: (params) =>
+      calculateTxKpi({ ...params, networkId: NetworkId['mantle-mainnet'] }),
     rewardsPeriods: [
       {
         startTimestamp: '2025-08-01T00:00:00Z',
@@ -382,11 +386,15 @@ export async function uploadCurrentPeriodKpis(
     const calculateKpiStartTime = Date.now()
 
     if (!campaign.calculateKpi) {
-      console.log(`Campaign ${campaign.protocol} does not have a calculateKpi function, skipping`)
+      console.log(
+        `Campaign ${campaign.protocol} does not have a calculateKpi function, skipping`,
+      )
       continue
     }
 
-    const redis = args.redisConnection ? await getRedisClient(args.redisConnection) : undefined
+    const redis = args.redisConnection
+      ? await getRedisClient(args.redisConnection)
+      : undefined
 
     const allKpi = await _calculateKpiBatch({
       eligibleUsers: [],

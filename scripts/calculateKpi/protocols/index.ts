@@ -41,7 +41,8 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   beefy: calculateKpiBeefy,
   aerodrome: calculateKpiAerodrome,
   somm: calculateKpiSomm,
-  'celo-pg': (params) => calculateGasKpi({ ...params, networkId: NetworkId['celo-mainnet'] }),
+  'celo-pg': (params) =>
+    calculateGasKpi({ ...params, networkId: NetworkId['celo-mainnet'] }),
   arbitrum: calculateKpiArbitrum,
   velodrome: calculateKpiVelodrome,
   fonbnk: calculateKpiFonbnk,
@@ -49,10 +50,13 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   'celo-transactions': calculateKpiCeloTransactions,
   rhino: calculateKpiRhino,
   'scout-game-v0': calculateKpiScoutGameV0,
-  'lisk-v0': (params) => calculateGasKpi({ ...params, networkId: NetworkId['lisk-mainnet'] }),
+  'lisk-v0': (params) =>
+    calculateGasKpi({ ...params, networkId: NetworkId['lisk-mainnet'] }),
   'tether-v0': calculateKpiTetherV0,
-  'base-v0': (params) => calculateGasKpi({ ...params, networkId: NetworkId['base-mainnet'] }),
-  'mantle-v0': (params) => calculateGasKpi({ ...params, networkId: NetworkId['mantle-mainnet'] }),
+  'base-v0': (params) =>
+    calculateGasKpi({ ...params, networkId: NetworkId['base-mainnet'] }),
+  'mantle-v0': (params) =>
+    calculateGasKpi({ ...params, networkId: NetworkId['mantle-mainnet'] }),
   morph: calculateKpiMorph,
 }
 
