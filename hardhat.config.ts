@@ -68,36 +68,20 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 137,
     },
-    vana: {
-      url: 'https://rpc.vana.org',
+    mantle: {
+      url: 'https://mantle-mainnet.g.alchemy.com/public',
       accounts,
-      chainId: 1480,
-    },
-    morph: {
-      url: 'https://rpc-quicknode.morphl2.io',
-      accounts,
-      chainId: 2818,
+      chainId: 5000,
     },
   },
   etherscan: {
-    apiKey: {
-      alfajores: process.env.CELOSCAN_API_KEY!,
-      celo: process.env.CELOSCAN_API_KEY!,
-      arbitrumOne: process.env.ARBISCAN_API_KEY!,
-      mainnet: process.env.ETHERSCAN_API_KEY!,
-      optimisticEthereum: process.env.OPSCAN_API_KEY!,
-      base: process.env.BASESCAN_API_KEY!,
-      berachain: process.env.BERASCAN_API_KEY!,
-      vana: process.env.VANASCAN_API_KEY!,
-      polygon: process.env.POLYGONSCAN_API_KEY!,
-      morph: 'anything', // Per https://docs.morphl2.io/docs/build-on-morph/build-on-morph/verify-your-smart-contracts#verify-with-hardhat
-    },
+    apiKey: process.env.ETHERSCAN_API_KEY!,
     customChains: [
       {
         network: 'alfajores',
         chainId: 44787,
         urls: {
-          apiURL: 'https://api-alfajores.celoscan.io/api',
+          apiURL: 'https://api.etherscan.io/v2/api',
           browserURL: 'https://alfajores.celoscan.io',
         },
       },
@@ -105,7 +89,7 @@ const config: HardhatUserConfig = {
         network: 'celo',
         chainId: 42220,
         urls: {
-          apiURL: 'https://api.celoscan.io/api',
+          apiURL: 'https://api.etherscan.io/v2/api',
           browserURL: 'https://celoscan.io/',
         },
       },
@@ -113,24 +97,16 @@ const config: HardhatUserConfig = {
         network: 'berachain',
         chainId: 80094,
         urls: {
-          apiURL: 'https://api.berascan.com/api',
+          apiURL: 'https://api.etherscan.io/v2/api',
           browserURL: 'https://berascan.com/',
         },
       },
       {
-        network: 'vana',
-        chainId: 1480,
+        network: 'mantle',
+        chainId: 5000,
         urls: {
-          apiURL: 'https://vanascan.io/api',
-          browserURL: 'https://vanascan.io/',
-        },
-      },
-      {
-        network: 'morph',
-        chainId: 2818,
-        urls: {
-          apiURL: 'https://explorer-api.morphl2.io/api? ',
-          browserURL: 'https://explorer.morphl2.io/',
+          apiURL: 'https://api.etherscan.io/v2/api',
+          browserURL: 'https://mantlescan.xyz/',
         },
       },
     ],

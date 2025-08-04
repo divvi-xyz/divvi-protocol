@@ -6,7 +6,7 @@ export type Campaign = {
   protocol: Protocol
   rewardsPoolAddress: Address
   networkId: NetworkId
-  valoraRewardsPoolAddress: Address | null
+  valoraRewardsPoolAddress: Address | null // reward pool for redistributing valora rewards
 }
 
 export const campaigns: Campaign[] = [
@@ -15,7 +15,7 @@ export const campaigns: Campaign[] = [
     protocol: 'celo-pg',
     rewardsPoolAddress: '0xc273fb49c5c291f7c697d0fcef8ce34e985008f3',
     networkId: NetworkId['celo-mainnet'],
-    valoraRewardsPoolAddress: null,
+    valoraRewardsPoolAddress: '0x6fff207A32ac1392C132913cea80Bae23dDD5f77',
   },
   {
     providerAddress: '0xc95876688026be9d6fa7a7c33328bd013effa2bb',

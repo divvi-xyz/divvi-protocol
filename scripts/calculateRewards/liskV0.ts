@@ -11,39 +11,26 @@ const REWARD_AMOUNT_IN_DECIMALS = '15000'
 
 export function calculateRewardsLiskV0({
   kpiData,
-  proportionLinear,
   excludedReferrers,
+  maximumRewardAmount,
 }: {
   kpiData: KpiRow[]
-  proportionLinear: number
   excludedReferrers: Record<
     string,
     { referrerId: string; shouldWarn?: boolean }
   >
+  maximumRewardAmount: BigNumber
 }) {
   const totalRewardsForPeriod = new BigNumber(
     parseEther(REWARD_AMOUNT_IN_DECIMALS),
   )
-  const totalLinearRewardsForPeriod =
-    totalRewardsForPeriod.times(proportionLinear)
-  const totalPowerRewardsForPeriod = totalRewardsForPeriod.times(
-    1 - proportionLinear,
-  )
 
   const { referrerReferrals, referrerKpis } = getReferrerMetricsFromKpi(kpiData)
 
-  const referrerPowerKpis = Object.entries(referrerKpis).reduce(
-    (acc, [referrerId, kpi]) => {
-      acc[referrerId] = BigNumber(kpi).sqrt()
-      return acc
-    },
-    {} as Record<string, BigNumber>,
-  )
-
-  const totalLinear = Object.entries(referrerKpis).reduce(
+  const kpiSum = Object.entries(referrerKpis).reduce(
     (sum, [referrerId, kpi]) => {
       if (referrerId.toLowerCase() in excludedReferrers) {
-        if (excludedReferrers[referrerId].shouldWarn) {
+        if (excludedReferrers[referrerId.toLowerCase()].shouldWarn) {
           console.warn(
             `⚠️ Flagged address ${referrerId} is a referrer, they will be excluded from campaign rewards.`,
           )
@@ -58,41 +45,39 @@ export function calculateRewardsLiskV0({
     },
     BigNumber(0),
   )
-  const totalPower = Object.entries(referrerPowerKpis).reduce(
-    (sum, [referrerId, kpi]) => {
-      if (referrerId.toLowerCase() in excludedReferrers) {
-        return sum
-      }
-      return sum.plus(kpi)
-    },
-    BigNumber(0),
+
+  const referrerQueue = Object.entries(referrerKpis).sort((a, b) =>
+    BigNumber(b[1]).minus(BigNumber(a[1])).toNumber(),
   )
+  const rewards = []
+  let rewardsRemaining = totalRewardsForPeriod
+  let kpiSumRemaining = kpiSum
 
-  const rewards = Object.entries(referrerKpis).map(([referrerId, kpi]) => {
+  for (const [referrerId, kpi] of referrerQueue) {
     const isExcludedReferrer = referrerId.toLowerCase() in excludedReferrers
-    const linearProportion = isExcludedReferrer
-      ? BigNumber(0)
-      : BigNumber(kpi).div(totalLinear)
-    const powerProportion = isExcludedReferrer
-      ? BigNumber(0)
-      : BigNumber(referrerPowerKpis[referrerId]).div(totalPower)
+    const proportion =
+      isExcludedReferrer || kpiSumRemaining.isZero()
+        ? BigNumber(0)
+        : BigNumber(kpi).div(kpiSumRemaining)
 
-    const linearReward = totalLinearRewardsForPeriod.times(linearProportion)
-    const powerReward = totalPowerRewardsForPeriod.times(powerProportion)
-    const rewardAmount = linearReward.plus(powerReward)
+    const rewardAmount = BigNumber.min(
+      rewardsRemaining.times(proportion),
+      maximumRewardAmount,
+    )
+    rewardsRemaining = rewardsRemaining.minus(rewardAmount)
+    if (!isExcludedReferrer) {
+      kpiSumRemaining = kpiSumRemaining.minus(kpi)
+    }
 
-    return {
+    const rewardRow = {
       referrerId,
       rewardAmount: rewardAmount.toFixed(0, BigNumber.ROUND_DOWN),
       referralCount: referrerReferrals[referrerId],
       kpi,
-      linearProportion: linearProportion.toFixed(8, BigNumber.ROUND_DOWN),
-      powerProportion: powerProportion.toFixed(8, BigNumber.ROUND_DOWN),
-      linearReward: linearReward.toFixed(8, BigNumber.ROUND_DOWN),
-      powerReward: powerReward.toFixed(8, BigNumber.ROUND_DOWN),
     }
-  })
 
+    rewards.push(rewardRow)
+  }
   return rewards
 }
 
@@ -115,12 +100,12 @@ function parseArgs() {
       type: 'string',
       demandOption: true,
     })
-    .option('proportion-linear', {
-      alias: 'l',
+    .option('maximum-reward-proportion', {
+      alias: 'm',
       description:
-        'the proportion of the rewards that are distributed linearly',
-      type: 'number',
-      default: 1,
+        'Maximum proportion of the reward amount any builder can earn (e.g., 0.2)',
+      type: 'string',
+      demandOption: true,
     })
     .strict()
     .parseSync()
@@ -134,7 +119,7 @@ function parseArgs() {
     }),
     startTimestamp: args['start-timestamp'],
     endTimestampExclusive: args['end-timestamp'],
-    proportionLinear: args['proportion-linear'],
+    maximumRewardProportion: new BigNumber(args['maximum-reward-proportion']),
   }
 }
 
@@ -148,16 +133,18 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args.startTimestamp)
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const resultDirectory = args.resultDirectory
-  const proportionLinear = args.proportionLinear
   const kpiData = await resultDirectory.readKpi()
 
   const excludedReferrers = await getDivviRewardsExcludedReferrers()
   await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
+  const maximumRewardAmount = new BigNumber(
+    parseEther(REWARD_AMOUNT_IN_DECIMALS),
+  ).times(args.maximumRewardProportion)
   const rewards = calculateRewardsLiskV0({
     kpiData,
-    proportionLinear,
     excludedReferrers,
+    maximumRewardAmount,
   })
 
   createAddRewardSafeTransactionJSON({

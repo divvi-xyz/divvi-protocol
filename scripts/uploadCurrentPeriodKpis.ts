@@ -5,6 +5,7 @@ import { join } from 'path'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import yargs from 'yargs'
+import { BigNumber } from 'bignumber.js'
 import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
 import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
@@ -147,7 +148,7 @@ const campaigns: Campaign[] = [
             resultDirectory,
             startTimestamp,
             endTimestampExclusive,
-            proportionLinear: 1,
+            maximumRewardProportion: new BigNumber(0.2),
           })
         },
       },
@@ -165,7 +166,7 @@ const campaigns: Campaign[] = [
             resultDirectory,
             startTimestamp,
             endTimestampExclusive,
-            proportionLinear: 1,
+            maximumRewardProportion: new BigNumber(0.2),
           })
         },
       },
@@ -367,7 +368,7 @@ export async function uploadCurrentPeriodKpis(
     const fetchReferralsStartTime = Date.now()
     await fetchReferrals({
       protocol: campaign.protocol,
-      startTimestamp: currentPeriod.startTimestamp,
+      startTimestamp: campaign.rewardsPeriods[0].startTimestamp,
       endTimestampExclusive,
       outputDir,
       useStaging: false,

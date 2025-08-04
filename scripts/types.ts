@@ -81,7 +81,7 @@ export interface ReferralEvent {
   userAddress: string
   timestamp: number
   referrerId: string
-  protocol: Protocol
+  protocol?: Protocol
 }
 
 export interface FilterParams {
