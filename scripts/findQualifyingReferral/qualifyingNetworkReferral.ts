@@ -2,10 +2,7 @@ import { BlockField, TransactionField } from '@envio-dev/hypersync-client'
 import { getBlockRange } from '../calculateKpi/protocols/utils/events'
 import { NetworkId, ReferralEvent } from '../types'
 import { getHyperSyncClient } from '../utils'
-import {
-  paginateEventsQuery,
-  paginateQuery,
-} from '../utils/hypersyncPagination'
+import { paginateEventsQuery } from '../utils/hypersyncPagination'
 import { getReferrerIdFromTx } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getReferrerIdFromTx'
 import { Address, Hex } from 'viem'
 import { RedisClientType } from '@redis/client'
@@ -43,8 +40,8 @@ async function findQualifyingNetworkReferralForUser({
         TransactionField.To,
       ],
     },
-    fromBlock: startBlock,
-    toBlock: endBlockExclusive,
+    fromBlock: startBlock ?? 0,
+    ...(endBlockExclusive && { toBlock: endBlockExclusive }),
   }
   await paginateEventsQuery(client, query, async (response) => {
     for (const event of response.data) {
