@@ -15,16 +15,17 @@ jest.mock('../utils', () => ({
 }))
 
 jest.mock('../utils/hypersyncPagination', () => ({
-  paginateEventsQuery: jest.fn(async (_client, _query, cb) => {
+  paginateQuery: jest.fn(async (_client, _query, cb) => {
     const user = _query.transactions[0].from[0] as string
     const data = {
-      '0xUser1': [
-        {
-          transaction: { hash: '0xTxHash', input: '0xTxInput' },
-          block: { timestamp: 1234567890 },
-        },
-      ],
-      '0xUser2': [],
+      '0xUser1': {
+        transactions: [{ hash: '0xTxHash', input: '0xTxInput' }],
+        blocks: [{ timestamp: 1234567890 }],
+      },
+      '0xUser2': {
+        transactions: [],
+        blocks: [],
+      },
     }[user]
     await cb({ data })
   }),
