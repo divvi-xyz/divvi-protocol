@@ -3,10 +3,7 @@ import * as sax from 'sax'
 import * as unzipper from 'unzipper'
 import { Address, isAddress } from 'viem'
 
-const valoraEntities: { referrerId: Address; shouldWarn?: boolean }[] = [
-  { referrerId: '0x9ecfe3ddfaf1bb9b55f56b84471406893c5e29ad' }, // Valora app
-  // TODO: add VEarn app
-]
+const valoraEntities: { referrerId: Address; shouldWarn?: boolean }[] = []
 
 // https://sanctionslist.ofac.treas.gov/Home/SdnList
 const OFAC_SDN_ZIP_URL =
@@ -58,7 +55,10 @@ export async function getDivviRewardsExcludedReferrers(): Promise<
     }
   >
 > {
-  const ofacSdnAddresses = await getOfacSdnAddresses()
+  // TODO: The fetch to get OFAC SDN addresses is disabled for now because it
+  // intermittently fails with 403.
+  const ofacSdnAddresses: { referrerId: Address; shouldWarn: boolean }[] = []
+  // const ofacSdnAddresses = await getOfacSdnAddresses()
 
   const excludedReferrersMap: Record<
     string,

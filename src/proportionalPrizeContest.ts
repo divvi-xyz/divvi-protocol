@@ -23,7 +23,7 @@ export function calculateProportionalPrizeContest({
   let totalKpi = BigInt(0)
   for (const [referrerId, kpi] of Object.entries(referrerKpis)) {
     if (referrerId.toLowerCase() in excludedReferrers) {
-      if (excludedReferrers[referrerId].shouldWarn) {
+      if (excludedReferrers[referrerId.toLowerCase()].shouldWarn) {
         console.warn(
           `⚠️ Flagged address ${referrerId} is a referrer, they will be excluded from campaign rewards.`,
         )
@@ -99,7 +99,7 @@ export function calculateSqrtProportionalPrizeContest({
     (sum, [referrerId, value]) => {
       // exclude referrers in the exclude list
       if (referrerId.toLowerCase() in excludedReferrers) {
-        if (excludedReferrers[referrerId].shouldWarn) {
+        if (excludedReferrers[referrerId.toLowerCase()].shouldWarn) {
           console.warn(
             `⚠️ Flagged address ${referrerId} is a referrer, they will be excluded from campaign rewards.`,
           )

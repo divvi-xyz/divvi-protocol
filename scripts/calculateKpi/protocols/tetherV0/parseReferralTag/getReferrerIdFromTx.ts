@@ -19,7 +19,6 @@ export async function getReferrerIdFromTx(
       skipRetries,
     })
   } catch (error) {
-    console.warn('No transaction info found for tx', txHash, error)
     return null
   }
 
@@ -37,12 +36,11 @@ export async function getReferrerIdFromTx(
         user: transactionInfo.from,
       }
 
-  const { referral, error } = parseReferral(parseReferralParams)
+  const { referral } = parseReferral(parseReferralParams)
 
   if (referral) {
     return referral.consumer
   }
 
-  console.warn('No referral found for tx', txHash, error)
   return null
 }

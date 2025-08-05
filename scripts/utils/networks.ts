@@ -1,4 +1,3 @@
-import { Address } from 'viem'
 import { NetworkId } from '../types'
 import {
   arbitrum,
@@ -14,16 +13,8 @@ import {
   Chain,
   mainnet,
   mantle,
+  morph,
 } from 'viem/chains'
-
-export const NETWORK_ID_TO_REGISTRY_ADDRESS = {
-  [NetworkId['arbitrum-one']]: '0xBa9655677f4E42DD289F5b7888170bC0c7dA8Cdc',
-  [NetworkId['base-mainnet']]: '0xBa9655677f4E42DD289F5b7888170bC0c7dA8Cdc',
-  [NetworkId['celo-mainnet']]: '0xBa9655677f4E42DD289F5b7888170bC0c7dA8Cdc',
-  [NetworkId['op-mainnet']]: '0xBa9655677f4E42DD289F5b7888170bC0c7dA8Cdc',
-  [NetworkId['polygon-pos-mainnet']]:
-    '0xBa9655677f4E42DD289F5b7888170bC0c7dA8Cdc',
-} as Partial<Record<NetworkId, Address>>
 
 export const supportedNetworkIds = [
   NetworkId['arbitrum-one'],
@@ -47,6 +38,7 @@ export const NETWORK_ID_TO_HYPERSYNC_URL = {
   [NetworkId['avalanche-mainnet']]: 'https://avalanche.hypersync.xyz',
   [NetworkId['berachain-mainnet']]: 'https://berachain.hypersync.xyz',
   [NetworkId['mantle-mainnet']]: 'https://mantle.hypersync.xyz',
+  [NetworkId['morph-mainnet']]: 'https://morph.hypersync.xyz',
 } satisfies Record<NetworkId, string>
 
 export const NETWORK_ID_TO_VIEM_CHAIN = {
@@ -62,4 +54,5 @@ export const NETWORK_ID_TO_VIEM_CHAIN = {
   [NetworkId['avalanche-mainnet']]: avalanche,
   [NetworkId['berachain-mainnet']]: berachain,
   [NetworkId['mantle-mainnet']]: mantle,
+  [NetworkId['morph-mainnet']]: morph,
 } satisfies Record<NetworkId, Chain>

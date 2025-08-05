@@ -2,11 +2,46 @@ import { writeFileSync, mkdirSync } from 'fs'
 import yargs from 'yargs'
 import { protocolFilters } from './protocolFilters'
 import { fetchReferralEvents, removeDuplicates } from './utils/referrals'
-import { Protocol, protocols } from './types'
+import { NetworkId, Protocol, protocols, ReferralEvent } from './types'
 import { stringify } from 'csv-stringify/sync'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { dirname, join } from 'path'
 import { closeRedisClient, getRedisClient } from '../src/redis'
+import { findQualifyingNetworkReferral } from './findQualifyingReferral/qualifyingNetworkReferral'
+import { RedisClientType } from '@redis/client'
+
+const protocolToQualifyingReferralFinder: Partial<
+  Record<
+    Protocol,
+    ({
+      users,
+      startTimestamp,
+      endTimestampExclusive,
+      redis,
+    }: {
+      users: Set<string>
+      startTimestamp: Date
+      endTimestampExclusive: Date
+      redis?: RedisClientType
+    }) => Promise<ReferralEvent[]>
+  >
+> = {
+  'base-v0': (args) =>
+    findQualifyingNetworkReferral({
+      ...args,
+      networkId: NetworkId['base-mainnet'],
+    }),
+  'mantle-v0': (args) =>
+    findQualifyingNetworkReferral({
+      ...args,
+      networkId: NetworkId['mantle-mainnet'],
+    }),
+  morph: (args) =>
+    findQualifyingNetworkReferral({
+      ...args,
+      networkId: NetworkId['morph-mainnet'],
+    }),
+}
 
 async function getArgs() {
   const argv = await yargs
@@ -72,6 +107,7 @@ export async function fetchReferrals(
     ? await getRedisClient(args.redisConnection)
     : undefined
 
+  const startTimestamp = new Date(args.startTimestamp)
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const referralEvents = await fetchReferralEvents(
     args.protocol,
@@ -81,8 +117,23 @@ export async function fetchReferrals(
     redis,
   )
   const uniqueEvents = removeDuplicates(referralEvents)
+  let qualifyingEvents = uniqueEvents
 
-  const filteredEvents = await args.protocolFilter(uniqueEvents)
+  // TODO: we'll enable this after optimizing the hypersync query
+  // eslint-disable-next-line no-constant-condition
+  if (args.protocol in protocolToQualifyingReferralFinder && false) {
+    const findQualifyingReferrals =
+      protocolToQualifyingReferralFinder[args.protocol]!
+    const qualifyingReferralEvents = await findQualifyingReferrals({
+      users: new Set(uniqueEvents.map((event) => event.userAddress)),
+      startTimestamp,
+      endTimestampExclusive,
+      redis,
+    })
+    qualifyingEvents = qualifyingReferralEvents
+  }
+
+  const filteredEvents = await args.protocolFilter(qualifyingEvents)
   const outputEvents = filteredEvents.map((event) => ({
     referrerId: event.referrerId,
     userAddress: event.userAddress,

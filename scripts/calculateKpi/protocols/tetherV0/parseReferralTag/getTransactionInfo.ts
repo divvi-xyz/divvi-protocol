@@ -1,12 +1,12 @@
 import {
   Address,
   Hex,
-  PublicClient,
   TransactionNotFoundError,
   TransactionReceiptNotFoundError,
   Hash,
 } from 'viem'
 import { getUserOperations, UserOperationWithHash } from './getUserOperations'
+import { getViemPublicClient } from '../../../../utils'
 
 // Discriminated union for transaction info
 export type TransactionInfo = {
@@ -35,7 +35,7 @@ export async function getTransactionInfo({
   delayFn = delay, // facilitates testing
   skipRetries = false,
 }: {
-  publicClient: PublicClient
+  publicClient: ReturnType<typeof getViemPublicClient>
   txHash: Hex
   delayFn?: (ms: number) => Promise<void>
   skipRetries?: boolean

@@ -6,6 +6,7 @@ import { join } from 'path'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import yargs from 'yargs'
+import { BigNumber } from 'bignumber.js'
 import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
 import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV0'
@@ -13,6 +14,7 @@ import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
 import { main as calculateRewardsBaseV0 } from './calculateRewards/baseV0'
 import { main as calculateRewardsTetherV0 } from './calculateRewards/tetherV0'
 import { main as calculateRewardsMantleV0 } from './calculateRewards/mantleV0'
+import { main as calculateRewardsMorph } from './calculateRewards/morph'
 import { main as calculateRewardSlices } from './calculateRewards/slices'
 
 export interface Campaign {
@@ -44,10 +46,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsCeloPG({
             resultDirectory,
@@ -61,10 +59,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardSlices({
             resultDirectory,
@@ -82,10 +76,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsCeloPG({
             resultDirectory,
@@ -99,10 +89,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardSlices({
             resultDirectory,
@@ -120,10 +106,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsCeloPG({
             resultDirectory,
@@ -146,10 +128,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsScoutGame({
             resultDirectory,
@@ -165,10 +143,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsScoutGame({
             resultDirectory,
@@ -184,10 +158,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsScoutGame({
             resultDirectory,
@@ -203,10 +173,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsScoutGame({
             resultDirectory,
@@ -227,16 +193,12 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsLiskV0({
             resultDirectory,
             startTimestamp,
             endTimestampExclusive,
-            proportionLinear: 1,
+            maximumRewardProportion: new BigNumber(0.2),
           })
         },
       },
@@ -247,16 +209,12 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsLiskV0({
             resultDirectory,
             startTimestamp,
             endTimestampExclusive,
-            proportionLinear: 1,
+            maximumRewardProportion: new BigNumber(0.2),
           })
         },
       },
@@ -272,10 +230,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsBaseV0({
             resultDirectory,
@@ -296,10 +250,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsTetherV0({
             resultDirectory,
@@ -316,10 +266,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsTetherV0({
             resultDirectory,
@@ -341,10 +287,6 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsMantleV0({
             resultDirectory,
@@ -360,15 +302,36 @@ const campaigns: Campaign[] = [
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
-        }: {
-          resultDirectory: ResultDirectory
-          startTimestamp: string
-          endTimestampExclusive: string
         }) => {
           await calculateRewardsMantleV0({
             resultDirectory,
             startTimestamp,
             endTimestampExclusive,
+          })
+        },
+      },
+    ],
+  },
+  {
+    protocol: 'morph',
+    rewardsPeriods: [
+      {
+        startTimestamp: '2025-08-01T00:00:00Z',
+        endTimestampExclusive: '2025-08-30T00:00:00Z',
+        calculateRewards: async (args) => {
+          await calculateRewardsMorph({
+            ...args,
+            rewardAmount: '0', // 15k$ TODO: adjust after ENG-527 is done
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-08-30T00:00:00Z',
+        endTimestampExclusive: '2025-09-30T00:00:00Z',
+        calculateRewards: async (args) => {
+          await calculateRewardsMorph({
+            ...args,
+            rewardAmount: '0', // 25k$ TODO: adjust after ENG-527 is done
           })
         },
       },
@@ -498,7 +461,7 @@ export async function uploadCurrentPeriodKpis(
     const fetchReferralsStartTime = Date.now()
     await fetchReferrals({
       protocol: campaign.protocol,
-      startTimestamp: currentPeriod.startTimestamp,
+      startTimestamp: campaign.rewardsPeriods[0].startTimestamp,
       endTimestampExclusive,
       outputDir,
       useStaging: false,

@@ -17,6 +17,7 @@ export const protocols = [
   'tether-v0',
   'base-v0',
   'mantle-v0',
+  'morph',
 ] as const
 export type Protocol = (typeof protocols)[number]
 
@@ -43,6 +44,7 @@ export enum NetworkId {
   'unichain-mainnet' = 'unichain-mainnet',
   'berachain-mainnet' = 'berachain-mainnet',
   'mantle-mainnet' = 'mantle-mainnet',
+  'morph-mainnet' = 'morph-mainnet',
 }
 
 export interface TokenPriceData {
@@ -79,7 +81,7 @@ export interface ReferralEvent {
   userAddress: string
   timestamp: number
   referrerId: string
-  protocol: Protocol
+  protocol?: Protocol
 }
 
 export interface FilterParams {
