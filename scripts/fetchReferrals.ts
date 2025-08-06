@@ -119,9 +119,7 @@ export async function fetchReferrals(
   const uniqueEvents = removeDuplicates(referralEvents)
   let qualifyingEvents = uniqueEvents
 
-  // TODO: we'll enable this after optimizing the hypersync query
-  // eslint-disable-next-line no-constant-condition
-  if (args.protocol in protocolToQualifyingReferralFinder && false) {
+  if (args.protocol in protocolToQualifyingReferralFinder) {
     const findQualifyingReferrals =
       protocolToQualifyingReferralFinder[args.protocol]!
     const qualifyingReferralEvents = await findQualifyingReferrals({
