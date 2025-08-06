@@ -31,6 +31,7 @@ describe('distributeRewards', () => {
     rewardsPoolAddress: '0xa2a4c1eb286a2efa470d42676081b771bbe9c1c8',
     networkId: NetworkId['base-mainnet'],
     valoraRewardsPoolAddress: '0xf4fB5Ff2baf6B33dbd92659a88c6EE927B2C88A0',
+    rewardsPeriods: [],
   }
 
   const valoraDivviIdentifier = '0xVALORA123456789012345678901234567890123456'
