@@ -14,7 +14,7 @@
 function calculateKpi(params): Promise<KpiResult<string>>
 ```
 
-Defined in: [velodrome/index.ts:62](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/velodrome/index.ts#L62)
+Defined in: [velodrome/index.ts:62](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/velodrome/index.ts#L62)
 
 Calculates trading fee revenue generated for Velodrome DEX on Optimism Network.
 
