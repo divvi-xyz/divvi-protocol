@@ -60,14 +60,14 @@
   },
   "devDependencies": {
     "@bgd-labs/aave-address-book": "^4.18.0",
-    "@google-cloud/functions-framework": "^3.4.3",
+    "@google-cloud/functions-framework": "^4.0.0",
     "@jest/globals": "^30.0.3",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
     "@nomicfoundation/hardhat-ignition": "^0.15.10",
     "@nomicfoundation/hardhat-ignition-viem": "^0.15.10",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.12",
-    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
+    "@nomicfoundation/hardhat-toolbox-viem": "^4.1.0",
     "@nomicfoundation/hardhat-verify": "^2.0.14",
     "@nomicfoundation/hardhat-viem": "^2.0.6",
     "@openzeppelin/contracts": "5.2.0",
@@ -86,7 +86,7 @@
     "bignumber.js": "^9.2.1",
     "bottleneck": "^2.19.5",
     "chai": "^4.5.0",
-    "csv-parse": "^5.6.0",
+    "csv-parse": "^6.1.0",
     "csv-stringify": "^6.5.2",
     "eslint": "^8.57.1",
     "eslint-import-resolver-typescript": "^3.10.1",
@@ -101,7 +101,7 @@
     "prettier": "^3.6.2",
     "prettier-plugin-solidity": "^1.4.3",
     "sax": "^1.4.1",
-    "solhint": "^5.0.5",
+    "solhint": "^6.0.0",
     "solidity-coverage": "^0.8.14",
     "supertest": "^7.1.1",
     "ts-jest": "^29.3.0",
@@ -111,7 +111,7 @@
     "typedoc-plugin-markdown": "^4.6.4",
     "typescript": "^5.9.2",
     "unzipper": "^0.12.3",
-    "yargs": "^17.7.2"
+    "yargs": "^18.0.0"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
