@@ -32,6 +32,9 @@ jobs:
           check-latest: true
       - run: yarn
       - name: Calculate and upload KPIs for the current reward period
+        env:
+          HYPERSYNC_API_KEY: ${{ secrets.HYPERSYNC_API_KEY }}
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         run: |
           yarn ts-node scripts/uploadCurrentPeriodKpis.ts \
             --calculation-timestamp ${{ github.event.inputs.timestamp }} \
