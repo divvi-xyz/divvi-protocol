@@ -14,7 +14,7 @@
 function calculateKpi(params): Promise<KpiResult<string>>
 ```
 
-Defined in: [beefy/index.ts:214](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/beefy/index.ts#L214)
+Defined in: [beefy/index.ts:214](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/beefy/index.ts#L214)
 
 Calculates vault management fee revenue generated for Beefy Finance protocol.
 

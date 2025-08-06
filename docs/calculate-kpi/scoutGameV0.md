@@ -14,7 +14,7 @@
 const calculateKpi: CalculateKpiFn<ScoutGameBreakdown>
 ```
 
-Defined in: [scoutGameV0.ts:50](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/scoutGameV0.ts#L50)
+Defined in: [scoutGameV0.ts:50](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/scoutGameV0.ts#L50)
 
 Calculates transaction count for Scout Game V0 user engagement tracking.
 
