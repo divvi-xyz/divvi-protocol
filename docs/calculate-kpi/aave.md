@@ -14,7 +14,7 @@
 function calculateKpi(params): Promise<KpiResult<string>>
 ```
 
-Defined in: [aave/index.ts:104](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/aave/index.ts#L104)
+Defined in: [aave/index.ts:104](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/aave/index.ts#L104)
 
 Calculates lending protocol revenue generated for Aave across multiple networks.
 
