@@ -286,7 +286,7 @@ export const campaigns: Campaign[] = [
   {
     protocol: 'morph',
     rewardsPoolAddress: '0x0000000000000000000000000000000000000000', // on Morph mainnet (TODO: fill this in after ENG-527 is done)
-    providerAddress: '0x0', // TODO: fill this in
+    providerAddress: '0x0000000000000000000000000000000000000000', // TODO: fill this in
     networkId: NetworkId['morph-mainnet'],
     valoraRewardsPoolAddress: null,
     rewardsPeriods: [
