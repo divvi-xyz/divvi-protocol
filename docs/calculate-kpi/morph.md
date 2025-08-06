@@ -14,7 +14,7 @@
 function calculateKpi(params): Promise<KpiResult<string>>
 ```
 
-Defined in: [morph/index.ts:45](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/morph/index.ts#L45)
+Defined in: [morph/index.ts:45](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/morph/index.ts#L45)
 
 Calculates the number of transactions for a given user on the Morph network.
 
