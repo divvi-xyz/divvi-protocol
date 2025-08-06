@@ -3,6 +3,7 @@ import { findQualifyingNetworkReferral } from './qualifyingNetworkReferral'
 //import * as hypersyncPagination from '../utils/hypersyncPagination'
 //import * as getReferrerIdModule from '../calculateKpi/protocols/tetherV0/parseReferralTag/getReferrerIdFromTx'
 import { NetworkId } from '../types'
+import { getUserOperations } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getUserOperations'
 
 // Mocked data
 const mockUsers = new Set(['0xUser1', '0xUser2'])
@@ -16,18 +17,18 @@ jest.mock('../utils', () => ({
 
 jest.mock('../utils/hypersyncPagination', () => ({
   paginateQuery: jest.fn(async (_client, _query, cb) => {
-    console.log('_query', _query.transactions)
-    const user = _query.transactions[0].from[0] as string
     const data = {
-      '0xUser1': {
-        transactions: [{ hash: '0xTxHash' }],
-        blocks: [{ timestamp: 1234567890 }],
-      },
-      '0xUser2': {
-        transactions: [],
-        blocks: [],
-      },
-    }[user]
+      transactions: [
+        {
+          hash: '0xTxHash',
+          input: '0xTxInput',
+          to: '0xToToToToToToToToToToToToToToToToToToToTo',
+          from: '0xUser1',
+          blockNumber: 123,
+        },
+      ],
+      blocks: [{ timestamp: 1234567890, number: 123 }],
+    }
     await cb({ data })
   }),
 }))
@@ -46,6 +47,11 @@ jest.mock('../calculateKpi/protocols/utils/events', () => ({
     endBlockExclusive: 100,
   })),
 }))
+
+jest.mock(
+  '../calculateKpi/protocols/tetherV0/parseReferralTag/getUserOperations',
+)
+jest.mocked(getUserOperations).mockReturnValue([])
 
 describe('findQualifyingNetworkReferral', () => {
   it('returns qualifying referrals for users', async () => {
