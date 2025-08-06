@@ -14,7 +14,7 @@
 function calculateKpi(params): Promise<KpiResult<string>>
 ```
 
-Defined in: [fonbnk/index.ts:215](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/fonbnk/index.ts#L215)
+Defined in: [fonbnk/index.ts:215](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/fonbnk/index.ts#L215)
 
 Calculates cash-in transaction volume from Fonbnk payout wallets to user.
 
