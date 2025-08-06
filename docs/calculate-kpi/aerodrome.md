@@ -14,7 +14,7 @@
 function calculateKpi(params): Promise<KpiResult<string>>
 ```
 
-Defined in: [aerodrome/index.ts:56](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/aerodrome/index.ts#L56)
+Defined in: [aerodrome/index.ts:56](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/aerodrome/index.ts#L56)
 
 Calculates trading fee revenue generated for Aerodrome DEX on Base Network.
 
