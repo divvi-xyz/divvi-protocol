@@ -1,0 +1,2 @@
+GCLOUD_PROJECT: 'divvi-production'
+DIVVI_ENTITIES_BUCKET_NAME: 'divvi-campaign-data-production'
