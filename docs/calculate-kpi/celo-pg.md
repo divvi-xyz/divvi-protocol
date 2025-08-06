@@ -14,7 +14,7 @@
 function calculateKpi(params): Promise<KpiResult<string>>
 ```
 
-Defined in: [celo-pg/index.ts:48](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/celo-pg/index.ts#L48)
+Defined in: [celo-pg/index.ts:48](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/celo-pg/index.ts#L48)
 
 Calculates gas usage for Celo public goods infrastructure activity.
 

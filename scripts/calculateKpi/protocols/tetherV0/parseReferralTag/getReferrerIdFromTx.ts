@@ -8,18 +8,20 @@ export async function getReferrerIdFromTx(
   txHash: Hex,
   networkId: NetworkId,
   skipRetries: boolean,
+  transactionInfo?: TransactionInfo,
 ): Promise<null | string> {
   const publicClient = getViemPublicClient(networkId)
 
-  let transactionInfo: TransactionInfo | null = null
-  try {
-    transactionInfo = await getTransactionInfo({
-      publicClient,
-      txHash,
-      skipRetries,
-    })
-  } catch (error) {
-    return null
+  if (!transactionInfo) {
+    try {
+      transactionInfo = await getTransactionInfo({
+        publicClient,
+        txHash,
+        skipRetries,
+      })
+    } catch (error) {
+      return null
+    }
   }
 
   const userOperation =
