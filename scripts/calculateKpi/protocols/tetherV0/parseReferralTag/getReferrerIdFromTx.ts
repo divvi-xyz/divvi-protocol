@@ -10,9 +10,8 @@ export async function getReferrerIdFromTx(
   skipRetries: boolean,
   transactionInfo?: TransactionInfo,
 ): Promise<null | string> {
-  const publicClient = getViemPublicClient(networkId)
-
   if (!transactionInfo) {
+    const publicClient = getViemPublicClient(networkId)
     try {
       transactionInfo = await getTransactionInfo({
         publicClient,

@@ -54,7 +54,14 @@ async function getEligibleTxCountByReferrer({
 }): Promise<Record<string, number>> {
   const client = getHyperSyncClient(networkId)
 
-  const transactionValueByHash: Record<string, BigNumber> = {}
+  const transactionValueByHash: Record<
+    string,
+    {
+      value: BigNumber
+      to: Address
+      input: Hex
+    }
+  > = {}
 
   const query = {
     transactions: [{ from: [user] }],
@@ -80,7 +87,11 @@ async function getEligibleTxCountByReferrer({
         LogField.Topic3,
         LogField.TransactionHash,
       ],
-      transaction: [TransactionField.Hash],
+      transaction: [
+        TransactionField.Hash,
+        TransactionField.Input,
+        TransactionField.To,
+      ],
     },
     fromBlock: startBlock ?? 0,
     ...(endBlockExclusive && { toBlock: endBlockExclusive }),
@@ -88,6 +99,16 @@ async function getEligibleTxCountByReferrer({
 
   // Group each Transfer event to / from the user by transactionHash to get the net transfer value
   await paginateQuery(client, query, async (response) => {
+    for (const tx of response.data.transactions) {
+      if (tx.hash && tx.to && tx.input) {
+        transactionValueByHash[tx.hash] = {
+          value: BigNumber(0),
+          to: tx.to as Address,
+          input: tx.input as Hex,
+        }
+      }
+    }
+
     for (const { data, topics, transactionHash } of response.data.logs) {
       if (data && transactionHash) {
         const decodedLog = decodeEventLog({
@@ -102,16 +123,22 @@ async function getEligibleTxCountByReferrer({
           isTransferToUser ? 1 : -1,
         )
 
-        transactionValueByHash[transactionHash] = (
-          transactionValueByHash[transactionHash] ?? BigNumber(0)
-        ).plus(transferValue)
+        if (!transactionValueByHash[transactionHash]) {
+          console.log(
+            `Transaction ${transactionHash} not found in transactionValueByHash, skipping`,
+          )
+          continue
+        }
+
+        transactionValueByHash[transactionHash].value =
+          transactionValueByHash[transactionHash].value.plus(transferValue)
       }
     }
   })
 
   // Separate the eligible transactions by referrerId
   const eligibleTxCountByReferrer: Record<string, number> = {}
-  for (const [transactionHash, value] of Object.entries(
+  for (const [transactionHash, { value, to, input }] of Object.entries(
     transactionValueByHash,
   )) {
     if (value.abs().gte(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT)) {
@@ -119,6 +146,15 @@ async function getEligibleTxCountByReferrer({
         transactionHash as Hex,
         networkId,
         true,
+        // TODO: handle AA transactions
+        {
+          hash: transactionHash as Hex,
+          type: 'transaction',
+          transactionType: 'regular',
+          from: user,
+          to,
+          calldata: input,
+        },
       )
       if (referrerId !== null) {
         eligibleTxCountByReferrer[referrerId] =
