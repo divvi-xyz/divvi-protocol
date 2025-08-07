@@ -41,19 +41,39 @@ async function _getNearestBlock(
 ): Promise<BlockTimestampData> {
   const defiLlamaChain = NETWORK_ID_TO_DEFI_LLAMA_CHAIN[networkId]
 
-  const response = await fetchWithTimeout(
-    `${DEFI_LLAMA_API_URL}/block/${defiLlamaChain}/${targetTimestampSec}`,
-  )
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(
-      `Error while fetching block timestamp from DefiLlama:\n` +
-        `Status: ${response.status} ${response.statusText}\n` +
-        `Body: ${errorBody}`,
-    )
+  // Add retry logic for fetchWithTimeout
+  const MAX_RETRIES = 3
+  const RETRY_DELAY_MS = 2000
+
+  let lastError: Error | null = null
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetchWithTimeout(
+        `${DEFI_LLAMA_API_URL}/block/${defiLlamaChain}/${targetTimestampSec}`,
+        null,
+        60000, // 60 seconds
+      )
+      if (!response.ok) {
+        const errorBody = await response.text()
+        throw new Error(
+          `Error while fetching block timestamp from DefiLlama:\n` +
+            `Status: ${response.status} ${response.statusText}\n` +
+            `Body: ${errorBody}`,
+        )
+      }
+      const blockTimestampData = (await response.json()) as BlockTimestampData
+      return blockTimestampData
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err))
+      if (attempt < MAX_RETRIES) {
+        // Wait before retrying
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS))
+      }
+    }
   }
-  const blockTimestampData = (await response.json()) as BlockTimestampData
-  return blockTimestampData
+  throw new Error(
+    `Failed to fetch block timestamp from DefiLlama after ${MAX_RETRIES} attempts: ${lastError?.message}`,
+  )
 }
 
 // Set up a Bottleneck instance to keep requests to DefiLlama under the allowed rate limit (500 requests per minute).
