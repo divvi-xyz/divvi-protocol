@@ -4,7 +4,7 @@ import { QueryResponse, Log } from '@envio-dev/hypersync-client'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { getHyperSyncClient, getViemPublicClient } from '../../../utils'
 import { BigNumber } from 'bignumber.js'
-import { calculateKpi } from './index'
+import { calculateKpi, calculateKpiBatch } from './index'
 import { getReferrerIdFromTx } from './parseReferralTag/getReferrerIdFromTx'
 
 // Mock dependencies
@@ -65,7 +65,10 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       startBlock: 1000,
       endBlockExclusive: 2000,
     })
-    mockGetReferrerIdFromTx.mockResolvedValue('test-referrer')
+    mockGetReferrerIdFromTx.mockImplementation(async (txHash: Hex) => {
+      if (txHash === '0xabc123') return 'test-referrer'
+      return null
+    })
     mockReadContract.mockResolvedValue(true)
   })
 
@@ -569,6 +572,151 @@ describe('Tether V0 Protocol KPI Calculation', () => {
           },
         },
       ])
+    })
+  })
+
+  describe('calculateKpiBatch', () => {
+    const testUsers = [
+      '0x1234567890123456789012345678901234567890',
+      '0x2345678901234567890123456789012345678901',
+      '0x3456789012345678901234567890123456789012',
+    ]
+
+    const batchProps = {
+      users: testUsers,
+      startTimestamp,
+      endTimestampExclusive,
+    }
+
+    it('should calculate KPI for multiple users in a single batch', async () => {
+      // Mock paginateQuery to return transactions for multiple users
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse([
+          // User 1 transaction
+          {
+            data: ('0x' +
+              BigNumber(2).shiftedBy(6).toString(16).padStart(64, '0')) as Hex,
+            topics: [
+              transferEventSigHash,
+              pad(testUsers[0], { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xabc123' as Hex,
+          },
+          // User 2 transaction
+          {
+            data: ('0x' +
+              BigNumber(2).shiftedBy(6).toString(16).padStart(64, '0')) as Hex,
+            topics: [
+              transferEventSigHash,
+              pad(testUsers[1], { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xdef456' as Hex,
+          },
+          // User 3 transaction
+          {
+            data: ('0x' +
+              BigNumber(2).shiftedBy(6).toString(16).padStart(64, '0')) as Hex,
+            topics: [
+              transferEventSigHash,
+              pad(testUsers[2], { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xghi789' as Hex,
+          },
+        ])
+        await onPage(mockResponse)
+      })
+
+      // Mock getReferrerIdFromTx to return different referrers for each user
+      mockGetReferrerIdFromTx.mockImplementation(async (txHash: Hex) => {
+        if (txHash === '0xabc123') return 'referrer1'
+        if (txHash === '0xdef456') return 'referrer2'
+        if (txHash === '0xghi789') return 'referrer3'
+        return null
+      })
+
+      const result = await calculateKpiBatch(batchProps)
+
+      // Should return results for all three users
+      expect(result).toHaveLength(3)
+
+      // Check that each user has their own result
+      const userAddresses = result.map((r) => r.userAddress)
+      expect(userAddresses).toContain(testUsers[0])
+      expect(userAddresses).toContain(testUsers[1])
+      expect(userAddresses).toContain(testUsers[2])
+
+      // Check that each user has the correct KPI (1 transaction * 8 networks)
+      result.forEach((userResult) => {
+        expect(userResult.kpi).toBe(8)
+      })
+    })
+
+    it('should handle empty user list', async () => {
+      const result = await calculateKpiBatch({
+        users: [],
+        startTimestamp,
+        endTimestampExclusive,
+      })
+
+      expect(result).toEqual([])
+    })
+
+    it('should filter out users with no eligible transactions', async () => {
+      // Mock paginateQuery to return no transactions
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse([])
+        await onPage(mockResponse)
+      })
+
+      const result = await calculateKpiBatch(batchProps)
+
+      expect(result).toEqual([])
+    })
+
+    it('should handle mixed scenarios with some users having transactions and others not', async () => {
+      // Mock paginateQuery to return transactions only for first user
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse([
+          {
+            data: ('0x' +
+              BigNumber(2).shiftedBy(6).toString(16).padStart(64, '0')) as Hex,
+            topics: [
+              transferEventSigHash,
+              pad(testUsers[0], { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xabc123' as Hex,
+          },
+        ])
+        await onPage(mockResponse)
+      })
+
+      mockGetReferrerIdFromTx.mockImplementation(async (txHash: Hex) => {
+        if (txHash === '0xabc123') return 'test-referrer'
+        return null
+      })
+
+      const result = await calculateKpiBatch(batchProps)
+
+      // Should only return result for the first user
+      expect(result).toHaveLength(1)
+      expect(result[0].userAddress).toBe(testUsers[0])
+      expect(result[0].kpi).toBe(8)
     })
   })
 })

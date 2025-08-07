@@ -9,11 +9,10 @@ export async function getReferrerIdFromTx(
   networkId: NetworkId,
   skipRetries: boolean,
   transactionInfo?: TransactionInfo,
-): Promise<null | string> {
-  const publicClient = getViemPublicClient(networkId)
-
+): Promise<null | { referrerId: string; user: string }> {
   if (!transactionInfo) {
     try {
+      const publicClient = getViemPublicClient(networkId)
       transactionInfo = await getTransactionInfo({
         publicClient,
         txHash,
@@ -41,7 +40,7 @@ export async function getReferrerIdFromTx(
   const { referral } = parseReferral(parseReferralParams)
 
   if (referral) {
-    return referral.consumer
+    return { referrerId: referral.consumer, user: referral.user }
   }
 
   return null

@@ -1,4 +1,6 @@
-import calculateKpiHandlers from './calculateKpi/protocols'
+import calculateKpiHandlers, {
+  calculateKpiBatchHandlers,
+} from './calculateKpi/protocols'
 import yargs from 'yargs'
 import { KpiResults, Protocol, protocols } from './types'
 import { ResultDirectory } from '../src/resultDirectory'
@@ -36,49 +38,112 @@ async function calculateKpiBatch({
 }): Promise<KpiResults> {
   const results: KpiResults = []
 
-  for (let i = 0; i < eligibleUsers.length; i += batchSize) {
-    const batch = eligibleUsers.slice(i, i + batchSize)
-    console.log(
-      `Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)} for campaign ${protocol}`,
-    )
+  // Check if this protocol has a batch handler
+  const batchHandler = calculateKpiBatchHandlers[protocol]
 
-    const batchPromises = batch.map(
-      async ({ referrerId, userAddress, timestamp }) => {
-        const referralTimestamp = new Date(
-          Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
+  if (batchHandler) {
+    // Use the protocol-specific batch handler
+    console.log(`Using batch handler for protocol ${protocol}`)
+
+    // Filter out users whose referral timestamp is after the end date
+    const filteredUsers = eligibleUsers.filter(({ timestamp }) => {
+      const referralTimestamp = new Date(
+        Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
+      )
+      if (referralTimestamp.getTime() >= endTimestampExclusive.getTime()) {
+        console.log(
+          `Referral date is at or after end date (exclusive), skipping user (registration tx date: ${timestamp}) for campaign ${protocol}`,
         )
+        return false
+      }
+      return true
+    })
 
-        if (referralTimestamp.getTime() >= endTimestampExclusive.getTime()) {
-          console.log(
-            `Referral date is at or after end date (exclusive), skipping ${userAddress} (registration tx date: ${timestamp}) for campaign ${protocol}`,
+    // Extract unique user addresses
+    const userAddresses = [...new Set(filteredUsers.map((u) => u.userAddress))]
+
+    // Process in batches similar to qualifyingNetworkReferral.ts
+    const requestsPerBatch = batchSize // number of parallel requests
+    const usersPerRequest = 100 // number of users per hypersync request
+
+    for (
+      let i = 0;
+      i < userAddresses.length;
+      i += requestsPerBatch * usersPerRequest
+    ) {
+      const userGroups = Array.from({ length: requestsPerBatch }, (_, j) =>
+        userAddresses.slice(
+          i + j * usersPerRequest,
+          i + (j + 1) * usersPerRequest,
+        ),
+      ).filter((group) => group.length > 0)
+
+      console.log(
+        `Processing user batch ${Math.floor(i / (requestsPerBatch * usersPerRequest)) + 1} of ${Math.ceil(userAddresses.length / (requestsPerBatch * usersPerRequest))} for campaign ${protocol}`,
+      )
+
+      const batchResults = await Promise.all(
+        userGroups.map((users, j) =>
+          batchHandler({
+            users,
+            startTimestamp,
+            endTimestampExclusive,
+            redis,
+            index: i + j * usersPerRequest,
+          }),
+        ),
+      )
+
+      results.push(...batchResults.flat())
+    }
+  } else {
+    // Fall back to the original per-user processing
+    console.log(`Using per-user processing for protocol ${protocol}`)
+
+    for (let i = 0; i < eligibleUsers.length; i += batchSize) {
+      const batch = eligibleUsers.slice(i, i + batchSize)
+      console.log(
+        `Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)} for campaign ${protocol}`,
+      )
+
+      const batchPromises = batch.map(
+        async ({ referrerId, userAddress, timestamp }) => {
+          const referralTimestamp = new Date(
+            Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
           )
-          return null
-        }
 
-        const calculatedKpi = await calculateKpiHandlers[protocol]({
-          address: userAddress,
-          // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
-          startTimestamp:
-            referralTimestamp.getTime() > startTimestamp.getTime()
-              ? referralTimestamp
-              : startTimestamp,
-          endTimestampExclusive,
-          redis,
-          referrerId,
-        })
+          if (referralTimestamp.getTime() >= endTimestampExclusive.getTime()) {
+            console.log(
+              `Referral date is at or after end date (exclusive), skipping ${userAddress} (registration tx date: ${timestamp}) for campaign ${protocol}`,
+            )
+            return null
+          }
 
-        return Array.isArray(calculatedKpi)
-          ? calculatedKpi
-          : [{ ...calculatedKpi, userAddress, referrerId }]
-      },
-    )
+          const calculatedKpi = await calculateKpiHandlers[protocol]({
+            address: userAddress,
+            // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
+            startTimestamp:
+              referralTimestamp.getTime() > startTimestamp.getTime()
+                ? referralTimestamp
+                : startTimestamp,
+            endTimestampExclusive,
+            redis,
+            referrerId,
+          })
 
-    const batchResults = (await Promise.all(batchPromises)).flat()
-    results.push(
-      ...batchResults.filter(
-        (result): result is NonNullable<typeof result> => result !== null,
-      ),
-    )
+          return Array.isArray(calculatedKpi)
+            ? calculatedKpi
+            : [{ ...calculatedKpi, userAddress, referrerId }]
+        },
+      )
+
+      const batchResults = (await Promise.all(batchPromises)).flat()
+      results.push(
+        ...batchResults.filter(
+          (result): result is NonNullable<typeof result> => result !== null,
+        ),
+      )
+    }
   }
 
   return results
