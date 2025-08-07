@@ -101,17 +101,17 @@ async function findQualifyingNetworkReferralForUsers({
         }
       }
 
-      const referrerId = await getReferrerIdFromTx(
+      const referral = await getReferrerIdFromTx(
         tx.hash as Hex,
         networkId,
         true,
         transactionInfo,
       )
-      if (referrerId !== null) {
+      if (referral !== null) {
         qualifyingNetworkReferrals[user] = {
           userAddress: user,
           timestamp: blockTimestamp,
-          referrerId,
+          referrerId: referral.referrerId,
         }
 
         if (Object.keys(qualifyingNetworkReferrals).length === users.length) {
