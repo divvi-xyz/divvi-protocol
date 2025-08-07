@@ -8,10 +8,7 @@ import { Address, Hex } from 'viem'
 import { RedisClientType } from '@redis/client'
 import Bottleneck from 'bottleneck'
 import { TransactionInfo } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getTransactionInfo'
-import {
-  getUserOperations,
-  isEntryPointAddress,
-} from '../calculateKpi/protocols/tetherV0/parseReferralTag/getUserOperations'
+import { isEntryPointAddress } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getUserOperations'
 
 const limiter = new Bottleneck({
   reservoir: 1000, // initial number of available requests
