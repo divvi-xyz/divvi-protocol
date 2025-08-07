@@ -19,6 +19,8 @@ import {
   REGISTRY_CONTRACT_ADDRESS,
   REWARDS_PROVIDERS,
 } from '../../../utils/referrals'
+import { isEntryPointAddress } from './parseReferralTag/getUserOperations'
+import { TransactionInfo } from './parseReferralTag/getTransactionInfo'
 
 const MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT = BigNumber(1).shiftedBy(6)
 const transferEventSigHash = toEventSelector(
@@ -64,7 +66,6 @@ async function getEligibleTxCountByReferrer({
   > = {}
 
   const query = {
-    transactions: [{ from: [user] }],
     logs: [
       {
         address: [tokenAddress],
@@ -91,6 +92,7 @@ async function getEligibleTxCountByReferrer({
         TransactionField.Hash,
         TransactionField.Input,
         TransactionField.To,
+        TransactionField.From,
       ],
     },
     fromBlock: startBlock ?? 0,
@@ -100,7 +102,13 @@ async function getEligibleTxCountByReferrer({
   // Group each Transfer event to / from the user by transactionHash to get the net transfer value
   await paginateQuery(client, query, async (response) => {
     for (const tx of response.data.transactions) {
-      if (tx.hash && tx.to && tx.input) {
+      if (
+        tx.hash &&
+        tx.to &&
+        tx.input &&
+        (tx.from?.toLowerCase() === user.toLowerCase() ||
+          isEntryPointAddress(tx.to as Address))
+      ) {
         transactionValueByHash[tx.hash] = {
           value: BigNumber(0),
           to: tx.to as Address,
@@ -123,15 +131,10 @@ async function getEligibleTxCountByReferrer({
           isTransferToUser ? 1 : -1,
         )
 
-        if (!transactionValueByHash[transactionHash]) {
-          console.log(
-            `Transaction ${transactionHash} not found in transactionValueByHash, skipping`,
-          )
-          continue
+        if (transactionValueByHash[transactionHash]) {
+          transactionValueByHash[transactionHash].value =
+            transactionValueByHash[transactionHash].value.plus(transferValue)
         }
-
-        transactionValueByHash[transactionHash].value =
-          transactionValueByHash[transactionHash].value.plus(transferValue)
       }
     }
   })
@@ -142,23 +145,28 @@ async function getEligibleTxCountByReferrer({
     transactionValueByHash,
   )) {
     if (value.abs().gte(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT)) {
-      const referrerId = await getReferrerIdFromTx(
-        transactionHash as Hex,
-        networkId,
-        true,
-        // TODO: handle AA transactions
-        {
+      let transactionInfo: TransactionInfo | undefined
+
+      if (!isEntryPointAddress(to)) {
+        transactionInfo = {
           hash: transactionHash as Hex,
           type: 'transaction',
           transactionType: 'regular',
           from: user,
           to,
           calldata: input,
-        },
+        }
+      }
+
+      const referral = await getReferrerIdFromTx(
+        transactionHash as Hex,
+        networkId,
+        true,
+        transactionInfo,
       )
-      if (referrerId !== null) {
-        eligibleTxCountByReferrer[referrerId] =
-          (eligibleTxCountByReferrer[referrerId] ?? 0) + 1
+      if (referral !== null && referral.user === user) {
+        eligibleTxCountByReferrer[referral.referrerId] =
+          (eligibleTxCountByReferrer[referral.referrerId] ?? 0) + 1
       }
     }
   }
