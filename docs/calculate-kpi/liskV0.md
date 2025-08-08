@@ -14,7 +14,7 @@
 function calculateKpi(params): Promise<KpiResult<string>>
 ```
 
-Defined in: [liskV0/index.ts:48](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/liskV0/index.ts#L48)
+Defined in: [liskV0/index.ts:48](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/liskV0/index.ts#L48)
 
 Calculates gas usage for Lisk infrastructure activity.
 

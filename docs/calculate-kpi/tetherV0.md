@@ -14,7 +14,7 @@
 function calculateKpi(params): Promise<KpiResults>
 ```
 
-Defined in: [tetherV0/index.ts:178](https://github.com/divvi-xyz/divvi-protocol-v0/blob/main/scripts/calculateKpi/protocols/tetherV0/index.ts#L178)
+Defined in: [tetherV0/index.ts:222](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/tetherV0/index.ts#L222)
 
 Calculates eligible transaction count for Tether (USDT) activity across multiple networks.
 
