@@ -50,7 +50,7 @@ const NETWORK_ID_TO_SAFE_CONFIG: Partial<
  */
 export async function proposeSafeClaimRewardTx({
   safeAddress: rawSafeAddress,
-  rewardPoolAddress,
+  rewardPoolAddress: rawRewardPoolAddress,
   pendingRewards,
   networkId,
   alchemyKey,
@@ -66,6 +66,7 @@ export async function proposeSafeClaimRewardTx({
   const safeConfig = NETWORK_ID_TO_SAFE_CONFIG[networkId]
   const alchemyRpcUrl = NETWORK_ID_TO_ALCHEMY_RPC_URL[networkId]
   const safeAddress = getAddress(rawSafeAddress)
+  const rewardPoolAddress = getAddress(rawRewardPoolAddress)
 
   if (!safeConfig) {
     throw new Error(`No Safe config found for networkId: ${networkId}`)
