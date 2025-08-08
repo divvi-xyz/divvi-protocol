@@ -18,6 +18,8 @@ const mockPaginateQuery = jest.mocked(paginateQuery)
 const mockGetHyperSyncClient = jest.mocked(getHyperSyncClient)
 const mockGetReferrerIdFromTx = jest.mocked(getReferrerIdFromTx)
 
+const testAddress = '0x1234567890123456789012345678901234567890' as Address
+
 // Mock the memoize function to disable memoization in tests
 jest.mock('@github/memoize', () => ({
   __esModule: true,
@@ -27,7 +29,12 @@ jest.mock('@github/memoize', () => ({
 const makeQueryResponse = (logs: Log[], nextBlock = 100): QueryResponse => ({
   data: {
     blocks: [],
-    transactions: [],
+    transactions: logs.map((log) => ({
+      hash: log.transactionHash,
+      to: '0x0000000000000000000000000000000000000000',
+      input: '0xdoesnotmatter',
+      from: testAddress,
+    })),
     logs,
     traces: [],
   },
@@ -48,7 +55,6 @@ describe('Tether V0 Protocol KPI Calculation', () => {
   const transferEventSigHash = toEventSelector(
     'Transfer(address,address,uint256)',
   )
-  const testAddress = '0x1234567890123456789012345678901234567890' as Address
   const startTimestamp = new Date('2024-01-01T00:00:00Z')
   const endTimestampExclusive = new Date('2024-01-31T23:59:59Z')
 
@@ -65,7 +71,10 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       startBlock: 1000,
       endBlockExclusive: 2000,
     })
-    mockGetReferrerIdFromTx.mockResolvedValue('test-referrer')
+    mockGetReferrerIdFromTx.mockResolvedValue({
+      referrerId: 'test-referrer',
+      user: testAddress,
+    })
     mockReadContract.mockResolvedValue(true)
   })
 
@@ -277,8 +286,10 @@ describe('Tether V0 Protocol KPI Calculation', () => {
     it('should filter out referrers who have not registered agreements with the campaign', async () => {
       // Mock getReferrerIdFromTx to return different referrers
       mockGetReferrerIdFromTx.mockImplementation(async (txHash: string) => {
-        if (txHash === '0xabc123') return 'registered-referrer'
-        if (txHash === '0xdef456') return 'unregistered-referrer'
+        if (txHash === '0xabc123')
+          return { referrerId: 'registered-referrer', user: testAddress }
+        if (txHash === '0xdef456')
+          return { referrerId: 'unregistered-referrer', user: testAddress }
         return null
       })
 
@@ -371,10 +382,14 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
     it('should group results by multiple referrers', async () => {
       mockGetReferrerIdFromTx.mockImplementation(async (txHash: string) => {
-        if (txHash === '0xabc123') return 'referrer1'
-        if (txHash === '0xdef456') return 'referrer2'
-        if (txHash === '0xghi789') return 'referrer3'
-        if (txHash === '0xjkl012') return 'referrer1'
+        if (txHash === '0xabc123')
+          return { referrerId: 'referrer1', user: testAddress }
+        if (txHash === '0xdef456')
+          return { referrerId: 'referrer2', user: testAddress }
+        if (txHash === '0xghi789')
+          return { referrerId: 'referrer3', user: testAddress }
+        if (txHash === '0xjkl012')
+          return { referrerId: 'referrer1', user: testAddress }
         return null
       })
 
@@ -486,9 +501,11 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
     it('should filter out transactions with null referrerId', async () => {
       mockGetReferrerIdFromTx.mockImplementation(async (txHash: string) => {
-        if (txHash === '0xabc123') return 'referrer1'
+        if (txHash === '0xabc123')
+          return { referrerId: 'referrer1', user: testAddress }
         if (txHash === '0xdef456') return null // This transaction should be filtered out
-        if (txHash === '0xghi789') return 'referrer2'
+        if (txHash === '0xghi789')
+          return { referrerId: 'referrer2', user: testAddress }
         return null
       })
 

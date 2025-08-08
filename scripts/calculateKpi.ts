@@ -58,7 +58,9 @@ async function calculateKpiBatch({
         const calculatedKpi = await calculateKpiHandlers[protocol]({
           address: userAddress,
           // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
+          // except for the tether campaign, since we check for the referral tag on all txs, so start from the start of the period to reduce defi llama calls
           startTimestamp:
+            protocol !== 'tether-v0' &&
             referralTimestamp.getTime() > startTimestamp.getTime()
               ? referralTimestamp
               : startTimestamp,
