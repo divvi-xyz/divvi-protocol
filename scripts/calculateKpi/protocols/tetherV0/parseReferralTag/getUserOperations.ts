@@ -30,6 +30,10 @@ export type UserOperationWithHash = {
   calldata: Hex
 }
 
+export function isEntryPointAddress(address: Address): boolean {
+  return Object.keys(entryPointConfigByAddress).includes(getAddress(address))
+}
+
 /**
  * Extracts and validates UserOperations from a transaction that called an EntryPoint contract.
  *

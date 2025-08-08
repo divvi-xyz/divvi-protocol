@@ -65,21 +65,9 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     excludedReferrers,
   })
 
-  const totalTransactionsPerReferrer: {
-    [referrerId: string]: number
-  } = {}
-
-  for (const { referrerId, metadata } of kpiData) {
-    if (!metadata) continue
-
-    totalTransactionsPerReferrer[referrerId] =
-      (totalTransactionsPerReferrer[referrerId] ?? 0) +
-      (metadata.totalTransactions ?? 0)
-  }
-
   const rewardsWithMetadata = rewards.map((reward) => ({
     ...reward,
-    totalTransactions: totalTransactionsPerReferrer[reward.referrerId],
+    totalTransactions: reward.kpi,
   }))
 
   createAddRewardSafeTransactionJSON({

@@ -36,10 +36,7 @@ export const NETWORK_ID_TO_ALCHEMY_RPC_URL: Record<
   [NetworkId['morph-mainnet']]: undefined, // Morph is not supported by Alchemy at the time of writing
 }
 
-/**
- * Gets a public Viem client for a given NetworkId
- */
-export function getViemPublicClient(networkId: NetworkId) {
+function createViemPublicClient(networkId: NetworkId) {
   // there are some networks that don't fit the usual viem client pattern
   // so we handle them separately
   if (networkId === NetworkId['celo-mainnet']) {
@@ -62,6 +59,25 @@ export function getViemPublicClient(networkId: NetworkId) {
         })
       : http(),
   })
+}
+
+const viemPublicClients = new Map<
+  NetworkId,
+  ReturnType<typeof createViemPublicClient>
+>()
+
+/**
+ * Gets a public Viem client for a given NetworkId
+ */
+export function getViemPublicClient(networkId: NetworkId) {
+  let client = viemPublicClients.get(networkId)
+
+  if (!client) {
+    client = createViemPublicClient(networkId)
+    viemPublicClients.set(networkId, client)
+  }
+
+  return client
 }
 
 // Hypersync Client Factory (Lazy Singleton)
