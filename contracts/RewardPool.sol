@@ -76,7 +76,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     address indexed user,
     uint256 originalAmount,
     uint256 feeAmount,
-    uint256 netAmount
+    uint256 protocolFee
   );
 
   // Errors
@@ -270,7 +270,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
             reward.user,
             reward.amount,
             feeAmount,
-            reward.amount
+            protocolFee
           );
         }
 

@@ -279,7 +279,7 @@ describe(CONTRACT_NAME, function () {
       const factoryWithOwner = factory.connect(owner) as typeof factory
       await expect(
         factoryWithOwner.setDefaultReserveAddress(hre.ethers.ZeroAddress),
-      ).to.be.revertedWithCustomError(factory, 'InvalidReserveAddress')
+      ).to.be.revertedWithCustomError(factory, 'ZeroAddressNotAllowed')
     })
 
     it('reverts when setting zero address as default owner', async function () {

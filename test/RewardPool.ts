@@ -1042,7 +1042,7 @@ describe(CONTRACT_NAME, function () {
               user1.address,
               rewardAmount,
               hre.ethers.parseEther('5'),
-              rewardAmount,
+              protocolFee,
             )
 
           // Check that reserve address received the fee

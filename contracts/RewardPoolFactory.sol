@@ -41,7 +41,6 @@ contract RewardPoolFactory is
   error ZeroAddressNotAllowed();
   error ImplementationNotSet();
   error InvalidProtocolFee(uint256 fee);
-  error InvalidReserveAddress();
 
   // State variables
   address public implementation;
@@ -75,7 +74,7 @@ contract RewardPoolFactory is
     __UUPSUpgradeable_init();
 
     if (_implementation == address(0)) revert ZeroAddressNotAllowed();
-    if (_defaultReserveAddress == address(0)) revert InvalidReserveAddress();
+    if (_defaultReserveAddress == address(0)) revert ZeroAddressNotAllowed();
     if (_defaultOwner == address(0)) revert ZeroAddressNotAllowed();
     if (_defaultProtocolFee > 1e18)
       revert InvalidProtocolFee(_defaultProtocolFee);
@@ -151,7 +150,7 @@ contract RewardPoolFactory is
   function setDefaultReserveAddress(
     address _defaultReserveAddress
   ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    if (_defaultReserveAddress == address(0)) revert InvalidReserveAddress();
+    if (_defaultReserveAddress == address(0)) revert ZeroAddressNotAllowed();
 
     address previousReserveAddress = defaultReserveAddress;
     defaultReserveAddress = _defaultReserveAddress;
