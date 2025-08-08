@@ -8,18 +8,19 @@ export async function getReferrerIdFromTx(
   txHash: Hex,
   networkId: NetworkId,
   skipRetries: boolean,
-): Promise<null | string> {
-  const publicClient = getViemPublicClient(networkId)
-
-  let transactionInfo: TransactionInfo | null = null
-  try {
-    transactionInfo = await getTransactionInfo({
-      publicClient,
-      txHash,
-      skipRetries,
-    })
-  } catch (error) {
-    return null
+  transactionInfo?: TransactionInfo,
+): Promise<null | { referrerId: string; user: string }> {
+  if (!transactionInfo) {
+    const publicClient = getViemPublicClient(networkId)
+    try {
+      transactionInfo = await getTransactionInfo({
+        publicClient,
+        txHash,
+        skipRetries,
+      })
+    } catch (error) {
+      return null
+    }
   }
 
   const userOperation =
@@ -39,7 +40,10 @@ export async function getReferrerIdFromTx(
   const { referral } = parseReferral(parseReferralParams)
 
   if (referral) {
-    return referral.consumer
+    return {
+      referrerId: referral.consumer,
+      user: referral.user,
+    }
   }
 
   return null
