@@ -1,7 +1,7 @@
 import { Address, bytesToHex, decodeAbiParameters, Hex, hexToBytes } from 'viem'
 import { alignMagicPrefixAndPadHex } from './alignMagicPrefixAndPadHex'
 
-const SUPPORTED_FORMAT_IDS = [1] as const
+const SUPPORTED_FORMAT_IDS = [0, 1] as const
 // Magic prefix is keccak256("divvi").slice(2, 10)
 export const DIVVI_MAGIC_PREFIX = '6decb85d'
 
@@ -134,6 +134,15 @@ export function parseReferral(
 
       // 3. Based on formatId, call appropriate parser
       switch (formatIdByte) {
+        case 0:
+          return parseFormat0({
+            // Use the original data for format 0 parsing
+            // Since it has the length suffix which must be at the end of the data
+            // This means it will return an error if the prefix is not byte aligned
+            // but that's the best we can do for format 0
+            data,
+            user,
+          })
         case 1:
           return parseFormat1({
             dataBytes: alignedDataBytes,
@@ -152,6 +161,45 @@ export function parseReferral(
       type: 'no-referral',
       message: 'No referral tag found in the transaction data',
     },
+  }
+}
+
+function parseFormat0({
+  data,
+  user,
+}: {
+  data: Hex
+  user: Address
+}): ParseReferralResult {
+  // Here we use aligned data to be more resilient to malformed data
+  // since we're searching for the prefix anywhere in the data
+  const alignedData = alignMagicPrefixAndPadHex(data)
+  const alignedDataBytes = hexToBytes(alignedData)
+  // Find expectedDataPrefixHex in alignedData
+  const prefixIndex = alignedData.indexOf(DIVVI_MAGIC_PREFIX)
+  // Convert hex string index to byte array index: subtract 2 for '0x' prefix, then divide by 2 since each byte is 2 hex chars
+  const appendedDataBytes = alignedDataBytes.slice((prefixIndex - 2) / 2)
+
+  // ABI-encoded part: between prefix + formatId (5 bytes) and length suffix (last 4 bytes)
+  const encodedDataBytes = appendedDataBytes.slice(5, -4)
+  const encodedDataHex = bytesToHex(encodedDataBytes)
+
+  try {
+    const [consumer, providers] = decodeAbiParameters(
+      [{ type: 'address' }, { type: 'address[]' }],
+      encodedDataHex,
+    )
+
+    return {
+      referral: {
+        user,
+        consumer,
+        providers,
+      },
+      tagFormatId: 0,
+    }
+  } catch (error) {
+    return createAbiDecodeError(0)
   }
 }
 

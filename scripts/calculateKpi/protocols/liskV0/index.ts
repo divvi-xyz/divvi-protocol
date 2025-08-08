@@ -63,11 +63,11 @@ export async function calculateKpi({
     redis,
   })
 
-  const { totalGasUsed: kpi } = await fetchNetworkMetrics({
+  const { totalGasUsed: kpi, totalTransactions } = await fetchNetworkMetrics({
     networkId: NetworkId['lisk-mainnet'],
     users: [address],
     startBlock,
     endBlockExclusive,
   })
-  return { kpi }
+  return { kpi, metadata: { totalTransactions } }
 }
