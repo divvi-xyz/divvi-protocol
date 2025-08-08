@@ -1,4 +1,4 @@
-import { Address, parseEther } from 'viem'
+import { Address, parseEther, parseUnits } from 'viem'
 import { Protocol, NetworkId } from '../scripts/types'
 import { ResultDirectory } from './resultDirectory'
 import { main as calculateRewardsCeloPG } from '../scripts/calculateRewards/celoPG'
@@ -257,7 +257,7 @@ export const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-06-30T00:00:00Z',
         endTimestampExclusive: '2025-08-01T00:00:00Z',
-        rewardAmountInWei: '1000000000', // 1000 USDC
+        rewardAmountInWei: parseUnits('1000', 6).toString(),
         calculateRewards: async (params) => {
           await calculateProportionalRewards({
             ...params,
@@ -339,7 +339,7 @@ export const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-07-28T00:00:00Z',
         endTimestampExclusive: '2025-08-30T00:00:00Z',
-        rewardAmountInWei: '5000000000', // 5000 USDT
+        rewardAmountInWei: parseUnits('5000', 6).toString(),
         calculateRewards: async (params) => {
           await calculateProportionalRewards({
             ...params,
@@ -350,7 +350,7 @@ export const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-08-30T00:00:00Z',
         endTimestampExclusive: '2025-09-30T00:00:00Z',
-        rewardAmountInWei: '10000000000', // 10000 USDT
+        rewardAmountInWei: parseUnits('10000', 6).toString(),
         calculateRewards: async (params) => {
           await calculateProportionalRewards({
             ...params,
