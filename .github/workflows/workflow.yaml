@@ -142,6 +142,7 @@ jobs:
             --env-vars-file=cloud-functions/endpoints/redistributeValoraRewards/config-production.yaml \
             --set-secrets VALORA_REWARDS_POOL_OWNER_PRIVATE_KEY=ETHCC2025_REWARD_POOL_OWNER_PRIVATE_KEY:latest \
             --set-secrets ALCHEMY_KEY=ALCHEMY_API_KEY:latest
+            --memory 1GB
       - name: Deploy updateDivviEntities
         run: |
           yarn deploy:production:internal-single updateDivviEntities \
