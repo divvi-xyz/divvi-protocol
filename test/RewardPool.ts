@@ -169,8 +169,8 @@ describe(CONTRACT_NAME, function () {
             owner.address,
             manager.address,
             (await time.latest()) + TIMELOCK,
-            0, // protocolFee
-            owner.address, // reserveAddress
+            0,
+            owner.address,
           ),
         ).to.be.revertedWithCustomError(rewardPool, 'AlreadyInitialized')
       })
@@ -986,15 +986,10 @@ describe(CONTRACT_NAME, function () {
         it('collects protocol fees when adding rewards', async function () {
           // Set protocol fee to 5%
           const protocolFee = hre.ethers.parseEther('0.05')
-          console.log('Setting protocol fee to:', protocolFee.toString())
           await poolWithOwner.setProtocolFee(protocolFee)
 
           // Verify the protocol fee was set correctly
           const actualFee = await rewardPool.protocolFee()
-          console.log(
-            'Actual protocol fee after setting:',
-            actualFee.toString(),
-          )
           expect(actualFee).to.equal(protocolFee)
 
           // Set reserve address to user1
@@ -1008,7 +1003,6 @@ describe(CONTRACT_NAME, function () {
           if (tokenType === 'ERC20') {
             await poolWithManager.deposit(depositAmount)
           } else {
-            // For native token, we need to send value with the deposit
             await poolWithManager.deposit(depositAmount, {
               value: depositAmount,
             })
@@ -1055,7 +1049,7 @@ describe(CONTRACT_NAME, function () {
             hre.ethers.parseEther('5'),
           )
 
-          // Check that user can claim the full reward amount (no deduction)
+          // Check that user can claim the full reward amount
           expect(await rewardPool.pendingRewards(user1.address)).to.equal(
             rewardAmount,
           )
@@ -1070,7 +1064,6 @@ describe(CONTRACT_NAME, function () {
           if (tokenType === 'ERC20') {
             await poolWithManager.deposit(depositAmount)
           } else {
-            // For native token, we need to send value with the deposit
             await poolWithManager.deposit(depositAmount, {
               value: depositAmount,
             })

@@ -25,6 +25,8 @@ contract RewardPoolFactory is
     address indexed owner,
     address indexed manager,
     uint256 timelock,
+    uint256 protocolFee,
+    address reserveAddress,
     address rewardPool
   );
   event DefaultProtocolFeeUpdated(
@@ -120,6 +122,8 @@ contract RewardPoolFactory is
       defaultOwner,
       _manager,
       _timelock,
+      defaultProtocolFee,
+      defaultReserveAddress,
       clone
     );
 

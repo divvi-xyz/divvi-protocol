@@ -28,8 +28,8 @@ describe(CONTRACT_NAME, function () {
       owner.address,
       manager.address,
       (await time.latest()) + TIMELOCK,
-      0, // protocolFee - 0% fee for tests
-      deployer.address, // reserveAddress - use deployer as reserve for tests
+      0,
+      deployer.address,
     )
     await implementation.waitForDeployment()
 
@@ -41,9 +41,9 @@ describe(CONTRACT_NAME, function () {
         owner.address,
         TRANSFER_DELAY,
         await implementation.getAddress(),
-        0, // defaultProtocolFee - 0% fee for tests
-        deployer.address, // defaultReserveAddress - use deployer as reserve for tests
-        owner.address, // defaultOwner - use owner as default owner for tests
+        0,
+        deployer.address,
+        owner.address,
       ],
       { kind: 'uups' },
     )
@@ -114,14 +114,18 @@ describe(CONTRACT_NAME, function () {
       })
       const cloneAddress = eventData?.args.rewardPool // Get the clone address from the named argument
 
-      await expect(tx).to.emit(factory, 'RewardPoolCreated').withArgs(
-        poolToken.address,
-        rewardFunctionId,
-        owner.address, // defaultOwner from factory
-        poolManager,
-        timelock,
-        cloneAddress,
-      )
+      await expect(tx)
+        .to.emit(factory, 'RewardPoolCreated')
+        .withArgs(
+          poolToken.address,
+          rewardFunctionId,
+          owner.address, // defaultOwner from factory
+          poolManager,
+          timelock,
+          await factory.defaultProtocolFee(), // protocolFee
+          await factory.defaultReserveAddress(), // reserveAddress
+          cloneAddress,
+        )
 
       const rewardPool = await hre.ethers.getContractAt(
         IMPLEMENTATION_NAME,
@@ -173,7 +177,7 @@ describe(CONTRACT_NAME, function () {
     })
   })
 
-  describe('Default Protocol Fee Management', function () {
+  describe('Default State Management', function () {
     let factory: Contract
     let owner: HardhatEthersSigner
     let user1: HardhatEthersSigner
