@@ -4,7 +4,7 @@
   "navigation": {
     "groups": [
       {
-        "group": "General",
+        "group": "Divvi Protocol",
         "pages": ["overview", "fund-managers", "contracts"]
       }
     ]
