@@ -1,7 +1,8 @@
-import { Protocol, CalculateKpiFn, NetworkId } from '../../types'
+import { Protocol, CalculateKpiFn } from '../../types'
 import { calculateKpi as calculateKpiAerodrome } from './aerodrome'
 import { calculateKpi as calculateKpiBeefy } from './beefy'
 import { calculateKpi as calculateKpiSomm } from './somm'
+import { calculateKpi as calculateKpiCeloPG } from './celo-pg'
 import { calculateKpi as calculateKpiArbitrum } from './arbitrum'
 import { calculateKpi as calculateKpiVelodrome } from './velodrome'
 import { calculateKpi as calculateKpiFonbnk } from './fonbnk'
@@ -9,8 +10,11 @@ import { calculateKpi as calculateKpiAave } from './aave'
 import { calculateKpi as calculateKpiCeloTransactions } from './celoTransactions'
 import { calculateKpi as calculateKpiRhino } from './rhino'
 import { calculateKpi as calculateKpiScoutGameV0 } from './scoutGameV0'
+import { calculateKpi as calculateKpiLiskV0 } from './liskV0'
 import { calculateKpi as calculateKpiTetherV0 } from './tetherV0'
-import { calculateNetworkKpi } from '../networkKpi'
+import { calculateKpi as calculateKpiBaseV0 } from './baseV0'
+import { calculateKpi as calculateKpiMantleV0 } from './mantleV0'
+import { calculateKpi as calculateKpiMorph } from './morph'
 
 /**
  * Central registry of KPI calculation handlers for all supported protocols.
@@ -40,12 +44,7 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   beefy: calculateKpiBeefy,
   aerodrome: calculateKpiAerodrome,
   somm: calculateKpiSomm,
-  'celo-pg': (params) =>
-    calculateNetworkKpi({
-      ...params,
-      networkId: NetworkId['celo-mainnet'],
-      kpiType: 'gas',
-    }),
+  'celo-pg': calculateKpiCeloPG,
   arbitrum: calculateKpiArbitrum,
   velodrome: calculateKpiVelodrome,
   fonbnk: calculateKpiFonbnk,
@@ -53,31 +52,11 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   'celo-transactions': calculateKpiCeloTransactions,
   rhino: calculateKpiRhino,
   'scout-game-v0': calculateKpiScoutGameV0,
-  'lisk-v0': (params) =>
-    calculateNetworkKpi({
-      ...params,
-      networkId: NetworkId['lisk-mainnet'],
-      kpiType: 'gas',
-    }),
+  'lisk-v0': calculateKpiLiskV0,
   'tether-v0': calculateKpiTetherV0,
-  'base-v0': (params) =>
-    calculateNetworkKpi({
-      ...params,
-      networkId: NetworkId['base-mainnet'],
-      kpiType: 'gas',
-    }),
-  'mantle-v0': (params) =>
-    calculateNetworkKpi({
-      ...params,
-      networkId: NetworkId['mantle-mainnet'],
-      kpiType: 'gas',
-    }),
-  morph: (params) =>
-    calculateNetworkKpi({
-      ...params,
-      networkId: NetworkId['morph-mainnet'],
-      kpiType: 'tx',
-    }),
+  'base-v0': calculateKpiBaseV0,
+  'mantle-v0': calculateKpiMantleV0,
+  morph: calculateKpiMorph,
 }
 
 export default calculateKpiHandlers
