@@ -1,10 +1,12 @@
 import { it } from '@jest/globals'
-import { Campaign, uploadCurrentPeriodKpis } from './uploadCurrentPeriodKpis'
+import { uploadCurrentPeriodKpis } from './uploadCurrentPeriodKpis'
 import { fetchReferrals } from './fetchReferrals'
 import { calculateKpi } from './calculateKpi'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
+import { Campaign } from '../src/campaigns'
+import { NetworkId } from './types'
 
 // Mock all the dependencies
 jest.mock('./fetchReferrals')
@@ -28,11 +30,14 @@ describe('uploadCurrentPeriodKpis', () => {
   const mockCampaigns: Campaign[] = [
     {
       protocol: 'celo-pg',
+      providerAddress: '0x0423189886d7966f0dd7e7d256898daeee625dca',
+      rewardsPoolAddress: '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3',
+      networkId: NetworkId['celo-mainnet'],
+      valoraRewardsPoolAddress: null,
       rewardsPeriods: [
         {
           startTimestamp: '2025-05-15T00:00:00Z',
           endTimestampExclusive: '2025-06-01T00:00:00Z',
-          rewardPoolAddress: '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3',
           rewardAmountInWei: '25000000000000000000000',
           calculateRewards: async ({
             resultDirectory,
@@ -55,7 +60,6 @@ describe('uploadCurrentPeriodKpis', () => {
         {
           startTimestamp: '2025-06-01T00:00:00Z',
           endTimestampExclusive: '2025-07-01T00:00:00Z',
-          rewardPoolAddress: '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3',
           rewardAmountInWei: '50000000000000000000000',
           calculateRewards: async ({
             resultDirectory,
@@ -78,7 +82,6 @@ describe('uploadCurrentPeriodKpis', () => {
         {
           startTimestamp: '2025-07-01T00:00:00Z',
           endTimestampExclusive: '2025-08-01T00:00:00Z',
-          rewardPoolAddress: '0xc273fB49C5c291F7C697D0FcEf8ce34E985008F3',
           rewardAmountInWei: '75000000000000000000000',
           calculateRewards: async ({
             resultDirectory,
@@ -102,22 +105,28 @@ describe('uploadCurrentPeriodKpis', () => {
     },
     {
       protocol: 'scout-game-v0',
+      providerAddress: '0xc95876688026be9d6fa7a7c33328bd013effa2bb',
+      networkId: NetworkId['base-mainnet'],
+      valoraRewardsPoolAddress: null,
+      rewardsPoolAddress: '0x6F599b879541d289e344e325f4D9badf8c5bB49E',
       rewardsPeriods: [
         {
           startTimestamp: '2025-06-01T00:00:00Z',
           endTimestampExclusive: '2025-07-01T00:00:00Z',
-          rewardPoolAddress: '0x6F599b879541d289e344e325f4D9badf8c5bB49E',
           rewardAmountInWei: '10000000000000000000000',
         },
       ],
     },
     {
       protocol: 'celo-transactions',
+      providerAddress: '0x5f0a55fad9424ac99429f635dfb9bf20c3360ab8',
+      networkId: NetworkId['celo-mainnet'],
+      valoraRewardsPoolAddress: null,
+      rewardsPoolAddress: '0x6F599b879541d289e344e325f4D9badf8c5bB49E',
       rewardsPeriods: [
         {
           startTimestamp: '2025-06-14T00:00:00Z',
           endTimestampExclusive: '2025-06-21T00:00:00Z',
-          rewardPoolAddress: '0x6F599b879541d289e344e325f4D9badf8c5bB49E',
           rewardAmountInWei: '10000000000000000000000',
         },
       ],
