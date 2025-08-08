@@ -8,7 +8,7 @@ import { Address, Hex } from 'viem'
 import { RedisClientType } from '@redis/client'
 import Bottleneck from 'bottleneck'
 import { TransactionInfo } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getTransactionInfo'
-import { getUserOperations } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getUserOperations'
+import { isEntryPointAddress } from '../calculateKpi/protocols/tetherV0/parseReferralTag/getUserOperations'
 
 const limiter = new Bottleneck({
   reservoir: 1000, // initial number of available requests
@@ -70,26 +70,8 @@ async function findQualifyingNetworkReferralForUsers({
         continue
       }
 
-      let transactionInfo: TransactionInfo | null = null
-      // Try to extract UserOperations to determine transaction type
-      const userOperations = getUserOperations({
-        to: tx.to as Address,
-        calldata: tx.input as Hex,
-        // TODO: convert hypersync logs to viem logs
-        logs: [],
-      })
-      if (userOperations.length > 0) {
-        // This is an Account Abstraction transaction
-        transactionInfo = {
-          hash: tx.hash as Hex,
-          type: 'transaction',
-          transactionType: 'account-abstraction-bundle',
-          from: user,
-          to: tx.to as Address,
-          calldata: tx.input as Hex,
-          userOperations,
-        }
-      } else {
+      let transactionInfo: TransactionInfo | undefined
+      if (!isEntryPointAddress(tx.to as Address)) {
         // This is a regular transaction
         transactionInfo = {
           hash: tx.hash as Hex,
@@ -101,17 +83,17 @@ async function findQualifyingNetworkReferralForUsers({
         }
       }
 
-      const referrerId = await getReferrerIdFromTx(
+      const referral = await getReferrerIdFromTx(
         tx.hash as Hex,
         networkId,
         true,
         transactionInfo,
       )
-      if (referrerId !== null) {
+      if (referral !== null) {
         qualifyingNetworkReferrals[user] = {
           userAddress: user,
           timestamp: blockTimestamp,
-          referrerId,
+          referrerId: referral.referrerId,
         }
 
         if (Object.keys(qualifyingNetworkReferrals).length === users.length) {
