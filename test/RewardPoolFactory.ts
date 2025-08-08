@@ -119,11 +119,11 @@ describe(CONTRACT_NAME, function () {
         .withArgs(
           poolToken.address,
           rewardFunctionId,
-          owner.address, // defaultOwner from factory
+          owner.address,
           poolManager,
           timelock,
-          await factory.defaultProtocolFee(), // protocolFee
-          await factory.defaultReserveAddress(), // reserveAddress
+          await factory.defaultProtocolFee(),
+          await factory.defaultReserveAddress(),
           cloneAddress,
         )
 
@@ -137,7 +137,7 @@ describe(CONTRACT_NAME, function () {
       expect(
         await rewardPool.hasRole(
           await rewardPool.DEFAULT_ADMIN_ROLE(),
-          owner.address, // defaultOwner from factory
+          owner.address,
         ),
       ).to.be.true
       expect(

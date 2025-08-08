@@ -51,8 +51,8 @@ describe(CONTRACT_NAME, function () {
       owner.address,
       manager.address,
       (await time.latest()) + TIMELOCK,
-      0, // protocolFee - 0% fee for tests
-      deployer.address, // reserveAddress - use deployer as reserve for tests
+      0,
+      deployer.address,
     )
     await implementation.waitForDeployment()
 
