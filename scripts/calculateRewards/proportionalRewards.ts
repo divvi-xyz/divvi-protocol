@@ -1,32 +1,40 @@
 import { BigNumber } from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { ResultDirectory } from '../../src/resultDirectory'
-import { calculateProportionalPrizeContest } from '../../src/proportionalPrizeContest'
+import { calculateProportionalPrizeContest, calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
 import { getDivviRewardsExcludedReferrers } from '../utils/divviRewardsExcludedReferrers'
 
-export async function calculateLinearProportionalRewards({
+type RewardFunction = 'linear' | 'sqrt'
+
+export async function calculateProportionalRewards({
   resultDirectory,
   startTimestamp,
   endTimestampExclusive,
   rewardPoolAddress,
   rewardAmountInWei,
+  rewardFunction,
 }: {
   resultDirectory: ResultDirectory
   startTimestamp: string
   endTimestampExclusive: string
   rewardPoolAddress: string
   rewardAmountInWei: string
+  rewardFunction: RewardFunction
 }) {
   const kpiData = await resultDirectory.readKpi()
 
   const excludedReferrers = await getDivviRewardsExcludedReferrers()
   await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
-  const rewards = calculateProportionalPrizeContest({
+  const rewards: { referrerId: string; rewardAmount: string }[] = rewardFunction === 'linear' ? calculateProportionalPrizeContest({
     kpiData,
-    excludedReferrers,
-    rewards: new BigNumber(rewardAmountInWei),
-  })
+      excludedReferrers,
+      rewards: new BigNumber(rewardAmountInWei),
+    }) : calculateSqrtProportionalPrizeContest({
+      kpiData,
+      excludedReferrers,
+      rewards: new BigNumber(rewardAmountInWei),
+    })
 
   const totalTransactionsPerReferrer: {
     [referrerId: string]: number
