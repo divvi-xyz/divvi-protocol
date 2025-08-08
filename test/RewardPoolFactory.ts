@@ -28,6 +28,8 @@ describe(CONTRACT_NAME, function () {
       owner.address,
       manager.address,
       (await time.latest()) + TIMELOCK,
+      0, // protocolFee - 0% fee for tests
+      deployer.address, // reserveAddress - use deployer as reserve for tests
     )
     await implementation.waitForDeployment()
 
@@ -35,7 +37,13 @@ describe(CONTRACT_NAME, function () {
     const Factory = await hre.ethers.getContractFactory(CONTRACT_NAME)
     const factory = await hre.upgrades.deployProxy(
       Factory,
-      [owner.address, TRANSFER_DELAY, await implementation.getAddress()],
+      [
+        owner.address,
+        TRANSFER_DELAY,
+        await implementation.getAddress(),
+        0, // defaultProtocolFee - 0% fee for tests
+        deployer.address, // defaultReserveAddress - use deployer as reserve for tests
+      ],
       { kind: 'uups' },
     )
     await factory.waitForDeployment()
@@ -135,6 +143,14 @@ describe(CONTRACT_NAME, function () {
         await rewardPool.hasRole(await rewardPool.MANAGER_ROLE(), poolManager),
       ).to.be.true
       expect(await rewardPool.timelock()).to.equal(timelock)
+
+      // Check that the created pool uses the factory's default values
+      expect(await rewardPool.protocolFee()).to.equal(
+        await factory.defaultProtocolFee(),
+      )
+      expect(await rewardPool.reserveAddress()).to.equal(
+        await factory.defaultReserveAddress(),
+      )
     })
 
     it('reverts when creating with zero pool token', async function () {
@@ -171,6 +187,134 @@ describe(CONTRACT_NAME, function () {
           (await time.latest()) + TIMELOCK,
         ),
       ).to.be.revertedWithCustomError(factory, 'ZeroAddressNotAllowed')
+    })
+  })
+
+  describe('Default Protocol Fee Management', function () {
+    let factory: Contract
+    let owner: HardhatEthersSigner
+    let user1: HardhatEthersSigner
+    let stranger: HardhatEthersSigner
+
+    beforeEach(async function () {
+      const deployment = await loadFixture(deployFactoryContract)
+      factory = deployment.factory
+      owner = deployment.owner
+      user1 = deployment.user1
+      stranger = deployment.stranger
+    })
+
+    it('initializes with correct default values', async function () {
+      const deployment = await loadFixture(deployFactoryContract)
+      expect(await factory.defaultProtocolFee()).to.equal(0)
+      expect(await factory.defaultReserveAddress()).to.equal(
+        deployment.deployer.address,
+      )
+    })
+
+    it('allows owner to set default protocol fee', async function () {
+      const factoryWithOwner = factory.connect(owner) as typeof factory
+      const newFee = hre.ethers.parseEther('0.05') // 5%
+
+      await expect(factoryWithOwner.setDefaultProtocolFee(newFee))
+        .to.emit(factory, 'DefaultProtocolFeeUpdated')
+        .withArgs(newFee, 0)
+
+      expect(await factory.defaultProtocolFee()).to.equal(newFee)
+    })
+
+    it('allows owner to set default reserve address', async function () {
+      const factoryWithOwner = factory.connect(owner) as typeof factory
+      const deployment = await loadFixture(deployFactoryContract)
+      const newReserveAddress = stranger.address
+
+      await expect(factoryWithOwner.setDefaultReserveAddress(newReserveAddress))
+        .to.emit(factory, 'DefaultReserveAddressUpdated')
+        .withArgs(newReserveAddress, deployment.deployer.address)
+
+      expect(await factory.defaultReserveAddress()).to.equal(newReserveAddress)
+    })
+
+    it('reverts when non-owner tries to set default protocol fee', async function () {
+      const factoryWithStranger = factory.connect(stranger) as typeof factory
+      const newFee = hre.ethers.parseEther('0.05')
+
+      await expect(
+        factoryWithStranger.setDefaultProtocolFee(newFee),
+      ).to.be.revertedWithCustomError(
+        factory,
+        'AccessControlUnauthorizedAccount',
+      )
+    })
+
+    it('reverts when non-owner tries to set default reserve address', async function () {
+      const factoryWithStranger = factory.connect(stranger) as typeof factory
+      const newReserveAddress = stranger.address
+
+      await expect(
+        factoryWithStranger.setDefaultReserveAddress(newReserveAddress),
+      ).to.be.revertedWithCustomError(
+        factory,
+        'AccessControlUnauthorizedAccount',
+      )
+    })
+
+    it('reverts when setting invalid default protocol fee', async function () {
+      const factoryWithOwner = factory.connect(owner) as typeof factory
+      const invalidFee = hre.ethers.parseEther('1.1') // 110%
+
+      await expect(
+        factoryWithOwner.setDefaultProtocolFee(invalidFee),
+      ).to.be.revertedWithCustomError(factory, 'InvalidProtocolFee')
+    })
+
+    it('reverts when setting zero address as default reserve', async function () {
+      const factoryWithOwner = factory.connect(owner) as typeof factory
+      await expect(
+        factoryWithOwner.setDefaultReserveAddress(hre.ethers.ZeroAddress),
+      ).to.be.revertedWithCustomError(factory, 'InvalidReserveAddress')
+    })
+
+    it('creates pools with updated default values', async function () {
+      const factoryWithOwner = factory.connect(owner) as typeof factory
+      // Set new defaults
+      const newFee = hre.ethers.parseEther('0.05') // 5%
+      const newReserveAddress = stranger.address
+
+      await factoryWithOwner.setDefaultProtocolFee(newFee)
+      await factoryWithOwner.setDefaultReserveAddress(newReserveAddress)
+
+      // Create a new pool using the same factory instance (not a new deployment)
+      const poolToken = user1.address
+      const rewardFunctionId = MOCK_REWARD_FUNCTION_ID
+      const poolOwner = user1.address
+      const poolManager = user1.address
+      const timelock = (await time.latest()) + TIMELOCK
+
+      const tx = await factory.createRewardPool(
+        poolToken,
+        rewardFunctionId,
+        poolOwner,
+        poolManager,
+        timelock,
+      )
+
+      const receipt = await tx.wait()
+      const event = receipt?.logs.slice(-1)[0]
+      const eventData = factory.interface.parseLog({
+        topics: event?.topics as string[],
+        data: event?.data as string,
+      })
+      const cloneAddress = eventData?.args.rewardPool
+
+      const rewardPool = await hre.ethers.getContractAt(
+        IMPLEMENTATION_NAME,
+        cloneAddress,
+      )
+
+      // Check that the new pool uses the updated default values
+      expect(await rewardPool.protocolFee()).to.equal(newFee)
+      expect(await rewardPool.reserveAddress()).to.equal(newReserveAddress)
     })
   })
 

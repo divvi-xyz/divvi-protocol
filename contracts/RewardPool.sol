@@ -5,6 +5,7 @@ import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
 import {ReentrancyGuard} from '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {Math} from '@openzeppelin/contracts/utils/math/Math.sol';
 
 /**
  * @title Divvi RewardPool
@@ -17,6 +18,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   address public constant NATIVE_TOKEN_ADDRESS =
     0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   bytes32 public constant MANAGER_ROLE = keccak256('MANAGER_ROLE');
+  uint256 public constant FEE_DENOMINATOR = 1e18;
 
   // Data structures
   struct RewardData {
@@ -33,6 +35,10 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   uint256 public totalPendingRewards;
   mapping(address => uint256) public pendingRewards;
   mapping(bytes32 => bool) public processedIdempotencyKeys;
+
+  // Protocol fee state variables
+  uint256 public protocolFee;
+  address public reserveAddress;
 
   // Events
   event PoolInitialized(
@@ -61,6 +67,17 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   );
   event ClaimReward(address indexed user, uint256 amount);
   event RescueToken(address token, uint256 amount);
+  event ProtocolFeeUpdated(uint256 newProtocolFee, uint256 previousProtocolFee);
+  event ReserveAddressUpdated(
+    address newReserveAddress,
+    address previousReserveAddress
+  );
+  event ProtocolFeeCollected(
+    address indexed user,
+    uint256 originalAmount,
+    uint256 feeAmount,
+    uint256 netAmount
+  );
 
   // Errors
   error AmountMismatch(uint256 expected, uint256 received);
@@ -87,6 +104,8 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   error ZeroAddressNotAllowed(uint256 index);
   error RewardAmountMustBeGreaterThanZero(uint256 index);
   error AlreadyInitialized();
+  error InvalidProtocolFee(uint256 fee);
+  error InvalidReserveAddress();
 
   // This is needed to prevent the implementation from being initialized
   bool private initialized;
@@ -98,13 +117,17 @@ contract RewardPool is AccessControl, ReentrancyGuard {
    * @param _owner Address that will have DEFAULT_ADMIN_ROLE
    * @param _manager Address that will have MANAGER_ROLE
    * @param _timelock Timestamp when manager withdrawals will be allowed
+   * @param _protocolFee Protocol fee numerator (denominator is 10^18)
+   * @param _reserveAddress Address that will receive protocol fees
    */
   function initialize(
     address _poolToken,
     bytes32 _rewardFunctionId,
     address _owner,
     address _manager,
-    uint256 _timelock
+    uint256 _timelock,
+    uint256 _protocolFee,
+    address _reserveAddress
   ) external {
     if (initialized) revert AlreadyInitialized();
     initialized = true;
@@ -118,6 +141,8 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     rewardFunctionId = _rewardFunctionId;
 
     _setTimelock(_timelock);
+    _setProtocolFee(_protocolFee);
+    _setReserveAddress(_reserveAddress);
 
     emit PoolInitialized(_poolToken, _rewardFunctionId, _timelock);
   }
@@ -129,13 +154,17 @@ contract RewardPool is AccessControl, ReentrancyGuard {
    * @param _owner Address that will have DEFAULT_ADMIN_ROLE
    * @param _manager Address that will have MANAGER_ROLE
    * @param _timelock Timestamp when manager withdrawals will be allowed
+   * @param _protocolFee Protocol fee numerator (denominator is 10^18)
+   * @param _reserveAddress Address that will receive protocol fees
    */
   constructor(
     address _poolToken,
     bytes32 _rewardFunctionId,
     address _owner,
     address _manager,
-    uint256 _timelock
+    uint256 _timelock,
+    uint256 _protocolFee,
+    address _reserveAddress
   ) {
     initialized = true;
 
@@ -148,6 +177,8 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     rewardFunctionId = _rewardFunctionId;
 
     _setTimelock(_timelock);
+    _setProtocolFee(_protocolFee);
+    _setReserveAddress(_reserveAddress);
 
     emit PoolInitialized(_poolToken, _rewardFunctionId, _timelock);
   }
@@ -227,15 +258,34 @@ contract RewardPool is AccessControl, ReentrancyGuard {
       if (!processedIdempotencyKeys[reward.idempotencyKey]) {
         processedIdempotencyKeys[reward.idempotencyKey] = true;
 
-        // Update pending rewards and total
-        pendingRewards[reward.user] += reward.amount;
-        totalPendingRewards += reward.amount;
+        // Calculate protocol fee - use mulDiv for safe multiplication and division
+        uint256 feeAmount = Math.mulDiv(
+          reward.amount,
+          protocolFee,
+          FEE_DENOMINATOR
+        );
+        uint256 netAmount = reward.amount - feeAmount;
+
+        // Send protocol fee to reserve address if fee is greater than 0
+        if (feeAmount > 0) {
+          _transferPoolToken(reserveAddress, feeAmount);
+          emit ProtocolFeeCollected(
+            reward.user,
+            reward.amount,
+            feeAmount,
+            netAmount
+          );
+        }
+
+        // Update pending rewards and total with net amount (after fee deduction)
+        pendingRewards[reward.user] += netAmount;
+        totalPendingRewards += netAmount;
 
         // Old event for backwards compatibility
-        emit AddReward(reward.user, reward.amount, rewardFunctionArgs);
+        emit AddReward(reward.user, netAmount, rewardFunctionArgs);
         emit AddRewardWithIdempotency(
           reward.user,
-          reward.amount,
+          netAmount,
           reward.idempotencyKey,
           rewardFunctionArgs
         );
@@ -306,6 +356,50 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     } else {
       IERC20(poolToken).safeTransfer(recipient, amount);
     }
+  }
+
+  /**
+   * @dev Internal function to set the protocol fee
+   * @param _protocolFee Protocol fee numerator (denominator is 10^18)
+   */
+  function _setProtocolFee(uint256 _protocolFee) internal {
+    if (_protocolFee > FEE_DENOMINATOR) revert InvalidProtocolFee(_protocolFee);
+    protocolFee = _protocolFee;
+  }
+
+  /**
+   * @dev Internal function to set the reserve address
+   * @param _reserveAddress Address that will receive protocol fees
+   */
+  function _setReserveAddress(address _reserveAddress) internal {
+    if (_reserveAddress == address(0)) revert InvalidReserveAddress();
+    reserveAddress = _reserveAddress;
+  }
+
+  /**
+   * @dev Sets the protocol fee
+   * @param _protocolFee Protocol fee numerator (denominator is 10^18)
+   * @notice Allowed only for address with DEFAULT_ADMIN_ROLE
+   */
+  function setProtocolFee(
+    uint256 _protocolFee
+  ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    uint256 previousProtocolFee = protocolFee;
+    _setProtocolFee(_protocolFee);
+    emit ProtocolFeeUpdated(_protocolFee, previousProtocolFee);
+  }
+
+  /**
+   * @dev Sets the reserve address
+   * @param _reserveAddress Address that will receive protocol fees
+   * @notice Allowed only for address with DEFAULT_ADMIN_ROLE
+   */
+  function setReserveAddress(
+    address _reserveAddress
+  ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    address previousReserveAddress = reserveAddress;
+    _setReserveAddress(_reserveAddress);
+    emit ReserveAddressUpdated(_reserveAddress, previousReserveAddress);
   }
 
   /**

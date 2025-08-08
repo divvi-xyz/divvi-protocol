@@ -27,13 +27,25 @@ contract RewardPoolFactory is
     uint256 timelock,
     address rewardPool
   );
+  event DefaultProtocolFeeUpdated(
+    uint256 newProtocolFee,
+    uint256 previousProtocolFee
+  );
+  event DefaultReserveAddressUpdated(
+    address newReserveAddress,
+    address previousReserveAddress
+  );
 
   // Errors
   error ZeroAddressNotAllowed();
   error ImplementationNotSet();
+  error InvalidProtocolFee(uint256 fee);
+  error InvalidReserveAddress();
 
   // State variables
   address public implementation;
+  uint256 public defaultProtocolFee;
+  address public defaultReserveAddress;
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -45,17 +57,27 @@ contract RewardPoolFactory is
    * @param _owner Address that will have DEFAULT_ADMIN_ROLE
    * @param _changeDefaultAdminDelay The delay between admin change steps
    * @param _implementation Address of the RewardPool implementation contract
+   * @param _defaultProtocolFee Default protocol fee numerator (denominator is 10^18)
+   * @param _defaultReserveAddress Default address that will receive protocol fees
    */
   function initialize(
     address _owner,
     uint48 _changeDefaultAdminDelay,
-    address _implementation
+    address _implementation,
+    uint256 _defaultProtocolFee,
+    address _defaultReserveAddress
   ) public initializer {
     __AccessControlDefaultAdminRules_init(_changeDefaultAdminDelay, _owner);
     __UUPSUpgradeable_init();
 
     if (_implementation == address(0)) revert ZeroAddressNotAllowed();
+    if (_defaultReserveAddress == address(0)) revert InvalidReserveAddress();
+    if (_defaultProtocolFee > 1e18)
+      revert InvalidProtocolFee(_defaultProtocolFee);
+
     implementation = _implementation;
+    defaultProtocolFee = _defaultProtocolFee;
+    defaultReserveAddress = _defaultReserveAddress;
   }
 
   /**
@@ -85,7 +107,9 @@ contract RewardPoolFactory is
       _rewardFunctionId,
       _owner,
       _manager,
-      _timelock
+      _timelock,
+      defaultProtocolFee,
+      defaultReserveAddress
     );
 
     emit RewardPoolCreated(
@@ -98,6 +122,40 @@ contract RewardPoolFactory is
     );
 
     return clone;
+  }
+
+  /**
+   * @dev Sets the default protocol fee
+   * @param _defaultProtocolFee Default protocol fee numerator (denominator is 10^18)
+   * @notice Allowed only for address with DEFAULT_ADMIN_ROLE
+   */
+  function setDefaultProtocolFee(
+    uint256 _defaultProtocolFee
+  ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    if (_defaultProtocolFee > 1e18)
+      revert InvalidProtocolFee(_defaultProtocolFee);
+
+    uint256 previousProtocolFee = defaultProtocolFee;
+    defaultProtocolFee = _defaultProtocolFee;
+    emit DefaultProtocolFeeUpdated(_defaultProtocolFee, previousProtocolFee);
+  }
+
+  /**
+   * @dev Sets the default reserve address
+   * @param _defaultReserveAddress Default address that will receive protocol fees
+   * @notice Allowed only for address with DEFAULT_ADMIN_ROLE
+   */
+  function setDefaultReserveAddress(
+    address _defaultReserveAddress
+  ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    if (_defaultReserveAddress == address(0)) revert InvalidReserveAddress();
+
+    address previousReserveAddress = defaultReserveAddress;
+    defaultReserveAddress = _defaultReserveAddress;
+    emit DefaultReserveAddressUpdated(
+      _defaultReserveAddress,
+      previousReserveAddress
+    );
   }
 
   /**
