@@ -10,8 +10,7 @@ import { calculateKpi as calculateKpiCeloTransactions } from './celoTransactions
 import { calculateKpi as calculateKpiRhino } from './rhino'
 import { calculateKpi as calculateKpiScoutGameV0 } from './scoutGameV0'
 import { calculateKpi as calculateKpiTetherV0 } from './tetherV0'
-import { calculateGasKpi } from '../gasKpi'
-import { calculateTxKpi } from '../txKpi'
+import { calculateNetworkKpi } from '../networkKpi'
 
 /**
  * Central registry of KPI calculation handlers for all supported protocols.
@@ -42,7 +41,7 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   aerodrome: calculateKpiAerodrome,
   somm: calculateKpiSomm,
   'celo-pg': (params) =>
-    calculateGasKpi({ ...params, networkId: NetworkId['celo-mainnet'] }),
+    calculateNetworkKpi({ ...params, networkId: NetworkId['celo-mainnet'], method: 'gas' }),
   arbitrum: calculateKpiArbitrum,
   velodrome: calculateKpiVelodrome,
   fonbnk: calculateKpiFonbnk,
@@ -51,14 +50,14 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   rhino: calculateKpiRhino,
   'scout-game-v0': calculateKpiScoutGameV0,
   'lisk-v0': (params) =>
-    calculateGasKpi({ ...params, networkId: NetworkId['lisk-mainnet'] }),
+    calculateNetworkKpi({ ...params, networkId: NetworkId['lisk-mainnet'], method: 'gas' }),
   'tether-v0': calculateKpiTetherV0,
   'base-v0': (params) =>
-    calculateGasKpi({ ...params, networkId: NetworkId['base-mainnet'] }),
+    calculateNetworkKpi({ ...params, networkId: NetworkId['base-mainnet'], method: 'gas' }),
   'mantle-v0': (params) =>
-    calculateGasKpi({ ...params, networkId: NetworkId['mantle-mainnet'] }),
+    calculateNetworkKpi({ ...params, networkId: NetworkId['mantle-mainnet'], method: 'gas' }),
   morph: (params) =>
-    calculateTxKpi({ ...params, networkId: NetworkId['morph-mainnet'] }),
+    calculateNetworkKpi({ ...params, networkId: NetworkId['morph-mainnet'], method: 'tx' }),
 }
 
 export default calculateKpiHandlers
