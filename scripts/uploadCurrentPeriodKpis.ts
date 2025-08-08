@@ -173,7 +173,7 @@ const campaigns: Campaign[] = [
         startTimestamp: '2025-06-30T00:00:00Z',
         endTimestampExclusive: '2025-08-01T00:00:00Z',
         rewardPoolAddress: '0xA2a4C1eb286a2EfA470d42676081B771bbe9C1c8',
-        rewardAmountInWei: '1000000000',  // 1000 USDC
+        rewardAmountInWei: '1000000000', // 1000 USDC
         calculateRewards: async (params) => {
           await calculateProportionalRewards({
             ...params,
@@ -190,7 +190,7 @@ const campaigns: Campaign[] = [
         startTimestamp: '2025-07-28T00:00:00Z',
         endTimestampExclusive: '2025-08-30T00:00:00Z',
         rewardPoolAddress: '0xB575210cdF52B18000aE24Be4981e9ABC7716F98',
-        rewardAmountInWei: '5000000000',  // 5000 USDT
+        rewardAmountInWei: '5000000000', // 5000 USDT
         calculateRewards: async (params) => {
           await calculateProportionalRewards({
             ...params,
@@ -202,12 +202,12 @@ const campaigns: Campaign[] = [
         startTimestamp: '2025-08-30T00:00:00Z',
         endTimestampExclusive: '2025-09-30T00:00:00Z',
         rewardPoolAddress: '0xB575210cdF52B18000aE24Be4981e9ABC7716F98',
-        rewardAmountInWei: '10000000000',  // 10000 USDT
+        rewardAmountInWei: '10000000000', // 10000 USDT
         calculateRewards: async (params) => {
           await calculateProportionalRewards({
             ...params,
-          rewardFunction: 'linear',
-        })
+            rewardFunction: 'linear',
+          })
         },
       },
     ],
