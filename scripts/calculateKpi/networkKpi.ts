@@ -3,7 +3,7 @@ import { KpiResult, NetworkId } from '../types'
 import { getBlockRange } from './protocols/utils/events'
 import { fetchNetworkMetrics } from './protocols/utils/networks'
 
-type Method = 'gas' | 'tx'
+type KpiType = 'gas' | 'tx'
 
 export async function calculateNetworkKpi({
   address,
@@ -11,14 +11,14 @@ export async function calculateNetworkKpi({
   endTimestampExclusive,
   networkId,
   redis,
-  method,
+  kpiType,
 }: {
   address: string
   startTimestamp: Date
   endTimestampExclusive: Date
   networkId: NetworkId
   redis?: RedisClientType
-  method: Method
+  kpiType: KpiType
 }): Promise<KpiResult> {
   const { startBlock, endBlockExclusive } = await getBlockRange({
     networkId,
@@ -33,5 +33,8 @@ export async function calculateNetworkKpi({
     startBlock,
     endBlockExclusive,
   })
-  return { kpi: method === 'gas' ? totalGasUsed : totalTransactions, metadata: { totalTransactions } }
+  return {
+    kpi: kpiType === 'gas' ? totalGasUsed : totalTransactions,
+    metadata: { totalTransactions },
+  }
 }

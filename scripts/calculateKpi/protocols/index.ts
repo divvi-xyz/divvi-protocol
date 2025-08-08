@@ -41,7 +41,11 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   aerodrome: calculateKpiAerodrome,
   somm: calculateKpiSomm,
   'celo-pg': (params) =>
-    calculateNetworkKpi({ ...params, networkId: NetworkId['celo-mainnet'], method: 'gas' }),
+    calculateNetworkKpi({
+      ...params,
+      networkId: NetworkId['celo-mainnet'],
+      kpiType: 'gas',
+    }),
   arbitrum: calculateKpiArbitrum,
   velodrome: calculateKpiVelodrome,
   fonbnk: calculateKpiFonbnk,
@@ -50,14 +54,30 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   rhino: calculateKpiRhino,
   'scout-game-v0': calculateKpiScoutGameV0,
   'lisk-v0': (params) =>
-    calculateNetworkKpi({ ...params, networkId: NetworkId['lisk-mainnet'], method: 'gas' }),
+    calculateNetworkKpi({
+      ...params,
+      networkId: NetworkId['lisk-mainnet'],
+      kpiType: 'gas',
+    }),
   'tether-v0': calculateKpiTetherV0,
   'base-v0': (params) =>
-    calculateNetworkKpi({ ...params, networkId: NetworkId['base-mainnet'], method: 'gas' }),
+    calculateNetworkKpi({
+      ...params,
+      networkId: NetworkId['base-mainnet'],
+      kpiType: 'gas',
+    }),
   'mantle-v0': (params) =>
-    calculateNetworkKpi({ ...params, networkId: NetworkId['mantle-mainnet'], method: 'gas' }),
+    calculateNetworkKpi({
+      ...params,
+      networkId: NetworkId['mantle-mainnet'],
+      kpiType: 'gas',
+    }),
   morph: (params) =>
-    calculateNetworkKpi({ ...params, networkId: NetworkId['morph-mainnet'], method: 'tx' }),
+    calculateNetworkKpi({
+      ...params,
+      networkId: NetworkId['morph-mainnet'],
+      kpiType: 'tx',
+    }),
 }
 
 export default calculateKpiHandlers
