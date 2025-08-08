@@ -11,7 +11,7 @@ import { calculateKpi as calculateKpiRhino } from './rhino'
 import { calculateKpi as calculateKpiScoutGameV0 } from './scoutGameV0'
 import { calculateKpi as calculateKpiTetherV0 } from './tetherV0'
 import { calculateGasKpi } from '../gasKpi'
-import { calculateKpi as calculateKpiMorph } from './morph'
+import { calculateTxKpi } from '../txKpi'
 
 /**
  * Central registry of KPI calculation handlers for all supported protocols.
@@ -57,7 +57,8 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
     calculateGasKpi({ ...params, networkId: NetworkId['base-mainnet'] }),
   'mantle-v0': (params) =>
     calculateGasKpi({ ...params, networkId: NetworkId['mantle-mainnet'] }),
-  morph: calculateKpiMorph,
+  morph: (params) =>
+    calculateTxKpi({ ...params, networkId: NetworkId['morph-mainnet'] }),
 }
 
 export default calculateKpiHandlers
