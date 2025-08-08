@@ -1,0 +1,12 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Divvi Protocol",
+  "navigation": {
+    "groups": [
+      {
+        "group": "General",
+        "pages": ["overview", "fund-managers", "contracts"]
+      }
+    ]
+  }
+}
