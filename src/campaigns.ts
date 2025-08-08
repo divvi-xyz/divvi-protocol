@@ -1,12 +1,12 @@
-import { Address } from 'viem'
+import { Address, parseEther } from 'viem'
 import { Protocol, NetworkId } from '../scripts/types'
 import { ResultDirectory } from './resultDirectory'
 import { main as calculateRewardsCeloPG } from '../scripts/calculateRewards/celoPG'
 import { main as calculateRewardSlices } from '../scripts/calculateRewards/slices'
 import { main as calculateRewardsLiskV0 } from '../scripts/calculateRewards/liskV0'
-import { calculateSqrtProportionalRewards } from '../scripts/calculateRewards/sqrtProportionalRewards'
 import BigNumber from 'bignumber.js'
 import { main as calculateRewardsScoutGame } from '../scripts/calculateRewards/scoutGameV0'
+import { calculateProportionalRewards } from '../scripts/calculateRewards/proportionalRewards'
 
 export type Campaign = {
   providerAddress: Address
@@ -44,7 +44,7 @@ export const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-05-15T00:00:00Z',
         endTimestampExclusive: '2025-06-01T00:00:00Z',
-        rewardAmountInWei: '25000000000000000000000',
+        rewardAmountInWei: parseEther('25000').toString(),
         calculateRewards: async ({
           resultDirectory,
           startTimestamp,
@@ -75,7 +75,7 @@ export const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-06-01T00:00:00Z',
         endTimestampExclusive: '2025-07-01T00:00:00Z',
-        rewardAmountInWei: '50000000000000000000000',
+        rewardAmountInWei: parseEther('50000').toString(),
         calculateRewards: async ({
           resultDirectory,
           startTimestamp,
@@ -106,7 +106,7 @@ export const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-07-01T00:00:00Z',
         endTimestampExclusive: '2025-08-01T00:00:00Z',
-        rewardAmountInWei: '75000000000000000000000',
+        rewardAmountInWei: parseEther('75000').toString(),
         calculateRewards: async ({
           resultDirectory,
           startTimestamp,
@@ -206,7 +206,7 @@ export const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-06-05T00:00:00Z',
         endTimestampExclusive: '2025-07-01T00:00:00Z',
-        rewardAmountInWei: '15000000000000000000000',
+        rewardAmountInWei: parseEther('15000').toString(),
         calculateRewards: async ({
           resultDirectory,
           startTimestamp,
@@ -223,7 +223,7 @@ export const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-07-01T00:00:00Z',
         endTimestampExclusive: '2025-08-01T00:00:00Z',
-        rewardAmountInWei: '15000000000000000000000',
+        rewardAmountInWei: parseEther('15000').toString(),
         calculateRewards: async ({
           resultDirectory,
           startTimestamp,
@@ -257,8 +257,13 @@ export const campaigns: Campaign[] = [
       {
         startTimestamp: '2025-06-30T00:00:00Z',
         endTimestampExclusive: '2025-08-01T00:00:00Z',
-        rewardAmountInWei: '1000000000',
-        calculateRewards: calculateSqrtProportionalRewards,
+        rewardAmountInWei: '1000000000', // 1000 USDC
+        calculateRewards: async (params) => {
+          await calculateProportionalRewards({
+            ...params,
+            rewardFunction: 'sqrt',
+          })
+        },
       },
     ],
   },
@@ -273,13 +278,23 @@ export const campaigns: Campaign[] = [
         startTimestamp: '2025-08-01T00:00:00Z',
         endTimestampExclusive: '2025-08-30T00:00:00Z',
         rewardAmountInWei: '0', // TODO: add reward amount per distribution ($2.5k in $MNT) once funded
-        calculateRewards: calculateSqrtProportionalRewards,
+        calculateRewards: async (params) => {
+          await calculateProportionalRewards({
+            ...params,
+            rewardFunction: 'sqrt',
+          })
+        },
       },
       {
         startTimestamp: '2025-08-30T00:00:00Z',
         endTimestampExclusive: '2025-09-30T00:00:00Z',
         rewardAmountInWei: '0', // TODO: add reward amount per distribution ($2.5k in $MNT) once funded
-        calculateRewards: calculateSqrtProportionalRewards,
+        calculateRewards: async (params) => {
+          await calculateProportionalRewards({
+            ...params,
+            rewardFunction: 'sqrt',
+          })
+        },
       },
     ],
   },
@@ -294,13 +309,54 @@ export const campaigns: Campaign[] = [
         startTimestamp: '2025-08-01T00:00:00Z',
         endTimestampExclusive: '2025-08-30T00:00:00Z',
         rewardAmountInWei: '0', // TODO: add reward amount per distribution ($15k in $MNT) once funded
-        calculateRewards: calculateSqrtProportionalRewards,
+        calculateRewards: async (params) => {
+          await calculateProportionalRewards({
+            ...params,
+            rewardFunction: 'sqrt',
+          })
+        },
       },
       {
         startTimestamp: '2025-08-30T00:00:00Z',
         endTimestampExclusive: '2025-09-30T00:00:00Z',
         rewardAmountInWei: '0', // TODO: add reward amount per distribution ($15k in $MNT) once funded
-        calculateRewards: calculateSqrtProportionalRewards,
+        calculateRewards: async (params) => {
+          await calculateProportionalRewards({
+            ...params,
+            rewardFunction: 'sqrt',
+          })
+        },
+      },
+    ],
+  },
+  {
+    protocol: 'tether-v0',
+    rewardsPoolAddress: '0xB575210cdF52B18000aE24Be4981e9ABC7716F98',
+    providerAddress: '0xe451b7Cd488aD2Bf6bfdECD7702a2967329cC1D0',
+    networkId: NetworkId['ethereum-mainnet'],
+    valoraRewardsPoolAddress: null,
+    rewardsPeriods: [
+      {
+        startTimestamp: '2025-07-28T00:00:00Z',
+        endTimestampExclusive: '2025-08-30T00:00:00Z',
+        rewardAmountInWei: '5000000000', // 5000 USDT
+        calculateRewards: async (params) => {
+          await calculateProportionalRewards({
+            ...params,
+            rewardFunction: 'linear',
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-08-30T00:00:00Z',
+        endTimestampExclusive: '2025-09-30T00:00:00Z',
+        rewardAmountInWei: '10000000000', // 10000 USDT
+        calculateRewards: async (params) => {
+          await calculateProportionalRewards({
+            ...params,
+            rewardFunction: 'linear',
+          })
+        },
       },
     ],
   },
