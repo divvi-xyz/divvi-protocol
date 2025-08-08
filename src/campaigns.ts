@@ -240,6 +240,14 @@ export const campaigns: Campaign[] = [
     ],
   },
   {
+    providerAddress: '0x5f0a55fad9424ac99429f635dfb9bf20c3360ab8',
+    protocol: 'celo-transactions',
+    rewardsPoolAddress: '0xe2bedafb063e0b7f12607ebcf4636e2690a427a3',
+    networkId: NetworkId['celo-mainnet'],
+    valoraRewardsPoolAddress: null,
+    rewardsPeriods: [], // past campaign
+  },
+  {
     providerAddress: '0xce56ed47c8f2ee8714087c9e48924b1a30bc455c',
     protocol: 'base-v0',
     rewardsPoolAddress: '0xa2a4c1eb286a2efa470d42676081b771bbe9c1c8',
