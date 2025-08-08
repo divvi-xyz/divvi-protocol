@@ -1042,7 +1042,7 @@ describe(CONTRACT_NAME, function () {
               user1.address,
               rewardAmount,
               hre.ethers.parseEther('5'),
-              hre.ethers.parseEther('95'),
+              rewardAmount,
             )
 
           // Check that reserve address received the fee
@@ -1055,9 +1055,9 @@ describe(CONTRACT_NAME, function () {
             hre.ethers.parseEther('5'),
           )
 
-          // Check that user can claim the net amount (after fee deduction)
+          // Check that user can claim the full reward amount (no deduction)
           expect(await rewardPool.pendingRewards(user1.address)).to.equal(
-            hre.ethers.parseEther('95'),
+            rewardAmount,
           )
         })
 

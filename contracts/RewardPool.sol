@@ -258,34 +258,30 @@ contract RewardPool is AccessControl, ReentrancyGuard {
       if (!processedIdempotencyKeys[reward.idempotencyKey]) {
         processedIdempotencyKeys[reward.idempotencyKey] = true;
 
-        // Calculate protocol fee - use mulDiv for safe multiplication and division
         uint256 feeAmount = Math.mulDiv(
           reward.amount,
           protocolFee,
           FEE_DENOMINATOR
         );
-        uint256 netAmount = reward.amount - feeAmount;
 
-        // Send protocol fee to reserve address if fee is greater than 0
         if (feeAmount > 0) {
           _transferPoolToken(reserveAddress, feeAmount);
           emit ProtocolFeeCollected(
             reward.user,
             reward.amount,
             feeAmount,
-            netAmount
+            reward.amount
           );
         }
 
-        // Update pending rewards and total with net amount (after fee deduction)
-        pendingRewards[reward.user] += netAmount;
-        totalPendingRewards += netAmount;
+        pendingRewards[reward.user] += reward.amount;
+        totalPendingRewards += reward.amount;
 
         // Old event for backwards compatibility
-        emit AddReward(reward.user, netAmount, rewardFunctionArgs);
+        emit AddReward(reward.user, reward.amount, rewardFunctionArgs);
         emit AddRewardWithIdempotency(
           reward.user,
-          netAmount,
+          reward.amount,
           reward.idempotencyKey,
           rewardFunctionArgs
         );
