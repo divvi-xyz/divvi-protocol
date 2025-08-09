@@ -51,6 +51,8 @@ describe(CONTRACT_NAME, function () {
       owner.address,
       manager.address,
       (await time.latest()) + TIMELOCK,
+      0,
+      deployer.address,
     )
     await implementation.waitForDeployment()
 
@@ -167,6 +169,8 @@ describe(CONTRACT_NAME, function () {
             owner.address,
             manager.address,
             (await time.latest()) + TIMELOCK,
+            0,
+            owner.address,
           ),
         ).to.be.revertedWithCustomError(rewardPool, 'AlreadyInitialized')
       })
@@ -880,6 +884,209 @@ describe(CONTRACT_NAME, function () {
           ).to.be.revertedWithCustomError(
             rewardPool,
             'AccessControlUnauthorizedAccount',
+          )
+        })
+      })
+    })
+  })
+
+  describe('Protocol Fee', function () {
+    tokenTypes.forEach(function ({ tokenType, deployFixture }) {
+      describe(`with ${tokenType} token`, function () {
+        let rewardPool: Contract
+        let mockERC20: Contract
+        let owner: HardhatEthersSigner
+        let manager: HardhatEthersSigner
+        let user1: HardhatEthersSigner
+        let deployer: HardhatEthersSigner
+        let poolWithOwner: Contract
+        let poolWithManager: Contract
+
+        beforeEach(async function () {
+          const deployment = await loadFixture(deployFixture)
+          rewardPool = deployment.rewardPool
+          mockERC20 = deployment.mockERC20
+          owner = deployment.owner
+          manager = deployment.manager
+          user1 = deployment.user1
+          deployer = deployment.deployer
+
+          // Connect with owner and manager
+          poolWithOwner = rewardPool.connect(owner) as typeof rewardPool
+          poolWithManager = rewardPool.connect(manager) as typeof rewardPool
+        })
+
+        it('initializes with correct protocol fee and reserve address', async function () {
+          expect(await rewardPool.protocolFee()).to.equal(0)
+          expect(await rewardPool.reserveAddress()).to.equal(deployer.address)
+        })
+
+        it('allows owner to set protocol fee', async function () {
+          const newFee = hre.ethers.parseEther('0.05') // 5%
+
+          await expect(poolWithOwner.setProtocolFee(newFee))
+            .to.emit(rewardPool, 'ProtocolFeeUpdated')
+            .withArgs(newFee, 0)
+
+          expect(await rewardPool.protocolFee()).to.equal(newFee)
+        })
+
+        it('allows owner to set reserve address', async function () {
+          const newReserveAddress = user1.address
+
+          await expect(poolWithOwner.setReserveAddress(newReserveAddress))
+            .to.emit(rewardPool, 'ReserveAddressUpdated')
+            .withArgs(newReserveAddress, deployer.address)
+
+          expect(await rewardPool.reserveAddress()).to.equal(newReserveAddress)
+        })
+
+        it('reverts when non-owner tries to set protocol fee', async function () {
+          const poolWithManager = rewardPool.connect(
+            manager,
+          ) as typeof rewardPool
+          const newFee = hre.ethers.parseEther('0.05')
+
+          await expect(
+            poolWithManager.setProtocolFee(newFee),
+          ).to.be.revertedWithCustomError(
+            rewardPool,
+            'AccessControlUnauthorizedAccount',
+          )
+        })
+
+        it('reverts when non-owner tries to set reserve address', async function () {
+          const poolWithManager = rewardPool.connect(
+            manager,
+          ) as typeof rewardPool
+          const newReserveAddress = user1.address
+
+          await expect(
+            poolWithManager.setReserveAddress(newReserveAddress),
+          ).to.be.revertedWithCustomError(
+            rewardPool,
+            'AccessControlUnauthorizedAccount',
+          )
+        })
+
+        it('reverts when setting invalid protocol fee', async function () {
+          const invalidFee = hre.ethers.parseEther('1.1') // 110%
+
+          await expect(
+            poolWithOwner.setProtocolFee(invalidFee),
+          ).to.be.revertedWithCustomError(rewardPool, 'InvalidProtocolFee')
+        })
+
+        it('reverts when setting zero address as reserve', async function () {
+          await expect(
+            poolWithOwner.setReserveAddress(hre.ethers.ZeroAddress),
+          ).to.be.revertedWithCustomError(rewardPool, 'InvalidReserveAddress')
+        })
+
+        it('collects protocol fees when adding rewards', async function () {
+          // Set protocol fee to 5%
+          const protocolFee = hre.ethers.parseEther('0.05')
+          await poolWithOwner.setProtocolFee(protocolFee)
+
+          // Verify the protocol fee was set correctly
+          const actualFee = await rewardPool.protocolFee()
+          expect(actualFee).to.equal(protocolFee)
+
+          // Set reserve address to user1
+          await poolWithOwner.setReserveAddress(user1.address)
+
+          // Verify the reserve address was set correctly
+          expect(await rewardPool.reserveAddress()).to.equal(user1.address)
+
+          // Deposit funds
+          const depositAmount = hre.ethers.parseEther('1000')
+          if (tokenType === 'ERC20') {
+            await poolWithManager.deposit(depositAmount)
+          } else {
+            await poolWithManager.deposit(depositAmount, {
+              value: depositAmount,
+            })
+          }
+
+          // Add rewards
+          const rewardAmount = hre.ethers.parseEther('100')
+          const idempotencyKey = generateTestIdempotencyKey(user1.address, 1)
+          const rewardData = [
+            {
+              user: user1.address,
+              amount: rewardAmount,
+              idempotencyKey: idempotencyKey,
+            },
+          ]
+
+          const balanceBefore =
+            tokenType === 'native'
+              ? await hre.ethers.provider.getBalance(user1.address)
+              : await mockERC20.balanceOf(user1.address)
+
+          const tx = await poolWithOwner.addRewards(
+            rewardData,
+            MOCK_REWARD_FUNCTION_ARGS,
+          )
+
+          // Check that the event is emitted
+          await expect(tx)
+            .to.emit(rewardPool, 'ProtocolFeeCollected')
+            .withArgs(
+              user1.address,
+              rewardAmount,
+              hre.ethers.parseEther('5'),
+              protocolFee,
+            )
+
+          // Check that reserve address received the fee
+          const balanceAfter =
+            tokenType === 'native'
+              ? await hre.ethers.provider.getBalance(user1.address)
+              : await mockERC20.balanceOf(user1.address)
+
+          expect(balanceAfter - balanceBefore).to.equal(
+            hre.ethers.parseEther('5'),
+          )
+
+          // Check that user can claim the full reward amount
+          expect(await rewardPool.pendingRewards(user1.address)).to.equal(
+            rewardAmount,
+          )
+        })
+
+        it('does not collect fees when protocol fee is zero', async function () {
+          // Protocol fee is already 0 from initialization
+          expect(await rewardPool.protocolFee()).to.equal(0)
+
+          // Deposit funds
+          const depositAmount = hre.ethers.parseEther('1000')
+          if (tokenType === 'ERC20') {
+            await poolWithManager.deposit(depositAmount)
+          } else {
+            await poolWithManager.deposit(depositAmount, {
+              value: depositAmount,
+            })
+          }
+
+          // Add rewards
+          const rewardAmount = hre.ethers.parseEther('100')
+          const idempotencyKey = generateTestIdempotencyKey(user1.address, 1)
+          const rewardData = [
+            {
+              user: user1.address,
+              amount: rewardAmount,
+              idempotencyKey: idempotencyKey,
+            },
+          ]
+
+          await expect(
+            poolWithOwner.addRewards(rewardData, MOCK_REWARD_FUNCTION_ARGS),
+          ).to.not.emit(rewardPool, 'ProtocolFeeCollected')
+
+          // Check that user gets the full amount
+          expect(await rewardPool.pendingRewards(user1.address)).to.equal(
+            rewardAmount,
           )
         })
       })
