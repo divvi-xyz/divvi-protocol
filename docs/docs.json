@@ -5,7 +5,15 @@
     "groups": [
       {
         "group": "Divvi Protocol",
-        "pages": ["overview", "fund-managers", "contracts"]
+        "pages": [
+          "overview",
+          "fund-managers",
+          "contracts",
+          {
+            "group": "KPI calculation",
+            "autogenerate": "calculate-kpi"
+          }
+        ]
       }
     ]
   }
