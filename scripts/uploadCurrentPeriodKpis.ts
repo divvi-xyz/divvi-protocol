@@ -115,6 +115,19 @@ const campaigns: Campaign[] = [
             proportionLinear: 0.1,
           })
         },
+        calculateRewardSlices: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }) => {
+          await calculateRewardSlices({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '300000',
+            rewardType: 'builder',
+          })
+        },
       },
     ],
   },
