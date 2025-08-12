@@ -182,13 +182,16 @@ describe(CONTRACT_NAME, function () {
     let owner: HardhatEthersSigner
     let user1: HardhatEthersSigner
     let stranger: HardhatEthersSigner
-
+    let factoryWithOwner: Contract
+    let factoryWithStranger: Contract
     beforeEach(async function () {
       const deployment = await loadFixture(deployFactoryContract)
       factory = deployment.factory
       owner = deployment.owner
       user1 = deployment.user1
       stranger = deployment.stranger
+      factoryWithOwner = factory.connect(owner) as typeof factory
+      factoryWithStranger = factory.connect(stranger) as typeof factory
     })
 
     it('initializes with correct default values', async function () {
@@ -201,7 +204,6 @@ describe(CONTRACT_NAME, function () {
     })
 
     it('allows owner to set default protocol fee', async function () {
-      const factoryWithOwner = factory.connect(owner) as typeof factory
       const newFee = hre.ethers.parseEther('0.05') // 5%
 
       await expect(factoryWithOwner.setDefaultProtocolFee(newFee))
@@ -212,7 +214,6 @@ describe(CONTRACT_NAME, function () {
     })
 
     it('allows owner to set default reserve address', async function () {
-      const factoryWithOwner = factory.connect(owner) as typeof factory
       const deployment = await loadFixture(deployFactoryContract)
       const newReserveAddress = stranger.address
 
@@ -224,7 +225,6 @@ describe(CONTRACT_NAME, function () {
     })
 
     it('allows owner to set default owner', async function () {
-      const factoryWithOwner = factory.connect(owner) as typeof factory
       const newOwner = stranger.address
 
       await expect(factoryWithOwner.setDefaultOwner(newOwner))
@@ -259,7 +259,6 @@ describe(CONTRACT_NAME, function () {
     })
 
     it('reverts when non-owner tries to set default owner', async function () {
-      const factoryWithStranger = factory.connect(stranger) as typeof factory
       const newOwner = stranger.address
 
       await expect(
@@ -271,7 +270,6 @@ describe(CONTRACT_NAME, function () {
     })
 
     it('reverts when setting invalid default protocol fee', async function () {
-      const factoryWithOwner = factory.connect(owner) as typeof factory
       const invalidFee = hre.ethers.parseEther('1.1') // 110%
 
       await expect(
@@ -280,21 +278,18 @@ describe(CONTRACT_NAME, function () {
     })
 
     it('reverts when setting zero address as default reserve', async function () {
-      const factoryWithOwner = factory.connect(owner) as typeof factory
       await expect(
         factoryWithOwner.setDefaultReserveAddress(hre.ethers.ZeroAddress),
       ).to.be.revertedWithCustomError(factory, 'ZeroAddressNotAllowed')
     })
 
     it('reverts when setting zero address as default owner', async function () {
-      const factoryWithOwner = factory.connect(owner) as typeof factory
       await expect(
         factoryWithOwner.setDefaultOwner(hre.ethers.ZeroAddress),
       ).to.be.revertedWithCustomError(factory, 'ZeroAddressNotAllowed')
     })
 
     it('creates pools with updated default values', async function () {
-      const factoryWithOwner = factory.connect(owner) as typeof factory
       // Set new defaults
       const newFee = hre.ethers.parseEther('0.05') // 5%
       const newReserveAddress = stranger.address

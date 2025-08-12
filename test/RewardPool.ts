@@ -942,9 +942,6 @@ describe(CONTRACT_NAME, function () {
         })
 
         it('reverts when non-owner tries to set protocol fee', async function () {
-          const poolWithManager = rewardPool.connect(
-            manager,
-          ) as typeof rewardPool
           const newFee = hre.ethers.parseEther('0.05')
 
           await expect(
@@ -956,9 +953,6 @@ describe(CONTRACT_NAME, function () {
         })
 
         it('reverts when non-owner tries to set reserve address', async function () {
-          const poolWithManager = rewardPool.connect(
-            manager,
-          ) as typeof rewardPool
           const newReserveAddress = user1.address
 
           await expect(
