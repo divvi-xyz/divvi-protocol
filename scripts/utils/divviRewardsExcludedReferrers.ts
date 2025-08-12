@@ -9,9 +9,19 @@ const valoraEntities: { referrerId: Address; shouldWarn?: boolean }[] = []
 const OFAC_SDN_ZIP_URL =
   'https://sanctionslistservice.ofac.treas.gov/api/download/SDN_XML.ZIP'
 
+// Cache for OFAC SDN addresses to avoid multiple fetches
+let cachedOfacSdnAddresses:
+  | { referrerId: Address; shouldWarn: boolean }[]
+  | null = null
+
 export async function getOfacSdnAddresses(): Promise<
   { referrerId: Address; shouldWarn: boolean }[]
 > {
+  // Return cached result if available
+  if (cachedOfacSdnAddresses !== null) {
+    return cachedOfacSdnAddresses
+  }
+
   const res = await fetch(OFAC_SDN_ZIP_URL)
   if (!res.ok) {
     throw new Error(
@@ -32,14 +42,15 @@ export async function getOfacSdnAddresses(): Promise<
         addresses.add(text.toLowerCase() as Address)
       }
     })
-    xmlParser.on('end', () =>
-      resolve(
-        [...addresses].map((address) => ({
-          referrerId: address,
-          shouldWarn: true,
-        })),
-      ),
-    )
+    xmlParser.on('end', () => {
+      const result = [...addresses].map((address) => ({
+        referrerId: address,
+        shouldWarn: true,
+      }))
+      // Cache the result
+      cachedOfacSdnAddresses = result
+      resolve(result)
+    })
     xmlParser.on('error', reject)
 
     Readable.fromWeb(res.body).pipe(unzipper.ParseOne()).pipe(xmlParser)
@@ -55,10 +66,7 @@ export async function getDivviRewardsExcludedReferrers(): Promise<
     }
   >
 > {
-  // TODO: The fetch to get OFAC SDN addresses is disabled for now because it
-  // intermittently fails with 403.
-  const ofacSdnAddresses: { referrerId: Address; shouldWarn: boolean }[] = []
-  // const ofacSdnAddresses = await getOfacSdnAddresses()
+  const ofacSdnAddresses = await getOfacSdnAddresses()
 
   const excludedReferrersMap: Record<
     string,

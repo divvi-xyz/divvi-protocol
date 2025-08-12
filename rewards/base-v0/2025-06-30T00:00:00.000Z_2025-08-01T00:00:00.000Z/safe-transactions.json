@@ -1,0 +1,36 @@
+{
+  "meta": {},
+  "transactions": [
+    {
+      "to": "0xA2a4C1eb286a2EfA470d42676081B771bbe9C1c8",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address[]",
+            "name": "users",
+            "type": "address[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "amounts",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "rewardFunctionArgs",
+            "type": "uint256[]"
+          }
+        ],
+        "name": "addRewards",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "users": "[0xe6e6c0ddf053822bbbc1f39218f30ea25fca58dd, 0xda404bfda2a5dcda88fd2aa9b9e0c32a677bc8eb, 0x4ea48e01f1314db0925653e30617b254d1cf5366, 0x22886c71a4c1fa2824bd86210ead1c310b3d7cf5, 0x53eaf4cd171842d8144e45211308e5d90b4b0088, 0xc5337cee97ff5b190f26c4a12341dd210f26e17c, 0xaf108dd1ac530f1c4bded13f43e336a9cec92b44, 0x000cbf0bec88214aab15bc1fa40d3c30b3ca97a9, 0x62bb362d63f14449398b79ebc46574f859a6045d, 0x5e23d5be257d9140d4c5b12654111a4d4e18d9b2, 0xd59b83de618561c8ff4e98fc29a1b96abcbfb18a, 0x55a5705453ee82c742274154136fce8149597058, 0x131ec028bb8bd936a3416635777d905497f3d21f, 0xb82896c4f251ed65186b416dbdb6f6192dfaf926, 0xb897559f4dcea628b48376e969bd0f81cf4b1dea, 0x124d8fad33e0b9fe9f3e1e90d0fc0055abe8ca8d]",
+        "amounts": "[533957573, 61132254, 81780488, 2139262, 2532027, 147919797, 10885839, 52392865, 72976373, 4348571, 7664856, 8406607, 333409, 11603705, 1009787, 916580]",
+        "rewardFunctionArgs": "[1751241600, 1754006400]"
+      }
+    }
+  ]
+}

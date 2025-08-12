@@ -115,6 +115,19 @@ const campaigns: Campaign[] = [
             proportionLinear: 0.1,
           })
         },
+        calculateRewardSlices: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }) => {
+          await calculateRewardSlices({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '300000',
+            rewardType: 'builder',
+          })
+        },
       },
     ],
   },
@@ -406,6 +419,13 @@ export async function uploadCurrentPeriodKpis(
 
   // Due to the DefiLlama API rate limit, there is no point in parallelising the calculations across campaigns
   for (const campaign of campaignsToCalculate) {
+    if (campaign.rewardsPeriods.length === 0) {
+      console.log(
+        `Campaign ${campaign.protocol} has no rewards periods, skipping`,
+      )
+      continue
+    }
+
     const campaignStartTimestamp = Date.parse(
       campaign.rewardsPeriods[0].startTimestamp,
     )
