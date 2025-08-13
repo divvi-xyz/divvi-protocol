@@ -20,6 +20,40 @@ const mockGetReferrerIdFromTx = jest.mocked(getReferrerIdFromTx)
 
 const testAddress = '0x1234567890123456789012345678901234567890' as Address
 
+const getExpectedMetadata = (
+  value: BigNumber = BigNumber(2).shiftedBy(6),
+  txCount: number = 1,
+) => {
+  return {
+    ...[
+      'ethereum-mainnet',
+      'avalanche-mainnet',
+      'celo-mainnet',
+      'unichain-mainnet',
+      'ink-mainnet',
+      'op-mainnet',
+      'arbitrum-one',
+      'berachain-mainnet',
+    ].reduce(
+      (acc, chain) => {
+        acc[chain] = {
+          txCount,
+          addresses: [
+            testAddress,
+            '0x4567890123456789012345678901234567890123' as Address,
+          ],
+          totalValue: value,
+        }
+        return acc
+      },
+      {} as Record<
+        string,
+        { txCount: number; addresses: Address[]; totalValue: BigNumber }
+      >,
+    ),
+  }
+}
+
 // Mock the memoize function to disable memoization in tests
 jest.mock('@github/memoize', () => ({
   __esModule: true,
@@ -341,16 +375,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
           kpi: 8, // 1 transaction * 8 networks
           referrerId: 'registered-referrer',
           userAddress: testAddress,
-          metadata: {
-            'ethereum-mainnet': 1,
-            'avalanche-mainnet': 1,
-            'celo-mainnet': 1,
-            'unichain-mainnet': 1,
-            'ink-mainnet': 1,
-            'op-mainnet': 1,
-            'arbitrum-one': 1,
-            'berachain-mainnet': 1,
-          },
+          metadata: getExpectedMetadata(),
         },
       ])
     })
@@ -455,46 +480,19 @@ describe('Tether V0 Protocol KPI Calculation', () => {
           kpi: 16, // 2 transactions * 8 networks
           referrerId: 'referrer1',
           userAddress: testAddress,
-          metadata: {
-            'ethereum-mainnet': 2,
-            'avalanche-mainnet': 2,
-            'celo-mainnet': 2,
-            'unichain-mainnet': 2,
-            'ink-mainnet': 2,
-            'op-mainnet': 2,
-            'arbitrum-one': 2,
-            'berachain-mainnet': 2,
-          },
+          metadata: getExpectedMetadata(BigNumber(4).shiftedBy(6), 2),
         },
         {
           kpi: 8, // 1 transaction * 8 networks
           referrerId: 'referrer2',
           userAddress: testAddress,
-          metadata: {
-            'ethereum-mainnet': 1,
-            'avalanche-mainnet': 1,
-            'celo-mainnet': 1,
-            'unichain-mainnet': 1,
-            'ink-mainnet': 1,
-            'op-mainnet': 1,
-            'arbitrum-one': 1,
-            'berachain-mainnet': 1,
-          },
+          metadata: getExpectedMetadata(),
         },
         {
           kpi: 8, // 1 transaction * 8 networks
           referrerId: 'referrer3',
           userAddress: testAddress,
-          metadata: {
-            'ethereum-mainnet': 1,
-            'avalanche-mainnet': 1,
-            'celo-mainnet': 1,
-            'unichain-mainnet': 1,
-            'ink-mainnet': 1,
-            'op-mainnet': 1,
-            'arbitrum-one': 1,
-            'berachain-mainnet': 1,
-          },
+          metadata: getExpectedMetadata(),
         },
       ])
     })
@@ -559,31 +557,13 @@ describe('Tether V0 Protocol KPI Calculation', () => {
           kpi: 8, // 1 transaction * 8 networks
           referrerId: 'referrer1',
           userAddress: testAddress,
-          metadata: {
-            'ethereum-mainnet': 1,
-            'avalanche-mainnet': 1,
-            'celo-mainnet': 1,
-            'unichain-mainnet': 1,
-            'ink-mainnet': 1,
-            'op-mainnet': 1,
-            'arbitrum-one': 1,
-            'berachain-mainnet': 1,
-          },
+          metadata: getExpectedMetadata(),
         },
         {
           kpi: 8, // 1 transaction * 8 networks
           referrerId: 'referrer2',
           userAddress: testAddress,
-          metadata: {
-            'ethereum-mainnet': 1,
-            'avalanche-mainnet': 1,
-            'celo-mainnet': 1,
-            'unichain-mainnet': 1,
-            'ink-mainnet': 1,
-            'op-mainnet': 1,
-            'arbitrum-one': 1,
-            'berachain-mainnet': 1,
-          },
+          metadata: getExpectedMetadata(),
         },
       ])
     })

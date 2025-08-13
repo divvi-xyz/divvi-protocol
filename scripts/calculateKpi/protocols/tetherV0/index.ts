@@ -41,7 +41,7 @@ const networkToTokenAddress: Partial<Record<NetworkId, Address>> = {
     '0x779ded0c9e1022225f8e0630b35a9b54be713736',
 }
 
-async function getEligibleTxCountByReferrer({
+async function getEligibleTransactionsInfoByReferrer({
   networkId,
   user,
   startBlock,
@@ -53,15 +53,17 @@ async function getEligibleTxCountByReferrer({
   startBlock?: number
   endBlockExclusive?: number
   tokenAddress: Address
-}): Promise<Record<string, number>> {
+}) {
   const client = getHyperSyncClient(networkId)
 
-  const transactionValueByHash: Record<
+  const transactionsByHash: Record<
     string,
     {
       value: BigNumber
       to: Address
       input: Hex
+      transferFrom: Address | undefined
+      transferTo: Address | undefined
     }
   > = {}
 
@@ -109,10 +111,12 @@ async function getEligibleTxCountByReferrer({
         (tx.from?.toLowerCase() === user.toLowerCase() ||
           isEntryPointAddress(tx.to as Address))
       ) {
-        transactionValueByHash[tx.hash] = {
+        transactionsByHash[tx.hash] = {
           value: BigNumber(0),
           to: tx.to as Address,
           input: tx.input as Hex,
+          transferFrom: undefined,
+          transferTo: undefined,
         }
       }
     }
@@ -124,26 +128,42 @@ async function getEligibleTxCountByReferrer({
           data: data as Hex,
           topics: topics as [],
         })
+
+        if (decodedLog.eventName !== 'Transfer') {
+          // should never happen
+          continue
+        }
+
         const isTransferToUser =
-          decodedLog.eventName === 'Transfer' &&
           decodedLog.args.to.toLowerCase() === user.toLowerCase()
         const transferValue = BigNumber(decodedLog.args.value).multipliedBy(
           isTransferToUser ? 1 : -1,
         )
 
-        if (transactionValueByHash[transactionHash]) {
-          transactionValueByHash[transactionHash].value =
-            transactionValueByHash[transactionHash].value.plus(transferValue)
+        if (transactionsByHash[transactionHash]) {
+          transactionsByHash[transactionHash].value =
+            transactionsByHash[transactionHash].value.plus(transferValue)
+          transactionsByHash[transactionHash].transferFrom =
+            decodedLog.args.from
+          transactionsByHash[transactionHash].transferTo = decodedLog.args.to
         }
       }
     }
   })
 
   // Separate the eligible transactions by referrerId
-  const eligibleTxCountByReferrer: Record<string, number> = {}
-  for (const [transactionHash, { value, to, input }] of Object.entries(
-    transactionValueByHash,
-  )) {
+  const transactionsByReferrer: Record<
+    string,
+    {
+      txCount: number
+      addresses: Set<Address>
+      totalValue: BigNumber
+    }
+  > = {}
+  for (const [
+    transactionHash,
+    { value, to, input, transferFrom, transferTo },
+  ] of Object.entries(transactionsByHash)) {
     if (value.abs().gte(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT)) {
       let transactionInfo: TransactionInfo | undefined
 
@@ -165,13 +185,26 @@ async function getEligibleTxCountByReferrer({
         transactionInfo,
       )
       if (referral !== null && referral.user === user) {
-        eligibleTxCountByReferrer[referral.referrerId] =
-          (eligibleTxCountByReferrer[referral.referrerId] ?? 0) + 1
+        transactionsByReferrer[referral.referrerId] = {
+          txCount:
+            (transactionsByReferrer[referral.referrerId]?.txCount ?? 0) + 1,
+          addresses: new Set(
+            [
+              ...(transactionsByReferrer[referral.referrerId]?.addresses ?? []),
+              transferFrom,
+              transferTo,
+            ].filter(Boolean) as Address[],
+          ),
+          totalValue: (
+            transactionsByReferrer[referral.referrerId]?.totalValue ??
+            BigNumber(0)
+          ).plus(value.abs()),
+        }
       }
     }
   }
 
-  return eligibleTxCountByReferrer
+  return transactionsByReferrer
 }
 
 /**
@@ -250,18 +283,20 @@ export async function calculateKpi({
           redis,
         })
 
-        const eligibleTxCountByReferrer = await getEligibleTxCountByReferrer({
-          networkId,
-          user: address as Address,
-          startBlock: blockRange.startBlock,
-          endBlockExclusive: blockRange.endBlockExclusive,
-          tokenAddress,
-        })
+        const transactionsByReferrer =
+          await getEligibleTransactionsInfoByReferrer({
+            networkId,
+            user: address as Address,
+            startBlock: blockRange.startBlock,
+            endBlockExclusive: blockRange.endBlockExclusive,
+            tokenAddress,
+          })
 
         // Aggregate results by referrer across the supported networks
-        for (const [referrerId, txCount] of Object.entries(
-          eligibleTxCountByReferrer,
-        )) {
+        for (const [
+          referrerId,
+          { txCount, addresses, totalValue },
+        ] of Object.entries(transactionsByReferrer)) {
           if (!(referrerId in kpiByReferrer)) {
             kpiByReferrer[referrerId] = {
               kpi: 0,
@@ -271,7 +306,11 @@ export async function calculateKpi({
             }
           }
           kpiByReferrer[referrerId].kpi += txCount
-          kpiByReferrer[referrerId].metadata![networkId] = txCount
+          kpiByReferrer[referrerId].metadata![networkId] = {
+            txCount,
+            addresses: Array.from(addresses),
+            totalValue,
+          }
         }
       },
     ),
