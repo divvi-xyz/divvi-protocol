@@ -24,7 +24,6 @@ contract BuilderStaking is
   uint256 public stakingThreshold;
   uint256 public totalStaked;
 
-  // Core mappings - these store the actual stake amounts
   mapping(address => mapping(address => uint256)) public stakersForBeneficiary; // beneficiary => staker => amount
   mapping(address => mapping(address => uint256)) public beneficiariesForStaker; // staker => beneficiary => amount
 
@@ -34,8 +33,16 @@ contract BuilderStaking is
 
   // Events
   event ThresholdUpdated(uint256 newThreshold, uint256 previousThreshold);
-  event Staked(address indexed staker, address indexed beneficiary, uint256 amount);
-  event Unstaked(address indexed staker, address indexed beneficiary, uint256 amount);
+  event Staked(
+    address indexed staker,
+    address indexed beneficiary,
+    uint256 amount
+  );
+  event Unstaked(
+    address indexed staker,
+    address indexed beneficiary,
+    uint256 amount
+  );
 
   // Errors
   error ZeroAddressNotAllowed();
@@ -96,7 +103,6 @@ contract BuilderStaking is
     if (_amount == 0) revert AmountMustBeGreaterThanZero();
     if (_beneficiary == address(0)) revert ZeroAddressNotAllowed();
 
-    // Transfer tokens from staker to this contract
     divviToken.safeTransferFrom(msg.sender, address(this), _amount);
 
     // Update stake amounts
@@ -104,9 +110,8 @@ contract BuilderStaking is
     beneficiariesForStaker[msg.sender][_beneficiary] += _amount;
     totalStaked += _amount;
 
-    // Add to tracking arrays if this is a new relationship
+    // Add to tracking arrays if this is a new relationship (amount was 0 before)
     if (beneficiariesForStaker[msg.sender][_beneficiary] == _amount) {
-      // This is a new relationship (amount was 0 before)
       stakerListForBeneficiary[_beneficiary].push(msg.sender);
       beneficiaryListForStaker[msg.sender].push(_beneficiary);
     }
@@ -139,7 +144,6 @@ contract BuilderStaking is
       _removeBeneficiaryFromStaker(msg.sender, _beneficiary);
     }
 
-    // Transfer tokens back to staker
     divviToken.safeTransfer(msg.sender, _amount);
 
     emit Unstaked(msg.sender, _beneficiary, _amount);
@@ -152,7 +156,7 @@ contract BuilderStaking is
    */
   function getStakedBalance(
     address _beneficiary
-  ) external view returns (uint256) {
+  ) public view returns (uint256) {
     address[] memory stakers = stakerListForBeneficiary[_beneficiary];
     uint256 total = 0;
 
@@ -182,14 +186,7 @@ contract BuilderStaking is
    * @return True if the total staked amount meets or exceeds the threshold, false otherwise
    */
   function meetsThreshold(address _beneficiary) external view returns (bool) {
-    address[] memory stakers = stakerListForBeneficiary[_beneficiary];
-    uint256 total = 0;
-
-    for (uint256 i = 0; i < stakers.length; i++) {
-      total += stakersForBeneficiary[_beneficiary][stakers[i]];
-    }
-
-    return total >= stakingThreshold;
+    return getStakedBalance(_beneficiary) >= stakingThreshold;
   }
 
   /**
@@ -299,21 +296,23 @@ contract BuilderStaking is
     if (_token == address(0)) revert ZeroAddressNotAllowed();
     if (_to == address(0)) revert ZeroAddressNotAllowed();
     if (_amount == 0) revert CannotRescueZeroAmount();
-    
+
     if (_token == address(divviToken)) {
       // For DIVVI tokens, calculate excess as balance minus total staked
       uint256 currentBalance = divviToken.balanceOf(address(this));
-      uint256 excessAmount = currentBalance > totalStaked ? currentBalance - totalStaked : 0;
-      
+      uint256 excessAmount = currentBalance > totalStaked
+        ? currentBalance - totalStaked
+        : 0;
+
       if (_amount > excessAmount) {
         revert CannotRescueStakedTokens(_amount, totalStaked);
       }
-      
+
       divviToken.safeTransfer(_to, _amount);
     } else {
       IERC20 token = IERC20(_token);
       uint256 balance = token.balanceOf(address(this));
-      
+
       if (_amount > balance) {
         revert InsufficientStakeBalance(_amount, balance);
       }

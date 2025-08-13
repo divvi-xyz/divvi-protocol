@@ -154,7 +154,9 @@ describe(CONTRACT_NAME, function () {
     })
 
     it('returns correct threshold via getThreshold', async function () {
-      expect(await builderStaking.stakingThreshold()).to.equal(INITIAL_THRESHOLD)
+      expect(await builderStaking.stakingThreshold()).to.equal(
+        INITIAL_THRESHOLD,
+      )
     })
   })
 
@@ -924,15 +926,24 @@ describe(CONTRACT_NAME, function () {
 
       // Check that tokens were transferred
       expect(await mockToken.balanceOf(staker1.address)).to.equal(rescueAmount)
-      expect(await mockToken.balanceOf(await builderStaking.getAddress())).to.equal(0)
+      expect(
+        await mockToken.balanceOf(await builderStaking.getAddress()),
+      ).to.equal(0)
     })
 
     it('allows admin to rescue excess DIVVI tokens', async function () {
       // First stake some tokens
       const stakeAmount = hre.ethers.parseEther('50')
-      const builderStakingWithStaker = builderStaking.connect(staker1) as typeof builderStaking
-      const mockDivviTokenWithStaker = mockDivviToken.connect(staker1) as typeof mockDivviToken
-      await mockDivviTokenWithStaker.approve(await builderStaking.getAddress(), stakeAmount)
+      const builderStakingWithStaker = builderStaking.connect(
+        staker1,
+      ) as typeof builderStaking
+      const mockDivviTokenWithStaker = mockDivviToken.connect(
+        staker1,
+      ) as typeof mockDivviToken
+      await mockDivviTokenWithStaker.approve(
+        await builderStaking.getAddress(),
+        stakeAmount,
+      )
       await builderStakingWithStaker.stake(stakeAmount, beneficiary1.address)
 
       // Send additional DIVVI tokens to the contract (excess)
@@ -959,15 +970,24 @@ describe(CONTRACT_NAME, function () {
       const balanceAfter = await mockDivviToken.balanceOf(staker1.address)
       expect(balanceAfter).to.equal(balanceBefore + excessAmount)
       // Check that staked tokens remain
-      expect(await builderStaking.getStakedBalance(beneficiary1.address)).to.equal(stakeAmount)
+      expect(
+        await builderStaking.getStakedBalance(beneficiary1.address),
+      ).to.equal(stakeAmount)
     })
 
     it('reverts when trying to rescue more DIVVI tokens than excess', async function () {
       // First stake some tokens
       const stakeAmount = hre.ethers.parseEther('50')
-      const builderStakingWithStaker = builderStaking.connect(staker1) as typeof builderStaking
-      const mockDivviTokenWithStaker = mockDivviToken.connect(staker1) as typeof mockDivviToken
-      await mockDivviTokenWithStaker.approve(await builderStaking.getAddress(), stakeAmount)
+      const builderStakingWithStaker = builderStaking.connect(
+        staker1,
+      ) as typeof builderStaking
+      const mockDivviTokenWithStaker = mockDivviToken.connect(
+        staker1,
+      ) as typeof mockDivviToken
+      await mockDivviTokenWithStaker.approve(
+        await builderStaking.getAddress(),
+        stakeAmount,
+      )
       await builderStakingWithStaker.stake(stakeAmount, beneficiary1.address)
 
       // Send some excess tokens
@@ -985,7 +1005,11 @@ describe(CONTRACT_NAME, function () {
           staker1.address,
           rescueAmount,
         ),
-      ).to.be.revertedWithCustomError(builderStaking, 'CannotRescueStakedTokens')
+      )
+        .to.be.revertedWithCustomError(
+          builderStaking,
+          'CannotRescueStakedTokens',
+        )
         .withArgs(rescueAmount, stakeAmount)
     })
 
@@ -1013,15 +1037,24 @@ describe(CONTRACT_NAME, function () {
       // Check that all tokens were transferred
       const balanceAfter = await mockDivviToken.balanceOf(staker1.address)
       expect(balanceAfter).to.equal(balanceBefore + excessAmount)
-      expect(await mockDivviToken.balanceOf(await builderStaking.getAddress())).to.equal(0)
+      expect(
+        await mockDivviToken.balanceOf(await builderStaking.getAddress()),
+      ).to.equal(0)
     })
 
     it('prevents rescuing when contract balance equals total staked', async function () {
       // Stake tokens (this will increase totalStaked and contract balance)
       const stakeAmount = hre.ethers.parseEther('50')
-      const builderStakingWithStaker = builderStaking.connect(staker1) as typeof builderStaking
-      const mockDivviTokenWithStaker = mockDivviToken.connect(staker1) as typeof mockDivviToken
-      await mockDivviTokenWithStaker.approve(await builderStaking.getAddress(), stakeAmount)
+      const builderStakingWithStaker = builderStaking.connect(
+        staker1,
+      ) as typeof builderStaking
+      const mockDivviTokenWithStaker = mockDivviToken.connect(
+        staker1,
+      ) as typeof mockDivviToken
+      await mockDivviTokenWithStaker.approve(
+        await builderStaking.getAddress(),
+        stakeAmount,
+      )
       await builderStakingWithStaker.stake(stakeAmount, beneficiary1.address)
 
       const builderStakingWithAdmin = builderStaking.connect(
@@ -1035,16 +1068,27 @@ describe(CONTRACT_NAME, function () {
           staker1.address,
           hre.ethers.parseEther('1'),
         ),
-      ).to.be.revertedWithCustomError(builderStaking, 'CannotRescueStakedTokens')
+      )
+        .to.be.revertedWithCustomError(
+          builderStaking,
+          'CannotRescueStakedTokens',
+        )
         .withArgs(hre.ethers.parseEther('1'), stakeAmount)
     })
 
     it('allows partial rescue of excess DIVVI tokens', async function () {
       // First stake some tokens
       const stakeAmount = hre.ethers.parseEther('50')
-      const builderStakingWithStaker = builderStaking.connect(staker1) as typeof builderStaking
-      const mockDivviTokenWithStaker = mockDivviToken.connect(staker1) as typeof mockDivviToken
-      await mockDivviTokenWithStaker.approve(await builderStaking.getAddress(), stakeAmount)
+      const builderStakingWithStaker = builderStaking.connect(
+        staker1,
+      ) as typeof builderStaking
+      const mockDivviTokenWithStaker = mockDivviToken.connect(
+        staker1,
+      ) as typeof mockDivviToken
+      await mockDivviTokenWithStaker.approve(
+        await builderStaking.getAddress(),
+        stakeAmount,
+      )
       await builderStakingWithStaker.stake(stakeAmount, beneficiary1.address)
 
       // Send excess tokens
@@ -1057,8 +1101,12 @@ describe(CONTRACT_NAME, function () {
       ) as typeof builderStaking
 
       // Get balances before rescue
-      const staker1BalanceBefore = await mockDivviToken.balanceOf(staker1.address)
-      const staker2BalanceBefore = await mockDivviToken.balanceOf(staker2.address)
+      const staker1BalanceBefore = await mockDivviToken.balanceOf(
+        staker1.address,
+      )
+      const staker2BalanceBefore = await mockDivviToken.balanceOf(
+        staker2.address,
+      )
 
       // Rescue partial amount
       await builderStakingWithAdmin.rescueToken(
@@ -1068,9 +1116,11 @@ describe(CONTRACT_NAME, function () {
       )
 
       // Check that partial amount was transferred
-      const staker1BalanceAfter = await mockDivviToken.balanceOf(staker1.address)
+      const staker1BalanceAfter = await mockDivviToken.balanceOf(
+        staker1.address,
+      )
       expect(staker1BalanceAfter).to.equal(staker1BalanceBefore + rescueAmount)
-      
+
       // Check that remaining excess can still be rescued
       const remainingExcess = totalExcess - rescueAmount
       await builderStakingWithAdmin.rescueToken(
@@ -1078,8 +1128,12 @@ describe(CONTRACT_NAME, function () {
         staker2.address,
         remainingExcess,
       )
-      const staker2BalanceAfter = await mockDivviToken.balanceOf(staker2.address)
-      expect(staker2BalanceAfter).to.equal(staker2BalanceBefore + remainingExcess)
+      const staker2BalanceAfter = await mockDivviToken.balanceOf(
+        staker2.address,
+      )
+      expect(staker2BalanceAfter).to.equal(
+        staker2BalanceBefore + remainingExcess,
+      )
     })
 
     it('reverts when non-admin tries to rescue tokens', async function () {
@@ -1177,7 +1231,11 @@ describe(CONTRACT_NAME, function () {
           staker1.address,
           rescueAmount,
         ),
-      ).to.be.revertedWithCustomError(builderStaking, 'InsufficientStakeBalance')
+      )
+        .to.be.revertedWithCustomError(
+          builderStaking,
+          'InsufficientStakeBalance',
+        )
         .withArgs(rescueAmount, availableAmount)
     })
 
@@ -1205,9 +1263,9 @@ describe(CONTRACT_NAME, function () {
 
       // Check balances
       expect(await mockToken.balanceOf(staker1.address)).to.equal(rescueAmount)
-      expect(await mockToken.balanceOf(await builderStaking.getAddress())).to.equal(
-        totalAmount - rescueAmount,
-      )
+      expect(
+        await mockToken.balanceOf(await builderStaking.getAddress()),
+      ).to.equal(totalAmount - rescueAmount)
     })
 
     it('correctly tracks totalStaked when staking and unstaking', async function () {
@@ -1216,9 +1274,16 @@ describe(CONTRACT_NAME, function () {
 
       // Stake tokens
       const stakeAmount = hre.ethers.parseEther('100')
-      const builderStakingWithStaker = builderStaking.connect(staker1) as typeof builderStaking
-      const mockDivviTokenWithStaker = mockDivviToken.connect(staker1) as typeof mockDivviToken
-      await mockDivviTokenWithStaker.approve(await builderStaking.getAddress(), stakeAmount)
+      const builderStakingWithStaker = builderStaking.connect(
+        staker1,
+      ) as typeof builderStaking
+      const mockDivviTokenWithStaker = mockDivviToken.connect(
+        staker1,
+      ) as typeof mockDivviToken
+      await mockDivviTokenWithStaker.approve(
+        await builderStaking.getAddress(),
+        stakeAmount,
+      )
       await builderStakingWithStaker.stake(stakeAmount, beneficiary1.address)
 
       // Check totalStaked increased
@@ -1226,18 +1291,31 @@ describe(CONTRACT_NAME, function () {
 
       // Stake more tokens
       const additionalStake = hre.ethers.parseEther('50')
-      await mockDivviTokenWithStaker.approve(await builderStaking.getAddress(), additionalStake)
-      await builderStakingWithStaker.stake(additionalStake, beneficiary2.address)
+      await mockDivviTokenWithStaker.approve(
+        await builderStaking.getAddress(),
+        additionalStake,
+      )
+      await builderStakingWithStaker.stake(
+        additionalStake,
+        beneficiary2.address,
+      )
 
       // Check totalStaked increased again
-      expect(await builderStaking.totalStaked()).to.equal(stakeAmount + additionalStake)
+      expect(await builderStaking.totalStaked()).to.equal(
+        stakeAmount + additionalStake,
+      )
 
       // Unstake some tokens
       const unstakeAmount = hre.ethers.parseEther('30')
-      await builderStakingWithStaker.unstake(unstakeAmount, beneficiary1.address)
+      await builderStakingWithStaker.unstake(
+        unstakeAmount,
+        beneficiary1.address,
+      )
 
       // Check totalStaked decreased
-      expect(await builderStaking.totalStaked()).to.equal(stakeAmount + additionalStake - unstakeAmount)
+      expect(await builderStaking.totalStaked()).to.equal(
+        stakeAmount + additionalStake - unstakeAmount,
+      )
     })
   })
 })
