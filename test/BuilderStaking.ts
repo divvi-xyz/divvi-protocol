@@ -152,12 +152,6 @@ describe(CONTRACT_NAME, function () {
         'AccessControlUnauthorizedAccount',
       )
     })
-
-    it('returns correct threshold via getThreshold', async function () {
-      expect(await builderStaking.stakingThreshold()).to.equal(
-        INITIAL_THRESHOLD,
-      )
-    })
   })
 
   describe('Staking', function () {
@@ -774,55 +768,6 @@ describe(CONTRACT_NAME, function () {
 
       expect(beneficiaries.length).to.equal(0)
       expect(amounts.length).to.equal(0)
-    })
-
-    it('correctly updates arrays when stakes are removed', async function () {
-      const stakeAmount = hre.ethers.parseEther('100')
-      const builderStakingWithStaker = builderStaking.connect(
-        staker1,
-      ) as typeof builderStaking
-
-      // Approve and stake tokens
-      const mockDivviTokenWithStaker = mockDivviToken.connect(
-        staker1,
-      ) as typeof mockDivviToken
-      await mockDivviTokenWithStaker.approve(
-        await builderStaking.getAddress(),
-        stakeAmount,
-      )
-      await builderStakingWithStaker.stake(stakeAmount, beneficiary1.address)
-
-      // Check that staker is in beneficiary's list
-      let result = await builderStaking.getStakers(beneficiary1.address)
-      let stakers = result[0]
-      let amounts = result[1]
-      expect(stakers.length).to.equal(1)
-      expect(stakers[0]).to.equal(staker1.address)
-      expect(amounts[0]).to.equal(stakeAmount)
-
-      // Check that beneficiary is in staker's list
-      result = await builderStaking.getStakes(staker1.address)
-      let beneficiaries = result[0]
-      let beneficiaryAmounts = result[1]
-      expect(beneficiaries.length).to.equal(1)
-      expect(beneficiaries[0]).to.equal(beneficiary1.address)
-      expect(beneficiaryAmounts[0]).to.equal(stakeAmount)
-
-      // Unstake all tokens
-      await builderStakingWithStaker.unstake(stakeAmount, beneficiary1.address)
-
-      // Check that arrays are now empty
-      result = await builderStaking.getStakers(beneficiary1.address)
-      stakers = result[0]
-      amounts = result[1]
-      expect(stakers.length).to.equal(0)
-      expect(amounts.length).to.equal(0)
-
-      result = await builderStaking.getStakes(staker1.address)
-      beneficiaries = result[0]
-      beneficiaryAmounts = result[1]
-      expect(beneficiaries.length).to.equal(0)
-      expect(beneficiaryAmounts.length).to.equal(0)
     })
 
     it('handles multiple stakes from same staker for same beneficiary correctly', async function () {
