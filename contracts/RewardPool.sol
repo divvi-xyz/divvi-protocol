@@ -263,7 +263,6 @@ contract RewardPool is AccessControl, ReentrancyGuard {
           protocolFee,
           FEE_DENOMINATOR
         );
-        uint256 netAmount = reward.amount - feeAmount;
 
         if (feeAmount > 0) {
           _transferPoolToken(reserveAddress, feeAmount);
@@ -275,15 +274,14 @@ contract RewardPool is AccessControl, ReentrancyGuard {
           );
         }
 
-        // Update pending rewards and total with net amount (after fee deduction)
-        pendingRewards[reward.user] += netAmount;
-        totalPendingRewards += netAmount;
+        pendingRewards[reward.user] += reward.amount;
+        totalPendingRewards += reward.amount;
 
         // Old event for backwards compatibility
-        emit AddReward(reward.user, netAmount, rewardFunctionArgs);
+        emit AddReward(reward.user, reward.amount, rewardFunctionArgs);
         emit AddRewardWithIdempotency(
           reward.user,
-          netAmount,
+          reward.amount,
           reward.idempotencyKey,
           rewardFunctionArgs
         );

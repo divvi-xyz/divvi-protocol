@@ -979,20 +979,13 @@ describe(CONTRACT_NAME, function () {
 
         it('collects protocol fees when adding rewards', async function () {
           // Set protocol fee to 5%
-          const protocolFee = hre.ethers.parseEther('0.05')
+          const protocolFee = hre.ethers.parseEther('0.05') // 5%
           await poolWithOwner.setProtocolFee(protocolFee)
-
-          // Verify the protocol fee was set correctly
-          const actualFee = await rewardPool.protocolFee()
-          expect(actualFee).to.equal(protocolFee)
 
           // Set reserve address to user1
           await poolWithOwner.setReserveAddress(user1.address)
 
-          // Verify the reserve address was set correctly
-          expect(await rewardPool.reserveAddress()).to.equal(user1.address)
-
-          // Deposit funds
+          // First deposit funds to the pool so it has enough to pay fees
           const depositAmount = hre.ethers.parseEther('1000')
           if (tokenType === 'ERC20') {
             await poolWithManager.deposit(depositAmount)
@@ -1002,51 +995,53 @@ describe(CONTRACT_NAME, function () {
             })
           }
 
-          // Add rewards
           const rewardAmount = hre.ethers.parseEther('100')
-          const idempotencyKey = generateTestIdempotencyKey(user1.address, 1)
-          const rewardData = [
+          const feeAmount = hre.ethers.parseEther('5') // 5% of 100
+
+          // For ERC20 token, we need to mint and approve the reward amount
+          if (tokenType === 'ERC20') {
+            await mockERC20.mint(deployer.address, rewardAmount)
+            await mockERC20.approve(await rewardPool.getAddress(), rewardAmount)
+          }
+
+          const rewards = [
             {
               user: user1.address,
               amount: rewardAmount,
-              idempotencyKey: idempotencyKey,
+              idempotencyKey: hre.ethers.keccak256(
+                hre.ethers.toUtf8Bytes('test-key-1'),
+              ),
             },
           ]
 
+          // Get balance before for native token test
           const balanceBefore =
             tokenType === 'native'
               ? await hre.ethers.provider.getBalance(user1.address)
-              : await mockERC20.balanceOf(user1.address)
+              : 0n
 
-          const tx = await poolWithOwner.addRewards(
-            rewardData,
-            MOCK_REWARD_FUNCTION_ARGS,
+          const tx = await poolWithOwner.addRewards(rewards, [])
+
+          // User should receive full reward amount (no fee deduction)
+          expect(await rewardPool.pendingRewards(user1.address)).to.equal(
+            rewardAmount,
           )
 
-          // Check that the event is emitted
+          // Protocol fee should be collected from the pool balance to reserve address
+          if (tokenType === 'ERC20') {
+            expect(await mockERC20.balanceOf(user1.address)).to.equal(feeAmount)
+          } else {
+            const balanceAfter = await hre.ethers.provider.getBalance(
+              user1.address,
+            )
+            const actualFeeReceived = balanceAfter - balanceBefore
+            expect(actualFeeReceived).to.equal(feeAmount)
+          }
+
+          // Event should be emitted with correct parameters
           await expect(tx)
             .to.emit(rewardPool, 'ProtocolFeeCollected')
-            .withArgs(
-              user1.address,
-              rewardAmount,
-              hre.ethers.parseEther('5'),
-              protocolFee,
-            )
-
-          // Check that reserve address received the fee
-          const balanceAfter =
-            tokenType === 'native'
-              ? await hre.ethers.provider.getBalance(user1.address)
-              : await mockERC20.balanceOf(user1.address)
-
-          expect(balanceAfter - balanceBefore).to.equal(
-            hre.ethers.parseEther('5'),
-          )
-
-          // Check that user can claim the net amount (after fee deduction)
-          expect(await rewardPool.pendingRewards(user1.address)).to.equal(
-            hre.ethers.parseEther('95'),
-          )
+            .withArgs(user1.address, rewardAmount, feeAmount, protocolFee)
         })
 
         it('does not collect fees when protocol fee is zero', async function () {
