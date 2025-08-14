@@ -61,7 +61,7 @@ export interface TokenPriceData {
  */
 export interface KpiResult<T extends string = string> {
   kpi: number
-  metadata?: Record<T, number>
+  metadata?: Record<T, unknown>
 }
 
 export type KpiResults<T extends string = string> = (KpiResult<T> & {
