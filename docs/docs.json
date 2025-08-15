@@ -4,16 +4,30 @@
   "navigation": {
     "groups": [
       {
-        "group": "Protocol",
+        "group": "Getting started",
+        "pages": ["index", "builder-camp"]
+      },
+      {
+        "group": "How-to guides",
+        "pages": ["overview", "fund-managers"]
+      },
+      {
+        "group": "Explanation",
+        "pages": ["yellow-paper"]
+      },
+      {
+        "group": "Reference",
         "pages": [
-          "overview",
-          "fund-managers",
           "contracts",
           {
-            "group": "KPI calculation",
+            "group": "KPI calculations",
             "autogenerate": "calculate-kpi"
           }
         ]
+      },
+      {
+        "group": "Community",
+        "pages": ["community-code-of-conduct"]
       }
     ]
   }

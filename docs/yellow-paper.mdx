@@ -1,0 +1,487 @@
+---
+sidebarTitle: Yellow paper
+---
+# Divvi: A Protocol for Impact-Based Incentives in On-Chain Ecosystems
+
+# Introduction
+
+Divvi is a new onchain protocol that coordinates the growth of the blockchain ecosystem by creating a market for participants to define onchain objectives and reward other participants for helping achieve those objectives.
+
+The Divvi protocol exposes a set of interfaces that allow an onchain participant (e.g., a DEX) to define objectives (*e.g.*, increase transaction volume) and rewards for other participants (e.g., frontend builders or local ambassadors) who help achieve those objectives (*e.g.*, 10% of incremental revenue). With this interface, onchain participants can decide what they’re willing to share (or pay) for growth and also select which other participants they’re willing to support.
+
+This document describes a high-level, scalable architecture for the Divvi protocol based on a *directed acyclic graph* of **entities** connected by **referrer relationships**. Each entity in the graph generates **revenue** through **Divvi rewards**. Recursively, Divvi rewards earned by an entity consist of Divvi rewards earned by downstream entities, plus any additional **incentive rewards** offered by those entities.
+
+## Motivating Example
+
+Consider an example with the following participants:
+
+- A yield optimizer that automatically compounds a user’s liquidity
+- A set of local dapp builders that each specialize in different geographic regions
+- A set of marketing ambassadors across different geographic areas that can help onboard users to locally built dapps
+
+The yield optimizer can utilize Divvi to increase its revenue by stipulating that Divvi should share 50% of incremental harvest fees (*i.e.*, revenue) with local dapps. The project codifies the harvest fees and reward calculation using Divvi, which makes it verifiable to any potential dapp builder. 
+
+Each dapp builder can grow their revenue by declaring that Divvi should share 50% of all rewards received from the yield optimizer with local marketing ambassadors who onboard users.  A dapp provides each local ambassador with a referral link for onboarding users, and the dapp is responsible for calling Divvi to associate the user, dapp builder, and marketing ambassador.
+
+Marketing ambassadors grow their revenue with Divvi by onboarding new users to the dapps, for example, by providing local educational content and sharing their referral link.
+
+In this example, the Divvi system enables the yield optimizer, local dapp builders, and marketing ambassadors to align incentives by configuring onchain reward sharing.
+
+# Incentive Rewards
+
+Incentive rewards are the core component of Divvi that provide entities a means to generate revenue; supporting them requires us to define a few terms in advance.
+
+## Objective Functions
+
+Incentive rewards are an additional pool of rewards an entity is willing to offer for referred users. An entity $A$ who wishes to provide incentive rewards chooses some **objective function $\phi_{A}$** they wish to increase on a per-user basis. This objective function must be a **monotonically increasing function** [1] with respect to time. 
+
+In regular intervals, entities offering incentive rewards will post the values of $\phi_{A,t}(x)$ for the current time $t$ for each user $x \in \Chi_{A,B}$ that has been referred to them by some other entity $B$, to some **data availability layer** onchain in order for the Divvi protocol to calculate rewards accurately. These intervals will be identical across all entities; that is to say, updates to the data availability layer will be *synchronized* for all entities offering incentive rewards. If the values for $\phi_{A,t_1}$ are available on the data availability layer for some time $t_1$ and some entity $A$, the values $\phi_{B,t_1}$ will necessarily also be available for some other entity $B$. This synchronization implies some design decisions with respect to the data availability layer, but as we’ll see, this guarantee of synchrony greatly simplifies Divvi reward calculation. In general, the specifics of the data availability layer are beyond the scope of this document; we take it as given that data will be available in one way or another.
+
+## Incentive Functions
+
+These objective function values alone are not enough to determine incentive rewards; an additional layer of translation is needed to determine how a user’s impact on an objective function affects the rewards owed to some referring entity. As such, entities offering incentive rewards need to define an **incentive function $\Theta$**, which accepts a change or *delta* in the objective function value for some user $x \in \Chi$. Precisely, over a timespan $[t_{1}, t_{2}]$, which corresponds to intervals at which the objective function data was posted to the data availability layer, let
+
+$$
+\Delta\phi_{A,t_1,t_2}(x) = \phi_{A,t_2}(x) - \phi_{A,t_1}(x)
+$$
+
+for some user $x \in \Chi_{A,B}$ referred to $A$ by entity $B$, then the value
+
+$$
+\theta_{A,t_1,t_2}(x) :=      \theta_A(\Delta\phi_{A,t_1,t_2}(x))
+$$
+
+is equal to the incentive reward owed to $B$ by $A$ for the change in objective function due to user $x$ over the timespan $[t_{1}, t_{2}]$.
+
+Incentive functions must be **additive**, [1] which is to say, for some 
+
+$$
+t_1,t_2,t_3:t_1\leq t_2 \leq t_3
+$$
+
+and entity $A$:
+
+$$
+\theta_{A,t_1,t_3}(x) = \theta_{A,t_1,t_2}(x) + \theta_{A,t_2,t_3}(x)
+$$
+
+In other words, evaluating the incentive function across some timespan is equivalent to summing the result of its application across any partition of subsets of that timespan. We will see why this is important when discussing reward distribution.
+
+All of this fussing over objective and incentive functions is important. Incentive rewards are the only organic source of revenue in the Divvi protocol, since Divvi rewards are defined recursively as the sum of downstream Divvi rewards and incentive rewards. This recursive definition begs some discussion of the base case of the recursion, which are entities with **out-degree 0**. More plainly, these are entities that do not refer to any other entities. For the sake of simplicity in this document, we’ll assume that *all entities with out-degree 0 offer incentive rewards.* In reality, this need not necessarily be the case, but we can safely make this assumption here WLOG, in order to avoid some minor complexity when discussing reward distributions.
+
+# Reward Calculation
+
+In this section, we’ll discuss the process of reward calculation. A few things are worth mentioning around reward *distribution* first, however. 
+
+## Time Ranges
+
+Reward calculation is not quite the same as reward *distribution*, in that the parameters for calculation (namely, the timespan across which rewards are being calculated) are *derived* from those being used for distribution. In the steady state, distributions take place at some discrete time $t_c$ (the “current time”). The Divvi protocol keeps track of the *last* time $t_l$ up to which rewards have already been distributed. Note that as we will see shortly, $t_l$ is *not* the time at which the last distribution was triggered, and *always* corresponds to an interval at which the objective function data was posted to the data availability layer.
+
+Let $T$ be a partially ordered set of timestamps at which the objective function data was posted to the data availability layer. When a distribution is triggered at time $t_c$, the Divvi protocol finds  
+
+$$
+t_n = max(T)
+$$
+
+It is necessarily the case that $t_n < t_c$. $[t_l, t_n]$ is then used as the input timespan to reward calculation. This has the effect of calculating and distributing rewards for the greatest possible timespan for which data is available on the data availability layer. Once the distribution is complete, we set $t_l = t_n$ to mark the point up to which rewards have been distributed. 
+
+Note that there may be some $t \in T: t_l < t < t_n$, which implies that there are data in the data availability layer that are effectively getting “skipped over”. Since objective functions must be monotonically increasing, each “block” of objective function data posted at new intervals inherently takes into account contribution to the objective from previous time ranges. Further, due to the additivity constraint on incentive functions, we can safely calculate incentives on broad timespans, since this is equivalent to summing sub-spans.
+
+## Distribution Incentives
+
+In order to facilitate true decentralization, the process of triggering reward distributions must not be left to a particular party; community members must be *economically* *incentivized* to initiate the distribution in a permissionless way via a smart contract call. As such, we define a **distribution incentive function $\gamma$**, which accepts a Divvi reward amount and returns a fraction of the input to grant to the distribution method caller as a reward [2]. This function must obey **additivity**.
+
+## A Preliminary Calculation Process
+
+We’ll now discuss a preliminary version of how rewards are calculated and flow throughout the graph of entities in the Divvi ecosystem. As we will see later, this implementation is somewhat flawed, and will be revisited later on. For now, we will examine how the Divvi protocol calculates rewards an entity $A$ owes to an upstream referrer $B$ for the set of users $\Chi_{A,B}$ that were referred over a particular timespan $[t_{1}, t_{2}]$ is calculated.
+
+### General Case
+
+In the general case, an entity $A$ will owe an upstream referrer $B$ both incentive rewards as well as a fraction of the Divvi rewards that each $x \in X_{A,B}$ generated for $A$. This calculation, then, will ultimately be the sum of two terms. In the base case (as we’ll discuss below), the term for Divvi rewards will go to zero, and for entities that offer no incentive rewards themselves, the term for incentive rewards will go to zero. Without loss of generality, we assume that every entity in this general case provides both types of rewards to upstream referrers.
+
+We’ll start by looking at how to calculate the Divvi rewards that $A$ received via referrals by referring users $x \in X_{A,B}$ to *downstream* entities. $A$ will owe $B$ some fraction of these rewards, since those downstream referrals would not have happened if not for the referral from $B$.
+
+Let $\mathbb{Z}$ represent the set of entities that $A$ refers to. For each entity $Z \in \mathbb{Z}$, entity $A$ was rewarded some Divvi revenue. The attribution for this Divvi revenue can be further broken down *per user.* That is, let  $R_{A,Z,t_1,t_2,x}$ represent the Divvi revenue rewarded to $A$ from $Z$ for referring user $x$ across timespan $[t_{1}, t_{2}]$. (Note that we will be eliding the $t_1,t_2$ subscripts here for simplicity, and just writing e.g., $R_{A,Z,x}$.) We will eventually arrive at a recursive definition for this.
+
+Then, the *total* Divvi revenue that $A$ received from each $Z \in \mathbb{Z}$ on behalf of $x \in X_{A,B}$ is 
+
+$$
+\sum_{Z \in \mathbb{Z}}R_{A,Z,x}
+$$
+
+This represents the total amount of Divvi revenue that $A$ received thanks to $B$’s referral of user $x$. $B$ is owed a portion of this. To determine this portion, we introduce a new function per entity, the **reward transform** function $\tau$. $\tau_{A}$ for an entity $A$ accepts an amount of Divvi reward, and returns some fraction of it to be rewarded to an upstream referrer [3]. Like the incentive function, this transform function must obey **additivity**. The *actual* amount of Divvi revenue $A$ received thanks to $B$’s referral of user $x$, that it owes to $B$, is
+
+$$
+\tau_A\biggl\lparen\sum_{Z \in \mathbb{Z}}R_{A,Z,x}\biggl\rparen
+$$
+
+In order to come up with a full recursive definition for $R_{A,B,x}$, we need to determine the portion of total incentive rewards that $x$ was responsible for. Thankfully, this is a bit more straightforward. $A$’s incentive function makes short work of this; the partial contribution of user $x$ to the total incentive revenue $A$ owes to $B$, before accounting for distribution incentives, is simply
+
+$$
+\theta_{A,t_1,t_2}(x)
+$$
+
+However, we must take into account the *distribution incentive* we mentioned earlier. Rather than pulling the distribution incentive from the *total rewards* owed an entity, we pull it directly from incentive reward sources. If instead we took it from total rewards, we would be reducing the total rewards at every step in the recursion. By only pulling distribution rewards from incentive reward sources, we ensure, thanks to the distribution incentive function’s guarantee of additivity, that distribution rewards are calculated exactly against the *total supply of organic rewards *****available for this distribution cycle. Thus, we have that the actual partial contribution of user $x$ to the total incentive revenue $A$ owes to $B$, *after* accounting for distribution incentives, is
+
+$$
+\theta_{A,t_1,t_2}(x) - \gamma(\theta_{A,t_1,t_2}(x))
+$$
+
+This distribution incentive will be removed from the partial revenue contribution of each user and sent to the distribution method caller.
+
+Now, combining previous terms, we have the complete *partial contribution* of user $x$:
+
+$$
+R_{B,A,x} := \tau_A\biggl\lparen\sum_{Z \in \mathbb{Z}}R_{A,Z,x}\biggl\rparen + \theta_{A,t_1,t_2}(x) - \gamma(\theta_{A,t_1,t_2}(x))
+$$
+
+*This partial sum defines the recurrence relation.* In order to calculate rewards through the entire Divvi network, these partial contributions must be *made available* to upstream entities, in order for them to calculate user contributions correctly. This can either be done via message passing in smart contract method return values, or by posting this data somewhere onchain.
+
+With the per-user contribution determined, it is easy to determine the full amount that $A$ owes referrer $B$ by summing partial contributions across all $x \in X_{A,B}$.
+
+$$
+R_{B,A} := \sum_{x \in X_{A,B}}R_{A,B,x} = \sum_{x \in X_{A,B}}\biggl\lparen\tau_A\biggl\lparen\sum_{Z \in \mathbb{Z}}R_{A,Z,x}\biggl\rparen + \theta_{A,t_1,t_2}(x) - \gamma(\theta_{A,t_1,t_2}(x))\biggl\rparen
+$$
+
+$R_{B, A}$ then, is the *total amount* that $A$ owes to $B$ for the current distribution cycle.
+
+Of course, if multiple entities refer to $A$, this entire process must be repeated for each of those entities.
+
+### Base Case
+
+As mentioned earlier in this document, the base case of the recursion occurs where $A$ is an entity of out-degree 0, and offers incentive rewards.
+
+In this case, $A$ only owes $B$ incentive rewards for each $x \in \Chi_{A,B}$. Specifically, the total sum of incentive rewards (and thus Divvi rewards as a whole, since $A$ generates no Divvi rewards themselves) is: 
+
+$$
+R_{B,A} = \sum_{x \in \Chi_{A,B}}\theta_{A,t_1,t_2}(x) - \gamma(\theta_{A,t_1,t_2}(x))
+$$
+
+This of course implies a partial, per-user contribution of
+
+$$
+R_{B,A,x} = \theta_{A,t_1,t_2}(x) - \gamma(\theta_{A,t_1,t_2}(x))
+$$
+
+which should be made available to upstream entities for their own calculation, just as in the general case. Likewise to the general case, if multiple entities refer to $A$ in the base case, this process must be repeated for each.
+
+## The Issue of Referral Indirection
+
+The protocol, as described above, appears to have a problem. When a user $x$ is marked in the protocol as being referred to some entity $A$ by some other entity $B$, we have so far been assuming that this establishes an implicit “chain” of referrals, following the path of entity relationships starting at $B$. e.g., if $A$ refers to $C$, then there is an implicit referral of $x$ by $A$ to $C$, and so on and so forth.
+
+Imagine a case where a frontend app, entity $A$, refers to Beefy, a yield aggregator, entity $B$. In turn, Beefy refers to some protocol which offers an underlying source of yield, entity $C$. For the sake of argument, say $C$ is the only entity here which offers incentive rewards.
+
+A user $x$ which uses $A$ to invest with Beefy is explicitly referred to $B$ by $A$, and, under our current design, by extension to $C$ by $B$. 
+
+In practice however, Beefy does not directly invest user $x$’s funds into a yield source controlled by $C$. It instead invests funds on behalf of *all* users in a single smart contract, which then pools them into a single position in $C$’s yield source. We’ll call this smart contract user $y$. 
+
+In In more general terms, $C$ has *no knowledge themselves* of user $x$’s participation in $C$’s ecosystem, and if it were to evaluate its objective function against $x$ at any time, it would always turn out $0$.
+
+What happens here is that $B$ refers $y$ to $C$. Functionally, this means that when distributing rewards, $B$ would be rewarded for referring $y$ to $C$, but since $C$ would report no portion of this reward as having been contributed to by user $x$, e.g., $R_{B,C,x} = 0$, $B$ would award *nothing* to $A$ for its referral of user $x$. In actuality, the balance invested in $C$’s yield source by $y$ may come *entirely* from the balance provided by user $x$. 
+
+How do we solve this problem? It seems as if some sort of ability to perform *user translation* is required here. That is to say, for entities that use some sort of *indirection* between upstream and downstream referrals, such as Beefy in this case, we need some way of translating rewards generated for the entity by those downstream referrals to rewards owed to upstream referrers.
+
+In this case specifically, (some portion of) the rewards generated by referring user $y$ should actually be attributed to upstream referred users, however, the general case may indeed be more complicated. Imagine some entity $A$ refers users to entity $B$, and $B$, by some indirection (e.g., pooling all user funds in an intermediate contracts, as is the case with Beefy), refers to entities $C,D,E...$. Divvi revenue awarded to $B$ from *any* of those entities may be ultimately attributable to users referred to $B$ via $A$. This is not an uncommon scenario — imagine a frontend ( $A$ ) for the Beefy protocol ( $B$ ) that allows users to invest in different underlying pools ( $C,D,E,...$ ).
+
+In the general case let us assume some set of entities $\mathbb{A}$ that refer to entity $B$, and some set $\mathbb{Z}$ of entities that $B$ refers to. We define the set of *all users* referred to some entity $B$ by some set of entities $\mathbb{A}$ as follows:
+
+$$
+\Chi_{\mathbb{A},B} := \bigcup\limits_{A \in \mathbb{A}}\Chi_{A,B}
+$$
+
+Likewise, we define the set of all users referred by entity $B$ to some set of entities $\mathbb{Z}$ similarly:
+
+$$
+\Chi_{B, \mathbb{Z}} := \bigcup\limits_{Z \in \mathbb{Z}}\Chi_{B,Z}
+$$
+
+(As an aside, note that even when excluding the case of indirect referrals, it *cannot* be assumed that $\Chi_{\mathbb{A},B} = \Chi_{B,\mathbb{Z}}$, since *organic,* i.e., non-referred users, of $B$ may be contained in $\Chi_{B,\mathbb{Z}}$ but not$\Chi_{\mathbb{A},B}$.) 
+
+Consider the following expression:
+
+$$
+\mathbb{R}_B := \{R_{B,Z,x} | \ \forall \ Z \in \mathbb{Z},\ \forall \ x \in \Chi_{B, \mathbb{Z}}, \}
+$$
+
+$\mathbb{R}_B$ is defined then as the set of all per-user Divvi rewards $B$ generates due to referring users to downstream entities; summing the elements of this set gives the total Divvi revenue generated by $B$. For some $x \in A \ | \ A \in \mathbb{A}$, user $x$ may have contributed to any number of these partial revenues via indirection. 
+
+Recall from earlier that, in the case of non-indirection (where $B$ directly refers $x$ to downstream entities), the total amount of Divvi rewards $x$ generates $B$ is:
+
+$$
+\sum_{Z \in \mathbb{Z}}R_{B,Z,x}
+$$
+
+We need to update this expression to account for the case of indirection. We need some function which, given access to the set of per-user revenues $\mathbb{R}_B$, and a user $x \in \Chi_{\mathbb{A},B}$, returns the amount of Divvi rewards $B$ earned due to $x$’s referral.
+
+One way to look at this is that for each user that $B$ refers to each downstream entity $Z$, some portion of the rewards that user generates may be attributable to some $x \in \Chi_{\mathbb{A},B}$. Let $\psi_{B,Z}(x, x')$ be a function that returns the *portion* of the revenue $B$ generates by referring $x' \in \Chi_{B,Z}$ to $Z$ that is *attributable to user $x$.*
+
+Then, we can define the **reward translation function ****as:
+
+$$
+\Psi_B(x) := \sum_{Z \in \mathbb{Z}}\sum_{x' \in \Chi_{B, Z}}  \psi_{B,Z}(x, x')
+$$
+
+The domain of this function is the set of users $\Chi_{\mathbb{A},B}$ — all users referred to $B$ by some other entity. For any given $x \in \Chi_{A,B}$, it sums the contributions that $x$ has made on behalf of every user $x' \in \Chi_{B,\mathbb{Z}}$ to every $Z \in \mathbb{Z}$.
+
+As a practical note, the reward translation function is defined here as a double summation because it is convenient and expressive; in practice, entities need not define *individual functions* for each user they refer/entity they refer to.
+
+### Reward Translation Function for Direct Referrals
+
+Despite the possibility of indirect referrals, many entities will still refer users directly downstream, in such a way that the downstream entities are able to know those users’ usage within their own ecosystems. Due to how common this use case is, it’s useful to define a “default” reward translation function suitable for such entities. 
+
+Consider again the function $\psi_{B,Z}(x, x')$ as defined above. In the case of direct referrals to downstream entities, we want the reward translation function to reduce to our *original* expression for user contributions to $B$’s Divvi revenue, which is to say, we want
+
+$$
+\sum_{Z \in \mathbb{Z}}R_{B,Z,x} = \sum_{Z \in \mathbb{Z}}\sum_{x' \in \Chi_{B, Z}}  \psi_{B,Z}(x, x')
+$$
+
+Recall that $\psi_{B,Z}(x, x')$ returns the portion of $R_{B,Z,x'}$ attributable to user $x$. Since in this case, $B$ is directly referring its users downstream, the only user that will have contributed to this amount will be user $x$ itself. Thus, we can define $\psi_{B,Z}(x, x')$ as:
+
+$$
+\psi_{B,Z}(x, x') = \begin{array}{cc}  \Bigg\{ & 
+    \begin{array}{cc}
+      R_{B,Z,x} & x = x' \\
+      0 & x \neq x' \\
+
+    \end{array}
+\end{array}
+$$
+
+Since there necessarily exists exactly one element $x' \in \Chi_{B, Z}$ such that $x = x'$, we see that the inner sum reduces:
+
+$$
+\sum_{x' \in \Chi_{B, Z}}  \psi_{B,Z}(x, x') = R_{B,Z,x}
+$$
+
+And thus
+
+$$
+\Psi_B(x) = \sum_{Z \in \mathbb{Z}}R_{B,Z,x}
+$$
+
+as desired. In practice, this implementation may be provided by the protocol as a “default” for entities which do not perform indirect referrals.
+
+## Revisiting Reward Calculation
+
+Having solved the issue of referral indirection, we can now revisit the reward calculation process and determine the updated recurrence relation for calculating Divvi rewards. As before, we will examine how the Divvi rewards an entity $A$ owes to an upstream referrer $B$ for the set of users $\Chi_{A,B}$ that were referred over a particular timespan $[t_{1}, t_{2}]$ is calculated. We use the same notation as earlier, eliding the $t_1, t_2$ subscripts occasionally.
+
+### General Case
+
+Let $\mathbb{Z}$ represent the set of entities that $A$ refers to. Let $Z \in \mathbb{Z}$, and $x \in \Chi_{A,B}$. As before, let $R_{A,Z,x}$ represent the Divvi revenue rewarded to $A$ from $Z$ for referring user $x$. Recall from earlier in the case of direct referrals, we had that the *total* Divvi revenue that $A$ received from each $Z \in \mathbb{Z}$ on behalf of $x \in X_{A,B}$ was
+
+$$
+\sum_{Z \in \mathbb{Z}}R_{A,Z,x}
+$$
+
+We can now replace this directly with our reward transform function:
+
+$$
+\Psi_A(x) = \sum_{Z \in \mathbb{Z}}\sum_{x' \in \Chi_{A, Z}}  \psi_{A,Z}(x, x')
+$$
+
+We simply replace all occurrences of the original expression above with the reward transform function; the rest of the derivation is unchanged. This leaves us with:
+
+$$
+R_{B,A,x} := \tau_A\biggl\lparen\Psi_A(x)\biggl\rparen + \theta_{A,t_1,t_2}(x) - \gamma(\theta_{A,t_1,t_2}(x))
+$$
+
+as the amount of rewards $A$ owes to $B$ for the referral of $x$. The total amount $A$ owes to $B$ is then
+
+$$
+R_{B,A} := \sum_{x \in X_{A,B}}R_{A,B,x} = \sum_{x \in X_{A,B}}\biggl\lparen\tau_A\biggl\lparen\Psi_A(x)\biggl\rparen + \theta_{A,t_1,t_2}(x) - \gamma(\theta_{A,t_1,t_2}(x))\biggl\rparen
+$$
+
+### Base Case
+
+The base case of the recurrence remains unchanged in light of the introduction of the reward transform function. As before, we have:
+
+$$
+R_{B,A,x} = \theta_{A,t_1,t_2}(x) - \gamma(\theta_{A,t_1,t_2}(x))
+$$
+
+for per-user rewards, and for the total rewards we have:
+
+$$
+R_{B,A} = \sum_{x \in \Chi_{A,B}}\theta_{A,t_1,t_2}(x) - \gamma(\theta_{A,t_1,t_2}(x))
+$$
+
+# Smart Contract Architecture
+
+In this section we’ll discuss the smart contract architecture that implements the above relationships and facilitates reward calculation and distribution. For convenience, let’s review all the relevant parameters of the system.
+
+### Global Parameters
+
+- $\gamma$, the **distribution incentive function**
+    - Used to determine what fraction of total incentive rewards in the Divvi ecosystem the distribution caller is entitled to.
+
+### Entity Parameters
+
+- $\phi$, the **objective function**
+    - Used to calculate the impact that referred users have on some entity’s key metric; function values are available via the data availability layer.
+- $\Theta$, the **incentive function**
+    - Used to convert objective function values into incentive reward amounts to pay to referrers.
+- $\tau$, the **reward transform function**
+    - Used to determine what fraction of total Divvi rewards earned by an entity due to a particular upstream referrer is owed to that referrer.
+- $\Psi$, the **reward translation function**
+    - Used to determine what fraction of Divvi rewards an entity has earned is attributable to a particular referred user.
+
+We need to address a few design problems, in no particular order:
+
+- How to register/update referrer relationships between entities
+- How to register user referrals
+    - How/when referrals are “chained” downstream
+- How to manage incentive rewards
+    - How to manage registering incentive reward entity parameters
+    - How to manage holding incentive reward funds
+    - How to ensure trust/stability in the above parameters/funds
+- How to distribute rewards to entities
+
+For this discussion, we will assume that all smart contracts (including the data availability layer) are deployed to a **single chain**, regardless of which chain entities themselves are actually deployed to/transacting on. Further, we will make some simplifying assumptions about the shape of the data availability layer, and assume that it is possible somehow for it to expose an interface to retrieve the values of objective functions for a given user and timestamp. 
+
+Before discussing particular smart contracts and their implementation, we’ll examine a few key design considerations of the system, and how they impact the implementation.
+
+## Downstream Referral Propagation
+
+In the Divvi protocol, users can be referred to some entity by exactly one other entity. For an entity $A$ referring to entity $B$, outside of incentive rewards directly from $B$, the only way $A$ generates Divvi rewards is via their referred users generating Divvi rewards for entities *downstream* of $B$; some portion of those rewards then flow back up to $A$.
+
+In order to support this, and to implement the protocol as described at length in the previous section, when a user is registered as referred to $B$ by $A$, the protocol *must* also register that user as referred by $B$ to any entities directly downstream of $B$. This process repeats for those entities as well. (Note that this also applies to entities who take advantage of referral indirection; since “strict” indirection where users referred to $B$ *never* interact with downstream protocols directly is in fact a special case implementation of reward transform functions.)
+
+This has some subtle consequences. If $A$ refers to $B$, and $B$ to $C$, and user $x$ has already been referred to $C$ by some other entity $D$, what happens when $A$ attempts to refer $x$ to $B$? Since $x$ has already been referred to $C$, it cannot be referred again. In this case the “best” we can do is a best-effort propagation of referrals; we can register $x$ as being referred from $A$ to $B$, but not from $B$ to $C$. This would make $A$ eligible for any potential incentive rewards from $B$ for the actions of $x$, but *not* for a fraction of the Divvi rewards that $B$ receives from $C$. In general, this “best-effort” propagation through the network is what the protocol must attempt when registering a new referral.
+
+## Ensuring Reward Reliability
+
+Entities that refer users/transactions to other entities may want some guarantees on the rewards available, as well as guarantees on the way that those rewards are calculated. In particular, they may want to be able to know that:
+
+- Some fixed pool of rewards are available, for a guaranteed duration
+- The *calculation* of those rewards are known, and fixed for a guaranteed duration
+
+Since rewards given by entities are divided into two parts, downstream Divvi rewards and incentive rewards, we can impose separate constraints on the parameters used to determine those rewards.
+
+First, for incentive rewards, entities should be able to specify their *objective function $\phi$, incentive function $\Theta$,* and *total incentive rewards available*. For each of these values, entities should be able to specify a **lockout period**. For the objective and incentive functions, this lockout period refers to a length of time during which that entity will be *unable* to update/remove these functions. For the total pool of incentive rewards, this lockout period refers to a length of time during which that entity will be *unable to access/withdraw* those funds.
+
+For the Divvi revenue portion of rewards, entities should be able to specify their *reward transform function $\tau$* and *reward translation function* $\Psi$. These too should be subject to optional lockout periods, in the same way as the functions above for incentive rewards.
+
+## Self-Service Considerations
+
+A balance needs to be struck between allowing entities to freely register themselves as referring to other entities, and allowing entities to restrict which entities refer to them. For example, some entity may only want to allow a particular other entity to refer to them, and may not want the traffic from many other entities, or, say, have enough available funds for incentive rewards to support all of them.
+
+To this end, we propose a configuration by which an entity may *optionally* allow other entities to freely register themselves as referrers to them, but also allow them to instead require other entities to submit a *request* to become a referrer which must be approved by the entity themselves.
+
+## Referral Registration & Contract-as-User
+
+In Divvi, a user is simply an address; this address may be an EOA, as in the case of an end-user in some frontend app, or a contract address, as might be the case if the Beefy app discussed earlier referred to other downstream entities.
+
+In either case, the Divvi protocol should support registering arbitrary addresses as users who have been referred to some entity by some other. A referral cannot be registered without some indication from the user being referred that they consent to this referral. Otherwise, unscrupulous entities could register referrals *en masse* on behalf of non-consenting users and undeservedly receive rewards.
+
+In the case of EOAs, getting this “consent” is easy — the protocol can just require that the user sign some message with their private key; this message can be verified in a protocol contract. In the case of registering *contracts* as users, things become slightly more tricky. The Divvi protocol makes absolutely no distinction between EOA referrals and smart contract referrals — in short, a signature by the smart contract is required; this is facilitated by [ERC-1271](https://eips.ethereum.org/EIPS/eip-1271), a proposal providing a standard interface for contracts to sign messages. Entities which wish to register smart contracts as referred to some other entity must ensure that the contract is ERC-1271 compatible, and that they have some means to generate a signature with it.
+
+The Divvi protocol method for registering a referral need not be called by the user who is being registered as being referred; *anyone* can call this method on behalf of any user, so long as they provide a valid signature for the user being registered.
+
+## Reward Denomination
+
+Recall that the root source of all rewards in Divvi come from *incentive rewards*: entities providing incentive rewards decide what actions to reward and what tokens to use as rewards. **Whatever the tokens incentive rewards in the network are denominated in will ultimately be what entities receive as rewards. The protocol itself is agnostic to the exact ERC20 tokens chosen as incentive rewards. 
+
+## Permissions & Principals
+
+At any time, an entity may register themselves within the protocol. An entity is represented by some address; it is the address that the transaction is sent from to register themselves as an entity. However, this address is *merely* an identifier, and has no semantic meaning. Entities must register some *owner* address to manage the configuration of their Divvi network parameters. Entities are able to transfer ownership of their Divvi entity to some other address at any time, potentially subject to some transfer delay period.
+
+For global Divvi parameters, these will be controlled/configurable by some address controlled by the Divvi organization; ownership here can also be transferred as above.
+
+## Reward Distribution
+
+As discussed earlier, reward distribution will be able to be triggered by arbitrary addresses, who will receive some incentive for making the distribution contract call. Rewards will not be sent out directly to entity-controlled addresses as part of the distribution process. Instead, rewards will be held in a protocol contract, and the owner address for some entity will be given permission to call a claim function in order to withdraw the funds. This allows an entity receiving rewards to optimize their claims (*e.g.*, with respect to gas) and also allows entities distributing rewards to reclaim remaining rewards after a timelock has expired.
+
+## Contract Overview
+
+The Divvi platform is implemented by the following smart contracts; we’ll provide a high-level overview, then discuss each of them in more depth.
+
+- **Registry**
+    - The Registry contract allows entities to register themselves with the Divvi protocol, and specify referrer relationships between themselves and other entities. It also allows users to register themselves as being referred to some entity by some upstream entity.
+- **EntityRewards**
+    - The EntityRewards contract is a per-entity contract, deployed once for each entity that wishes to grant incentive rewards. This contract holds the entity’s pool of available incentive rewards for distribution, and provides mechanisms to ensure reward lockup for some fixed period of time.
+- **RewardManager**
+    - The RewardManager contract manages reward distribution. It allows entities to register incentive and reward transform functions, and for the Divvi platform to register a distribution incentive function.
+
+In addition to actual contract implementations, the Divvi protocol specifies a handful of contract  *interfaces* to ensure consistency and interoperability among the various functions entities must specify for reward calculations. These interfaces are:
+
+- **IDivviIncentiveFunction**
+    - This is the interface that entities must use in order to specify an incentive function. This is a contract containing a method with some fixed name that accepts as parameters some user address and block range, and returns the amount of rewards owed to an upstream referrer due to the given user’s contribution to the objective function over the given time range. This function will access the objective function values from the data availability layer.
+- **IDivviRewardTransformFunction**
+    - This is the interface that entities must implement in order to specify a custom reward transform function. This will accept some amount of Divvi reward that the entity has earned on behalf of a given upstream referrer, and return the fraction of that amount that it owes the upstream referrer. A default implementation of this (e.g., multiplying rewards by some fractional scalar) will be provided for entities to use if they do not wish to specify a custom function.
+- **IDivviRewardTranslationFunction**
+    - This is the interface that entities must implement in order to attribute downstream rewards earned to upstream referred users. A default implementation of this (i.e., the “direct referral” implementation as discussed in the previous section) will be provided to entities who do not wish to specify a custom function.
+
+## Registry Contract
+
+The **Registry** contract is where the topology of the Divvi network is defined, i.e., it contains information about all entities in the network as well as relationships between them. It contains the following core methods:
+
+- `registerEntity`
+    - Registers an entity in the Divvi network; caller must specify an owner address.
+- `transferEntityOwner`
+    - Transfers ownership of a Divvi entity
+- `registerReferrer`
+    - Registers a referrer↔ referee relationship between two entities. Can only be called by the given referrer. If the referee requires approvals, the registration must be approved before going into effect.
+- `requireApprovalsForReferrers`
+    - Requires that referrer registrations be approved before going into effect for some entity.
+- `approveReferrer`
+    - Approves a request to register a referrer to some entity.
+- `removeReferrerRelationship`
+    - This may not be necessary depending on whether we want network relationships to be mutable once created.
+- `registerReferral`
+    - Registers a user as being referred to some entity by some other. Requires a signature from the user being referred. Reverts if there is no referrer ↔referee relationship
+- `removeReferral`
+    - This may not be necessary depending on whether we want referrals to be mutable once created.
+
+## EntityRewards Contract
+
+An instance of the EntityRewards contract will be deployed once per entity, and will be responsible for holding entity funds for the purpose of distributing incentive rewards. A lockup mechanism is made available on the contract, giving entities the ability to ensure upstream referrers that rewards will be available for some fixed amount of time. Only the entity’s owner will be able to call methods on this contract. Note that for entities that do not offer incentive rewards, it’s not required to deploy/configure this contract. It contains the following core methods:
+
+- `addRewards`
+    - Adds any number of rewards as incentive rewards to the contract. The method caller must be holding the specified rewards, and have pre-approved the contract to spend them.
+- `setLockoutPeriod`
+    - Sets a lockout period for the rewards. Until this lockout period has passed, the owner will be unable to withdraw their rewards.
+- `withdrawRewards`
+    - Withdraws all incentive rewards from the contract. Reverts if the funds are currently locked.
+
+## RewardsManager Contract
+
+The RewardsManager contract is a core Divvi contract that fulfills a handful of roles. It allows entities to register various functions involved with reward calculation, and contains the core logic to perform reward distribution and calculation. Additionally, it holds claimable rewards, and allows entities to claim those rewards. It contains the following core methods:
+
+- `registerIncentiveFunction`
+    - Registers an incentive function for an entity. Not required to be set if an entity does not offer incentive rewards. This takes an address of an `IDivviIncentiveFunction` contract.
+- `setIncentiveFunctionLockoutPeriod`
+    - Sets the lockout period for the incentive function for an entity.
+- `registerRewardTransformFunction`
+    - Registers a reward transform function for an entity. This takes an address of an `IDivviRewardTransformFunction` contract.
+- `registerScalingRewardTransformFunction`
+    - This sets an entity’s reward transform function to a simple fractional scalar value; this value is passed as a parameter. This will probably be the most common use case for the reward transform function, so this method is offered as a convenience. We can default an entity’s implementation for the reward transform function to a scaling function with scalar value 0.
+- `setRewardTransformFunctionLockoutPeriod`
+    - Sets the lockout period for the reward transform function for an entity.
+- `setRewardTranslationFunction`
+    - Sets the reward translation function for an entity. This takes an address of an `IDivviRewardTranslationFunction` contract.
+- `setDirectRewardTranslationFunction`
+    - Sets the reward translation function to be the “direct referrals” implementation as discussed in the previous section. This will be the most common use case, and thus this method exists as a convenience. We can default an entity’s implementation for the reward translation function to be this direct referral implementation.
+- `setRewardTranslationFunctionLockoutPeriod`
+    - Sets the lockout period for the reward translation function for an entity.
+- `setDistributionIncentiveFunction`
+    - Allows Divvi protocol owner to set a distribution incentive function.
+- `distributeRewards`
+    - Kicks off a reward distribution. Rewards the caller based off of the distribution incentive function. Moves reward funds per entity to this contract.
+- `claimRewards`
+    - Allows an entity to claim any rewards that they are owed that are heIn order ld by this contract. This encapsulates the reward calculation implementation; we’ll discuss this a bit more shortly.
+
+The core of this contract is the `claimRewards` function. This method implements the recursion worked out in the previous section, using the appropriate functions that entities have registered with the protocol at each step of the recursion. At each “step” of the recursion (i.e., once per entity), the per-user revenue contribution values (i.e., $R_{B,A,x,t_1,t_2}$ as explained in the previous section) are published onchain in a well-known location, accessible by both the `claimRewards` function as well as any custom functions that entities may have registered with the protocol.
+
+In `claimRewards`, directly after calculating the per-user revenue contributions, the method determines the total revenue that an entity owes to each of its upstream referrers, and transfers it to the `RewardsManager` contract. Note that this revenue may come from an `EntityRewards` contract in the case of incentive rewards, *or* from the `RewardsManager` contract, in the case of Divvi rewards being propagated upstream. When `claimRewards` has finished sending out upstream rewards from a particular entity, it marks that entity as being able to claim whatever other rewards it earned. Additionally, at the end of each recursion step, the `claimRewards` function sends out distribution incentive rewards to the method caller.
+
+# Conclusion
+
+Divvi provides a programmable and composable foundation for funding growth across onchain ecosystems. By enabling participants to define, measure, and reward impact in a transparent and onchain manner, Divvi facilitates completely onchain incentive structures spanning multiple ecosystems. The protocol’s DAG-based architecture ensures that value flows efficiently through chains of contribution, making it easy to support builders, promoters, and other actors who drive measurable results. As more participants adopt Divvi, we anticipate a richer and more decentralized market for ecosystem growth.
+
+---
+
+[1] The purpose of requiring the objective function to be monotonically increasing is to capture the notion of *lifetime* contribution of a user to some *real* underlying metric. If, over an interval, this *lifetime* value of a user is unchanged, then the delta will be zero and the user (presumably) ineligible for reward contribution over that span. Metrics such as swap volume fit neatly into this kind of function. If a protocol wants to incentivize e.g., TVL, they can do so by picking an objective function that represents value locked * unit time.
+
+[2] Practically speaking, this will likely be very simple, typically just a fractional scalar value. However, it is worth parameterizing into its own function, since more complex use cases are possible. For example, one could use a scalar value which increases in proportion with the duration since the last distribution was triggered. 
+
+[3] Note this function is liable to be relatively simple as well, again typically just a fractional scalar value. It is essentially the Divvi-reward equivalent to the incentive rewards’ *incentive function.* One subtlety here is that this function is only ever applied to the Divvi portion of rewards; “portioning” semantics for incentive rewards are expected to be encoded in the incentive function itself.
