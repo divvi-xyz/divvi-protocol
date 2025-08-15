@@ -21,6 +21,7 @@
           "contracts",
           {
             "group": "KPI calculations",
+            "icon": "calculator",
             "autogenerate": "calculate-kpi"
           }
         ]
