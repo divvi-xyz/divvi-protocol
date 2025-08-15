@@ -5,7 +5,7 @@
     "groups": [
       {
         "group": "Getting started",
-        "pages": ["index", "builder-camp"]
+        "pages": ["index"]
       },
       {
         "group": "How-to guides",
