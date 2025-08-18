@@ -1,10 +1,15 @@
 import { expect } from 'chai'
 import hre from 'hardhat'
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
+import { Contract } from 'ethers'
+
+interface Kpi {
+  kpi: bigint
+  referrerAddress: string
+}
 
 describe('RewardLibrary', function () {
-  let testContract: any
-  let rewardLibrary: any
+  let testContract: Contract
   let user1: HardhatEthersSigner
   let user2: HardhatEthersSigner
   let user3: HardhatEthersSigner
@@ -12,13 +17,19 @@ describe('RewardLibrary', function () {
   before(async function () {
     // Deploy the RewardLibrary first
     const RewardLibrary = await hre.ethers.getContractFactory('RewardLibrary')
-    rewardLibrary = await RewardLibrary.deploy()
+    const rewardLibrary = await RewardLibrary.deploy()
     await rewardLibrary.waitForDeployment()
 
-    // Deploy the test contract with the library address as constructor parameter
-    const TestContract =
-      await hre.ethers.getContractFactory('RewardLibraryTest')
-    testContract = await TestContract.deploy(await rewardLibrary.getAddress())
+    // Deploy the test contract with the library linked
+    const TestContract = await hre.ethers.getContractFactory(
+      'RewardLibraryTest',
+      {
+        libraries: {
+          RewardLibrary: await rewardLibrary.getAddress(),
+        },
+      },
+    )
+    testContract = await TestContract.deploy()
     await testContract.waitForDeployment()
 
     // Get signers
@@ -137,7 +148,7 @@ describe('RewardLibrary', function () {
     })
 
     it('should handle empty KPI array', async function () {
-      const kpis: any[] = []
+      const kpis: Kpi[] = []
       const totalRewardAmount = 100n
 
       const linearRewards = await testContract.testCalculateLinearReward(
@@ -243,7 +254,7 @@ describe('RewardLibrary', function () {
     })
 
     it('should handle empty KPI array', async function () {
-      const kpis: any[] = []
+      const kpis: Kpi[] = []
       const totalRewardAmount = 100n
 
       const sqrtRewards = await testContract.testCalculateSqrtReward(

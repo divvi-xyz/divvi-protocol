@@ -4,12 +4,6 @@ pragma solidity ^0.8.24;
 import {RewardLibrary} from '../../libraries/RewardLibrary.sol';
 
 contract RewardLibraryTest {
-  address public immutable rewardLibraryAddress;
-
-  constructor(address _rewardLibraryAddress) {
-    rewardLibraryAddress = _rewardLibraryAddress;
-  }
-
   function testCalculateLinearReward(
     RewardLibrary.Kpi[] memory kpis,
     uint256 totalRewardAmount
