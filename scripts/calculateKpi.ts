@@ -36,11 +36,13 @@ async function calculateKpiBatch({
 }): Promise<KpiResults> {
   const results: KpiResults = []
 
+  console.log(
+    `Calculating KPI for ${eligibleUsers.length} eligible users for campaign ${protocol} from ${startTimestamp.toISOString()} to ${endTimestampExclusive.toISOString()}`,
+  )
+
   for (let i = 0; i < eligibleUsers.length; i += batchSize) {
     const batch = eligibleUsers.slice(i, i + batchSize)
-    console.log(
-      `Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)} for campaign ${protocol}`,
-    )
+    const startTs = Date.now()
 
     const batchPromises = batch.map(
       async ({ referrerId, userAddress, timestamp }) => {
@@ -80,6 +82,10 @@ async function calculateKpiBatch({
       ...batchResults.filter(
         (result): result is NonNullable<typeof result> => result !== null,
       ),
+    )
+
+    console.log(
+      `Processed batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)} for campaign ${protocol} in ${Date.now() - startTs}ms`,
     )
   }
 
