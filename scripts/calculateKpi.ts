@@ -36,6 +36,10 @@ async function calculateKpiBatch({
 }): Promise<KpiResults> {
   const results: KpiResults = []
 
+  console.log(
+    `Calculating KPI for ${eligibleUsers.length} eligible users for campaign ${protocol} from ${startTimestamp.toISOString()} to ${endTimestampExclusive.toISOString()}`,
+  )
+
   for (let i = 0; i < eligibleUsers.length; i += batchSize) {
     const batch = eligibleUsers.slice(i, i + batchSize)
     const startTs = Date.now()
