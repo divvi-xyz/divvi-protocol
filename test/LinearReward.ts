@@ -63,7 +63,7 @@ describe('LinearReward', function () {
       const kpis = [{ kpi: 500n, referrerAddress: user1.address }]
       const totalRewardAmount = 1000n
 
-      const rewards = await testContract.testCalculateLinearReward(
+      const rewards = await testContract.testCalculateReward(
         kpis,
         totalRewardAmount,
       )
