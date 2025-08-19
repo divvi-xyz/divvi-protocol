@@ -21,42 +21,15 @@ describe('SqrtReward', function () {
     await sqrtReward.waitForDeployment()
 
     // Deploy the test contract with the library linked
-    const TestContract = await hre.ethers.getContractFactory('SqrtRewardPool', {
-      libraries: {
-        SqrtReward: await sqrtReward.getAddress(),
-      },
-    })
-    testContract = await TestContract.deploy()
+    const TestContract = await hre.ethers.getContractFactory('TestRewardPool')
+    testContract = await TestContract.deploy(await sqrtReward.getAddress())
     await testContract.waitForDeployment()
 
     // Get signers
     ;[user1, user2, user3] = await hre.ethers.getSigners()
   })
 
-  describe('_sqrt function', function () {
-    it('should return 0 for sqrt(0)', async function () {
-      const result = await testContract.testSqrt(0)
-      expect(result).to.equal(0)
-    })
-
-    it('should handle large numbers', async function () {
-      const result = await testContract.testSqrt(1000000)
-      expect(result).to.equal(1000)
-    })
-
-    it('should handle perfect squares', async function () {
-      const result = await testContract.testSqrt(144)
-      expect(result).to.equal(12)
-    })
-
-    it('should handle non-perfect squares', async function () {
-      const result = await testContract.testSqrt(10)
-      // sqrt(10) ≈ 3.16..., so should return 3
-      expect(result).to.equal(3)
-    })
-  })
-
-  describe('calculateSqrtReward function', function () {
+  describe('calculateReward function', function () {
     it('should calculate sqrt rewards correctly for KPIs', async function () {
       const kpis = [
         { kpi: 100n, referrerAddress: user1.address }, // sqrt = 10

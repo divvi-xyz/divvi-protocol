@@ -1,17 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-library LinearReward {
-  struct Kpi {
-    uint256 kpi;
-    address referrerAddress;
-  }
+import {IRewardFunction} from './IRewardFunction.sol';
 
-  struct Reward {
-    uint256 reward;
-    address referrerAddress;
-  }
-
+library LinearReward is IRewardFunction {
   /**
    * @dev Calculate linear reward
    * @param kpis The KPIs to calculate the reward for
@@ -19,13 +11,16 @@ library LinearReward {
    * @return rewards The rewards for each referrer calculated using the linear function
    */
   function calculateReward(
-    Kpi[] memory kpis,
+    Kpi[] calldata kpis,
     uint256 totalRewardAmount
-  ) external pure returns (Reward[] memory rewards) {
+  ) external pure override returns (Reward[] memory rewards) {
     rewards = new Reward[](kpis.length);
     uint256 totalKpi = 0;
     for (uint256 i = 0; i < kpis.length; i++) {
       totalKpi += kpis[i].kpi;
+    }
+    if (totalKpi == 0) {
+      return rewards;
     }
     for (uint256 i = 0; i < kpis.length; i++) {
       rewards[i] = Reward({
@@ -33,6 +28,5 @@ library LinearReward {
         referrerAddress: kpis[i].referrerAddress
       });
     }
-    return rewards;
   }
 }

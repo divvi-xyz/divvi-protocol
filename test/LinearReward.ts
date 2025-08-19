@@ -21,15 +21,8 @@ describe('LinearReward', function () {
     await linearReward.waitForDeployment()
 
     // Deploy the test contract with the library linked
-    const TestContract = await hre.ethers.getContractFactory(
-      'LinearRewardPool',
-      {
-        libraries: {
-          LinearReward: await linearReward.getAddress(),
-        },
-      },
-    )
-    testContract = await TestContract.deploy()
+    const TestContract = await hre.ethers.getContractFactory('TestRewardPool')
+    testContract = await TestContract.deploy(await linearReward.getAddress())
     await testContract.waitForDeployment()
 
     // Get signers

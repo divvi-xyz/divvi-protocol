@@ -1,17 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-library SqrtReward {
-  struct Kpi {
-    uint256 kpi;
-    address referrerAddress;
-  }
+import {IRewardFunction} from './IRewardFunction.sol';
 
-  struct Reward {
-    uint256 reward;
-    address referrerAddress;
-  }
-
+library SqrtReward is IRewardFunction {
   /**
    * @dev Calculate sqrt reward
    * @param kpis The KPIs to calculate the reward for
@@ -19,13 +11,16 @@ library SqrtReward {
    * @return rewards The rewards for each referrer calculated using the square root function
    */
   function calculateReward(
-    Kpi[] memory kpis,
+    Kpi[] calldata kpis,
     uint256 totalRewardAmount
-  ) external pure returns (Reward[] memory rewards) {
+  ) external pure override returns (Reward[] memory rewards) {
     rewards = new Reward[](kpis.length);
     uint256 totalSqrtKpi = 0;
     for (uint256 i = 0; i < kpis.length; i++) {
       totalSqrtKpi += _sqrt(kpis[i].kpi);
+    }
+    if (totalSqrtKpi == 0) {
+      return rewards;
     }
     for (uint256 i = 0; i < kpis.length; i++) {
       rewards[i] = Reward({
@@ -33,7 +28,6 @@ library SqrtReward {
         referrerAddress: kpis[i].referrerAddress
       });
     }
-    return rewards;
   }
 
   /**
