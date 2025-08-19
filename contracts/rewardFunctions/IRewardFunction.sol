@@ -15,5 +15,5 @@ interface IRewardFunction {
   function calculateReward(
     Kpi[] calldata kpis,
     uint256 totalRewardAmount
-  ) external pure returns (Reward[] memory);
+  ) external view returns (Reward[] memory);
 }

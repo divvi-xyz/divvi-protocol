@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {IRewardFunction} from './IRewardFunction.sol';
 
-library SqrtReward is IRewardFunction {
+contract SqrtReward is IRewardFunction {
   /**
    * @dev Calculate sqrt reward
    * @param kpis The KPIs to calculate the reward for

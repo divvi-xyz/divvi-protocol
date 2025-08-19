@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IRewardFunction} from '../../libraries/IRewardFunction.sol';
+import {IRewardFunction} from '../rewardFunctions/IRewardFunction.sol';
 
 contract TestRewardPool {
   IRewardFunction public rewardFunction;
@@ -13,7 +13,7 @@ contract TestRewardPool {
   function testCalculateReward(
     IRewardFunction.Kpi[] calldata kpis,
     uint256 totalRewardAmount
-  ) external pure returns (IRewardFunction.Reward[] memory) {
+  ) external view returns (IRewardFunction.Reward[] memory) {
     return rewardFunction.calculateReward(kpis, totalRewardAmount);
   }
 }
