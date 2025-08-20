@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {IRewardFunction} from './IRewardFunction.sol';
+import {Math} from '@openzeppelin/contracts/utils/math/Math.sol';
 
 contract SqrtReward is IRewardFunction {
   /**
@@ -17,30 +18,20 @@ contract SqrtReward is IRewardFunction {
     rewards = new Reward[](kpis.length);
     uint256 totalSqrtKpi = 0;
     for (uint256 i = 0; i < kpis.length; i++) {
-      totalSqrtKpi += _sqrt(kpis[i].kpi);
+      totalSqrtKpi += Math.sqrt(kpis[i].kpi);
     }
     if (totalSqrtKpi == 0) {
       return rewards;
     }
     for (uint256 i = 0; i < kpis.length; i++) {
       rewards[i] = Reward({
-        reward: (totalRewardAmount * _sqrt(kpis[i].kpi)) / totalSqrtKpi,
+        reward: Math.mulDiv(
+          totalRewardAmount,
+          Math.sqrt(kpis[i].kpi),
+          totalSqrtKpi
+        ),
         referrerAddress: kpis[i].referrerAddress
       });
-    }
-  }
-
-  /**
-   * @dev Calculate the square root of a number
-   * @param x The number to calculate the square root of
-   * @return y The square root of the number
-   */
-  function _sqrt(uint256 x) internal pure returns (uint256 y) {
-    uint256 z = (x + 1) / 2;
-    y = x;
-    while (z < y) {
-      y = z;
-      z = (x / z + z) / 2;
     }
   }
 }

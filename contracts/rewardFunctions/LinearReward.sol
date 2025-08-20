@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {IRewardFunction} from './IRewardFunction.sol';
+import {Math} from '@openzeppelin/contracts/utils/math/Math.sol';
 
 contract LinearReward is IRewardFunction {
   /**
@@ -24,7 +25,7 @@ contract LinearReward is IRewardFunction {
     }
     for (uint256 i = 0; i < kpis.length; i++) {
       rewards[i] = Reward({
-        reward: (totalRewardAmount * kpis[i].kpi) / totalKpi,
+        reward: Math.mulDiv(totalRewardAmount, kpis[i].kpi, totalKpi),
         referrerAddress: kpis[i].referrerAddress
       });
     }
