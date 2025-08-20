@@ -26,7 +26,8 @@ contract LinearReward is IRewardFunction {
     for (uint256 i = 0; i < kpis.length; i++) {
       rewards[i] = Reward({
         reward: Math.mulDiv(totalRewardAmount, kpis[i].kpi, totalKpi),
-        referrerAddress: kpis[i].referrerAddress
+        referrerAddress: kpis[i].referrerAddress,
+        idempotencyKey: kpis[i].idempotencyKey
       });
     }
   }

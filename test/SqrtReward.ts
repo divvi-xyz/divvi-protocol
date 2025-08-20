@@ -6,6 +6,12 @@ import { Contract } from 'ethers'
 interface Kpi {
   kpi: bigint
   referrerAddress: string
+  idempotencyKey: string
+}
+
+// Helper function to generate idempotency keys for testing
+function generateTestIdempotencyKey(user: string, nonce: number = 0): string {
+  return hre.ethers.keccak256(hre.ethers.toUtf8Bytes(`${user}-${nonce}`))
 }
 
 describe('SqrtReward', function () {
@@ -32,9 +38,21 @@ describe('SqrtReward', function () {
   describe('calculateReward function', function () {
     it('should calculate sqrt rewards correctly for KPIs', async function () {
       const kpis = [
-        { kpi: 100n, referrerAddress: user1.address }, // sqrt = 10
-        { kpi: 400n, referrerAddress: user2.address }, // sqrt = 20
-        { kpi: 900n, referrerAddress: user3.address }, // sqrt = 30
+        {
+          kpi: 100n,
+          referrerAddress: user1.address,
+          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
+        }, // sqrt = 10
+        {
+          kpi: 400n,
+          referrerAddress: user2.address,
+          idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
+        }, // sqrt = 20
+        {
+          kpi: 900n,
+          referrerAddress: user3.address,
+          idempotencyKey: generateTestIdempotencyKey(user3.address, 1),
+        }, // sqrt = 30
       ]
       const totalRewardAmount = 600n
 
@@ -55,7 +73,11 @@ describe('SqrtReward', function () {
 
     it('should handle single KPI', async function () {
       const kpis = [
-        { kpi: 400n, referrerAddress: user1.address }, // sqrt = 20
+        {
+          kpi: 400n,
+          referrerAddress: user1.address,
+          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
+        }, // sqrt = 20
       ]
       const totalRewardAmount = 1000n
 
@@ -71,8 +93,16 @@ describe('SqrtReward', function () {
 
     it('should handle zero total reward amount', async function () {
       const kpis = [
-        { kpi: 100n, referrerAddress: user1.address },
-        { kpi: 400n, referrerAddress: user2.address },
+        {
+          kpi: 100n,
+          referrerAddress: user1.address,
+          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
+        },
+        {
+          kpi: 400n,
+          referrerAddress: user2.address,
+          idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
+        },
       ]
       const totalRewardAmount = 0n
 
@@ -88,8 +118,16 @@ describe('SqrtReward', function () {
 
     it('should handle zero KPI values', async function () {
       const kpis = [
-        { kpi: 0n, referrerAddress: user1.address }, // sqrt = 0
-        { kpi: 100n, referrerAddress: user2.address }, // sqrt = 10
+        {
+          kpi: 0n,
+          referrerAddress: user1.address,
+          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
+        }, // sqrt = 0
+        {
+          kpi: 100n,
+          referrerAddress: user2.address,
+          idempotencyKey: generateTestIdempotencyKey(user2.address),
+        }, // sqrt = 10
       ]
       const totalRewardAmount = 100n
 
@@ -105,9 +143,21 @@ describe('SqrtReward', function () {
 
     it('should handle non-perfect squares', async function () {
       const kpis = [
-        { kpi: 2n, referrerAddress: user1.address }, // sqrt ≈ 1
-        { kpi: 5n, referrerAddress: user2.address }, // sqrt ≈ 2
-        { kpi: 10n, referrerAddress: user3.address }, // sqrt ≈ 3
+        {
+          kpi: 2n,
+          referrerAddress: user1.address,
+          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
+        }, // sqrt ≈ 1
+        {
+          kpi: 5n,
+          referrerAddress: user2.address,
+          idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
+        }, // sqrt ≈ 2
+        {
+          kpi: 10n,
+          referrerAddress: user3.address,
+          idempotencyKey: generateTestIdempotencyKey(user3.address, 1),
+        }, // sqrt ≈ 3
       ]
       const totalRewardAmount = 60n
 
