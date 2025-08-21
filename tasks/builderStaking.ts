@@ -17,6 +17,12 @@ task('builder-staking:deploy', 'Deploy BuilderStaking contract')
   )
   .addFlag('useDefender', 'Deploy using OpenZeppelin Defender')
   .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
+  .addOptionalParam(
+    'transferDelay',
+    'Delay in seconds before admin role changes take effect',
+    '0',
+    types.string,
+  )
   .setAction(async (taskArgs, hre) => {
     const adminAddress =
       taskArgs.adminAddress || (await hre.ethers.getSigners())[0].address
@@ -24,7 +30,12 @@ task('builder-staking:deploy', 'Deploy BuilderStaking contract')
     await deployContract(
       hre,
       CONTRACT_NAME,
-      [taskArgs.divviTokenAddress, adminAddress, taskArgs.initialThreshold],
+      [
+        taskArgs.divviTokenAddress,
+        adminAddress,
+        taskArgs.initialThreshold,
+        taskArgs.transferDelay,
+      ],
       {
         isUpgradeable: true,
         useDefender: taskArgs.useDefender,

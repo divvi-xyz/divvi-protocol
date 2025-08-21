@@ -21,7 +21,12 @@ describe(CONTRACT_NAME, function () {
     const BuilderStaking = await hre.ethers.getContractFactory(CONTRACT_NAME)
     const builderStaking = await hre.upgrades.deployProxy(
       BuilderStaking,
-      [await mockDivviToken.getAddress(), admin.address, INITIAL_THRESHOLD],
+      [
+        await mockDivviToken.getAddress(),
+        admin.address,
+        INITIAL_THRESHOLD,
+        86400,
+      ], // 1 day transfer delay
       { kind: 'uups' },
     )
     await builderStaking.waitForDeployment()
@@ -86,7 +91,7 @@ describe(CONTRACT_NAME, function () {
       await expect(
         hre.upgrades.deployProxy(
           BuilderStaking,
-          [hre.ethers.ZeroAddress, admin.address, INITIAL_THRESHOLD],
+          [hre.ethers.ZeroAddress, admin.address, INITIAL_THRESHOLD, 86400],
           { kind: 'uups' },
         ),
       ).to.be.revertedWithCustomError(BuilderStaking, 'ZeroAddressNotAllowed')
@@ -106,6 +111,7 @@ describe(CONTRACT_NAME, function () {
             await mockDivviToken.getAddress(),
             hre.ethers.ZeroAddress,
             INITIAL_THRESHOLD,
+            86400,
           ],
           { kind: 'uups' },
         ),

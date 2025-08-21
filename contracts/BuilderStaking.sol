@@ -67,16 +67,18 @@ contract BuilderStaking is
    * @param _divviToken Address of the $DIVVI token contract
    * @param _admin Address that will have DEFAULT_ADMIN_ROLE
    * @param _initialThreshold Initial staking threshold (can be 0)
+   * @param _transferDelay Delay in seconds before admin role changes take effect
    */
   function initialize(
     address _divviToken,
     address _admin,
-    uint256 _initialThreshold
+    uint256 _initialThreshold,
+    uint48 _transferDelay
   ) external initializer {
     if (_divviToken == address(0)) revert ZeroAddressNotAllowed();
     if (_admin == address(0)) revert ZeroAddressNotAllowed();
 
-    __AccessControlDefaultAdminRules_init(0, _admin);
+    __AccessControlDefaultAdminRules_init(_transferDelay, _admin);
     __UUPSUpgradeable_init();
 
     divviToken = IERC20(_divviToken);
