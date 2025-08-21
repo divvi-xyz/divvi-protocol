@@ -1,4 +1,6 @@
-import calculateKpiHandlers, { calculateKpiBatchHandlers } from './calculateKpi/protocols'
+import calculateKpiHandlers, {
+  calculateKpiBatchHandlers,
+} from './calculateKpi/protocols'
 import yargs from 'yargs'
 import { KpiResults, Protocol, protocols } from './types'
 import { ResultDirectory } from '../src/resultDirectory'
@@ -59,21 +61,28 @@ async function calculateKpiBatch({
     })
 
     // Extract unique user addresses while maintaining order and relationships
-    const uniqueUserMap = new Map<string, { timestamp: string; referrerId: string }>()
-    
+    const uniqueUserMap = new Map<
+      string,
+      { timestamp: string; referrerId: string }
+    >()
+
     // Build a map of unique users with their data, keeping the first occurrence
     filteredUsers.forEach((user) => {
       if (!uniqueUserMap.has(user.userAddress)) {
         uniqueUserMap.set(user.userAddress, {
           timestamp: user.timestamp,
-          referrerId: user.referrerId
+          referrerId: user.referrerId,
         })
       }
     })
-    
+
     const userAddresses = Array.from(uniqueUserMap.keys())
-    const referralTimestamps = Array.from(uniqueUserMap.values()).map(userData => new Date(userData.timestamp))
-    const referrerIds = Array.from(uniqueUserMap.values()).map(userData => userData.referrerId)
+    const referralTimestamps = Array.from(uniqueUserMap.values()).map(
+      (userData) => new Date(userData.timestamp),
+    )
+    const referrerIds = Array.from(uniqueUserMap.values()).map(
+      (userData) => userData.referrerId,
+    )
 
     // Process in batches similar to qualifyingNetworkReferral.ts
     const requestsPerBatch = batchSize // number of parallel requests
@@ -87,22 +96,25 @@ async function calculateKpiBatch({
       // Create all batches with their corresponding data upfront
       const batches = Array.from({ length: requestsPerBatch }, (_, j) => {
         const startIndex = i + j * usersPerRequest
-        const endIndex = Math.min(startIndex + usersPerRequest, userAddresses.length)
-        
+        const endIndex = Math.min(
+          startIndex + usersPerRequest,
+          userAddresses.length,
+        )
+
         return {
           users: userAddresses.slice(startIndex, endIndex),
           referralTimestamps: referralTimestamps.slice(startIndex, endIndex),
           referrerIds: referrerIds.slice(startIndex, endIndex),
-          startIndex
+          startIndex,
         }
-      }).filter(batch => batch.users.length > 0)
+      }).filter((batch) => batch.users.length > 0)
 
       console.log(
         `Processing user batch ${Math.floor(i / (requestsPerBatch * usersPerRequest)) + 1} of ${Math.ceil(userAddresses.length / (requestsPerBatch * usersPerRequest))} for campaign ${protocol}`,
       )
 
       const batchResults = await Promise.all(
-        batches.map(batch =>
+        batches.map((batch) =>
           batchHandler({
             users: batch.users,
             referralTimestamps: batch.referralTimestamps,
@@ -111,8 +123,8 @@ async function calculateKpiBatch({
             endTimestampExclusive,
             redis,
             index: batch.startIndex,
-          })
-        )
+          }),
+        ),
       )
 
       results.push(...batchResults.flat())

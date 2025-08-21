@@ -634,9 +634,12 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       // Mock getReferrerIdFromTx to return different referrers for each user
       mockGetReferrerIdFromTx.mockImplementation(async (txHash: Hex) => {
-        if (txHash === '0xabc123') return { referrerId: 'referrer1', user: testUsers[0] }
-        if (txHash === '0xdef456') return { referrerId: 'referrer2', user: testUsers[1] }
-        if (txHash === '0xghi789') return { referrerId: 'referrer3', user: testUsers[2] }
+        if (txHash === '0xabc123')
+          return { referrerId: 'referrer1', user: testUsers[0] }
+        if (txHash === '0xdef456')
+          return { referrerId: 'referrer2', user: testUsers[1] }
+        if (txHash === '0xghi789')
+          return { referrerId: 'referrer3', user: testUsers[2] }
         return null
       })
 
@@ -701,7 +704,8 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       })
 
       mockGetReferrerIdFromTx.mockImplementation(async (txHash: Hex) => {
-        if (txHash === '0xabc123') return { referrerId: 'referrer1', user: testUsers[0] }
+        if (txHash === '0xabc123')
+          return { referrerId: 'referrer1', user: testUsers[0] }
         return null
       })
 

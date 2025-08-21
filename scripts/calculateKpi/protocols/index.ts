@@ -11,7 +11,10 @@ import { calculateKpi as calculateKpiCeloTransactions } from './celoTransactions
 import { calculateKpi as calculateKpiRhino } from './rhino'
 import { calculateKpi as calculateKpiScoutGameV0 } from './scoutGameV0'
 import { calculateKpi as calculateKpiLiskV0 } from './liskV0'
-import { calculateKpi as calculateKpiTetherV0, calculateKpiBatch as calculateKpiBatchTetherV0 } from './tetherV0'
+import {
+  calculateKpi as calculateKpiTetherV0,
+  calculateKpiBatch as calculateKpiBatchTetherV0,
+} from './tetherV0'
 import { calculateKpi as calculateKpiBaseV0 } from './baseV0'
 import { calculateKpi as calculateKpiMantleV0 } from './mantleV0'
 import { calculateKpi as calculateKpiMorph } from './morph'

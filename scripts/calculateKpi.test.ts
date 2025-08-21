@@ -6,6 +6,7 @@ jest.mock('./calculateKpi/protocols', () => ({
   default: {
     'celo-transactions': (...args: unknown[]) => mockHandler(...args),
   },
+  calculateKpiBatchHandlers: {},
 }))
 
 describe('_calculateKpiBatch', () => {
@@ -17,7 +18,6 @@ describe('_calculateKpiBatch', () => {
   const endTimestampExclusive = new Date('2024-01-31T23:59:59Z')
   const defaultArgs = {
     eligibleUsers: [],
-    handler: mockHandler,
     batchSize: 2,
     startTimestamp,
     endTimestampExclusive,
