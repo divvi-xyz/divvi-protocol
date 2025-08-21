@@ -95,3 +95,49 @@ Start of time window for calculation (inclusive)
 `Promise`\<`KpiResults`\>
 
 Promise resolving to KPI results grouped by referrer ID with per-network breakdown
+
+---
+
+### calculateKpiBatch()
+
+```ts
+function calculateKpiBatch(__namedParameters): Promise<KpiResults>
+```
+
+Defined in: [tetherV0/index.ts:351](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/tetherV0/index.ts#L351)
+
+Batch version of calculateKpi that processes multiple users at once.
+
+**Business Logic**: Counts transactions initiated by users where the total transfer value
+(sum of all transfers involving the user) >= 1 USDT. Each transaction hash is associated
+with exactly one user (the transaction initiator).
+
+**Performance**: Makes a single HyperSync query for all users instead of separate queries per user.
+
+#### Parameters
+
+##### \_\_namedParameters
+
+###### endTimestampExclusive
+
+`Date`
+
+###### index?
+
+`number`
+
+###### redis?
+
+`RedisClientType`
+
+###### startTimestamp
+
+`Date`
+
+###### users
+
+`string`[]
+
+#### Returns
+
+`Promise`\<`KpiResults`\>
