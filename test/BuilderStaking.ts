@@ -847,15 +847,12 @@ describe(CONTRACT_NAME, function () {
 
   describe('Token Rescue', function () {
     it('allows admin to rescue non-DIVVI tokens', async function () {
-      // Deploy a mock token to rescue
-      const MockERC20 = await hre.ethers.getContractFactory('MockERC20')
-      const mockToken = await MockERC20.deploy('Mock Token', 'MOCK')
-      await mockToken.waitForDeployment()
-
-      // Mint some tokens to the contract
+      // Deploy additional token to rescue
+      const OtherToken = await hre.ethers.getContractFactory('MockERC20')
+      const otherToken = await OtherToken.deploy('Other Token', 'OTHER')
+      await otherToken.waitForDeployment()
       const rescueAmount = hre.ethers.parseEther('100')
-      await mockToken.mint(await builderStaking.getAddress(), rescueAmount)
-
+      await otherToken.mint(await builderStaking.getAddress(), rescueAmount)
       const builderStakingWithAdmin = builderStaking.connect(
         admin,
       ) as typeof builderStaking
@@ -863,17 +860,45 @@ describe(CONTRACT_NAME, function () {
       // Rescue tokens
       await expect(
         builderStakingWithAdmin.rescueToken(
-          await mockToken.getAddress(),
-          staker1.address,
+          await otherToken.getAddress(),
+          admin.address,
           rescueAmount,
         ),
-      ).to.not.be.reverted
+      )
+        .to.emit(builderStaking, 'RescueToken')
+        .withArgs(await otherToken.getAddress(), rescueAmount)
 
-      // Check that tokens were transferred
-      expect(await mockToken.balanceOf(staker1.address)).to.equal(rescueAmount)
-      expect(
-        await mockToken.balanceOf(await builderStaking.getAddress()),
-      ).to.equal(0)
+      expect(await otherToken.balanceOf(admin.address)).to.equal(rescueAmount)
+    })
+
+    it('allows admin to rescue native tokens', async function () {
+      // Force send native tokens to contract
+      await hre.ethers.provider.send('hardhat_setBalance', [
+        await builderStaking.getAddress(),
+        '0x8AC7230489E80000', // 10 ETH in hex
+      ])
+      const builderStakingWithAdmin = builderStaking.connect(
+        admin,
+      ) as typeof builderStaking
+
+      const balanceBefore = await hre.ethers.provider.getBalance(admin.address)
+
+      // Rescue tokens
+      const tx = await builderStakingWithAdmin.rescueToken(
+        '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // NATIVE_TOKEN_ADDRESS
+        admin.address,
+        hre.ethers.parseEther('10'),
+      )
+      const receipt = await tx.wait()
+
+      // Calculate gas used
+      const gasCost = receipt.gasUsed * receipt.gasPrice
+      const balanceAfter = await hre.ethers.provider.getBalance(admin.address)
+
+      // Check balance (accounting for gas cost)
+      expect(balanceAfter).to.equal(
+        balanceBefore + hre.ethers.parseEther('10') - BigInt(gasCost),
+      )
     })
 
     it('allows admin to rescue excess DIVVI tokens', async function () {

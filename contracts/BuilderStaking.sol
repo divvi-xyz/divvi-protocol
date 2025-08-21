@@ -19,6 +19,10 @@ contract BuilderStaking is
 {
   using SafeERC20 for IERC20;
 
+  // Constants
+  address public constant NATIVE_TOKEN_ADDRESS =
+    0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
   // State variables
   IERC20 public divviToken;
   uint256 public stakingThreshold;
@@ -43,6 +47,7 @@ contract BuilderStaking is
     address indexed beneficiary,
     uint256 amount
   );
+  event RescueToken(address token, uint256 amount);
 
   // Errors
   error ZeroAddressNotAllowed();
@@ -50,6 +55,7 @@ contract BuilderStaking is
   error InsufficientStakeBalance(uint256 requested, uint256 available);
   error CannotRescueStakedTokens(uint256 requested, uint256 totalStaked);
   error CannotRescueZeroAmount();
+  error NativeTransferFailed();
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -140,8 +146,7 @@ contract BuilderStaking is
 
     // Remove from tracking arrays if stake becomes zero
     if (beneficiariesForStaker[msg.sender][_beneficiary] == 0) {
-      _removeStakerFromBeneficiary(msg.sender, _beneficiary);
-      _removeBeneficiaryFromStaker(msg.sender, _beneficiary);
+      _removeStakeRelationship(msg.sender, _beneficiary);
     }
 
     divviToken.safeTransfer(msg.sender, _amount);
@@ -238,29 +243,40 @@ contract BuilderStaking is
   }
 
   /**
-   * @dev Internal function to remove a staker from a beneficiary's staker list
-   * @param _staker Address of the staker to remove
+   * @dev Internal helper to remove a staker-beneficiary relationship from both mappings
+   * @param _staker Address of the staker
    * @param _beneficiary Address of the beneficiary
    */
-  function _removeStakerFromBeneficiary(
+  function _removeStakeRelationship(
     address _staker,
     address _beneficiary
   ) internal {
-    address[] storage stakerList = stakerListForBeneficiary[_beneficiary];
-    uint256 stakerCount = stakerList.length;
+    _removeStakerFromBeneficiary(_beneficiary, _staker);
+    _removeBeneficiaryFromStaker(_staker, _beneficiary);
+  }
 
-    for (uint256 i = 0; i < stakerCount; i++) {
-      if (stakerList[i] == _staker) {
-        // Replace with last element and pop
-        stakerList[i] = stakerList[stakerCount - 1];
-        stakerList.pop();
+  /**
+   * @dev Internal helper to remove a staker from a beneficiary's staker list
+   * @param _beneficiary Address of the beneficiary
+   * @param _staker Address of the staker to remove
+   */
+  function _removeStakerFromBeneficiary(
+    address _beneficiary,
+    address _staker
+  ) internal {
+    address[] storage stakers = stakerListForBeneficiary[_beneficiary];
+    for (uint256 i = 0; i < stakers.length; i++) {
+      if (stakers[i] == _staker) {
+        // Replace with the last element and pop
+        stakers[i] = stakers[stakers.length - 1];
+        stakers.pop();
         break;
       }
     }
   }
 
   /**
-   * @dev Internal function to remove a beneficiary from a staker's beneficiary list
+   * @dev Internal helper to remove a beneficiary from a staker's beneficiary list
    * @param _staker Address of the staker
    * @param _beneficiary Address of the beneficiary to remove
    */
@@ -268,14 +284,12 @@ contract BuilderStaking is
     address _staker,
     address _beneficiary
   ) internal {
-    address[] storage beneficiaryList = beneficiaryListForStaker[_staker];
-    uint256 beneficiaryCount = beneficiaryList.length;
-
-    for (uint256 i = 0; i < beneficiaryCount; i++) {
-      if (beneficiaryList[i] == _beneficiary) {
-        // Replace with last element and pop
-        beneficiaryList[i] = beneficiaryList[beneficiaryCount - 1];
-        beneficiaryList.pop();
+    address[] storage beneficiaries = beneficiaryListForStaker[_staker];
+    for (uint256 i = 0; i < beneficiaries.length; i++) {
+      if (beneficiaries[i] == _beneficiary) {
+        // Replace with the last element and pop
+        beneficiaries[i] = beneficiaries[beneficiaries.length - 1];
+        beneficiaries.pop();
         break;
       }
     }
@@ -309,6 +323,15 @@ contract BuilderStaking is
       }
 
       divviToken.safeTransfer(_to, _amount);
+    } else if (_token == NATIVE_TOKEN_ADDRESS) {
+      // For native tokens, check contract balance
+      uint256 balance = address(this).balance;
+      if (_amount > balance) {
+        revert InsufficientStakeBalance(_amount, balance);
+      }
+
+      (bool success, ) = _to.call{value: _amount}('');
+      if (!success) revert NativeTransferFailed();
     } else {
       IERC20 token = IERC20(_token);
       uint256 balance = token.balanceOf(address(this));
@@ -319,6 +342,8 @@ contract BuilderStaking is
 
       token.safeTransfer(_to, _amount);
     }
+
+    emit RescueToken(_token, _amount);
   }
 
   /**
