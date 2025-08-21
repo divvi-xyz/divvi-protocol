@@ -60,14 +60,18 @@ jest.mock('@github/memoize', () => ({
   default: (fn: unknown) => fn,
 }))
 
-const makeQueryResponse = (logs: Log[], nextBlock = 100): QueryResponse => ({
+const makeQueryResponse = (
+  logs: Log[],
+  nextBlock = 100,
+  fromAddresses?: Address[],
+): QueryResponse => ({
   data: {
     blocks: [],
-    transactions: logs.map((log) => ({
+    transactions: logs.map((log, index) => ({
       hash: log.transactionHash,
       to: '0x0000000000000000000000000000000000000000',
       input: '0xdoesnotmatter',
-      from: testAddress,
+      from: fromAddresses ? fromAddresses[index] || testAddress : testAddress,
     })),
     logs,
     traces: [],
@@ -585,63 +589,83 @@ describe('Tether V0 Protocol KPI Calculation', () => {
     it('should calculate KPI for multiple users in a single batch', async () => {
       // Mock paginateQuery to return transactions for multiple users
       mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
-        const mockResponse = makeQueryResponse([
-          // User 1 transaction
-          {
-            data: ('0x' +
-              BigNumber(2).shiftedBy(6).toString(16).padStart(64, '0')) as Hex,
-            topics: [
-              transferEventSigHash,
-              pad(testUsers[0] as Address, { size: 32 }),
-              pad('0x4567890123456789012345678901234567890123' as Address, {
-                size: 32,
-              }),
-              '0x0000000000000000000000000000000000000000000000000000000000000000',
-            ],
-            transactionHash: '0xabc123' as Hex,
-          },
-          // User 2 transaction
-          {
-            data: ('0x' +
-              BigNumber(2).shiftedBy(6).toString(16).padStart(64, '0')) as Hex,
-            topics: [
-              transferEventSigHash,
-              pad(testUsers[1] as Address, { size: 32 }),
-              pad('0x4567890123456789012345678901234567890123' as Address, {
-                size: 32,
-              }),
-              '0x0000000000000000000000000000000000000000000000000000000000000000',
-            ],
-            transactionHash: '0xdef456' as Hex,
-          },
-          // User 3 transaction
-          {
-            data: ('0x' +
-              BigNumber(2).shiftedBy(6).toString(16).padStart(64, '0')) as Hex,
-            topics: [
-              transferEventSigHash,
-              pad(testUsers[2] as Address, { size: 32 }),
-              pad('0x4567890123456789012345678901234567890123' as Address, {
-                size: 32,
-              }),
-              '0x0000000000000000000000000000000000000000000000000000000000000000',
-            ],
-            transactionHash: '0xghi789' as Hex,
-          },
-        ])
+        const mockResponse = makeQueryResponse(
+          [
+            // User 1 transaction
+            {
+              data: ('0x' +
+                BigNumber(2)
+                  .shiftedBy(6)
+                  .toString(16)
+                  .padStart(64, '0')) as Hex,
+              topics: [
+                transferEventSigHash,
+                pad(testUsers[0] as Address, { size: 32 }),
+                pad('0x4567890123456789012345678901234567890123' as Address, {
+                  size: 32,
+                }),
+                '0x0000000000000000000000000000000000000000000000000000000000000000',
+              ],
+              transactionHash: '0xabc123' as Hex,
+            },
+            // User 2 transaction
+            {
+              data: ('0x' +
+                BigNumber(2)
+                  .shiftedBy(6)
+                  .toString(16)
+                  .padStart(64, '0')) as Hex,
+              topics: [
+                transferEventSigHash,
+                pad(testUsers[1] as Address, { size: 32 }),
+                pad('0x4567890123456789012345678901234567890123' as Address, {
+                  size: 32,
+                }),
+                '0x0000000000000000000000000000000000000000000000000000000000000000',
+              ],
+              transactionHash: '0xdef456' as Hex,
+            },
+            // User 3 transaction
+            {
+              data: ('0x' +
+                BigNumber(2)
+                  .shiftedBy(6)
+                  .toString(16)
+                  .padStart(64, '0')) as Hex,
+              topics: [
+                transferEventSigHash,
+                pad(testUsers[2] as Address, { size: 32 }),
+                pad('0x4567890123456789012345678901234567890123' as Address, {
+                  size: 32,
+                }),
+                '0x0000000000000000000000000000000000000000000000000000000000000000',
+              ],
+              transactionHash: '0xghi789' as Hex,
+            },
+          ],
+          100,
+          testUsers as Address[],
+        )
         await onPage(mockResponse)
       })
 
       // Mock getReferrerIdFromTx to return different referrers for each user
-      mockGetReferrerIdFromTx.mockImplementation(async (txHash: Hex) => {
-        if (txHash === '0xabc123')
-          return { referrerId: 'referrer1', user: testUsers[0] }
-        if (txHash === '0xdef456')
-          return { referrerId: 'referrer2', user: testUsers[1] }
-        if (txHash === '0xghi789')
-          return { referrerId: 'referrer3', user: testUsers[2] }
-        return null
-      })
+      mockGetReferrerIdFromTx.mockImplementation(
+        async (
+          txHash: Hex,
+          _networkId: string,
+          _includeUserOps: boolean,
+          _txInfo: any,
+        ) => {
+          if (txHash === '0xabc123')
+            return { referrerId: 'referrer1', user: testUsers[0] }
+          if (txHash === '0xdef456')
+            return { referrerId: 'referrer2', user: testUsers[1] }
+          if (txHash === '0xghi789')
+            return { referrerId: 'referrer3', user: testUsers[2] }
+          return null
+        },
+      )
 
       const result = await calculateKpiBatch(batchProps)
 
@@ -661,6 +685,12 @@ describe('Tether V0 Protocol KPI Calculation', () => {
     })
 
     it('should handle empty user list', async () => {
+      // Mock paginateQuery to return no transactions for empty users
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse([])
+        await onPage(mockResponse)
+      })
+
       const result = await calculateKpiBatch({
         users: [],
         startTimestamp,
