@@ -1,4 +1,4 @@
-import { Protocol, CalculateKpiFn } from '../../types'
+import { Protocol, CalculateKpiFn, CalculateKpiBatchFn } from '../../types'
 import { calculateKpi as calculateKpiAerodrome } from './aerodrome'
 import { calculateKpi as calculateKpiBeefy } from './beefy'
 import { calculateKpi as calculateKpiSomm } from './somm'
@@ -11,7 +11,7 @@ import { calculateKpi as calculateKpiCeloTransactions } from './celoTransactions
 import { calculateKpi as calculateKpiRhino } from './rhino'
 import { calculateKpi as calculateKpiScoutGameV0 } from './scoutGameV0'
 import { calculateKpi as calculateKpiLiskV0 } from './liskV0'
-import { calculateKpi as calculateKpiTetherV0 } from './tetherV0'
+import { calculateKpi as calculateKpiTetherV0, calculateKpiBatch as calculateKpiBatchTetherV0 } from './tetherV0'
 import { calculateKpi as calculateKpiBaseV0 } from './baseV0'
 import { calculateKpi as calculateKpiMantleV0 } from './mantleV0'
 import { calculateKpi as calculateKpiMorph } from './morph'
@@ -59,4 +59,11 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   morph: calculateKpiMorph,
 }
 
+const calculateKpiBatchHandlers: Partial<
+  Record<Protocol, CalculateKpiBatchFn>
+> = {
+  'tether-v0': calculateKpiBatchTetherV0,
+}
+
 export default calculateKpiHandlers
+export { calculateKpiBatchHandlers }

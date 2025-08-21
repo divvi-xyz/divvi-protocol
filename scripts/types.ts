@@ -77,6 +77,16 @@ export type CalculateKpiFn<T extends string = string> = (params: {
   redis?: RedisClientType
 }) => Promise<KpiResult<T> | KpiResults<T>>
 
+export type CalculateKpiBatchFn<T extends string = string> = (params: {
+  users: string[]
+  referralTimestamps: Date[]
+  referrerIds: string[]
+  startTimestamp: Date
+  endTimestampExclusive: Date
+  redis?: RedisClientType
+  index?: number
+}) => Promise<KpiResults<T>>
+
 export interface ReferralEvent {
   userAddress: string
   timestamp: number
