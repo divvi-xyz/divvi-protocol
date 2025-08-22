@@ -122,10 +122,6 @@ with exactly one user (the transaction initiator).
 
 `Date`
 
-###### index?
-
-`number`
-
 ###### redis?
 
 `RedisClientType`
