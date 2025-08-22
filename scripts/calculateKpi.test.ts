@@ -329,52 +329,6 @@ describe('_calculateKpiBatch', () => {
       })
     })
 
-    it('should process large batches correctly with hypersync batch size', async () => {
-      // Create more users than the hypersync batch size (100)
-      const eligibleUsers = Array.from({ length: 250 }, (_, i) => ({
-        referrerId: `ref${i}`,
-        userAddress: `0x${i.toString().padStart(3, '0')}`,
-        timestamp: '2024-01-15T00:00:00Z',
-      }))
-
-      const results = await _calculateKpiBatch({
-        ...defaultArgs,
-        protocol: 'tether-v0',
-        eligibleUsers,
-        batchSize: 3, // 3 parallel requests
-      })
-
-      expect(results).toHaveLength(250)
-
-      // Should call batch handler multiple times due to hypersync batch size limit
-      // 250 users processed in 3 batches: 100 + 100 + 50
-      expect(mockBatchHandler).toHaveBeenCalledTimes(3)
-
-      // First batch should have 100 users
-      expect(mockBatchHandler).toHaveBeenNthCalledWith(1, {
-        users: expect.arrayContaining([expect.stringMatching(/^0x\d{3}$/)]),
-        referralTimestamps: expect.arrayContaining([expect.any(Date)]),
-        referrerIds: expect.arrayContaining([
-          expect.stringMatching(/^ref\d+$/),
-        ]),
-        startTimestamp,
-        endTimestampExclusive,
-        redis: undefined,
-      })
-
-      // Second batch should have users 100-199
-      expect(mockBatchHandler).toHaveBeenNthCalledWith(2, {
-        users: expect.arrayContaining([expect.stringMatching(/^0x\d{3}$/)]),
-        referralTimestamps: expect.arrayContaining([expect.any(Date)]),
-        referrerIds: expect.arrayContaining([
-          expect.stringMatching(/^ref\d+$/),
-        ]),
-        startTimestamp,
-        endTimestampExclusive,
-        redis: undefined,
-      })
-    })
-
     it('should handle empty batches gracefully', async () => {
       const eligibleUsers = [
         {

@@ -43,7 +43,7 @@ import { calculateKpi as calculateKpiMorph } from './morph'
  * - Token prices fetched at transaction timestamps for accurate USD conversion
  * - Protocol-specific fee structures and revenue sharing models are hardcoded per protocol
  */
-const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
+export const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   beefy: calculateKpiBeefy,
   aerodrome: calculateKpiAerodrome,
   somm: calculateKpiSomm,
@@ -62,11 +62,8 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   morph: calculateKpiMorph,
 }
 
-const calculateKpiBatchHandlers: Partial<
+export const calculateKpiBatchHandlers: Partial<
   Record<Protocol, CalculateKpiBatchFn>
 > = {
   'tether-v0': calculateKpiBatchTetherV0,
 }
-
-export default calculateKpiHandlers
-export { calculateKpiBatchHandlers }

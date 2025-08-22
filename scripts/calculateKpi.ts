@@ -1,5 +1,6 @@
-import calculateKpiHandlers, {
+import {
   calculateKpiBatchHandlers,
+  calculateKpiHandlers,
 } from './calculateKpi/protocols'
 import yargs from 'yargs'
 import { KpiResults, Protocol, protocols } from './types'
@@ -84,7 +85,6 @@ async function calculateKpiBatch({
       (userData) => userData.referrerId,
     )
 
-    // Process in batches similar to qualifyingNetworkReferral.ts
     const requestsPerBatch = batchSize // number of parallel requests
     const usersPerRequest = HYPERSYNC_BATCH_SIZE // number of users per hypersync request
 
@@ -109,9 +109,7 @@ async function calculateKpiBatch({
         }
       }).filter((batch) => batch.users.length > 0)
 
-      console.log(
-        `Processing user batch ${Math.floor(i / (requestsPerBatch * usersPerRequest)) + 1} of ${Math.ceil(userAddresses.length / (requestsPerBatch * usersPerRequest))} for campaign ${protocol}`,
-      )
+      const startTs = Date.now()
 
       const batchResults = await Promise.all(
         batches.map((batch) =>
@@ -124,6 +122,10 @@ async function calculateKpiBatch({
             redis,
           }),
         ),
+      )
+
+      console.log(
+        `Processed user batch ${Math.floor(i / (requestsPerBatch * usersPerRequest)) + 1} of ${Math.ceil(userAddresses.length / (requestsPerBatch * usersPerRequest))} for campaign ${protocol} in ${Date.now() - startTs}ms`,
       )
 
       results.push(...batchResults.flat())
