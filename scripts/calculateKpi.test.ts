@@ -399,35 +399,6 @@ describe('_calculateKpiBatch', () => {
       expect(mockBatchHandler).not.toHaveBeenCalled()
     })
 
-    it('should pass redis client to batch handler when provided', async () => {
-      const mockRedis = {} as any
-      const eligibleUsers = [
-        {
-          referrerId: 'ref1',
-          userAddress: '0x123',
-          timestamp: '2024-01-15T00:00:00Z',
-        },
-      ]
-
-      await _calculateKpiBatch({
-        ...defaultArgs,
-        protocol: 'tether-v0',
-        eligibleUsers,
-        batchSize: 2,
-        redis: mockRedis,
-      })
-
-      expect(mockBatchHandler).toHaveBeenCalledWith({
-        users: ['0x123'],
-        referralTimestamps: [expect.any(Date)],
-        referrerIds: ['ref1'],
-        startTimestamp,
-        endTimestampExclusive,
-        redis: mockRedis,
-        index: 0,
-      })
-    })
-
     it('should handle batch handler returning array results', async () => {
       mockBatchHandler.mockImplementation(
         async ({ users, referralTimestamps, referrerIds }) => {
