@@ -5,7 +5,7 @@ const mockBatchHandler = jest.fn()
 
 jest.mock('./calculateKpi/protocols', () => ({
   __esModule: true,
-  default: {
+  calculateKpiHandlers: {
     'celo-transactions': (...args: unknown[]) => mockHandler(...args),
     'tether-v0': (...args: unknown[]) => mockHandler(...args),
   },
