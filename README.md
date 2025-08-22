@@ -170,6 +170,16 @@ yarn hardhat divvi-registry:deploy \
     --owner-address <OWNER_ADDRESS>
 ```
 
+To deploy RewardPoolFactory, run:
+
+```bash
+yarn hardhat reward-pool-factory:deploy \
+    --network celo \
+    --use-defender \
+    --defender-deploy-salt <SALT> \
+    --owner-address <OWNER_ADDRESS>
+```
+
 To deploy RewardPool, run:
 
 ```bash
