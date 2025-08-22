@@ -76,6 +76,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     rewards,
     startTimestamp,
     endTimestampExclusive,
+    useIdempotency: true,
   })
 
   await resultDirectory.writeRewards(rewardsWithMetadata)
