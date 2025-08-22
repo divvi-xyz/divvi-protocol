@@ -32,13 +32,14 @@ List of staging contracts:
 
 The RewardPoolFactory contract is upgradeable; it is currently deployed on the following networks.
 
-| Network  | Proxy address                                                                                                                  | Multisig Address (has Owner role)                                                                                                  |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Base     | [`0xBF90d4BCbb74a5a58D6F8A31649D379E185F927C`](https://basescan.org/address/0xBF90d4BCbb74a5a58D6F8A31649D379E185F927C)        | [`0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4`](https://app.safe.global/home?safe=base:0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4)  |
-| Ethereum | [`0x1C4f9b95016F0910f0489bC7Bd8b90EC0A51E417`](https://etherscan.io/address/0x1C4f9b95016F0910f0489bC7Bd8b90EC0A51E417)        | [`0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4`](https://app.safe.global/home?safe=eth:0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4)   |
-| Mantle   | [`0xae633CF7A483C136cb8Eac7Efaa3382786E49D9D`](https://mantlescan.xyz/address/0xae633CF7A483C136cb8Eac7Efaa3382786E49D9D)      | [`0xBB6b913CE4E7c857EAe9ecd7Bf4912ee0578777A`](https://app.safe.global/home?safe=mnt:0xBB6b913CE4E7c857EAe9ecd7Bf4912ee0578777A)   |
-| Celo     | [`0x050359Da93228833F291788b7DE355CE97217CEB`](https://celoscan.io/address/0x050359Da93228833F291788b7DE355CE97217CEB)         | [`0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4`](https://app.safe.global/home?safe=celo:0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4)  |
-| Morph    | [`0xcF2D6173FBE0Fb9246327e946B2CC6ADBa67c2dE`](https://explorer.morphl2.io/address/0xcF2D6173FBE0Fb9246327e946B2CC6ADBa67c2dE) | [`0x46e9B2B7749b1359C1025Db41755De31E3029825`](https://safe.morphl2.io/home?safe=morph:0x46e9B2B7749b1359C1025Db41755De31E3029825) |
+| Network  | Proxy address                                                                                                                      | Multisig Address (has Owner role)                                                                                                  |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Base     | [`0xBF90d4BCbb74a5a58D6F8A31649D379E185F927C`](https://basescan.org/address/0xBF90d4BCbb74a5a58D6F8A31649D379E185F927C)            | [`0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4`](https://app.safe.global/home?safe=base:0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4)  |
+| Ethereum | [`0x1C4f9b95016F0910f0489bC7Bd8b90EC0A51E417`](https://etherscan.io/address/0x1C4f9b95016F0910f0489bC7Bd8b90EC0A51E417)            | [`0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4`](https://app.safe.global/home?safe=eth:0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4)   |
+| Mantle   | [`0xae633CF7A483C136cb8Eac7Efaa3382786E49D9D`](https://mantlescan.xyz/address/0xae633CF7A483C136cb8Eac7Efaa3382786E49D9D)          | [`0xBB6b913CE4E7c857EAe9ecd7Bf4912ee0578777A`](https://app.safe.global/home?safe=mnt:0xBB6b913CE4E7c857EAe9ecd7Bf4912ee0578777A)   |
+| Celo     | [`0x050359Da93228833F291788b7DE355CE97217CEB`](https://celoscan.io/address/0x050359Da93228833F291788b7DE355CE97217CEB)             | [`0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4`](https://app.safe.global/home?safe=celo:0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4)  |
+| Morph    | [`0xcF2D6173FBE0Fb9246327e946B2CC6ADBa67c2dE`](https://explorer.morphl2.io/address/0xcF2D6173FBE0Fb9246327e946B2CC6ADBa67c2dE)     | [`0x46e9B2B7749b1359C1025Db41755De31E3029825`](https://safe.morphl2.io/home?safe=morph:0x46e9B2B7749b1359C1025Db41755De31E3029825) |
+| Optimism | [`0x4533a2a053D332E5b5BD0eA94C675b0398392809`](https://optimistic.etherscan.io/address/0x4533a2a053D332E5b5BD0eA94C675b0398392809) | [`0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4`](https://app.safe.global/home?safe=oeth:0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4)  |
 
 ## Registry Contract (v0) -- Deprecated
 

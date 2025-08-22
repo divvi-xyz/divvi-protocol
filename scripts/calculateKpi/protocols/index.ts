@@ -45,6 +45,12 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
       networkId: NetworkId['celo-mainnet'],
       kpiType: 'gas',
     }),
+  'celo-pg-s1': (params) =>
+    calculateNetworkKpi({
+      ...params,
+      networkId: NetworkId['celo-mainnet'],
+      kpiType: 'gas',
+    }),
   arbitrum: calculateKpiArbitrum,
   velodrome: calculateKpiVelodrome,
   fonbnk: calculateKpiFonbnk,

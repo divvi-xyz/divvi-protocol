@@ -12,6 +12,7 @@
 - [baseV0](baseV0.md)
 - [beefy](beefy.md)
 - [celo-pg](celo-pg.md)
+- [celo-pg-s1](celo-pg-s1.md)
 - [celoTransactions](celoTransactions.md)
 - [fonbnk](fonbnk.md)
 - [liskV0](liskV0.md)
