@@ -273,7 +273,6 @@ describe('_calculateKpiBatch', () => {
         startTimestamp,
         endTimestampExclusive,
         redis: undefined,
-        index: 0,
       })
     })
 
@@ -327,7 +326,6 @@ describe('_calculateKpiBatch', () => {
         startTimestamp,
         endTimestampExclusive,
         redis: undefined,
-        index: 0,
       })
     })
 
@@ -362,7 +360,6 @@ describe('_calculateKpiBatch', () => {
         startTimestamp,
         endTimestampExclusive,
         redis: undefined,
-        index: 0,
       })
 
       // Second batch should have users 100-199
@@ -375,7 +372,6 @@ describe('_calculateKpiBatch', () => {
         startTimestamp,
         endTimestampExclusive,
         redis: undefined,
-        index: 100,
       })
     })
 
