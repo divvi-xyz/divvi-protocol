@@ -84,7 +84,6 @@ export type CalculateKpiBatchFn<T extends string = string> = (params: {
   startTimestamp: Date
   endTimestampExclusive: Date
   redis?: RedisClientType
-  index?: number
 }) => Promise<KpiResults<T>>
 
 export interface ReferralEvent {

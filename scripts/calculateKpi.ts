@@ -68,8 +68,8 @@ async function calculateKpiBatch({
 
     // Build a map of unique users with their data, keeping the first occurrence
     filteredUsers.forEach((user) => {
-      if (!uniqueUserMap.has(user.userAddress)) {
-        uniqueUserMap.set(user.userAddress, {
+      if (!uniqueUserMap.has(user.userAddress.toLowerCase())) {
+        uniqueUserMap.set(user.userAddress.toLowerCase(), {
           timestamp: user.timestamp,
           referrerId: user.referrerId,
         })
@@ -122,7 +122,6 @@ async function calculateKpiBatch({
             startTimestamp,
             endTimestampExclusive,
             redis,
-            index: batch.startIndex,
           }),
         ),
       )

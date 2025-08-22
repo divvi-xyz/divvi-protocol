@@ -353,13 +353,11 @@ export async function calculateKpiBatch({
   startTimestamp,
   endTimestampExclusive,
   redis,
-  index,
 }: {
   users: string[]
   startTimestamp: Date
   endTimestampExclusive: Date
   redis?: RedisClientType
-  index?: number
 }): Promise<KpiResults> {
   const kpiByUserAndReferrer: Record<
     string,
@@ -387,7 +385,6 @@ export async function calculateKpiBatch({
             startBlock: blockRange.startBlock,
             endBlockExclusive: blockRange.endBlockExclusive,
             tokenAddress,
-            index,
           })
 
         // Aggregate results by user and referrer across the supported networks
@@ -429,8 +426,6 @@ export async function calculateKpiBatch({
     }
   }
 
-  const startTime = Date.now()
-
   await Promise.all(
     (Array.from(allReferrerIds) as Address[]).map(async (referrerId) => {
       const hasAgreement = await publicClientOptimism.readContract({
@@ -443,13 +438,6 @@ export async function calculateKpiBatch({
         registeredReferrers.add(referrerId.toLowerCase())
       }
     }),
-  )
-
-  console.log(
-    'Finished checking agreements for batch',
-    index,
-    'in',
-    Date.now() - startTime,
   )
 
   // Flatten results and filter by registered referrers
@@ -471,18 +459,14 @@ async function getEligibleTxCountByUserAndReferrer({
   startBlock,
   endBlockExclusive,
   tokenAddress,
-  index,
 }: {
   networkId: NetworkId
   users: Address[]
   startBlock?: number
   endBlockExclusive?: number
   tokenAddress: Address
-  index?: number
 }): Promise<Record<string, Record<string, number>>> {
   const client = getHyperSyncClient(networkId)
-
-  const startTime = Date.now()
 
   const transactionsByHash: Record<
     string,
@@ -544,7 +528,13 @@ async function getEligibleTxCountByUserAndReferrer({
   await paginateQuery(client, query, async (response) => {
     // First, get transaction initiators from transaction data
     for (const tx of response.data.transactions) {
-      if (tx.hash && tx.from && tx.to && tx.input) {
+      if (
+        tx.hash &&
+        tx.from &&
+        tx.to &&
+        tx.input &&
+        users.includes(tx.from.toLowerCase() as Address)
+      ) {
         const initiator = tx.from as Address
         transactionsByHash[tx.hash] = {
           from: initiator as Address,
@@ -588,16 +578,6 @@ async function getEligibleTxCountByUserAndReferrer({
     }
   })
 
-  const midTime = Date.now()
-
-  console.log(
-    'Finished hypersync query for network',
-    networkId,
-    index,
-    'in',
-    midTime - startTime,
-  )
-
   // Separate the eligible transactions by user and referrerId
   const eligibleTxCountByUserAndReferrer: Record<
     string,
@@ -632,14 +612,6 @@ async function getEligibleTxCountByUserAndReferrer({
       }
     }
   }
-
-  console.log(
-    'Finished processing transactions for network',
-    networkId,
-    index,
-    'in',
-    Date.now() - midTime,
-  )
 
   return eligibleTxCountByUserAndReferrer
 }
