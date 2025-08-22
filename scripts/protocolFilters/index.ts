@@ -9,6 +9,7 @@ import { filter as filterBeefy } from './beefy'
 import { filter as filterAerodrome } from './aerodrome'
 import { filter as filterSomm } from './somm'
 import { filter as filterCeloPG } from './celo-pg'
+import { filter as filterCeloPGS1 } from './celo-pg-s1'
 import { filter as filterArbitrum } from './arbitrum'
 import { filter as filterVelodrome } from './velodrome'
 import { filter as filterFonbnk } from './fonbnk'
@@ -27,6 +28,7 @@ export const protocolFilters: Record<Protocol, FilterFn> = {
   somm: _createFilter(filterSomm),
   aerodrome: _createFilter(filterAerodrome),
   'celo-pg': _createFilter(filterCeloPG),
+  'celo-pg-s1': _createFilter(filterCeloPGS1),
   arbitrum: _createFilter(filterArbitrum),
   velodrome: _createFilter(filterVelodrome),
   fonbnk: _createFilter(filterFonbnk),

@@ -6,6 +6,7 @@ export const protocols = [
   'aerodrome',
   'somm',
   'celo-pg',
+  'celo-pg-s1',
   'arbitrum',
   'velodrome',
   'fonbnk',

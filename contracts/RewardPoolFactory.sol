@@ -63,6 +63,8 @@ contract RewardPoolFactory is
    * @param _defaultProtocolFee Default protocol fee numerator (denominator is 10^18)
    * @param _defaultReserveAddress Default address that will receive protocol fees
    * @param _defaultOwner Default address that will have DEFAULT_ADMIN_ROLE in created pools
+   *
+   * **Protocol Fee:** Uses 18-decimal fixed-point arithmetic (e.g., 0.05 * 1e18 for 5%)
    */
   function initialize(
     address _owner,
@@ -131,9 +133,14 @@ contract RewardPoolFactory is
   }
 
   /**
-   * @dev Sets the default protocol fee
+   * @dev Sets the default protocol fee for newly created pools
    * @param _defaultProtocolFee Default protocol fee numerator (denominator is 10^18)
    * @notice Allowed only for address with DEFAULT_ADMIN_ROLE
+   *
+   * Sets the default fee for newly created pools (existing pools unaffected).
+   * **Usage:** `setDefaultProtocolFee(parseEther('0.05'))` for 5% fee
+   * **Impact:** All pools created after this change inherit the new default fee
+   * **Validation:** Must be ≤ 1e18 (100% maximum)
    */
   function setDefaultProtocolFee(
     uint256 _defaultProtocolFee

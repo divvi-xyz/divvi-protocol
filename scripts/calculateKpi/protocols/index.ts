@@ -3,6 +3,7 @@ import { calculateKpi as calculateKpiAerodrome } from './aerodrome'
 import { calculateKpi as calculateKpiBeefy } from './beefy'
 import { calculateKpi as calculateKpiSomm } from './somm'
 import { calculateKpi as calculateKpiCeloPG } from './celo-pg'
+import { calculateKpi as calculateKpiCeloPGS1 } from './celo-pg-s1'
 import { calculateKpi as calculateKpiArbitrum } from './arbitrum'
 import { calculateKpi as calculateKpiVelodrome } from './velodrome'
 import { calculateKpi as calculateKpiFonbnk } from './fonbnk'
@@ -48,6 +49,7 @@ export const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   aerodrome: calculateKpiAerodrome,
   somm: calculateKpiSomm,
   'celo-pg': calculateKpiCeloPG,
+  'celo-pg-s1': calculateKpiCeloPGS1,
   arbitrum: calculateKpiArbitrum,
   velodrome: calculateKpiVelodrome,
   fonbnk: calculateKpiFonbnk,
