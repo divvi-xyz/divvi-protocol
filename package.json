@@ -54,7 +54,7 @@
     "googleapis": "^156.0.0",
     "graphql": "^16.11.0",
     "graphql-request": "^7.2.0",
-    "redis": "^5.8.1",
+    "redis": "^5.8.2",
     "viem": "^2.33.1",
     "zod": "^3.25.76"
   },
