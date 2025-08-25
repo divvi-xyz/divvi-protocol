@@ -11,8 +11,8 @@ import { closeRedisClient, getRedisClient } from '../src/redis'
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
 // Calculate KPIs for end users in batches to speed things up
-const PARALLEL_BATCH_SIZE = 20
-const HYPERSYNC_BATCH_SIZE = 100
+const NUM_REQUESTS_PER_BATCH = 20
+const NUM_USERS_PER_REQUEST = 100
 
 interface ReferralData {
   referrerId: string
@@ -84,7 +84,7 @@ async function calculateKpiBatch({
       referralTimestamp: new Date(userData.timestamp),
     }))
     const requestsPerBatch = batchSize // number of parallel requests
-    const usersPerRequest = HYPERSYNC_BATCH_SIZE // number of users per hypersync request
+    const usersPerRequest = NUM_USERS_PER_REQUEST // number of users per hypersync request
 
     for (
       let i = 0;
@@ -186,7 +186,7 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
 
   const allResults = await calculateKpiBatch({
     eligibleUsers,
-    batchSize: PARALLEL_BATCH_SIZE,
+    batchSize: NUM_REQUESTS_PER_BATCH,
     protocol,
     startTimestamp,
     endTimestampExclusive,
