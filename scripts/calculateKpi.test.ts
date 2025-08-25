@@ -262,9 +262,13 @@ describe('_calculateKpiBatch', () => {
       ])
       expect(mockBatchHandler).toHaveBeenCalledTimes(1)
       expect(mockBatchHandler).toHaveBeenCalledWith({
-        users: ['0x789'],
-        referralTimestamps: [expect.any(Date)],
-        referrerIds: ['ref3'],
+        users: [
+          {
+            address: '0x789',
+            referrerId: 'ref3',
+            referralTimestamp: expect.any(Date),
+          },
+        ],
         startTimestamp,
         endTimestampExclusive,
         redis: undefined,
@@ -313,9 +317,18 @@ describe('_calculateKpiBatch', () => {
       // Should only call batch handler once with deduplicated users
       expect(mockBatchHandler).toHaveBeenCalledTimes(1)
       expect(mockBatchHandler).toHaveBeenCalledWith({
-        users: ['0x123', '0x456'],
-        referralTimestamps: [expect.any(Date), expect.any(Date)],
-        referrerIds: ['ref1', 'ref3'],
+        users: [
+          {
+            address: '0x123',
+            referrerId: 'ref1',
+            referralTimestamp: expect.any(Date),
+          },
+          {
+            address: '0x456',
+            referrerId: 'ref3',
+            referralTimestamp: expect.any(Date),
+          },
+        ],
         startTimestamp,
         endTimestampExclusive,
         redis: undefined,
