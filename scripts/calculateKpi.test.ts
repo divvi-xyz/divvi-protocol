@@ -1,4 +1,5 @@
 import { _calculateKpiBatch } from './calculateKpi'
+import { ReferredUser } from './types'
 
 const mockHandler = jest.fn()
 const mockBatchHandler = jest.fn()
@@ -19,16 +20,13 @@ describe('_calculateKpiBatch', () => {
     return { kpi: address === '0x123' ? 100 : 50 }
   })
 
-  mockBatchHandler.mockImplementation(
-    async ({ users, referralTimestamps, referrerIds }) => {
-      return users.map((user: string, index: number) => ({
-        userAddress: user,
-        referrerId: referrerIds[index],
-        kpi: user === '0x123' ? 100 : 50,
-        metadata: { referralTimestamp: referralTimestamps[index] },
-      }))
-    },
-  )
+  mockBatchHandler.mockImplementation(async ({ users }) => {
+    return users.map((user: ReferredUser) => ({
+      userAddress: user.address,
+      referrerId: user.referrerId,
+      kpi: user.address === '0x123' ? 100 : 50,
+    }))
+  })
 
   const startTimestamp = new Date('2024-01-01T00:00:00Z')
   const endTimestampExclusive = new Date('2024-01-31T23:59:59Z')
@@ -350,17 +348,6 @@ describe('_calculateKpiBatch', () => {
     })
 
     it('should handle batch handler returning array results', async () => {
-      mockBatchHandler.mockImplementation(
-        async ({ users, referralTimestamps, referrerIds }) => {
-          return users.map((user: string, index: number) => ({
-            userAddress: user,
-            referrerId: referrerIds[index],
-            kpi: user === '0x123' ? 100 : 50,
-            metadata: { referralTimestamp: referralTimestamps[index] },
-          }))
-        },
-      )
-
       const eligibleUsers = [
         {
           referrerId: 'ref1',

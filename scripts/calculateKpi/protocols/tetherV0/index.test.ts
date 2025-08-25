@@ -689,9 +689,9 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       // Check that each user has their own result
       const userAddresses = result.map((r) => r.userAddress)
-      expect(userAddresses).toContain(testUsers[0])
-      expect(userAddresses).toContain(testUsers[1])
-      expect(userAddresses).toContain(testUsers[2])
+      expect(userAddresses).toContain(testUsers[0].address)
+      expect(userAddresses).toContain(testUsers[1].address)
+      expect(userAddresses).toContain(testUsers[2].address)
 
       // Check that each user has the correct KPI (1 transaction * 8 networks)
       result.forEach((userResult) => {
@@ -761,7 +761,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       // Should only return result for the first user
       expect(result).toHaveLength(1)
-      expect(result[0].userAddress).toBe(testUsers[0])
+      expect(result[0].userAddress).toBe(testUsers[0].address)
       expect(result[0].kpi).toBe(8)
     })
   })
