@@ -576,14 +576,13 @@ async function getEligibleTxCountByUserAndReferrer({
           continue
         }
 
-        const isTransferToUser =
-          decodedLog.args.to.toLowerCase() ===
-          transactionsByHash[transactionHash].from.toLowerCase()
-        const transferValue = BigNumber(decodedLog.args.value).multipliedBy(
-          isTransferToUser ? 1 : -1,
-        )
-
         if (transactionsByHash[transactionHash]) {
+          const isTransferToUser =
+            decodedLog.args.to.toLowerCase() ===
+            transactionsByHash[transactionHash].from.toLowerCase()
+          const transferValue = BigNumber(decodedLog.args.value).multipliedBy(
+            isTransferToUser ? 1 : -1,
+          )
           transactionsByHash[transactionHash].value =
             transactionsByHash[transactionHash].value.plus(transferValue)
           transactionsByHash[transactionHash].transferFrom =
