@@ -396,7 +396,10 @@ export async function calculateKpiBatch({
             kpiByUserAndReferrer[userAddress] = {}
           }
 
-          for (const [referrerId, txCount] of Object.entries(referrerCounts)) {
+          for (const [
+            referrerId,
+            { txCount, addresses, totalValue },
+          ] of Object.entries(referrerCounts)) {
             if (!(referrerId in kpiByUserAndReferrer[userAddress])) {
               kpiByUserAndReferrer[userAddress][referrerId] = {
                 kpi: 0,
@@ -407,7 +410,11 @@ export async function calculateKpiBatch({
             }
             kpiByUserAndReferrer[userAddress][referrerId].kpi += txCount
             kpiByUserAndReferrer[userAddress][referrerId].metadata![networkId] =
-              txCount
+              {
+                txCount,
+                addresses: Array.from(addresses),
+                totalValue,
+              }
           }
         }
       },
@@ -466,7 +473,15 @@ async function getEligibleTxCountByUserAndReferrer({
   startBlock?: number
   endBlockExclusive?: number
   tokenAddress: Address
-}): Promise<Record<string, Record<string, number>>> {
+}): Promise<
+  Record<
+    string,
+    Record<
+      string,
+      { txCount: number; totalValue: BigNumber; addresses: Set<Address> }
+    >
+  >
+> {
   const client = getHyperSyncClient(networkId)
 
   const transactionsByHash: Record<
@@ -474,13 +489,14 @@ async function getEligibleTxCountByUserAndReferrer({
     {
       from: Address
       to: Address
-      calldata: Hex
+      input: Hex
       value: BigNumber
+      transferFrom: Address | undefined
+      transferTo: Address | undefined
     }
   > = {}
 
   const query = {
-    transactions: [{ from: users }],
     logs: [
       {
         address: [tokenAddress],
@@ -524,8 +540,6 @@ async function getEligibleTxCountByUserAndReferrer({
     ...(endBlockExclusive && { toBlock: endBlockExclusive }),
   }
 
-  // We need to get transaction data to know who initiated each transaction
-
   await paginateQuery(client, query, async (response) => {
     // First, get transaction initiators from transaction data
     for (const tx of response.data.transactions) {
@@ -534,14 +548,16 @@ async function getEligibleTxCountByUserAndReferrer({
         tx.from &&
         tx.to &&
         tx.input &&
-        users.includes(tx.from.toLowerCase() as Address)
+        (users.includes(tx.from.toLowerCase() as Address) ||
+          isEntryPointAddress(tx.to as Address))
       ) {
-        const initiator = tx.from as Address
         transactionsByHash[tx.hash] = {
-          from: initiator as Address,
+          from: tx.from as Address,
           to: tx.to as Address,
-          calldata: tx.input as Hex,
+          input: tx.input as Hex,
           value: BigNumber(0),
+          transferFrom: undefined,
+          transferTo: undefined,
         }
       }
     }
@@ -555,25 +571,24 @@ async function getEligibleTxCountByUserAndReferrer({
           topics: topics as [],
         })
 
-        if (decodedLog.eventName === 'Transfer') {
-          const fromUser = decodedLog.args.from.toLowerCase()
-          const toUser = decodedLog.args.to.toLowerCase()
-          const transferValue = BigNumber(decodedLog.args.value)
+        if (decodedLog.eventName !== 'Transfer') {
+          // should never happen
+          continue
+        }
 
-          // Get the transaction initiator
-          const txInfo = transactionsByHash[transactionHash]
-          if (txInfo) {
-            // Check if the initiator was involved in this transfer
-            if (fromUser === txInfo.from || toUser === txInfo.from) {
-              // Determine if this is an incoming or outgoing transfer for the initiator
-              const isIncoming = toUser === txInfo.from
-              const netTransferValue = transferValue.multipliedBy(
-                isIncoming ? 1 : -1,
-              )
+        const isTransferToUser =
+          decodedLog.args.to.toLowerCase() ===
+          transactionsByHash[transactionHash].from.toLowerCase()
+        const transferValue = BigNumber(decodedLog.args.value).multipliedBy(
+          isTransferToUser ? 1 : -1,
+        )
 
-              txInfo.value = txInfo.value.plus(netTransferValue)
-            }
-          }
+        if (transactionsByHash[transactionHash]) {
+          transactionsByHash[transactionHash].value =
+            transactionsByHash[transactionHash].value.plus(transferValue)
+          transactionsByHash[transactionHash].transferFrom =
+            decodedLog.args.from
+          transactionsByHash[transactionHash].transferTo = decodedLog.args.to
         }
       }
     }
@@ -582,34 +597,61 @@ async function getEligibleTxCountByUserAndReferrer({
   // Separate the eligible transactions by user and referrerId
   const eligibleTxCountByUserAndReferrer: Record<
     string,
-    Record<string, number>
+    Record<
+      string,
+      { txCount: number; totalValue: BigNumber; addresses: Set<Address> }
+    >
   > = {}
 
-  for (const [transactionHash, txInfo] of Object.entries(transactionsByHash)) {
+  for (const [
+    transactionHash,
+    { value, to, from, input, transferFrom, transferTo },
+  ] of Object.entries(transactionsByHash)) {
     // Check if the absolute net transfer value meets the minimum threshold
-    if (txInfo.value.abs().gte(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT)) {
-      const userAddress = txInfo.from
-      const referrerId = await getReferrerIdFromTx(
-        transactionHash as Hex,
-        networkId,
-        true,
-        {
+    if (value.abs().gte(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT)) {
+      let transactionInfo: TransactionInfo | undefined
+      if (!isEntryPointAddress(to)) {
+        transactionInfo = {
           hash: transactionHash as Hex,
           type: 'transaction',
           transactionType: 'regular',
-          from: txInfo.from,
-          to: txInfo.to,
-          calldata: txInfo.calldata,
-        },
+          from: from,
+          to: to,
+          calldata: input,
+        }
+      }
+      const referral = await getReferrerIdFromTx(
+        transactionHash as Hex,
+        networkId,
+        true,
+        transactionInfo,
       )
-      if (referrerId !== null) {
+      if (
+        referral !== null &&
+        users.includes(referral.user.toLowerCase() as Address)
+      ) {
+        const userAddress = referral.user.toLowerCase()
         if (!eligibleTxCountByUserAndReferrer[userAddress]) {
           eligibleTxCountByUserAndReferrer[userAddress] = {}
         }
-        eligibleTxCountByUserAndReferrer[userAddress][referrerId.referrerId] =
-          (eligibleTxCountByUserAndReferrer[userAddress][
-            referrerId.referrerId
-          ] ?? 0) + 1
+        eligibleTxCountByUserAndReferrer[userAddress][referral.referrerId] = {
+          txCount:
+            (eligibleTxCountByUserAndReferrer[userAddress][referral.referrerId]
+              ?.txCount ?? 0) + 1,
+          totalValue: (
+            eligibleTxCountByUserAndReferrer[userAddress][referral.referrerId]
+              ?.totalValue ?? BigNumber(0)
+          ).plus(value),
+          addresses: new Set(
+            [
+              ...(eligibleTxCountByUserAndReferrer[userAddress][
+                referral.referrerId
+              ]?.addresses ?? []),
+              transferFrom,
+              transferTo,
+            ].filter(Boolean) as Address[],
+          ),
+        }
       }
     }
   }
