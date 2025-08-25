@@ -216,13 +216,11 @@ describe('_calculateKpiBatch', () => {
           userAddress: '0x123',
           referrerId: 'ref1',
           kpi: 100,
-          metadata: { referralTimestamp: expect.any(Date) },
         },
         {
           userAddress: '0x456',
           referrerId: 'ref2',
           kpi: 50,
-          metadata: { referralTimestamp: expect.any(Date) },
         },
       ])
       expect(mockBatchHandler).toHaveBeenCalledTimes(1)
@@ -260,7 +258,6 @@ describe('_calculateKpiBatch', () => {
           userAddress: '0x789',
           referrerId: 'ref3',
           kpi: 50,
-          metadata: { referralTimestamp: expect.any(Date) },
         },
       ])
       expect(mockBatchHandler).toHaveBeenCalledTimes(1)
@@ -305,13 +302,11 @@ describe('_calculateKpiBatch', () => {
           userAddress: '0x123',
           referrerId: 'ref1',
           kpi: 100,
-          metadata: { referralTimestamp: expect.any(Date) },
         },
         {
           userAddress: '0x456',
           referrerId: 'ref3',
           kpi: 50,
-          metadata: { referralTimestamp: expect.any(Date) },
         },
       ])
 
@@ -373,13 +368,11 @@ describe('_calculateKpiBatch', () => {
           userAddress: '0x123',
           referrerId: 'ref1',
           kpi: 100,
-          metadata: { referralTimestamp: expect.any(Date) },
         },
         {
           userAddress: '0x456',
           referrerId: 'ref2',
           kpi: 50,
-          metadata: { referralTimestamp: expect.any(Date) },
         },
       ])
     })
