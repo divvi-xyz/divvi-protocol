@@ -21,6 +21,7 @@ import {
 } from '../../../utils/referrals'
 import { isEntryPointAddress } from './parseReferralTag/getUserOperations'
 import { TransactionInfo } from './parseReferralTag/getTransactionInfo'
+import { ReferredUser } from '../../../types'
 
 const MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT = BigNumber(1).shiftedBy(6)
 const transferEventSigHash = toEventSelector(
@@ -354,7 +355,7 @@ export async function calculateKpiBatch({
   endTimestampExclusive,
   redis,
 }: {
-  users: string[]
+  users: ReferredUser[]
   startTimestamp: Date
   endTimestampExclusive: Date
   redis?: RedisClientType
@@ -381,7 +382,7 @@ export async function calculateKpiBatch({
         const eligibleTxCountByUserAndReferrer =
           await getEligibleTxCountByUserAndReferrer({
             networkId,
-            users: users as Address[],
+            users: users.map((user) => user.address as Address),
             startBlock: blockRange.startBlock,
             endBlockExclusive: blockRange.endBlockExclusive,
             tokenAddress,

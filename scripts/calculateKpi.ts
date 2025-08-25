@@ -3,7 +3,7 @@ import {
   calculateKpiHandlers,
 } from './calculateKpi/protocols'
 import yargs from 'yargs'
-import { KpiResults, Protocol, protocols } from './types'
+import { KpiResults, Protocol, protocols, ReferredUser } from './types'
 import { ResultDirectory } from '../src/resultDirectory'
 import { RedisClientType } from '@redis/client'
 import { closeRedisClient, getRedisClient } from '../src/redis'
@@ -64,59 +64,52 @@ async function calculateKpiBatch({
     // Extract unique user addresses while maintaining order and relationships
     const uniqueUserMap = new Map<
       string,
-      { timestamp: string; referrerId: string }
+      { userAddress: string; timestamp: string; referrerId: string }
     >()
 
     // Build a map of unique users with their data, keeping the first occurrence
     filteredUsers.forEach((user) => {
       if (!uniqueUserMap.has(user.userAddress.toLowerCase())) {
         uniqueUserMap.set(user.userAddress.toLowerCase(), {
+          userAddress: user.userAddress,
           timestamp: user.timestamp,
           referrerId: user.referrerId,
         })
       }
     })
 
-    const userAddresses = Array.from(uniqueUserMap.keys())
-    const referralTimestamps = Array.from(uniqueUserMap.values()).map(
-      (userData) => new Date(userData.timestamp),
-    )
-    const referrerIds = Array.from(uniqueUserMap.values()).map(
-      (userData) => userData.referrerId,
-    )
-
+    const referredUsers: ReferredUser[] = Array.from(
+      uniqueUserMap.values(),
+    ).map((userData) => ({
+      address: userData.userAddress,
+      referrerId: userData.referrerId,
+      referralTimestamp: new Date(userData.timestamp),
+    }))
     const requestsPerBatch = batchSize // number of parallel requests
     const usersPerRequest = HYPERSYNC_BATCH_SIZE // number of users per hypersync request
 
     for (
       let i = 0;
-      i < userAddresses.length;
+      i < referredUsers.length;
       i += requestsPerBatch * usersPerRequest
     ) {
       // Create all batches with their corresponding data upfront
-      const batches = Array.from({ length: requestsPerBatch }, (_, j) => {
+      const batches = []
+      for (let j = 0; j < requestsPerBatch; j++) {
         const startIndex = i + j * usersPerRequest
         const endIndex = Math.min(
           startIndex + usersPerRequest,
-          userAddresses.length,
+          referredUsers.length,
         )
-
-        return {
-          users: userAddresses.slice(startIndex, endIndex),
-          referralTimestamps: referralTimestamps.slice(startIndex, endIndex),
-          referrerIds: referrerIds.slice(startIndex, endIndex),
-          startIndex,
-        }
-      }).filter((batch) => batch.users.length > 0)
+        batches.push(referredUsers.slice(startIndex, endIndex))
+      }
 
       const startTs = Date.now()
 
       const batchResults = await Promise.all(
         batches.map((batch) =>
           batchHandler({
-            users: batch.users,
-            referralTimestamps: batch.referralTimestamps,
-            referrerIds: batch.referrerIds,
+            users: batch,
             startTimestamp,
             endTimestampExclusive,
             redis,
@@ -125,7 +118,7 @@ async function calculateKpiBatch({
       )
 
       console.log(
-        `Processed user batch ${Math.floor(i / (requestsPerBatch * usersPerRequest)) + 1} of ${Math.ceil(userAddresses.length / (requestsPerBatch * usersPerRequest))} for campaign ${protocol} in ${Date.now() - startTs}ms`,
+        `Processed user batch ${Math.floor(i / (requestsPerBatch * usersPerRequest)) + 1} of ${Math.ceil(referredUsers.length / (requestsPerBatch * usersPerRequest))} for campaign ${protocol} in ${Date.now() - startTs}ms`,
       )
 
       results.push(...batchResults.flat())
