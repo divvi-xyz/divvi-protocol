@@ -6,6 +6,7 @@ import { getHyperSyncClient, getViemPublicClient } from '../../../utils'
 import { BigNumber } from 'bignumber.js'
 import { calculateKpi, calculateKpiBatch } from './index'
 import { getReferrerIdFromTx } from './parseReferralTag/getReferrerIdFromTx'
+import { ReferredUser } from '../../../types'
 
 // Mock dependencies
 jest.mock('../utils/events')
@@ -574,10 +575,22 @@ describe('Tether V0 Protocol KPI Calculation', () => {
   })
 
   describe('calculateKpiBatch', () => {
-    const testUsers = [
-      '0x1234567890123456789012345678901234567890',
-      '0x2345678901234567890123456789012345678901',
-      '0x3456789012345678901234567890123456789012',
+    const testUsers: ReferredUser[] = [
+      {
+        address: '0x1234567890123456789012345678901234567890',
+        referrerId: 'referrer1',
+        referralTimestamp: new Date(),
+      },
+      {
+        address: '0x2345678901234567890123456789012345678901',
+        referrerId: 'referrer1',
+        referralTimestamp: new Date(),
+      },
+      {
+        address: '0x3456789012345678901234567890123456789012',
+        referrerId: 'referrer1',
+        referralTimestamp: new Date(),
+      },
     ]
 
     const batchProps = {
@@ -600,7 +613,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
                   .padStart(64, '0')) as Hex,
               topics: [
                 transferEventSigHash,
-                pad(testUsers[0] as Address, { size: 32 }),
+                pad(testUsers[0].address as Address, { size: 32 }),
                 pad('0x4567890123456789012345678901234567890123' as Address, {
                   size: 32,
                 }),
@@ -617,7 +630,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
                   .padStart(64, '0')) as Hex,
               topics: [
                 transferEventSigHash,
-                pad(testUsers[1] as Address, { size: 32 }),
+                pad(testUsers[1].address as Address, { size: 32 }),
                 pad('0x4567890123456789012345678901234567890123' as Address, {
                   size: 32,
                 }),
@@ -634,7 +647,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
                   .padStart(64, '0')) as Hex,
               topics: [
                 transferEventSigHash,
-                pad(testUsers[2] as Address, { size: 32 }),
+                pad(testUsers[2].address as Address, { size: 32 }),
                 pad('0x4567890123456789012345678901234567890123' as Address, {
                   size: 32,
                 }),
@@ -644,7 +657,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
             },
           ],
           100,
-          testUsers as Address[],
+          testUsers.map((user) => user.address as Address),
         )
         await onPage(mockResponse)
       })
@@ -652,11 +665,20 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       // Mock getReferrerIdFromTx to return different referrers for each user
       mockGetReferrerIdFromTx.mockImplementation(async (txHash: Hex) => {
         if (txHash === '0xabc123')
-          return { referrerId: 'referrer1', user: testUsers[0] }
+          return {
+            referrerId: 'referrer1',
+            user: testUsers[0].address as Address,
+          }
         if (txHash === '0xdef456')
-          return { referrerId: 'referrer2', user: testUsers[1] }
+          return {
+            referrerId: 'referrer2',
+            user: testUsers[1].address as Address,
+          }
         if (txHash === '0xghi789')
-          return { referrerId: 'referrer3', user: testUsers[2] }
+          return {
+            referrerId: 'referrer3',
+            user: testUsers[2].address as Address,
+          }
         return null
       })
 
@@ -714,7 +736,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
               BigNumber(2).shiftedBy(6).toString(16).padStart(64, '0')) as Hex,
             topics: [
               transferEventSigHash,
-              pad(testUsers[0] as Address, { size: 32 }),
+              pad(testUsers[0].address as Address, { size: 32 }),
               pad('0x4567890123456789012345678901234567890123' as Address, {
                 size: 32,
               }),
@@ -728,7 +750,10 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       mockGetReferrerIdFromTx.mockImplementation(async (txHash: Hex) => {
         if (txHash === '0xabc123')
-          return { referrerId: 'referrer1', user: testUsers[0] }
+          return {
+            referrerId: 'referrer1',
+            user: testUsers[0].address as Address,
+          }
         return null
       })
 
