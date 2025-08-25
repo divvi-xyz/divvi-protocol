@@ -44,7 +44,6 @@ async function calculateKpiBatch({
   const batchHandler = calculateKpiBatchHandlers[protocol]
 
   if (batchHandler) {
-    // Use the protocol-specific batch handler
     console.log(`Using batch handler for protocol ${protocol}`)
 
     // Filter out users whose referral timestamp is after the end date
@@ -61,13 +60,12 @@ async function calculateKpiBatch({
       return true
     })
 
-    // Extract unique user addresses while maintaining order and relationships
+    // Extract unique user addresses and associated data
     const uniqueUserMap = new Map<
       string,
       { userAddress: string; timestamp: string; referrerId: string }
     >()
 
-    // Build a map of unique users with their data, keeping the first occurrence
     filteredUsers.forEach((user) => {
       if (!uniqueUserMap.has(user.userAddress.toLowerCase())) {
         uniqueUserMap.set(user.userAddress.toLowerCase(), {

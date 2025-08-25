@@ -541,7 +541,6 @@ async function getEligibleTxCountByUserAndReferrer({
   }
 
   await paginateQuery(client, query, async (response) => {
-    // First, get transaction initiators from transaction data
     for (const tx of response.data.transactions) {
       if (
         tx.hash &&
