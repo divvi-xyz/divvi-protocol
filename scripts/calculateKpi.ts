@@ -94,15 +94,12 @@ async function calculateKpiBatch({
       i += requestsPerBatch * usersPerRequest
     ) {
       // Create all batches with their corresponding data upfront
-      const batches = []
-      for (let j = 0; j < requestsPerBatch; j++) {
-        const startIndex = i + j * usersPerRequest
-        const endIndex = Math.min(
-          startIndex + usersPerRequest,
-          referredUsers.length,
-        )
-        batches.push(referredUsers.slice(startIndex, endIndex))
-      }
+      const batches = Array.from({ length: requestsPerBatch }, (_, j) =>
+        referredUsers.slice(
+          i + j * usersPerRequest,
+          Math.min(i + (j + 1) * usersPerRequest, referredUsers.length),
+        ),
+      ).filter((batch) => batch.length > 0)
 
       const startTs = Date.now()
 
