@@ -6,12 +6,6 @@ import { Contract } from 'ethers'
 interface Kpi {
   kpi: bigint
   referrerAddress: string
-  idempotencyKey: string
-}
-
-// Helper function to generate idempotency keys for testing
-function generateTestIdempotencyKey(user: string, nonce: number = 0): string {
-  return hre.ethers.keccak256(hre.ethers.toUtf8Bytes(`${user}-${nonce}`))
 }
 
 describe('LinearReward', function () {
@@ -41,17 +35,14 @@ describe('LinearReward', function () {
         {
           kpi: 100n,
           referrerAddress: user1.address,
-          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
         },
         {
           kpi: 200n,
           referrerAddress: user2.address,
-          idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
         },
         {
           kpi: 300n,
           referrerAddress: user3.address,
-          idempotencyKey: generateTestIdempotencyKey(user3.address, 1),
         },
       ]
       const totalRewardAmount = 600n
@@ -75,7 +66,6 @@ describe('LinearReward', function () {
         {
           kpi: 500n,
           referrerAddress: user1.address,
-          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
         },
       ]
       const totalRewardAmount = 1000n
@@ -95,12 +85,10 @@ describe('LinearReward', function () {
         {
           kpi: 100n,
           referrerAddress: user1.address,
-          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
         },
         {
           kpi: 200n,
           referrerAddress: user2.address,
-          idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
         },
       ]
       const totalRewardAmount = 0n
@@ -120,12 +108,10 @@ describe('LinearReward', function () {
         {
           kpi: 0n,
           referrerAddress: user1.address,
-          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
         },
         {
           kpi: 100n,
           referrerAddress: user2.address,
-          idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
         },
       ]
       const totalRewardAmount = 100n
@@ -145,12 +131,10 @@ describe('LinearReward', function () {
         {
           kpi: 1000000n,
           referrerAddress: user1.address,
-          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
         },
         {
           kpi: 2000000n,
           referrerAddress: user2.address,
-          idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
         },
       ]
       const totalRewardAmount = 1500000n

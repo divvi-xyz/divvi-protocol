@@ -6,12 +6,6 @@ import { Contract } from 'ethers'
 interface Kpi {
   kpi: bigint
   referrerAddress: string
-  idempotencyKey: string
-}
-
-// Helper function to generate idempotency keys for testing
-function generateTestIdempotencyKey(user: string, nonce: number = 0): string {
-  return hre.ethers.keccak256(hre.ethers.toUtf8Bytes(`${user}-${nonce}`))
 }
 
 describe('SqrtReward', function () {
@@ -41,18 +35,15 @@ describe('SqrtReward', function () {
         {
           kpi: 100n,
           referrerAddress: user1.address,
-          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
-        }, // sqrt = 10
+        }, // sqrt(100 * 10^6) = sqrt(100,000,000) = 10,000
         {
           kpi: 400n,
           referrerAddress: user2.address,
-          idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
-        }, // sqrt = 20
+        }, // sqrt(400 * 10^6) = sqrt(400,000,000) = 20,000
         {
           kpi: 900n,
           referrerAddress: user3.address,
-          idempotencyKey: generateTestIdempotencyKey(user3.address, 1),
-        }, // sqrt = 30
+        }, // sqrt(900 * 10^6) = sqrt(900,000,000) = 30,000
       ]
       const totalRewardAmount = 600n
 
@@ -62,12 +53,12 @@ describe('SqrtReward', function () {
       )
 
       expect(rewards).to.have.length(3)
-      // total sqrt = 10 + 20 + 30 = 60
-      expect(rewards[0].reward).to.equal(100n) // 600 * 10 / 60
+      // total sqrt = 10,000 + 20,000 + 30,000 = 60,000
+      expect(rewards[0].reward).to.equal(100n) // 600 * 10,000 / 60,000
       expect(rewards[0].referrerAddress).to.equal(user1.address)
-      expect(rewards[1].reward).to.equal(200n) // 600 * 20 / 60
+      expect(rewards[1].reward).to.equal(200n) // 600 * 20,000 / 60,000
       expect(rewards[1].referrerAddress).to.equal(user2.address)
-      expect(rewards[2].reward).to.equal(300n) // 600 * 30 / 60
+      expect(rewards[2].reward).to.equal(300n) // 600 * 30,000 / 60,000
       expect(rewards[2].referrerAddress).to.equal(user3.address)
     })
 
@@ -76,8 +67,7 @@ describe('SqrtReward', function () {
         {
           kpi: 400n,
           referrerAddress: user1.address,
-          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
-        }, // sqrt = 20
+        }, // sqrt(400 * 10^6) = sqrt(400,000,000) = 20,000
       ]
       const totalRewardAmount = 1000n
 
@@ -87,7 +77,7 @@ describe('SqrtReward', function () {
       )
 
       expect(rewards).to.have.length(1)
-      expect(rewards[0].reward).to.equal(1000n) // 1000 * 20 / 20
+      expect(rewards[0].reward).to.equal(1000n) // 1000 * 20,000 / 20,000
       expect(rewards[0].referrerAddress).to.equal(user1.address)
     })
 
@@ -96,12 +86,10 @@ describe('SqrtReward', function () {
         {
           kpi: 100n,
           referrerAddress: user1.address,
-          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
         },
         {
           kpi: 400n,
           referrerAddress: user2.address,
-          idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
         },
       ]
       const totalRewardAmount = 0n
@@ -121,13 +109,11 @@ describe('SqrtReward', function () {
         {
           kpi: 0n,
           referrerAddress: user1.address,
-          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
-        }, // sqrt = 0
+        }, // sqrt(0 * 10^6) = sqrt(0) = 0
         {
           kpi: 100n,
           referrerAddress: user2.address,
-          idempotencyKey: generateTestIdempotencyKey(user2.address),
-        }, // sqrt = 10
+        }, // sqrt(100 * 10^6) = sqrt(100,000,000) = 10,000
       ]
       const totalRewardAmount = 100n
 
@@ -137,8 +123,8 @@ describe('SqrtReward', function () {
       )
 
       expect(rewards).to.have.length(2)
-      expect(rewards[0].reward).to.equal(0n) // 100 * 0 / 10
-      expect(rewards[1].reward).to.equal(100n) // 100 * 10 / 10
+      expect(rewards[0].reward).to.equal(0n) // 100 * 0 / 10,000
+      expect(rewards[1].reward).to.equal(100n) // 100 * 10,000 / 10,000
     })
 
     it('should handle non-perfect squares', async function () {
@@ -146,18 +132,15 @@ describe('SqrtReward', function () {
         {
           kpi: 2n,
           referrerAddress: user1.address,
-          idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
-        }, // sqrt ≈ 1
+        }, // sqrt(2 * 10^6) = sqrt(2,000,000) ≈ 1,414
         {
           kpi: 5n,
           referrerAddress: user2.address,
-          idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
-        }, // sqrt ≈ 2
+        }, // sqrt(5 * 10^6) = sqrt(5,000,000) ≈ 2,236
         {
           kpi: 10n,
           referrerAddress: user3.address,
-          idempotencyKey: generateTestIdempotencyKey(user3.address, 1),
-        }, // sqrt ≈ 3
+        }, // sqrt(10 * 10^6) = sqrt(10,000,000) ≈ 3,162
       ]
       const totalRewardAmount = 60n
 
@@ -167,10 +150,11 @@ describe('SqrtReward', function () {
       )
 
       expect(rewards).to.have.length(3)
-      // total sqrt = 1 + 2 + 3 = 6
-      expect(rewards[0].reward).to.equal(10n) // 60 * 1 / 6
-      expect(rewards[1].reward).to.equal(20n) // 60 * 2 / 6
-      expect(rewards[2].reward).to.equal(30n) // 60 * 3 / 6
+      // total sqrt ≈ 1,414 + 2,236 + 3,162 = 6,812
+      // Expected rewards: 60 * sqrt / 6,812
+      expect(rewards[0].reward).to.equal(12n) // 60 * 1,414 / 6,812 ≈ 12
+      expect(rewards[1].reward).to.equal(19n) // 60 * 2,236 / 6,812 ≈ 19
+      expect(rewards[2].reward).to.equal(27n) // 60 * 3,162 / 6,812 ≈ 27
     })
 
     it('should handle empty KPI array', async function () {

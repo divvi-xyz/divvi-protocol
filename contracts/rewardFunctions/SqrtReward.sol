@@ -18,7 +18,7 @@ contract SqrtReward is IRewardFunction {
     rewards = new Reward[](kpis.length);
     uint256 totalSqrtKpi = 0;
     for (uint256 i = 0; i < kpis.length; i++) {
-      totalSqrtKpi += Math.sqrt(kpis[i].kpi);
+      totalSqrtKpi += Math.sqrt(kpis[i].kpi * 1e6);
     }
     if (totalSqrtKpi == 0) {
       return rewards;
@@ -27,11 +27,10 @@ contract SqrtReward is IRewardFunction {
       rewards[i] = Reward({
         reward: Math.mulDiv(
           totalRewardAmount,
-          Math.sqrt(kpis[i].kpi),
+          Math.sqrt(kpis[i].kpi * 1e6),
           totalSqrtKpi
         ),
-        referrerAddress: kpis[i].referrerAddress,
-        idempotencyKey: kpis[i].idempotencyKey
+        referrerAddress: kpis[i].referrerAddress
       });
     }
   }
