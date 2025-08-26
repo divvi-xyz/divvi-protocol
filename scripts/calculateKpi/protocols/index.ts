@@ -1,4 +1,9 @@
-import { Protocol, CalculateKpiFn, CalculateKpiBatchFn, NetworkId } from '../../types'
+import {
+  Protocol,
+  CalculateKpiFn,
+  CalculateKpiBatchFn,
+  NetworkId,
+} from '../../types'
 import { calculateKpi as calculateKpiAerodrome } from './aerodrome'
 import { calculateKpi as calculateKpiBeefy } from './beefy'
 import { calculateKpi as calculateKpiSomm } from './somm'
