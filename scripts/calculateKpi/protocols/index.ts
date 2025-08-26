@@ -1,4 +1,4 @@
-import { Protocol, CalculateKpiFn } from '../../types'
+import { Protocol, CalculateKpiFn, CalculateKpiBatchFn } from '../../types'
 import { calculateKpi as calculateKpiAerodrome } from './aerodrome'
 import { calculateKpi as calculateKpiBeefy } from './beefy'
 import { calculateKpi as calculateKpiSomm } from './somm'
@@ -12,7 +12,10 @@ import { calculateKpi as calculateKpiCeloTransactions } from './celoTransactions
 import { calculateKpi as calculateKpiRhino } from './rhino'
 import { calculateKpi as calculateKpiScoutGameV0 } from './scoutGameV0'
 import { calculateKpi as calculateKpiLiskV0 } from './liskV0'
-import { calculateKpi as calculateKpiTetherV0 } from './tetherV0'
+import {
+  calculateKpi as calculateKpiTetherV0,
+  calculateKpiBatch as calculateKpiBatchTetherV0,
+} from './tetherV0'
 import { calculateKpi as calculateKpiBaseV0 } from './baseV0'
 import { calculateKpi as calculateKpiMantleV0 } from './mantleV0'
 import { calculateKpi as calculateKpiMorph } from './morph'
@@ -41,7 +44,7 @@ import { calculateKpi as calculateKpiMorph } from './morph'
  * - Token prices fetched at transaction timestamps for accurate USD conversion
  * - Protocol-specific fee structures and revenue sharing models are hardcoded per protocol
  */
-const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
+export const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   beefy: calculateKpiBeefy,
   aerodrome: calculateKpiAerodrome,
   somm: calculateKpiSomm,
@@ -61,4 +64,8 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   morph: calculateKpiMorph,
 }
 
-export default calculateKpiHandlers
+export const calculateKpiBatchHandlers: Partial<
+  Record<Protocol, CalculateKpiBatchFn>
+> = {
+  'tether-v0': calculateKpiBatchTetherV0,
+}
