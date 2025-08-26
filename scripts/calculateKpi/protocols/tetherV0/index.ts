@@ -639,7 +639,7 @@ async function getEligibleTxCountByUserAndReferrer({
           totalValue: (
             eligibleTxCountByUserAndReferrer[userAddress][referral.referrerId]
               ?.totalValue ?? BigNumber(0)
-          ).plus(value),
+          ).plus(value.abs()),
           addresses: new Set(
             [
               ...(eligibleTxCountByUserAndReferrer[userAddress][
