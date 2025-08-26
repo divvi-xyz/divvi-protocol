@@ -1,4 +1,4 @@
-import { Protocol, CalculateKpiFn, NetworkId } from '../../types'
+import { Protocol, CalculateKpiFn, CalculateKpiBatchFn, NetworkId } from '../../types'
 import { calculateKpi as calculateKpiAerodrome } from './aerodrome'
 import { calculateKpi as calculateKpiBeefy } from './beefy'
 import { calculateKpi as calculateKpiSomm } from './somm'
@@ -8,7 +8,10 @@ import { calculateKpi as calculateKpiFonbnk } from './fonbnk'
 import { calculateKpi as calculateKpiAave } from './aave'
 import { calculateKpi as calculateKpiRhino } from './rhino'
 import { calculateKpi as calculateKpiScoutGameV0 } from './scoutGameV0'
-import { calculateKpi as calculateKpiTetherV0 } from './tetherV0'
+import {
+  calculateKpi as calculateKpiTetherV0,
+  calculateKpiBatch as calculateKpiBatchTetherV0,
+} from './tetherV0'
 import { calculateNetworkKpi } from './networkKpi'
 
 /**
@@ -35,7 +38,7 @@ import { calculateNetworkKpi } from './networkKpi'
  * - Token prices fetched at transaction timestamps for accurate USD conversion
  * - Protocol-specific fee structures and revenue sharing models are hardcoded per protocol
  */
-const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
+export const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   beefy: calculateKpiBeefy,
   aerodrome: calculateKpiAerodrome,
   somm: calculateKpiSomm,
@@ -90,4 +93,8 @@ const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
     }),
 }
 
-export default calculateKpiHandlers
+export const calculateKpiBatchHandlers: Partial<
+  Record<Protocol, CalculateKpiBatchFn>
+> = {
+  'tether-v0': calculateKpiBatchTetherV0,
+}
