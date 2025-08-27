@@ -3,7 +3,12 @@ import { BigNumber } from 'bignumber.js'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { calculateProportionalPrizeContest } from '../../src/proportionalPrizeContest'
-import { getDivviRewardsExcludedReferrers } from '../utils/divviRewardsExcludedReferrers'
+import {
+  getDivviRewardsExcludedReferrers,
+  ExcludedReferrers,
+} from '../utils/divviRewardsExcludedReferrers'
+import fs from 'fs'
+import { parse } from 'csv-parse/sync'
 
 const REWARD_POOL_ADDRESS = '0xB575210cdF52B18000aE24Be4981e9ABC7716F98' // on Ethereum mainnet
 
@@ -33,13 +38,31 @@ function parseArgs() {
       type: 'string',
       demandOption: true,
     })
+    .option('excluded-referrers-csv', {
+      alias: 'x',
+      description: 'the excluded referrers for this time period in CSV format',
+      type: 'string',
+    })
     .strict()
     .parseSync()
 
   const excludedReferrers: Record<
     string,
     { referrerId: string; shouldWarn?: boolean }
-  > = {}
+  > = !args['excluded-referrers-csv']
+    ? {}
+    : parse(fs.readFileSync(args['excluded-referrers-csv'], 'utf8'), {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+      }).reduce((acc: ExcludedReferrers, row: { referrerId: string }) => {
+        const address = row['referrerId'].toLowerCase()
+        acc[address] = {
+          referrerId: address,
+          shouldWarn: false,
+        }
+        return acc
+      }, {} as ExcludedReferrers)
 
   return {
     resultDirectory: new ResultDirectory({
