@@ -18,6 +18,20 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   address public constant NATIVE_TOKEN_ADDRESS =
     0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   bytes32 public constant MANAGER_ROLE = keccak256('MANAGER_ROLE');
+
+  /**
+   * @dev Fee denominator used for protocol fee calculations
+   *
+   * Uses 18-decimal fixed-point arithmetic for precise percentage calculations
+   * that work correctly with tokens of any decimal configuration.
+   *
+   * **Formula:** feeAmount = (rewardAmount * protocolFee) / FEE_DENOMINATOR
+   *
+   * **Examples:**
+   * - 5% fee:   protocolFee = 0.05 * 1e18 = 50000000000000000
+   * - 1% fee:   protocolFee = 0.01 * 1e18 = 10000000000000000
+   * - 0.5% fee: protocolFee = 0.005 * 1e18 = 5000000000000000
+   */
   uint256 public constant FEE_DENOMINATOR = 1e18;
 
   // Data structures
@@ -119,6 +133,10 @@ contract RewardPool is AccessControl, ReentrancyGuard {
    * @param _timelock Timestamp when manager withdrawals will be allowed
    * @param _protocolFee Protocol fee numerator (denominator is 10^18)
    * @param _reserveAddress Address that will receive protocol fees
+   *
+   * **Protocol Fee System:**
+   * Fees are automatically collected when rewards are added using Math.mulDiv
+   * for precision and overflow safety: `feeAmount = Math.mulDiv(rewardAmount, protocolFee, FEE_DENOMINATOR)`
    */
   function initialize(
     address _poolToken,
@@ -357,6 +375,9 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   /**
    * @dev Internal function to set the protocol fee
    * @param _protocolFee Protocol fee numerator (denominator is 10^18)
+   *
+   * **Usage:** Use `parseEther('0.05')` for 5% fee, or raw values like `50000000000000000`
+   * **Validation:** Must be ≤ FEE_DENOMINATOR (1e18) to prevent fees > 100%
    */
   function _setProtocolFee(uint256 _protocolFee) internal {
     if (_protocolFee > FEE_DENOMINATOR) revert InvalidProtocolFee(_protocolFee);
@@ -376,6 +397,10 @@ contract RewardPool is AccessControl, ReentrancyGuard {
    * @dev Sets the protocol fee
    * @param _protocolFee Protocol fee numerator (denominator is 10^18)
    * @notice Allowed only for address with DEFAULT_ADMIN_ROLE
+   *
+   * **Usage:** `setProtocolFee(parseEther('0.05'))` for 5% fee
+   * **Fee Impact:** Automatically deducted from rewards and sent to reserve address
+   * **Security:** Only the contract admin can modify protocol fees
    */
   function setProtocolFee(
     uint256 _protocolFee

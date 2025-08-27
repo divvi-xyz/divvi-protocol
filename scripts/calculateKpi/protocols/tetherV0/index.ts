@@ -21,6 +21,7 @@ import {
 } from '../../../utils/referrals'
 import { isEntryPointAddress } from './parseReferralTag/getUserOperations'
 import { TransactionInfo } from './parseReferralTag/getTransactionInfo'
+import { ReferredUser } from '../../../types'
 
 const MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT = BigNumber(1).shiftedBy(6)
 const transferEventSigHash = toEventSelector(
@@ -337,4 +338,321 @@ export async function calculateKpi({
   return Object.values(kpiByReferrer).filter((kpi) =>
     registeredReferrers.has(kpi.referrerId.toLowerCase()),
   )
+}
+
+/**
+ * Batch version of calculateKpi that processes multiple users at once.
+ *
+ * **Business Logic**: Counts transactions initiated by users where the total transfer value
+ * (sum of all transfers involving the user) >= 1 USDT. Each transaction hash is associated
+ * with exactly one user (the transaction initiator).
+ *
+ * **Performance**: Makes a single HyperSync query for all users instead of separate queries per user.
+ */
+export async function calculateKpiBatch({
+  users,
+  startTimestamp,
+  endTimestampExclusive,
+  redis,
+}: {
+  users: ReferredUser[]
+  startTimestamp: Date
+  endTimestampExclusive: Date
+  redis?: RedisClientType
+}): Promise<KpiResults> {
+  const kpiByUserAndReferrer: Record<
+    string,
+    Record<string, KpiResults[number]>
+  > = {}
+  const campaignEntityId = REWARDS_PROVIDERS['tether-v0']
+  if (!campaignEntityId) {
+    throw new Error('Tether V0 rewards provider not found')
+  }
+
+  await Promise.all(
+    (Object.entries(networkToTokenAddress) as [NetworkId, Address][]).map(
+      async ([networkId, tokenAddress]) => {
+        const blockRange = await getBlockRange({
+          networkId,
+          startTimestamp,
+          endTimestampExclusive,
+          redis,
+        })
+
+        const eligibleTxCountByUserAndReferrer =
+          await getEligibleTxCountByUserAndReferrer({
+            networkId,
+            users: users.map((user) => user.address as Address),
+            startBlock: blockRange.startBlock,
+            endBlockExclusive: blockRange.endBlockExclusive,
+            tokenAddress,
+          })
+
+        // Aggregate results by user and referrer across the supported networks
+        for (const [userAddress, referrerCounts] of Object.entries(
+          eligibleTxCountByUserAndReferrer,
+        )) {
+          if (!(userAddress in kpiByUserAndReferrer)) {
+            kpiByUserAndReferrer[userAddress] = {}
+          }
+
+          for (const [
+            referrerId,
+            { txCount, addresses, totalValue },
+          ] of Object.entries(referrerCounts)) {
+            if (!(referrerId in kpiByUserAndReferrer[userAddress])) {
+              kpiByUserAndReferrer[userAddress][referrerId] = {
+                kpi: 0,
+                referrerId,
+                userAddress,
+                metadata: {},
+              }
+            }
+            kpiByUserAndReferrer[userAddress][referrerId].kpi += txCount
+            kpiByUserAndReferrer[userAddress][referrerId].metadata![networkId] =
+              {
+                txCount,
+                addresses: Array.from(addresses),
+                totalValue,
+              }
+          }
+        }
+      },
+    ),
+  )
+
+  // There is an edge case where a builder could add a divvi referral tag but have not signed up for the campaign.
+  // We should exclude any referrers that have not registered agreements with the campaign on DivviRegistry.
+  const publicClientOptimism = getViemPublicClient(NetworkId['op-mainnet'])
+  const registeredReferrers = new Set<string>()
+
+  // Collect all unique referrer IDs across all users
+  const allReferrerIds = new Set<string>()
+  for (const userReferrers of Object.values(kpiByUserAndReferrer)) {
+    for (const referrerId of Object.keys(userReferrers)) {
+      allReferrerIds.add(referrerId)
+    }
+  }
+
+  await Promise.all(
+    (Array.from(allReferrerIds) as Address[]).map(async (referrerId) => {
+      const hasAgreement = await publicClientOptimism.readContract({
+        address: REGISTRY_CONTRACT_ADDRESS,
+        abi: divviRegistryAbi,
+        functionName: 'hasAgreement',
+        args: [campaignEntityId, referrerId],
+      })
+      if (hasAgreement) {
+        registeredReferrers.add(referrerId.toLowerCase())
+      }
+    }),
+  )
+
+  // Flatten results and filter by registered referrers
+  const results: KpiResults = []
+  for (const userReferrers of Object.values(kpiByUserAndReferrer)) {
+    for (const kpi of Object.values(userReferrers)) {
+      if (registeredReferrers.has(kpi.referrerId.toLowerCase())) {
+        results.push(kpi)
+      }
+    }
+  }
+
+  return results
+}
+
+async function getEligibleTxCountByUserAndReferrer({
+  networkId,
+  users,
+  startBlock,
+  endBlockExclusive,
+  tokenAddress,
+}: {
+  networkId: NetworkId
+  users: Address[]
+  startBlock?: number
+  endBlockExclusive?: number
+  tokenAddress: Address
+}): Promise<
+  Record<
+    string,
+    Record<
+      string,
+      { txCount: number; totalValue: BigNumber; addresses: Set<Address> }
+    >
+  >
+> {
+  const client = getHyperSyncClient(networkId)
+
+  const transactionsByHash: Record<
+    string,
+    {
+      from: Address
+      to: Address
+      input: Hex
+      value: BigNumber
+      transferFrom: Address | undefined
+      transferTo: Address | undefined
+    }
+  > = {}
+
+  const query = {
+    logs: [
+      {
+        address: [tokenAddress],
+        // transfer from any of the users (outgoing)
+        topics: [
+          [transferEventSigHash],
+          users.map((user) => pad(user, { size: 32 })),
+          [],
+          [],
+        ],
+      },
+      {
+        address: [tokenAddress],
+        // transfer to any of the users (incoming)
+        topics: [
+          [transferEventSigHash],
+          [],
+          users.map((user) => pad(user, { size: 32 })),
+          [],
+        ],
+      },
+    ],
+    fieldSelection: {
+      log: [
+        LogField.Data,
+        LogField.Address,
+        LogField.Topic0,
+        LogField.Topic1,
+        LogField.Topic2,
+        LogField.Topic3,
+        LogField.TransactionHash,
+      ],
+      transaction: [
+        TransactionField.Hash,
+        TransactionField.From,
+        TransactionField.To,
+        TransactionField.Input,
+      ],
+    },
+    fromBlock: startBlock ?? 0,
+    ...(endBlockExclusive && { toBlock: endBlockExclusive }),
+  }
+
+  await paginateQuery(client, query, async (response) => {
+    for (const tx of response.data.transactions) {
+      if (
+        tx.hash &&
+        tx.from &&
+        tx.to &&
+        tx.input &&
+        (users.includes(tx.from.toLowerCase() as Address) ||
+          isEntryPointAddress(tx.to as Address))
+      ) {
+        transactionsByHash[tx.hash] = {
+          from: tx.from as Address,
+          to: tx.to as Address,
+          input: tx.input as Hex,
+          value: BigNumber(0),
+          transferFrom: undefined,
+          transferTo: undefined,
+        }
+      }
+    }
+
+    // Then process transfer events
+    for (const { data, topics, transactionHash } of response.data.logs) {
+      if (data && transactionHash) {
+        const decodedLog = decodeEventLog({
+          abi: erc20Abi,
+          data: data as Hex,
+          topics: topics as [],
+        })
+
+        if (decodedLog.eventName !== 'Transfer') {
+          // should never happen
+          continue
+        }
+
+        if (transactionsByHash[transactionHash]) {
+          const isTransferToUser =
+            decodedLog.args.to.toLowerCase() ===
+            transactionsByHash[transactionHash].from.toLowerCase()
+          const transferValue = BigNumber(decodedLog.args.value).multipliedBy(
+            isTransferToUser ? 1 : -1,
+          )
+          transactionsByHash[transactionHash].value =
+            transactionsByHash[transactionHash].value.plus(transferValue)
+          transactionsByHash[transactionHash].transferFrom =
+            decodedLog.args.from
+          transactionsByHash[transactionHash].transferTo = decodedLog.args.to
+        }
+      }
+    }
+  })
+
+  // Separate the eligible transactions by user and referrerId
+  const eligibleTxCountByUserAndReferrer: Record<
+    string,
+    Record<
+      string,
+      { txCount: number; totalValue: BigNumber; addresses: Set<Address> }
+    >
+  > = {}
+
+  for (const [
+    transactionHash,
+    { value, to, from, input, transferFrom, transferTo },
+  ] of Object.entries(transactionsByHash)) {
+    // Check if the absolute net transfer value meets the minimum threshold
+    if (value.abs().gte(MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT)) {
+      let transactionInfo: TransactionInfo | undefined
+      if (!isEntryPointAddress(to)) {
+        transactionInfo = {
+          hash: transactionHash as Hex,
+          type: 'transaction',
+          transactionType: 'regular',
+          from: from,
+          to: to,
+          calldata: input,
+        }
+      }
+      const referral = await getReferrerIdFromTx(
+        transactionHash as Hex,
+        networkId,
+        true,
+        transactionInfo,
+      )
+      if (
+        referral !== null &&
+        users.includes(referral.user.toLowerCase() as Address)
+      ) {
+        const userAddress = referral.user.toLowerCase()
+        if (!eligibleTxCountByUserAndReferrer[userAddress]) {
+          eligibleTxCountByUserAndReferrer[userAddress] = {}
+        }
+        eligibleTxCountByUserAndReferrer[userAddress][referral.referrerId] = {
+          txCount:
+            (eligibleTxCountByUserAndReferrer[userAddress][referral.referrerId]
+              ?.txCount ?? 0) + 1,
+          totalValue: (
+            eligibleTxCountByUserAndReferrer[userAddress][referral.referrerId]
+              ?.totalValue ?? BigNumber(0)
+          ).plus(value.abs()),
+          addresses: new Set(
+            [
+              ...(eligibleTxCountByUserAndReferrer[userAddress][
+                referral.referrerId
+              ]?.addresses ?? []),
+              transferFrom,
+              transferTo,
+            ].filter(Boolean) as Address[],
+          ),
+        }
+      }
+    }
+  }
+
+  return eligibleTxCountByUserAndReferrer
 }
