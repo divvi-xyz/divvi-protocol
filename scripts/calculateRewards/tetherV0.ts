@@ -36,6 +36,11 @@ function parseArgs() {
     .strict()
     .parseSync()
 
+  const excludedReferrers: Record<
+    string,
+    { referrerId: string; shouldWarn?: boolean }
+  > = {}
+
   return {
     resultDirectory: new ResultDirectory({
       datadir: args.datadir,
@@ -46,6 +51,7 @@ function parseArgs() {
     startTimestamp: args['start-timestamp'],
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
+    excludedReferrers,
   }
 }
 
@@ -56,7 +62,14 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const rewardAmount = args.rewardAmount
   const kpiData = await resultDirectory.readKpi()
 
-  const excludedReferrers = await getDivviRewardsExcludedReferrers()
+  let excludedReferrers = await getDivviRewardsExcludedReferrers()
+  if (
+    args.excludedReferrers &&
+    Object.keys(args.excludedReferrers).length > 0
+  ) {
+    excludedReferrers = { ...excludedReferrers, ...args.excludedReferrers }
+  }
+
   await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
   const rewards = calculateProportionalPrizeContest({
