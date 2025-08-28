@@ -1,7 +1,7 @@
 import { Address } from 'viem'
 import { Protocol, NetworkId } from '../scripts/types'
 
-export type Campaign = {
+type Campaign = {
   providerAddress: Address
   protocol: Protocol
   rewardsPoolAddress: Address
