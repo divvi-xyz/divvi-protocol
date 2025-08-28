@@ -54,7 +54,7 @@ describe('getLatestRewards', () => {
     it('should return the expected rewards file for a protocol', async () => {
       nock('https://storage.googleapis.com')
         .get(
-          '/bucket/kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
+          '/bucket/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         )
         .reply(200, mockRewardAmounts)
 
@@ -67,7 +67,7 @@ describe('getLatestRewards', () => {
 
       expect(result).toEqual({
         filename:
-          'kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
+          'kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         rewardAmounts: mockRewardAmounts,
       })
     })
@@ -105,9 +105,9 @@ describe('getLatestRewards', () => {
         },
       ]
 
-      nock('https://storage.googleapis.com')
+      nock('https://storage.googleapis.com/bucket')
         .get(
-          '/bucket/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
+          '/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         )
         .reply(200, mockRewardAmounts)
 
@@ -135,7 +135,9 @@ describe('getLatestRewards', () => {
           startTimestamp: '2025-01-01T00:00:00.000Z',
           endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
-      ).rejects.toThrow('No rewards file found for non-existent-protocol')
+      ).rejects.toThrow(
+        'No rewards file found for non-existent-protocol between 2025-01-01T00:00:00.000Z and 2025-02-01T00:00:00.000Z',
+      )
     })
 
     it('should throw error when no GCS files provided', async () => {
@@ -146,13 +148,15 @@ describe('getLatestRewards', () => {
           startTimestamp: '2025-01-01T00:00:00.000Z',
           endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
-      ).rejects.toThrow('No rewards file found for base-v0')
+      ).rejects.toThrow(
+        'No rewards file found for base-v0 between 2025-01-01T00:00:00.000Z and 2025-02-01T00:00:00.000Z',
+      )
     })
 
     it('should throw error when fetch fails with non-ok response', async () => {
       nock('https://storage.googleapis.com')
         .get(
-          '/bucket/kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
+          '/bucket/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         )
         .reply(404, 'File not found')
 
@@ -163,13 +167,15 @@ describe('getLatestRewards', () => {
           startTimestamp: '2025-01-01T00:00:00.000Z',
           endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
-      ).rejects.toThrow('Failed to fetch rewards file')
+      ).rejects.toThrow(
+        'No rewards file found for base-v0 between 2025-01-01T00:00:00.000Z and 2025-02-01T00:00:00.000Z',
+      )
     })
 
     it('should throw error when fetch throws an exception', async () => {
       nock('https://storage.googleapis.com')
         .get(
-          '/bucket/kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
+          '/bucket/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         )
         .replyWithError('Network error')
 
@@ -186,7 +192,7 @@ describe('getLatestRewards', () => {
     it('should throw error when JSON parsing fails', async () => {
       nock('https://storage.googleapis.com')
         .get(
-          '/bucket/kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
+          '/bucket/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         )
         .reply(200, 'Invalid JSON')
 

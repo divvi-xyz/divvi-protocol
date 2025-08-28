@@ -172,6 +172,8 @@ describe('redistributeValoraRewards', () => {
     expect(getLatestRewards).toHaveBeenCalledWith({
       gcsFiles: mockGcsFiles,
       protocol: 'celo-pg',
+      startTimestamp: '2025-07-01T00:00:00.000Z',
+      endTimestampExclusive: '2025-08-01T00:00:00.000Z',
     })
 
     // Verify claim transaction was proposed
