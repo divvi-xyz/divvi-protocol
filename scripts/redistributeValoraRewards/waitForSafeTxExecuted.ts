@@ -30,7 +30,7 @@ async function checkSafeTxExecuted(safeTxHash: string, networkId: NetworkId) {
 export async function waitForSafeTxExecuted(
   safeTxHash: string,
   networkId: NetworkId,
-  maxRetries: number = 30,
+  maxRetries: number = 10,
   initialDelay: number = 2000,
 ): Promise<void> {
   let delay = initialDelay
