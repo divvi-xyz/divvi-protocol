@@ -1,3 +1,4 @@
+import { Address } from 'viem'
 import { NetworkId } from '../types'
 
 export const NETWORK_ID_TO_SAFE_CONFIG: Partial<
@@ -34,3 +35,8 @@ export const NETWORK_ID_TO_SAFE_CONFIG: Partial<
     shortName: 'pol',
   },
 }
+
+export const VALORA_DIVVI_IDENTIFIER: Address =
+  '0x9eCfE3dDFAf1BB9B55f56b84471406893c5E29ad'
+export const VALORA_MEDIUM_SECURITY_SAFE_ADDRESS: Address =
+  '0xE8e569396A7580bb38f0F77685Fd2AA00f6adBA4'

@@ -149,20 +149,7 @@ export async function proposeSafeAddRewardsTx({
     }
     const safeTxUrl = `https://app.safe.global/transactions/tx?safe=${safeConfig.shortName}:${safeAddress}&id=${safeTxHash}`
 
-    console.info(
-      {
-        response,
-        safeTxHash,
-        safeAddress,
-        networkId,
-        rewardPoolAddress,
-        rewardAmounts,
-        valoraRewards,
-        safeTxUrl,
-      },
-      `Proposed Safe Add Rewards Tx`,
-    )
-    return safeTxUrl
+    return { safeTxUrl, safeTxHash }
   }
-  return null
+  return { safeTxUrl: null, safeTxHash: null }
 }

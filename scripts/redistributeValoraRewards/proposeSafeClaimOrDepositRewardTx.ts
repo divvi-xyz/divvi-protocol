@@ -110,19 +110,7 @@ export async function proposeSafeClaimOrDepositRewardTx({
     }
     const safeTxUrl = `https://app.safe.global/transactions/tx?safe=${safeConfig.shortName}:${safeAddress}&id=${safeTxHash}`
 
-    console.info(
-      {
-        response,
-        safeTxHash,
-        safeAddress,
-        networkId,
-        rewardPoolAddress,
-        rewardAmount,
-        safeTxUrl,
-      },
-      `Proposed Safe ${isClaiming ? 'Claim Reward' : 'Deposit'} Tx`,
-    )
-    return safeTxUrl
+    return { safeTxUrl, safeTxHash }
   }
-  return null
+  return { safeTxUrl: null, safeTxHash: null }
 }
