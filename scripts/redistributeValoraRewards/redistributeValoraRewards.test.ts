@@ -116,7 +116,11 @@ describe('redistributeValoraRewards', () => {
 
   it('should complete successfully when there are pending rewards', async () => {
     // Mock getViemPublicClient
-    jest.mocked(getViemPublicClient).mockReturnValue(mockViemClient as any)
+    jest
+      .mocked(getViemPublicClient)
+      .mockReturnValue(
+        mockViemClient as unknown as ReturnType<typeof getViemPublicClient>,
+      )
 
     // Mock contract call to return pending rewards
     mockViemClient.readContract.mockResolvedValue(BigInt('1000000000000000000'))
@@ -222,7 +226,11 @@ describe('redistributeValoraRewards', () => {
 
   it('should handle dry run mode correctly', async () => {
     // Mock getViemPublicClient
-    jest.mocked(getViemPublicClient).mockReturnValue(mockViemClient as any)
+    jest
+      .mocked(getViemPublicClient)
+      .mockReturnValue(
+        mockViemClient as unknown as ReturnType<typeof getViemPublicClient>,
+      )
 
     // Mock contract call to return pending rewards
     mockViemClient.readContract.mockResolvedValue(BigInt('1000000000000000000'))
@@ -267,7 +275,11 @@ describe('redistributeValoraRewards', () => {
 
   it('should throw error when rewards mismatch between contract and GCS', async () => {
     // Mock getViemPublicClient
-    jest.mocked(getViemPublicClient).mockReturnValue(mockViemClient as any)
+    jest
+      .mocked(getViemPublicClient)
+      .mockReturnValue(
+        mockViemClient as unknown as ReturnType<typeof getViemPublicClient>,
+      )
 
     // Mock contract call to return pending rewards
     mockViemClient.readContract.mockResolvedValue(BigInt('2000000000000000000')) // Different amount
@@ -296,7 +308,11 @@ describe('redistributeValoraRewards', () => {
 
   it('should do nothing when there are no pending rewards', async () => {
     // Mock getViemPublicClient
-    jest.mocked(getViemPublicClient).mockReturnValue(mockViemClient as any)
+    jest
+      .mocked(getViemPublicClient)
+      .mockReturnValue(
+        mockViemClient as unknown as ReturnType<typeof getViemPublicClient>,
+      )
 
     // Mock contract call to return no pending rewards
     mockViemClient.readContract.mockResolvedValue(BigInt(0))
@@ -325,7 +341,11 @@ describe('redistributeValoraRewards', () => {
 
   it('should handle case when VALORA_DIVVI_IDENTIFIER is not found in reward amounts', async () => {
     // Mock getViemPublicClient
-    jest.mocked(getViemPublicClient).mockReturnValue(mockViemClient as any)
+    jest
+      .mocked(getViemPublicClient)
+      .mockReturnValue(
+        mockViemClient as unknown as ReturnType<typeof getViemPublicClient>,
+      )
 
     // Mock contract call to return pending rewards
     mockViemClient.readContract.mockResolvedValue(BigInt('1000000000000000000'))
@@ -369,7 +389,11 @@ describe('redistributeValoraRewards', () => {
 
   it('should handle errors from proposeSafeClaimOrDepositRewardTx', async () => {
     // Mock getViemPublicClient
-    jest.mocked(getViemPublicClient).mockReturnValue(mockViemClient as any)
+    jest
+      .mocked(getViemPublicClient)
+      .mockReturnValue(
+        mockViemClient as unknown as ReturnType<typeof getViemPublicClient>,
+      )
 
     // Mock contract call to return pending rewards
     mockViemClient.readContract.mockResolvedValue(BigInt('1000000000000000000'))
@@ -403,7 +427,11 @@ describe('redistributeValoraRewards', () => {
 
   it('should handle errors from waitForSafeTxExecuted', async () => {
     // Mock getViemPublicClient
-    jest.mocked(getViemPublicClient).mockReturnValue(mockViemClient as any)
+    jest
+      .mocked(getViemPublicClient)
+      .mockReturnValue(
+        mockViemClient as unknown as ReturnType<typeof getViemPublicClient>,
+      )
 
     // Mock contract call to return pending rewards
     mockViemClient.readContract.mockResolvedValue(BigInt('1000000000000000000'))
@@ -448,7 +476,11 @@ describe('redistributeValoraRewards', () => {
 
   it('should handle errors from proposeSafeAddRewardsTx', async () => {
     // Mock getViemPublicClient
-    jest.mocked(getViemPublicClient).mockReturnValue(mockViemClient as any)
+    jest
+      .mocked(getViemPublicClient)
+      .mockReturnValue(
+        mockViemClient as unknown as ReturnType<typeof getViemPublicClient>,
+      )
 
     // Mock contract call to return pending rewards
     mockViemClient.readContract.mockResolvedValue(BigInt('1000000000000000000'))
