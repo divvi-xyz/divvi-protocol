@@ -1,5 +1,5 @@
 import { RedisClientType } from '@redis/client'
-import { KpiResults, NetworkId } from '../../../types'
+import { KpiResults, NetworkId, ReferredUser } from '../../../types'
 import { getBlockRange } from '../utils/events'
 import {
   Address,
@@ -21,7 +21,6 @@ import {
 } from '../../../utils/referrals'
 import { isEntryPointAddress } from './parseReferralTag/getUserOperations'
 import { TransactionInfo } from './parseReferralTag/getTransactionInfo'
-import { ReferredUser } from '../../../types'
 
 const MIN_ELIGIBLE_VALUE_IN_SMALLEST_UNIT = BigNumber(1).shiftedBy(6)
 const transferEventSigHash = toEventSelector(
