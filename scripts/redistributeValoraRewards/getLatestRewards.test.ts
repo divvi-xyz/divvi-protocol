@@ -51,7 +51,7 @@ describe('getLatestRewards', () => {
   })
 
   describe('success cases', () => {
-    it('should return the latest rewards file for a protocol', async () => {
+    it('should return the expected rewards file for a protocol', async () => {
       nock('https://storage.googleapis.com')
         .get(
           '/bucket/kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
@@ -61,6 +61,8 @@ describe('getLatestRewards', () => {
       const result = await getLatestRewards({
         gcsFiles: mockGcsFiles,
         protocol: 'base-v0' as Protocol,
+        startTimestamp: '2025-01-01T00:00:00.000Z',
+        endTimestampExclusive: '2025-02-01T00:00:00.000Z',
       })
 
       expect(result).toEqual({
@@ -70,7 +72,7 @@ describe('getLatestRewards', () => {
       })
     })
 
-    it('should filter files correctly by protocol', async () => {
+    it('should filter files correctly by protocol and period', async () => {
       nock('https://storage.googleapis.com')
         .get(
           '/bucket/kpi/celo-pg/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
@@ -80,37 +82,13 @@ describe('getLatestRewards', () => {
       const result = await getLatestRewards({
         gcsFiles: mockGcsFiles,
         protocol: 'celo-pg' as Protocol,
+        startTimestamp: '2025-01-01T00:00:00.000Z',
+        endTimestampExclusive: '2025-02-01T00:00:00.000Z',
       })
 
       expect(result).toEqual({
         filename:
           'kpi/celo-pg/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
-        rewardAmounts: mockRewardAmounts,
-      })
-    })
-
-    it('should handle single rewards file for a protocol', async () => {
-      const singleFileGcsFiles = [
-        {
-          name: 'kpi/scout-game-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
-          url: 'https://storage.googleapis.com/bucket/kpi/scout-game-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
-        },
-      ]
-
-      nock('https://storage.googleapis.com')
-        .get(
-          '/bucket/kpi/scout-game-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
-        )
-        .reply(200, mockRewardAmounts)
-
-      const result = await getLatestRewards({
-        gcsFiles: singleFileGcsFiles,
-        protocol: 'scout-game-v0' as Protocol,
-      })
-
-      expect(result).toEqual({
-        filename:
-          'kpi/scout-game-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         rewardAmounts: mockRewardAmounts,
       })
     })
@@ -136,6 +114,8 @@ describe('getLatestRewards', () => {
       const result = await getLatestRewards({
         gcsFiles: mixedFiles,
         protocol: 'base-v0' as Protocol,
+        startTimestamp: '2025-01-01T00:00:00.000Z',
+        endTimestampExclusive: '2025-02-01T00:00:00.000Z',
       })
 
       expect(result).toEqual({
@@ -152,6 +132,8 @@ describe('getLatestRewards', () => {
         getLatestRewards({
           gcsFiles: mockGcsFiles,
           protocol: 'non-existent-protocol' as Protocol,
+          startTimestamp: '2025-01-01T00:00:00.000Z',
+          endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
       ).rejects.toThrow('No rewards file found for non-existent-protocol')
     })
@@ -161,6 +143,8 @@ describe('getLatestRewards', () => {
         getLatestRewards({
           gcsFiles: [],
           protocol: 'base-v0' as Protocol,
+          startTimestamp: '2025-01-01T00:00:00.000Z',
+          endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
       ).rejects.toThrow('No rewards file found for base-v0')
     })
@@ -176,6 +160,8 @@ describe('getLatestRewards', () => {
         getLatestRewards({
           gcsFiles: mockGcsFiles,
           protocol: 'base-v0' as Protocol,
+          startTimestamp: '2025-01-01T00:00:00.000Z',
+          endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
       ).rejects.toThrow('Failed to fetch rewards file')
     })
@@ -191,6 +177,8 @@ describe('getLatestRewards', () => {
         getLatestRewards({
           gcsFiles: mockGcsFiles,
           protocol: 'base-v0' as Protocol,
+          startTimestamp: '2025-01-01T00:00:00.000Z',
+          endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
       ).rejects.toThrow('Network error')
     })
@@ -206,6 +194,8 @@ describe('getLatestRewards', () => {
         getLatestRewards({
           gcsFiles: mockGcsFiles,
           protocol: 'base-v0' as Protocol,
+          startTimestamp: '2025-01-01T00:00:00.000Z',
+          endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
       ).rejects.toThrow('Unexpected token')
     })

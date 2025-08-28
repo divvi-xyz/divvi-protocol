@@ -19,6 +19,18 @@ async function getArgs() {
       description: 'The protocol to redistribute valora rewards for',
       type: 'string',
     })
+    .option('start-timestamp', {
+      description:
+        'The start timestamp of the reward period to redistribute valora rewards for',
+      type: 'string',
+      required: true,
+    })
+    .option('end-timestamp-exclusive', {
+      description:
+        'The end timestamp exclusive of the reward period to redistribute valora rewards for',
+      type: 'string',
+      required: true,
+    })
     .option('dry-run', {
       description: 'Only show what would be done without actually doing it',
       type: 'boolean',
@@ -27,6 +39,8 @@ async function getArgs() {
 
   return {
     protocol: argv['protocol'],
+    startTimestamp: argv['start-timestamp'],
+    endTimestampExclusive: argv['end-timestamp-exclusive'],
     dryRun: argv['dry-run'],
   }
 }
@@ -61,6 +75,8 @@ export async function redistributeValoraRewards(
     const { filename, rewardAmounts } = await getLatestRewards({
       gcsFiles,
       protocol: campaign.protocol,
+      startTimestamp: args.startTimestamp,
+      endTimestampExclusive: args.endTimestampExclusive,
     })
 
     const valoraRewardsFromGcs =
