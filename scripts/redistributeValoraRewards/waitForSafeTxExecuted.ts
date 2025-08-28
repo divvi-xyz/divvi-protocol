@@ -33,6 +33,9 @@ export async function waitForSafeTxExecuted(
   maxRetries: number = 10,
   initialDelay: number = 2000,
 ): Promise<void> {
+  // Wait 1 minute before checking the status of the Safe transaction
+  await new Promise((resolve) => setTimeout(resolve, 1 * 60 * 1000))
+
   let delay = initialDelay
   let retries = 0
 
