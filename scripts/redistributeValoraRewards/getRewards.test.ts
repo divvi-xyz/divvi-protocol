@@ -132,7 +132,7 @@ describe('getRewards', () => {
           endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
       ).rejects.toThrow(
-        'No rewards file found for non-existent-protocol between 2025-01-01T00:00:00.000Z and 2025-02-01T00:00:00.000Z',
+        'No rewards file found for non-existent-protocol for period 2025-01-01T00:00:00.000Z to 2025-02-01T00:00:00.000Z',
       )
     })
 
@@ -145,7 +145,7 @@ describe('getRewards', () => {
           endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
       ).rejects.toThrow(
-        'No rewards file found for base-v0 between 2025-01-01T00:00:00.000Z and 2025-02-01T00:00:00.000Z',
+        'No rewards file found for base-v0 for period 2025-01-01T00:00:00.000Z to 2025-02-01T00:00:00.000Z',
       )
     })
 
@@ -164,7 +164,7 @@ describe('getRewards', () => {
           endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
       ).rejects.toThrow(
-        'No rewards file found for base-v0 between 2025-01-01T00:00:00.000Z and 2025-02-01T00:00:00.000Z',
+        'No rewards file found for base-v0 for period 2025-01-01T00:00:00.000Z to 2025-02-01T00:00:00.000Z',
       )
     })
 
