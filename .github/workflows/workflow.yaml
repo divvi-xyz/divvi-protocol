@@ -119,7 +119,7 @@ jobs:
         with:
           project_id: divvi-production
           credentials_json: ${{ secrets.DIVVI_PRODUCTION_SERVICE_ACCOUNT_KEY }}
-      - uses: google-github-actions/setup-gcloud@cb1e50a9932213ecece00a606661ae9ca44f3397 # v2.2.0
+      - uses: google-github-actions/setup-gcloud@26f734c2779b00b7dda794207734c511110a4368 # v3.0.0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: 'package.json'

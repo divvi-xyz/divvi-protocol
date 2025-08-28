@@ -12,6 +12,13 @@ task('reward-pool:deploy', 'Deploy RewardPool contract')
     0,
     types.int,
   )
+  .addOptionalParam(
+    'protocolFee',
+    'Protocol fee numerator (denominator is 10^18)',
+    0,
+    types.int,
+  )
+  .addParam('reserveAddress', 'Address that will receive protocol fees')
   .addFlag('useDefender', 'Deploy using OpenZeppelin Defender')
   .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
   .setAction(async (taskArgs, hre) => {
@@ -34,6 +41,8 @@ task('reward-pool:deploy', 'Deploy RewardPool contract')
         ownerAddress,
         managerAddress,
         taskArgs.timelock,
+        taskArgs.protocolFee,
+        taskArgs.reserveAddress,
       ],
       {
         isUpgradeable: false,
