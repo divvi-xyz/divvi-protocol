@@ -14,7 +14,7 @@
 function calculateKpi(params): Promise<KpiResults>
 ```
 
-Defined in: [tetherV0/index.ts:256](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/tetherV0/index.ts#L256)
+Defined in: [tetherV0/index.ts:255](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/tetherV0/index.ts#L255)
 
 Calculates eligible transaction count for Tether (USDT) activity across multiple networks.
 
@@ -104,7 +104,7 @@ Promise resolving to KPI results grouped by referrer ID with per-network breakdo
 function calculateKpiBatch(__namedParameters): Promise<KpiResults>
 ```
 
-Defined in: [tetherV0/index.ts:352](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/tetherV0/index.ts#L352)
+Defined in: [tetherV0/index.ts:351](https://github.com/divvi-xyz/divvi-protocol/blob/main/scripts/calculateKpi/protocols/tetherV0/index.ts#L351)
 
 Batch version of calculateKpi that processes multiple users at once.
 
