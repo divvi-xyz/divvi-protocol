@@ -3,6 +3,11 @@ import * as sax from 'sax'
 import * as unzipper from 'unzipper'
 import { Address, isAddress } from 'viem'
 
+export type ExcludedReferrers = Record<
+  string,
+  { referrerId: string; shouldWarn?: boolean }
+>
+
 const valoraEntities: { referrerId: Address; shouldWarn?: boolean }[] = []
 
 // https://sanctionslist.ofac.treas.gov/Home/SdnList
@@ -57,15 +62,7 @@ export async function getOfacSdnAddresses(): Promise<
   })
 }
 
-export async function getDivviRewardsExcludedReferrers(): Promise<
-  Record<
-    string,
-    {
-      referrerId: string
-      shouldWarn?: boolean
-    }
-  >
-> {
+export async function getDivviRewardsExcludedReferrers(): Promise<ExcludedReferrers> {
   const ofacSdnAddresses = await getOfacSdnAddresses()
 
   const excludedReferrersMap: Record<

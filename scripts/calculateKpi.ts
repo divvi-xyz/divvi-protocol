@@ -1,6 +1,9 @@
-import calculateKpiHandlers from './calculateKpi/protocols'
+import {
+  calculateKpiBatchHandlers,
+  calculateKpiHandlers,
+} from './calculateKpi/protocols'
 import yargs from 'yargs'
-import { KpiResults, Protocol, protocols } from './types'
+import { KpiResults, Protocol, protocols, ReferredUser } from './types'
 import { ResultDirectory } from '../src/resultDirectory'
 import { RedisClientType } from '@redis/client'
 import { closeRedisClient, getRedisClient } from '../src/redis'
@@ -8,7 +11,8 @@ import { closeRedisClient, getRedisClient } from '../src/redis'
 // Buffer to account for time it takes for a referral to be registered, since the referral transaction is made first and the referral registration happens on a schedule
 const REFERRAL_TIME_BUFFER_IN_MS = 30 * 60 * 1000 // 30 minutes
 // Calculate KPIs for end users in batches to speed things up
-const BATCH_SIZE = 20
+const NUM_REQUESTS_PER_BATCH = 20
+const NUM_USERS_PER_REQUEST = 100
 
 interface ReferralData {
   referrerId: string
@@ -36,59 +40,135 @@ async function calculateKpiBatch({
 }): Promise<KpiResults> {
   const results: KpiResults = []
 
-  console.log(
-    `Calculating KPI for ${eligibleUsers.length} eligible users for campaign ${protocol} from ${startTimestamp.toISOString()} to ${endTimestampExclusive.toISOString()}`,
-  )
+  // Check if this protocol has a batch handler
+  const batchHandler = calculateKpiBatchHandlers[protocol]
 
-  for (let i = 0; i < eligibleUsers.length; i += batchSize) {
-    const batch = eligibleUsers.slice(i, i + batchSize)
-    const startTs = Date.now()
+  if (batchHandler) {
+    console.log(`Using batch handler for protocol ${protocol}`)
 
-    const batchPromises = batch.map(
-      async ({ referrerId, userAddress, timestamp }) => {
-        const referralTimestamp = new Date(
-          Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
+    // Filter out users whose referral timestamp is after the end date
+    const filteredUsers = eligibleUsers.filter(({ timestamp }) => {
+      const referralTimestamp = new Date(
+        Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
+      )
+      if (referralTimestamp.getTime() >= endTimestampExclusive.getTime()) {
+        console.log(
+          `Referral date is at or after end date (exclusive), skipping user (registration tx date: ${timestamp}) for campaign ${protocol}`,
         )
+        return false
+      }
+      return true
+    })
 
-        if (referralTimestamp.getTime() >= endTimestampExclusive.getTime()) {
-          console.log(
-            `Referral date is at or after end date (exclusive), skipping ${userAddress} (registration tx date: ${timestamp}) for campaign ${protocol}`,
-          )
-          return null
-        }
+    // Extract unique user addresses and associated data
+    const uniqueUserMap = new Map<
+      string,
+      { userAddress: string; timestamp: string; referrerId: string }
+    >()
 
-        const calculatedKpi = await calculateKpiHandlers[protocol]({
-          address: userAddress,
-          // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
-          // except for the tether campaign, since we check for the referral tag on all txs, so start from the start of the period to reduce defi llama calls
-          startTimestamp:
-            protocol !== 'tether-v0' &&
-            referralTimestamp.getTime() > startTimestamp.getTime()
-              ? referralTimestamp
-              : startTimestamp,
-          endTimestampExclusive,
-          redis,
-          referrerId,
+    filteredUsers.forEach((user) => {
+      if (!uniqueUserMap.has(user.userAddress.toLowerCase())) {
+        uniqueUserMap.set(user.userAddress.toLowerCase(), {
+          userAddress: user.userAddress,
+          timestamp: user.timestamp,
+          referrerId: user.referrerId,
         })
+      }
+    })
 
-        return Array.isArray(calculatedKpi)
-          ? calculatedKpi
-          : [{ ...calculatedKpi, userAddress, referrerId }]
-      },
-    )
+    const referredUsers: ReferredUser[] = Array.from(
+      uniqueUserMap.values(),
+    ).map((userData) => ({
+      address: userData.userAddress,
+      referrerId: userData.referrerId,
+      referralTimestamp: new Date(userData.timestamp),
+    }))
+    const requestsPerBatch = batchSize // number of parallel requests
+    const usersPerRequest = NUM_USERS_PER_REQUEST // number of users per hypersync request
 
-    const batchResults = (await Promise.all(batchPromises)).flat()
-    results.push(
-      ...batchResults.filter(
-        (result): result is NonNullable<typeof result> => result !== null,
-      ),
-    )
+    for (
+      let i = 0;
+      i < referredUsers.length;
+      i += requestsPerBatch * usersPerRequest
+    ) {
+      // Create all batches with their corresponding data upfront
+      const batches = Array.from({ length: requestsPerBatch }, (_, j) =>
+        referredUsers.slice(
+          i + j * usersPerRequest,
+          Math.min(i + (j + 1) * usersPerRequest, referredUsers.length),
+        ),
+      ).filter((batch) => batch.length > 0)
 
-    console.log(
-      `Processed batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)} for campaign ${protocol} in ${Date.now() - startTs}ms`,
-    )
+      const startTs = Date.now()
+
+      const batchResults = await Promise.all(
+        batches.map((batch) =>
+          batchHandler({
+            users: batch,
+            startTimestamp,
+            endTimestampExclusive,
+            redis,
+          }),
+        ),
+      )
+
+      console.log(
+        `Processed user batch ${Math.floor(i / (requestsPerBatch * usersPerRequest)) + 1} of ${Math.ceil(referredUsers.length / (requestsPerBatch * usersPerRequest))} for campaign ${protocol} in ${Date.now() - startTs}ms`,
+      )
+
+      results.push(...batchResults.flat())
+    }
+  } else {
+    // Fall back to the original per-user processing
+    console.log(`Using per-user processing for protocol ${protocol}`)
+
+    for (let i = 0; i < eligibleUsers.length; i += batchSize) {
+      const batch = eligibleUsers.slice(i, i + batchSize)
+      const startTs = Date.now()
+
+      const batchPromises = batch.map(
+        async ({ referrerId, userAddress, timestamp }) => {
+          const referralTimestamp = new Date(
+            Date.parse(timestamp) - REFERRAL_TIME_BUFFER_IN_MS,
+          )
+
+          if (referralTimestamp.getTime() >= endTimestampExclusive.getTime()) {
+            console.log(
+              `Referral date is at or after end date (exclusive), skipping ${userAddress} (registration tx date: ${timestamp}) for campaign ${protocol}`,
+            )
+            return null
+          }
+
+          const calculatedKpi = await calculateKpiHandlers[protocol]({
+            address: userAddress,
+            // if the referral happened after the start of the period, only calculate KPI from the referral block onwards so that we exclude user activity before the referral
+            startTimestamp:
+              referralTimestamp.getTime() > startTimestamp.getTime()
+                ? referralTimestamp
+                : startTimestamp,
+            endTimestampExclusive,
+            redis,
+            referrerId,
+          })
+
+          return Array.isArray(calculatedKpi)
+            ? calculatedKpi
+            : [{ ...calculatedKpi, userAddress, referrerId }]
+        },
+      )
+
+      const batchResults = (await Promise.all(batchPromises)).flat()
+      results.push(
+        ...batchResults.filter(
+          (result): result is NonNullable<typeof result> => result !== null,
+        ),
+      )
+
+      console.log(
+        `Processed batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(eligibleUsers.length / batchSize)} for campaign ${protocol} in ${Date.now() - startTs}ms`,
+      )
+    }
   }
-
   return results
 }
 
@@ -106,7 +186,7 @@ export async function calculateKpi(args: Awaited<ReturnType<typeof getArgs>>) {
 
   const allResults = await calculateKpiBatch({
     eligibleUsers,
-    batchSize: BATCH_SIZE,
+    batchSize: NUM_REQUESTS_PER_BATCH,
     protocol,
     startTimestamp,
     endTimestampExclusive,
