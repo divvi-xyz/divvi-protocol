@@ -14,6 +14,8 @@ import { getSafeOwners } from './getSafeOwners'
  * @param rewardAmount The amount to claim (as string or bigint)
  * @param isClaiming Whether to claim or deposit rewards
  * @param networkId The NetworkId for the Safe Transaction Service
+ * @param alchemyKey The Alchemy API key
+ * @param dryRun Whether to dry run the transaction
  */
 export async function proposeSafeClaimOrDepositRewardTx({
   safeAddress: rawSafeAddress,

@@ -3,7 +3,7 @@ import { listGCSFiles } from '../utils/uploadFileToCloudStorage'
 import { campaigns } from '../../src/campaigns'
 import { getViemPublicClient } from '../utils'
 import { rewardPoolAbi } from '../../abis/RewardPool'
-import { getLatestRewards } from './getLatestRewards'
+import { getRewards } from './getRewards'
 import { proposeSafeAddRewardsTx } from './proposeSafeAddRewardsTx'
 import { proposeSafeClaimOrDepositRewardTx } from './proposeSafeClaimOrDepositRewardTx'
 import { waitForSafeTxExecuted } from './waitForSafeTxExecuted'
@@ -72,7 +72,7 @@ export async function redistributeValoraRewards(
   if (rewards > BigInt(0)) {
     const gcsFiles = await listGCSFiles(process.env.BUCKET_NAME!)
     // Find the latest rewards file for this campaign
-    const { filename, rewardAmounts } = await getLatestRewards({
+    const { filename, rewardAmounts } = await getRewards({
       gcsFiles,
       protocol: campaign.protocol,
       startTimestamp: args.startTimestamp,

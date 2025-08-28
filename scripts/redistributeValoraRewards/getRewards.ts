@@ -1,8 +1,8 @@
 import { Address } from 'viem'
-import { Protocol } from '../../scripts/types'
+import { Protocol } from '../types'
 import { toPeriodFolderName } from '../utils/dateFormatting'
 
-export async function getLatestRewards({
+export async function getRewards({
   gcsFiles,
   protocol,
   startTimestamp,
@@ -36,10 +36,10 @@ export async function getLatestRewards({
     }
   } else if (rewardsFiles.length > 1) {
     throw new Error(
-      `Multiple rewards files found for ${protocol} between ${startTimestamp} and ${endTimestampExclusive}`,
+      `Multiple rewards files found for ${protocol} for period ${startTimestamp} to ${endTimestampExclusive}`,
     )
   }
   throw new Error(
-    `No rewards file found for ${protocol} between ${startTimestamp} and ${endTimestampExclusive}`,
+    `No rewards file found for ${protocol} for period ${startTimestamp} to ${endTimestampExclusive}`,
   )
 }

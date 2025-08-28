@@ -2,7 +2,7 @@ import { redistributeValoraRewards } from './redistributeValoraRewards'
 import { campaigns } from '../../src/campaigns'
 import { NetworkId } from '../types'
 import { getViemPublicClient } from '../utils'
-import { getLatestRewards } from './getLatestRewards'
+import { getRewards } from './getRewards'
 import { proposeSafeAddRewardsTx } from './proposeSafeAddRewardsTx'
 import { proposeSafeClaimOrDepositRewardTx } from './proposeSafeClaimOrDepositRewardTx'
 import { waitForSafeTxExecuted } from './waitForSafeTxExecuted'
@@ -13,8 +13,8 @@ jest.mock('../utils', () => ({
   getViemPublicClient: jest.fn(),
 }))
 
-jest.mock('./getLatestRewards', () => ({
-  getLatestRewards: jest.fn(),
+jest.mock('./getRewards', () => ({
+  getRewards: jest.fn(),
 }))
 
 jest.mock('./proposeSafeAddRewardsTx', () => ({
@@ -128,8 +128,8 @@ describe('redistributeValoraRewards', () => {
     // Mock listGCSFiles
     jest.mocked(listGCSFiles).mockResolvedValue(mockGcsFiles)
 
-    // Mock getLatestRewards
-    jest.mocked(getLatestRewards).mockResolvedValue({
+    // Mock getRewards
+    jest.mocked(getRewards).mockResolvedValue({
       filename:
         '2025-07-01T00:00:00.000Z_2025-08-01T00:00:00.000Z/rewards.json',
       rewardAmounts: mockRewardAmounts,
@@ -168,8 +168,8 @@ describe('redistributeValoraRewards', () => {
       args: ['0x9eCfE3dDFAf1BB9B55f56b84471406893c5E29ad'],
     })
 
-    // Verify getLatestRewards was called
-    expect(getLatestRewards).toHaveBeenCalledWith({
+    // Verify getRewards was called
+    expect(getRewards).toHaveBeenCalledWith({
       gcsFiles: mockGcsFiles,
       protocol: 'celo-pg',
       startTimestamp: '2025-07-01T00:00:00.000Z',
@@ -240,8 +240,8 @@ describe('redistributeValoraRewards', () => {
     // Mock listGCSFiles
     jest.mocked(listGCSFiles).mockResolvedValue(mockGcsFiles)
 
-    // Mock getLatestRewards
-    jest.mocked(getLatestRewards).mockResolvedValue({
+    // Mock getRewards
+    jest.mocked(getRewards).mockResolvedValue({
       filename:
         '2025-07-01T00:00:00.000Z_2025-08-01T00:00:00.000Z/rewards.json',
       rewardAmounts: mockRewardAmounts,
@@ -263,16 +263,12 @@ describe('redistributeValoraRewards', () => {
       dryRun: true,
     }
 
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
-
     await redistributeValoraRewards(args)
 
     // Verify transactions were proposed but not waited for
     expect(proposeSafeClaimOrDepositRewardTx).toHaveBeenCalledTimes(2)
     expect(proposeSafeAddRewardsTx).toHaveBeenCalledTimes(1)
     expect(waitForSafeTxExecuted).not.toHaveBeenCalled()
-
-    consoleSpy.mockRestore()
   })
 
   it('should throw error when rewards mismatch between contract and GCS', async () => {
@@ -289,8 +285,8 @@ describe('redistributeValoraRewards', () => {
     // Mock listGCSFiles
     jest.mocked(listGCSFiles).mockResolvedValue(mockGcsFiles)
 
-    // Mock getLatestRewards
-    jest.mocked(getLatestRewards).mockResolvedValue({
+    // Mock getRewards
+    jest.mocked(getRewards).mockResolvedValue({
       filename:
         '2025-07-01T00:00:00.000Z_2025-08-01T00:00:00.000Z/rewards.json',
       rewardAmounts: mockRewardAmounts,
@@ -355,7 +351,7 @@ describe('redistributeValoraRewards', () => {
     // Mock listGCSFiles
     jest.mocked(listGCSFiles).mockResolvedValue(mockGcsFiles)
 
-    // Mock getLatestRewards with no VALORA_DIVVI_IDENTIFIER
+    // Mock getRewards with no VALORA_DIVVI_IDENTIFIER
     const rewardAmountsWithoutValora = [
       {
         referrerId:
@@ -369,7 +365,7 @@ describe('redistributeValoraRewards', () => {
       },
     ]
 
-    jest.mocked(getLatestRewards).mockResolvedValue({
+    jest.mocked(getRewards).mockResolvedValue({
       filename:
         '2025-07-01T00:00:00.000Z_2025-08-01T00:00:00.000Z/rewards.json',
       rewardAmounts: rewardAmountsWithoutValora,
@@ -403,8 +399,8 @@ describe('redistributeValoraRewards', () => {
     // Mock listGCSFiles
     jest.mocked(listGCSFiles).mockResolvedValue(mockGcsFiles)
 
-    // Mock getLatestRewards
-    jest.mocked(getLatestRewards).mockResolvedValue({
+    // Mock getRewards
+    jest.mocked(getRewards).mockResolvedValue({
       filename:
         '2025-07-01T00:00:00.000Z_2025-08-01T00:00:00.000Z/rewards.json',
       rewardAmounts: mockRewardAmounts,
@@ -441,8 +437,8 @@ describe('redistributeValoraRewards', () => {
     // Mock listGCSFiles
     jest.mocked(listGCSFiles).mockResolvedValue(mockGcsFiles)
 
-    // Mock getLatestRewards
-    jest.mocked(getLatestRewards).mockResolvedValue({
+    // Mock getRewards
+    jest.mocked(getRewards).mockResolvedValue({
       filename:
         '2025-07-01T00:00:00.000Z_2025-08-01T00:00:00.000Z/rewards.json',
       rewardAmounts: mockRewardAmounts,
@@ -490,8 +486,8 @@ describe('redistributeValoraRewards', () => {
     // Mock listGCSFiles
     jest.mocked(listGCSFiles).mockResolvedValue(mockGcsFiles)
 
-    // Mock getLatestRewards
-    jest.mocked(getLatestRewards).mockResolvedValue({
+    // Mock getRewards
+    jest.mocked(getRewards).mockResolvedValue({
       filename:
         '2025-07-01T00:00:00.000Z_2025-08-01T00:00:00.000Z/rewards.json',
       rewardAmounts: mockRewardAmounts,

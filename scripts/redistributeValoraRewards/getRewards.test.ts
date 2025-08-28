@@ -1,9 +1,9 @@
 import { Address } from 'viem'
-import { Protocol } from '../../scripts/types'
-import { getLatestRewards } from './getLatestRewards'
+import { Protocol } from '../types'
+import { getRewards } from './getRewards'
 import nock, { restore, cleanAll } from 'nock'
 
-describe('getLatestRewards', () => {
+describe('getRewards', () => {
   const mockGcsFiles = [
     {
       name: 'kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
@@ -20,10 +20,6 @@ describe('getLatestRewards', () => {
     {
       name: 'kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
       url: 'https://storage.googleapis.com/bucket/kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
-    },
-    {
-      name: 'kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/kpi.json',
-      url: 'https://storage.googleapis.com/bucket/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/kpi.json',
     },
   ]
 
@@ -58,7 +54,7 @@ describe('getLatestRewards', () => {
         )
         .reply(200, mockRewardAmounts)
 
-      const result = await getLatestRewards({
+      const result = await getRewards({
         gcsFiles: mockGcsFiles,
         protocol: 'base-v0' as Protocol,
         startTimestamp: '2025-01-01T00:00:00.000Z',
@@ -79,7 +75,7 @@ describe('getLatestRewards', () => {
         )
         .reply(200, mockRewardAmounts)
 
-      const result = await getLatestRewards({
+      const result = await getRewards({
         gcsFiles: mockGcsFiles,
         protocol: 'celo-pg' as Protocol,
         startTimestamp: '2025-01-01T00:00:00.000Z',
@@ -111,7 +107,7 @@ describe('getLatestRewards', () => {
         )
         .reply(200, mockRewardAmounts)
 
-      const result = await getLatestRewards({
+      const result = await getRewards({
         gcsFiles: mixedFiles,
         protocol: 'base-v0' as Protocol,
         startTimestamp: '2025-01-01T00:00:00.000Z',
@@ -129,7 +125,7 @@ describe('getLatestRewards', () => {
   describe('error cases', () => {
     it('should throw error when no rewards file found for protocol', async () => {
       await expect(
-        getLatestRewards({
+        getRewards({
           gcsFiles: mockGcsFiles,
           protocol: 'non-existent-protocol' as Protocol,
           startTimestamp: '2025-01-01T00:00:00.000Z',
@@ -142,7 +138,7 @@ describe('getLatestRewards', () => {
 
     it('should throw error when no GCS files provided', async () => {
       await expect(
-        getLatestRewards({
+        getRewards({
           gcsFiles: [],
           protocol: 'base-v0' as Protocol,
           startTimestamp: '2025-01-01T00:00:00.000Z',
@@ -161,7 +157,7 @@ describe('getLatestRewards', () => {
         .reply(404, 'File not found')
 
       await expect(
-        getLatestRewards({
+        getRewards({
           gcsFiles: mockGcsFiles,
           protocol: 'base-v0' as Protocol,
           startTimestamp: '2025-01-01T00:00:00.000Z',
@@ -180,7 +176,7 @@ describe('getLatestRewards', () => {
         .replyWithError('Network error')
 
       await expect(
-        getLatestRewards({
+        getRewards({
           gcsFiles: mockGcsFiles,
           protocol: 'base-v0' as Protocol,
           startTimestamp: '2025-01-01T00:00:00.000Z',
@@ -197,7 +193,7 @@ describe('getLatestRewards', () => {
         .reply(200, 'Invalid JSON')
 
       await expect(
-        getLatestRewards({
+        getRewards({
           gcsFiles: mockGcsFiles,
           protocol: 'base-v0' as Protocol,
           startTimestamp: '2025-01-01T00:00:00.000Z',

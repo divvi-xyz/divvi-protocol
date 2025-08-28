@@ -22,6 +22,8 @@ import { getSafeOwners } from './getSafeOwners'
  * @param excludeReferrerIds The referrer ids to exclude from the rewards
  * @param rewardsFilename The filename of the rewards file (used as idempotency key)
  * @param networkId The NetworkId for the Safe Transaction Service
+ * @param alchemyKey The Alchemy API key
+ * @param dryRun Whether to dry run the transaction
  */
 export async function proposeSafeAddRewardsTx({
   safeAddress: rawSafeAddress,
