@@ -13,8 +13,6 @@ import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV
 import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
 import { main as calculateRewardsBaseV0 } from './calculateRewards/baseV0'
 import { main as calculateRewardsTetherV0 } from './calculateRewards/tetherV0'
-import { main as calculateRewardsMantleV0 } from './calculateRewards/mantleV0'
-import { main as calculateRewardsMorph } from './calculateRewards/morph'
 import { main as calculateRewardSlices } from './calculateRewards/slices'
 
 const excludedReferrersFromTetherV0 = [
