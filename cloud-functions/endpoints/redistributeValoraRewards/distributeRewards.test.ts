@@ -111,6 +111,7 @@ describe('distributeRewards', () => {
 
       expect(result).toBe(expectedTxHash)
       expect(mockPublicClient.simulateContract).toHaveBeenCalledWith({
+        account: expect.any(Object),
         address: campaign.valoraRewardsPoolAddress,
         abi: expect.any(Object),
         functionName: 'addRewards',
@@ -150,6 +151,7 @@ describe('distributeRewards', () => {
 
       expect(result).toBe(null)
       expect(mockPublicClient.simulateContract).toHaveBeenCalledWith({
+        account: expect.any(Object),
         address: campaign.valoraRewardsPoolAddress,
         abi: expect.any(Object),
         functionName: 'addRewards',
@@ -205,6 +207,7 @@ describe('distributeRewards', () => {
 
       expect(result).toBe(expectedTxHash)
       expect(mockPublicClient.simulateContract).toHaveBeenCalledWith({
+        account: expect.any(Object),
         address: campaign.valoraRewardsPoolAddress,
         abi: expect.any(Array),
         functionName: 'addRewards',

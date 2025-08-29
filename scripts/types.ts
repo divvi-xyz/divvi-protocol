@@ -6,6 +6,7 @@ export const protocols = [
   'aerodrome',
   'somm',
   'celo-pg',
+  'celo-pg-s1',
   'arbitrum',
   'velodrome',
   'fonbnk',
@@ -61,7 +62,7 @@ export interface TokenPriceData {
  */
 export interface KpiResult<T extends string = string> {
   kpi: number
-  metadata?: Record<T, number>
+  metadata?: Record<T, unknown>
 }
 
 export type KpiResults<T extends string = string> = (KpiResult<T> & {
@@ -76,6 +77,19 @@ export type CalculateKpiFn<T extends string = string> = (params: {
   referrerId: string
   redis?: RedisClientType
 }) => Promise<KpiResult<T> | KpiResults<T>>
+
+export type ReferredUser = {
+  address: string
+  referrerId: string
+  referralTimestamp: Date
+}
+
+export type CalculateKpiBatchFn<T extends string = string> = (params: {
+  users: ReferredUser[]
+  startTimestamp: Date
+  endTimestampExclusive: Date
+  redis?: RedisClientType
+}) => Promise<KpiResults<T>>
 
 export interface ReferralEvent {
   userAddress: string

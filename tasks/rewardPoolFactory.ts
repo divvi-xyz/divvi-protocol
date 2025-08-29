@@ -14,13 +14,27 @@ task(
 )
   .addOptionalParam(
     'ownerAddress',
-    'Address that will have the DEFAULT_ADMIN_ROLE',
+    'Address that will have the DEFAULT_ADMIN_ROLE on the factory',
   )
   .addOptionalParam(
     'transferDelay',
     'Delay in seconds before admin role can be transferred',
     ONE_DAY,
     types.int,
+  )
+  .addOptionalParam(
+    'defaultProtocolFee',
+    'Default protocol fee numerator (denominator is 10^18)',
+    0,
+    types.int,
+  )
+  .addParam(
+    'defaultReserveAddress',
+    'Default address that will receive protocol fees',
+  )
+  .addParam(
+    'defaultOwner',
+    'Default address that will have the DEFAULT_ADMIN_ROLE in created pools',
   )
   .addFlag('useDefender', 'Deploy using OpenZeppelin Defender')
   .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
@@ -47,6 +61,8 @@ task(
         ownerAddress,
         ownerAddress,
         futureTimelock,
+        taskArgs.defaultProtocolFee,
+        taskArgs.defaultReserveAddress,
       ],
       {
         isUpgradeable: false,
@@ -59,7 +75,14 @@ task(
     const factoryAddress = await deployContract(
       hre,
       CONTRACT_NAME,
-      [ownerAddress, taskArgs.transferDelay, implementationAddress],
+      [
+        ownerAddress,
+        taskArgs.transferDelay,
+        implementationAddress,
+        taskArgs.defaultProtocolFee,
+        taskArgs.defaultReserveAddress,
+        taskArgs.defaultOwner,
+      ],
       {
         isUpgradeable: true,
         useDefender: taskArgs.useDefender,

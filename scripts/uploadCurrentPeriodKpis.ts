@@ -13,9 +13,30 @@ import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV
 import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
 import { main as calculateRewardsBaseV0 } from './calculateRewards/baseV0'
 import { main as calculateRewardsTetherV0 } from './calculateRewards/tetherV0'
-import { main as calculateRewardsMantleV0 } from './calculateRewards/mantleV0'
-import { main as calculateRewardsMorph } from './calculateRewards/morph'
 import { main as calculateRewardSlices } from './calculateRewards/slices'
+
+const excludedReferrersFromTetherV0 = [
+  [
+    '0x45Cb8FbAf94CF87236c39c791a210c9605E18F06',
+    '0x19B324e287E9aBC4706a4Cd09d08d5281d481c42',
+    '0x747Cee5Bf7cCfD94371ee91BB8C9275Cd18A4f7e',
+    '0x4AEacDA4b6Df4d6c98EDddf1f1F2F4d7Ed81268d',
+    '0x48E8583049a03D10D621c8Bb907942ab83Cf25B0',
+    '0xdA404bFDA2a5dCDa88FD2aa9B9e0C32a677bc8eB',
+    '0xd59B83De618561c8FF4E98fC29a1b96ABcBFB18a',
+  ]
+    .map((address) => address.toLowerCase())
+    .reduce(
+      (acc, address) => {
+        acc[address] = {
+          referrerId: address,
+          shouldWarn: false,
+        }
+        return acc
+      },
+      {} as Record<string, { referrerId: string; shouldWarn: boolean }>,
+    ),
+]
 
 export interface Campaign {
   protocol: Protocol
@@ -113,6 +134,19 @@ const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '75000',
             proportionLinear: 0.1,
+          })
+        },
+        calculateRewardSlices: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }) => {
+          await calculateRewardSlices({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '300000',
+            rewardType: 'builder',
           })
         },
       },
@@ -256,6 +290,7 @@ const campaigns: Campaign[] = [
             startTimestamp,
             endTimestampExclusive,
             rewardAmount: '5000000000', // 5000 USDT
+            excludedReferrers: excludedReferrersFromTetherV0[0],
           })
         },
       },
@@ -272,66 +307,7 @@ const campaigns: Campaign[] = [
             startTimestamp,
             endTimestampExclusive,
             rewardAmount: '10000000000', // 10000 USDT
-          })
-        },
-      },
-    ],
-  },
-  {
-    protocol: 'mantle-v0',
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-08-01T00:00:00Z',
-        endTimestampExclusive: '2025-08-30T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsMantleV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-08-30T00:00:00Z',
-        endTimestampExclusive: '2025-09-30T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsMantleV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-          })
-        },
-      },
-    ],
-  },
-  {
-    protocol: 'morph',
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-08-01T00:00:00Z',
-        endTimestampExclusive: '2025-08-30T00:00:00Z',
-        calculateRewards: async (args) => {
-          await calculateRewardsMorph({
-            ...args,
-            rewardAmount: '0', // 15k$ TODO: adjust after ENG-527 is done
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-08-30T00:00:00Z',
-        endTimestampExclusive: '2025-09-30T00:00:00Z',
-        calculateRewards: async (args) => {
-          await calculateRewardsMorph({
-            ...args,
-            rewardAmount: '0', // 25k$ TODO: adjust after ENG-527 is done
+            excludedReferrers: {},
           })
         },
       },
@@ -406,6 +382,13 @@ export async function uploadCurrentPeriodKpis(
 
   // Due to the DefiLlama API rate limit, there is no point in parallelising the calculations across campaigns
   for (const campaign of campaignsToCalculate) {
+    if (campaign.rewardsPeriods.length === 0) {
+      console.log(
+        `Campaign ${campaign.protocol} has no rewards periods, skipping`,
+      )
+      continue
+    }
+
     const campaignStartTimestamp = Date.parse(
       campaign.rewardsPeriods[0].startTimestamp,
     )

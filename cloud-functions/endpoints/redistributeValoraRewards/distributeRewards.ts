@@ -109,6 +109,7 @@ export async function distributeRewards({
   const publicClient = getViemPublicClient(campaign.networkId)
 
   const { request } = await publicClient.simulateContract({
+    account,
     address: campaign.valoraRewardsPoolAddress,
     abi: IDEMPOTENT_REWARD_POOL_ABI,
     functionName: 'addRewards',

@@ -4,8 +4,9 @@ import { QueryResponse, Log } from '@envio-dev/hypersync-client'
 import { paginateQuery } from '../../../utils/hypersyncPagination'
 import { getHyperSyncClient, getViemPublicClient } from '../../../utils'
 import { BigNumber } from 'bignumber.js'
-import { calculateKpi } from './index'
+import { calculateKpi, calculateKpiBatch } from './index'
 import { getReferrerIdFromTx } from './parseReferralTag/getReferrerIdFromTx'
+import { ReferredUser } from '../../../types'
 
 // Mock dependencies
 jest.mock('../utils/events')
@@ -20,20 +21,58 @@ const mockGetReferrerIdFromTx = jest.mocked(getReferrerIdFromTx)
 
 const testAddress = '0x1234567890123456789012345678901234567890' as Address
 
+const getExpectedMetadata = (
+  value: BigNumber = BigNumber(2).shiftedBy(6),
+  txCount: number = 1,
+) => {
+  return {
+    ...[
+      'ethereum-mainnet',
+      'avalanche-mainnet',
+      'celo-mainnet',
+      'unichain-mainnet',
+      'ink-mainnet',
+      'op-mainnet',
+      'arbitrum-one',
+      'berachain-mainnet',
+    ].reduce(
+      (acc, chain) => {
+        acc[chain] = {
+          txCount,
+          addresses: [
+            testAddress,
+            '0x4567890123456789012345678901234567890123' as Address,
+          ],
+          totalValue: value,
+        }
+        return acc
+      },
+      {} as Record<
+        string,
+        { txCount: number; addresses: Address[]; totalValue: BigNumber }
+      >,
+    ),
+  }
+}
+
 // Mock the memoize function to disable memoization in tests
 jest.mock('@github/memoize', () => ({
   __esModule: true,
   default: (fn: unknown) => fn,
 }))
 
-const makeQueryResponse = (logs: Log[], nextBlock = 100): QueryResponse => ({
+const makeQueryResponse = (
+  logs: Log[],
+  nextBlock = 100,
+  fromAddresses?: Address[],
+): QueryResponse => ({
   data: {
     blocks: [],
-    transactions: logs.map((log) => ({
+    transactions: logs.map((log, index) => ({
       hash: log.transactionHash,
       to: '0x0000000000000000000000000000000000000000',
       input: '0xdoesnotmatter',
-      from: testAddress,
+      from: fromAddresses ? fromAddresses[index] || testAddress : testAddress,
     })),
     logs,
     traces: [],
@@ -341,16 +380,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
           kpi: 8, // 1 transaction * 8 networks
           referrerId: 'registered-referrer',
           userAddress: testAddress,
-          metadata: {
-            'ethereum-mainnet': 1,
-            'avalanche-mainnet': 1,
-            'celo-mainnet': 1,
-            'unichain-mainnet': 1,
-            'ink-mainnet': 1,
-            'op-mainnet': 1,
-            'arbitrum-one': 1,
-            'berachain-mainnet': 1,
-          },
+          metadata: getExpectedMetadata(),
         },
       ])
     })
@@ -455,46 +485,19 @@ describe('Tether V0 Protocol KPI Calculation', () => {
           kpi: 16, // 2 transactions * 8 networks
           referrerId: 'referrer1',
           userAddress: testAddress,
-          metadata: {
-            'ethereum-mainnet': 2,
-            'avalanche-mainnet': 2,
-            'celo-mainnet': 2,
-            'unichain-mainnet': 2,
-            'ink-mainnet': 2,
-            'op-mainnet': 2,
-            'arbitrum-one': 2,
-            'berachain-mainnet': 2,
-          },
+          metadata: getExpectedMetadata(BigNumber(4).shiftedBy(6), 2),
         },
         {
           kpi: 8, // 1 transaction * 8 networks
           referrerId: 'referrer2',
           userAddress: testAddress,
-          metadata: {
-            'ethereum-mainnet': 1,
-            'avalanche-mainnet': 1,
-            'celo-mainnet': 1,
-            'unichain-mainnet': 1,
-            'ink-mainnet': 1,
-            'op-mainnet': 1,
-            'arbitrum-one': 1,
-            'berachain-mainnet': 1,
-          },
+          metadata: getExpectedMetadata(),
         },
         {
           kpi: 8, // 1 transaction * 8 networks
           referrerId: 'referrer3',
           userAddress: testAddress,
-          metadata: {
-            'ethereum-mainnet': 1,
-            'avalanche-mainnet': 1,
-            'celo-mainnet': 1,
-            'unichain-mainnet': 1,
-            'ink-mainnet': 1,
-            'op-mainnet': 1,
-            'arbitrum-one': 1,
-            'berachain-mainnet': 1,
-          },
+          metadata: getExpectedMetadata(),
         },
       ])
     })
@@ -559,33 +562,207 @@ describe('Tether V0 Protocol KPI Calculation', () => {
           kpi: 8, // 1 transaction * 8 networks
           referrerId: 'referrer1',
           userAddress: testAddress,
-          metadata: {
-            'ethereum-mainnet': 1,
-            'avalanche-mainnet': 1,
-            'celo-mainnet': 1,
-            'unichain-mainnet': 1,
-            'ink-mainnet': 1,
-            'op-mainnet': 1,
-            'arbitrum-one': 1,
-            'berachain-mainnet': 1,
-          },
+          metadata: getExpectedMetadata(),
         },
         {
           kpi: 8, // 1 transaction * 8 networks
           referrerId: 'referrer2',
           userAddress: testAddress,
-          metadata: {
-            'ethereum-mainnet': 1,
-            'avalanche-mainnet': 1,
-            'celo-mainnet': 1,
-            'unichain-mainnet': 1,
-            'ink-mainnet': 1,
-            'op-mainnet': 1,
-            'arbitrum-one': 1,
-            'berachain-mainnet': 1,
-          },
+          metadata: getExpectedMetadata(),
         },
       ])
+    })
+  })
+
+  describe('calculateKpiBatch', () => {
+    const testUsers: ReferredUser[] = [
+      {
+        address: '0x1234567890123456789012345678901234567890',
+        referrerId: 'referrer1',
+        referralTimestamp: new Date(),
+      },
+      {
+        address: '0x2345678901234567890123456789012345678901',
+        referrerId: 'referrer1',
+        referralTimestamp: new Date(),
+      },
+      {
+        address: '0x3456789012345678901234567890123456789012',
+        referrerId: 'referrer1',
+        referralTimestamp: new Date(),
+      },
+    ]
+
+    const batchProps = {
+      users: testUsers,
+      startTimestamp,
+      endTimestampExclusive,
+    }
+
+    it('should calculate KPI for multiple users in a single batch', async () => {
+      // Mock paginateQuery to return transactions for multiple users
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse(
+          [
+            // User 1 transaction
+            {
+              data: ('0x' +
+                BigNumber(2)
+                  .shiftedBy(6)
+                  .toString(16)
+                  .padStart(64, '0')) as Hex,
+              topics: [
+                transferEventSigHash,
+                pad(testUsers[0].address as Address, { size: 32 }),
+                pad('0x4567890123456789012345678901234567890123' as Address, {
+                  size: 32,
+                }),
+                '0x0000000000000000000000000000000000000000000000000000000000000000',
+              ],
+              transactionHash: '0xabc123' as Hex,
+            },
+            // User 2 transaction
+            {
+              data: ('0x' +
+                BigNumber(2)
+                  .shiftedBy(6)
+                  .toString(16)
+                  .padStart(64, '0')) as Hex,
+              topics: [
+                transferEventSigHash,
+                pad(testUsers[1].address as Address, { size: 32 }),
+                pad('0x4567890123456789012345678901234567890123' as Address, {
+                  size: 32,
+                }),
+                '0x0000000000000000000000000000000000000000000000000000000000000000',
+              ],
+              transactionHash: '0xdef456' as Hex,
+            },
+            // User 3 transaction
+            {
+              data: ('0x' +
+                BigNumber(2)
+                  .shiftedBy(6)
+                  .toString(16)
+                  .padStart(64, '0')) as Hex,
+              topics: [
+                transferEventSigHash,
+                pad(testUsers[2].address as Address, { size: 32 }),
+                pad('0x4567890123456789012345678901234567890123' as Address, {
+                  size: 32,
+                }),
+                '0x0000000000000000000000000000000000000000000000000000000000000000',
+              ],
+              transactionHash: '0xghi789' as Hex,
+            },
+          ],
+          100,
+          testUsers.map((user) => user.address as Address),
+        )
+        await onPage(mockResponse)
+      })
+
+      // Mock getReferrerIdFromTx to return different referrers for each user
+      mockGetReferrerIdFromTx.mockImplementation(async (txHash: Hex) => {
+        if (txHash === '0xabc123')
+          return {
+            referrerId: 'referrer1',
+            user: testUsers[0].address as Address,
+          }
+        if (txHash === '0xdef456')
+          return {
+            referrerId: 'referrer2',
+            user: testUsers[1].address as Address,
+          }
+        if (txHash === '0xghi789')
+          return {
+            referrerId: 'referrer3',
+            user: testUsers[2].address as Address,
+          }
+        return null
+      })
+
+      const result = await calculateKpiBatch(batchProps)
+
+      // Should return results for all three users
+      expect(result).toHaveLength(3)
+
+      // Check that each user has their own result
+      const userAddresses = result.map((r) => r.userAddress)
+      expect(userAddresses).toContain(testUsers[0].address)
+      expect(userAddresses).toContain(testUsers[1].address)
+      expect(userAddresses).toContain(testUsers[2].address)
+
+      // Check that each user has the correct KPI (1 transaction * 8 networks)
+      result.forEach((userResult) => {
+        expect(userResult.kpi).toBe(8)
+      })
+    })
+
+    it('should handle empty user list', async () => {
+      // Mock paginateQuery to return no transactions for empty users
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse([])
+        await onPage(mockResponse)
+      })
+
+      const result = await calculateKpiBatch({
+        users: [],
+        startTimestamp,
+        endTimestampExclusive,
+      })
+
+      expect(result).toEqual([])
+    })
+
+    it('should filter out users with no eligible transactions', async () => {
+      // Mock paginateQuery to return no transactions
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse([])
+        await onPage(mockResponse)
+      })
+
+      const result = await calculateKpiBatch(batchProps)
+
+      expect(result).toEqual([])
+    })
+
+    it('should handle mixed scenarios with some users having transactions and others not', async () => {
+      // Mock paginateQuery to return transactions only for first user
+      mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
+        const mockResponse = makeQueryResponse([
+          {
+            data: ('0x' +
+              BigNumber(2).shiftedBy(6).toString(16).padStart(64, '0')) as Hex,
+            topics: [
+              transferEventSigHash,
+              pad(testUsers[0].address as Address, { size: 32 }),
+              pad('0x4567890123456789012345678901234567890123' as Address, {
+                size: 32,
+              }),
+              '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ],
+            transactionHash: '0xabc123' as Hex,
+          },
+        ])
+        await onPage(mockResponse)
+      })
+
+      mockGetReferrerIdFromTx.mockImplementation(async (txHash: Hex) => {
+        if (txHash === '0xabc123')
+          return {
+            referrerId: 'referrer1',
+            user: testUsers[0].address as Address,
+          }
+        return null
+      })
+
+      const result = await calculateKpiBatch(batchProps)
+
+      // Should only return result for the first user
+      expect(result).toHaveLength(1)
+      expect(result[0].userAddress).toBe(testUsers[0].address)
+      expect(result[0].kpi).toBe(8)
     })
   })
 })
