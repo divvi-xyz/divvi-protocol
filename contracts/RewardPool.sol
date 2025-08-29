@@ -151,7 +151,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   error InvalidProtocolFee(uint256 fee);
   error InvalidReserveAddress();
   error InvalidRewardFunctionAddress();
-  error PeriodInvalid(uint48 periodStart, uint48 periodEndExclusive);
+  error InvalidPeriod(uint48 periodStart, uint48 periodEndExclusive);
   error PeriodAlreadyProcessed(bytes32 periodId);
 
   // This is needed to prevent the implementation from being initialized
@@ -300,7 +300,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     uint48 periodEndExclusive
   ) internal pure returns (bytes32) {
     if (periodStart >= periodEndExclusive)
-      revert PeriodInvalid(periodStart, periodEndExclusive);
+      revert InvalidPeriod(periodStart, periodEndExclusive);
 
     return keccak256(abi.encode(periodStart, periodEndExclusive));
   }
