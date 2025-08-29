@@ -13,8 +13,6 @@ import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV
 import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
 import { main as calculateRewardsBaseV0 } from './calculateRewards/baseV0'
 import { main as calculateRewardsTetherV0 } from './calculateRewards/tetherV0'
-import { main as calculateRewardsMantleV0 } from './calculateRewards/mantleV0'
-import { main as calculateRewardsMorph } from './calculateRewards/morph'
 import { main as calculateRewardSlices } from './calculateRewards/slices'
 
 const excludedReferrersFromTetherV0 = [
@@ -310,66 +308,6 @@ const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '10000000000', // 10000 USDT
             excludedReferrers: {},
-          })
-        },
-      },
-    ],
-  },
-  {
-    protocol: 'mantle-v0',
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-08-01T00:00:00Z',
-        endTimestampExclusive: '2025-08-30T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsMantleV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-08-30T00:00:00Z',
-        endTimestampExclusive: '2025-09-30T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsMantleV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-          })
-        },
-      },
-    ],
-  },
-  {
-    protocol: 'morph',
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-08-01T00:00:00Z',
-        endTimestampExclusive: '2025-08-30T00:00:00Z',
-        calculateRewards: async (args) => {
-          await calculateRewardsMorph({
-            ...args,
-            rewardAmount: '0', // 15k$ TODO: adjust after ENG-527 is done
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-08-30T00:00:00Z',
-        endTimestampExclusive: '2025-09-30T00:00:00Z',
-        calculateRewards: async (args) => {
-          await calculateRewardsMorph({
-            ...args,
-            rewardAmount: '0', // 25k$ TODO: adjust after ENG-527 is done
           })
         },
       },
