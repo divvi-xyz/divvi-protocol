@@ -1144,9 +1144,14 @@ describe(CONTRACT_NAME, function () {
     describe('Add KPI', function () {
       it('allows owner to add and update kpis', async function () {
         await expect(
-          pool.addKpis(mockKpis, mockStartTime, mockEndTime, mockKpiFunctionId),
+          pool.updatePeriodKpis(
+            mockKpis,
+            mockStartTime,
+            mockEndTime,
+            mockKpiFunctionId,
+          ),
         )
-          .to.emit(rewardPool, 'AddKpi')
+          .to.emit(rewardPool, 'KpiUpdated')
           .withArgs(
             user1.address,
             mockRewardPeriodKey,
@@ -1155,7 +1160,7 @@ describe(CONTRACT_NAME, function () {
             mockEndTime,
             mockKpiFunctionId,
           )
-          .to.emit(rewardPool, 'AddKpi')
+          .to.emit(rewardPool, 'KpiUpdated')
           .withArgs(
             user2.address,
             mockRewardPeriodKey,
@@ -1166,18 +1171,26 @@ describe(CONTRACT_NAME, function () {
           )
 
         expect(
-          await rewardPool.periodKpis(mockRewardPeriodKey, user1.address),
+          await rewardPool.getPeriodKpi(
+            mockStartTime,
+            mockEndTime,
+            user1.address,
+          ),
         ).to.equal(100)
         expect(
-          await rewardPool.periodKpis(mockRewardPeriodKey, user2.address),
+          await rewardPool.getPeriodKpi(
+            mockStartTime,
+            mockEndTime,
+            user2.address,
+          ),
         ).to.equal(200)
 
-        expect(await rewardPool.processedPeriods(mockRewardPeriodKey)).to.equal(
-          false,
-        )
+        expect(
+          await rewardPool.isPeriodProcessed(mockStartTime, mockEndTime),
+        ).to.equal(false)
 
         await expect(
-          pool.addKpis(
+          pool.updatePeriodKpis(
             [
               {
                 referrerAddress: user1.address,
@@ -1189,7 +1202,7 @@ describe(CONTRACT_NAME, function () {
             mockKpiFunctionId,
           ),
         )
-          .to.emit(rewardPool, 'AddKpi')
+          .to.emit(rewardPool, 'KpiUpdated')
           .withArgs(
             user1.address,
             mockRewardPeriodKey,
@@ -1200,13 +1213,17 @@ describe(CONTRACT_NAME, function () {
           )
 
         expect(
-          await rewardPool.periodKpis(mockRewardPeriodKey, user1.address),
+          await rewardPool.getPeriodKpi(
+            mockStartTime,
+            mockEndTime,
+            user1.address,
+          ),
         ).to.equal(150)
       })
 
       it('allows owner to add kpis with zero kpi', async function () {
         await expect(
-          pool.addKpis(
+          pool.updatePeriodKpis(
             [
               {
                 referrerAddress: user1.address,
@@ -1222,7 +1239,7 @@ describe(CONTRACT_NAME, function () {
             mockKpiFunctionId,
           ),
         )
-          .to.emit(rewardPool, 'AddKpi')
+          .to.emit(rewardPool, 'KpiUpdated')
           .withArgs(
             user1.address,
             mockRewardPeriodKey,
@@ -1231,7 +1248,7 @@ describe(CONTRACT_NAME, function () {
             mockEndTime,
             mockKpiFunctionId,
           )
-          .to.emit(rewardPool, 'AddKpi')
+          .to.emit(rewardPool, 'KpiUpdated')
           .withArgs(
             user2.address,
             mockRewardPeriodKey,
@@ -1242,14 +1259,22 @@ describe(CONTRACT_NAME, function () {
           )
 
         expect(
-          await rewardPool.periodKpis(mockRewardPeriodKey, user1.address),
+          await rewardPool.getPeriodKpi(
+            mockStartTime,
+            mockEndTime,
+            user1.address,
+          ),
         ).to.equal(100)
         expect(
-          await rewardPool.periodKpis(mockRewardPeriodKey, user2.address),
+          await rewardPool.getPeriodKpi(
+            mockStartTime,
+            mockEndTime,
+            user2.address,
+          ),
         ).to.equal(0)
 
         await expect(
-          pool.addKpis(
+          pool.updatePeriodKpis(
             [
               {
                 referrerAddress: user1.address,
@@ -1261,7 +1286,7 @@ describe(CONTRACT_NAME, function () {
             mockKpiFunctionId,
           ),
         )
-          .to.emit(rewardPool, 'AddKpi')
+          .to.emit(rewardPool, 'KpiUpdated')
           .withArgs(
             user1.address,
             mockRewardPeriodKey,
@@ -1272,10 +1297,18 @@ describe(CONTRACT_NAME, function () {
           )
 
         expect(
-          await rewardPool.periodKpis(mockRewardPeriodKey, user1.address),
+          await rewardPool.getPeriodKpi(
+            mockStartTime,
+            mockEndTime,
+            user1.address,
+          ),
         ).to.equal(0)
         expect(
-          await rewardPool.periodKpis(mockRewardPeriodKey, user2.address),
+          await rewardPool.getPeriodKpi(
+            mockStartTime,
+            mockEndTime,
+            user2.address,
+          ),
         ).to.equal(0)
       })
 
@@ -1288,39 +1321,51 @@ describe(CONTRACT_NAME, function () {
         ]
 
         await expect(
-          pool.addKpis(kpis, mockStartTime, mockEndTime, mockKpiFunctionId),
+          pool.updatePeriodKpis(
+            kpis,
+            mockStartTime,
+            mockEndTime,
+            mockKpiFunctionId,
+          ),
         ).to.be.revertedWithCustomError(rewardPool, 'ZeroAddressNotAllowed')
       })
 
       it('reverts when start time is greater than end time', async function () {
         await expect(
-          pool.addKpis(mockKpis, mockEndTime, mockStartTime, mockKpiFunctionId),
-        ).to.be.revertedWithCustomError(rewardPool, 'RewardPeriodInvalid')
+          pool.updatePeriodKpis(
+            mockKpis,
+            mockEndTime,
+            mockStartTime,
+            mockKpiFunctionId,
+          ),
+        ).to.be.revertedWithCustomError(rewardPool, 'PeriodInvalid')
       })
 
       it('reverts if kpi period is already processed', async function () {
-        await pool.addKpis(
+        await pool.updatePeriodKpis(
           mockKpis,
           mockStartTime,
           mockEndTime,
           mockKpiFunctionId,
         )
 
-        await pool.processRewardPeriod(mockStartTime, mockEndTime, 100)
+        await pool.processPeriod(mockStartTime, mockEndTime, 100)
 
         await expect(
-          pool.addKpis(mockKpis, mockStartTime, mockEndTime, mockKpiFunctionId),
-        ).to.be.revertedWithCustomError(
-          rewardPool,
-          'RewardPeriodAlreadyProcessed',
-        )
+          pool.updatePeriodKpis(
+            mockKpis,
+            mockStartTime,
+            mockEndTime,
+            mockKpiFunctionId,
+          ),
+        ).to.be.revertedWithCustomError(rewardPool, 'PeriodAlreadyProcessed')
       })
 
       it('does not allow non-owner to add kpis', async function () {
         const poolWithStranger = pool.connect(stranger) as typeof rewardPool
 
         await expect(
-          poolWithStranger.addKpis(
+          poolWithStranger.updatePeriodKpis(
             mockKpis,
             mockStartTime,
             mockEndTime,
@@ -1333,18 +1378,18 @@ describe(CONTRACT_NAME, function () {
       })
     })
 
-    describe('Process Reward Period', function () {
+    describe('Process Period', function () {
       it('allows owner to process reward period and distribute rewards', async function () {
-        await pool.addKpis(
+        await pool.updatePeriodKpis(
           mockKpis,
           mockStartTime,
           mockEndTime,
           mockKpiFunctionId,
         )
 
-        await expect(pool.processRewardPeriod(mockStartTime, mockEndTime, 100))
-          .to.emit(rewardPool, 'RewardPeriodProcessed')
-          .withArgs(mockRewardPeriodKey, mockStartTime, mockEndTime, 100)
+        await expect(pool.processPeriod(mockStartTime, mockEndTime, 100))
+          .to.emit(rewardPool, 'PeriodProcessed')
+          .withArgs(mockRewardPeriodKey, mockStartTime, mockEndTime, 100, 99, 2)
           .to.emit(rewardPool, 'AddRewardWithIdempotency')
           .withArgs(user1.address, 33, getIdempotencyKey(user1.address), [
             mockStartTime,
@@ -1356,16 +1401,16 @@ describe(CONTRACT_NAME, function () {
             mockEndTime,
           ])
 
-        expect(await rewardPool.processedPeriods(mockRewardPeriodKey)).to.equal(
-          true,
-        )
+        expect(
+          await rewardPool.isPeriodProcessed(mockStartTime, mockEndTime),
+        ).to.equal(true)
 
         expect(await rewardPool.pendingRewards(user1.address)).to.equal(33)
         expect(await rewardPool.pendingRewards(user2.address)).to.equal(66)
       })
 
       it('handles some users with zero rewards', async function () {
-        await pool.addKpis(
+        await pool.updatePeriodKpis(
           [
             {
               referrerAddress: user1.address,
@@ -1381,9 +1426,16 @@ describe(CONTRACT_NAME, function () {
           mockKpiFunctionId,
         )
 
-        await expect(pool.processRewardPeriod(mockStartTime, mockEndTime, 100))
-          .to.emit(rewardPool, 'RewardPeriodProcessed')
-          .withArgs(mockRewardPeriodKey, mockStartTime, mockEndTime, 100)
+        await expect(pool.processPeriod(mockStartTime, mockEndTime, 100))
+          .to.emit(rewardPool, 'PeriodProcessed')
+          .withArgs(
+            mockRewardPeriodKey,
+            mockStartTime,
+            mockEndTime,
+            100,
+            100,
+            1,
+          )
           .to.emit(rewardPool, 'AddRewardWithIdempotency')
           .withArgs(user2.address, 100, getIdempotencyKey(user2.address), [
             mockStartTime,
@@ -1395,32 +1447,29 @@ describe(CONTRACT_NAME, function () {
       })
 
       it('reverts if reward period is already processed', async function () {
-        await pool.addKpis(
+        await pool.updatePeriodKpis(
           mockKpis,
           mockStartTime,
           mockEndTime,
           mockKpiFunctionId,
         )
 
-        await pool.processRewardPeriod(mockStartTime, mockEndTime, 100)
+        await pool.processPeriod(mockStartTime, mockEndTime, 100)
 
         await expect(
-          pool.processRewardPeriod(mockStartTime, mockEndTime, 100),
-        ).to.be.revertedWithCustomError(
-          rewardPool,
-          'RewardPeriodAlreadyProcessed',
-        )
+          pool.processPeriod(mockStartTime, mockEndTime, 100),
+        ).to.be.revertedWithCustomError(rewardPool, 'PeriodAlreadyProcessed')
       })
 
       it('reverts if reward period has no users / kpis', async function () {
-        await pool.addKpis(
+        await pool.updatePeriodKpis(
           mockKpis,
           mockStartTime,
           mockEndTime,
           mockKpiFunctionId,
         )
 
-        await pool.addKpis(
+        await pool.updatePeriodKpis(
           [
             {
               referrerAddress: user1.address,
@@ -1436,15 +1485,15 @@ describe(CONTRACT_NAME, function () {
           mockKpiFunctionId,
         )
         await expect(
-          pool.processRewardPeriod(mockStartTime, mockEndTime, 100),
-        ).to.be.revertedWithCustomError(rewardPool, 'RewardPeriodInvalid')
+          pool.processPeriod(mockStartTime, mockEndTime, 100),
+        ).to.be.revertedWithCustomError(rewardPool, 'PeriodInvalid')
       })
 
       it('does not allow non-owner to process reward period', async function () {
         const poolWithStranger = pool.connect(stranger) as typeof rewardPool
 
         await expect(
-          poolWithStranger.processRewardPeriod(mockStartTime, mockEndTime, 100),
+          poolWithStranger.processPeriod(mockStartTime, mockEndTime, 100),
         ).to.be.revertedWithCustomError(
           rewardPool,
           'AccessControlUnauthorizedAccount',

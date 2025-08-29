@@ -42,6 +42,12 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     bytes32 idempotencyKey;
   }
 
+  struct PeriodData {
+    mapping(address => uint256) kpis;
+    address[] users;
+    uint48 processedAt; // epoch seconds at which the period was processed and rewards distributed. 0 if not processed yet.
+  }
+
   // State variables
   address public poolToken;
   bool public isNativeToken;
@@ -50,9 +56,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   uint256 public totalPendingRewards;
   mapping(address => uint256) public pendingRewards;
   mapping(bytes32 => bool) public processedIdempotencyKeys;
-  mapping(bytes32 => mapping(address => uint256)) public periodKpis;
-  mapping(bytes32 => address[]) private periodUsers;
-  mapping(bytes32 => bool) public processedPeriods;
+  mapping(bytes32 => PeriodData) private _periods;
 
   // Protocol fee state variables
   uint256 public protocolFee;
@@ -100,19 +104,21 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     address newRewardFunctionAddress,
     address previousRewardFunctionAddress
   );
-  event AddKpi(
+  event KpiUpdated(
     address indexed user,
-    bytes32 indexed rewardPeriodKey,
+    bytes32 indexed periodId,
     uint256 amount,
-    uint256 rewardPeriodStart,
-    uint256 rewardPeriodEndExclusive,
+    uint256 periodStart,
+    uint256 periodEndExclusive,
     bytes32 kpiFunctionId
   );
-  event RewardPeriodProcessed(
-    bytes32 indexed rewardPeriodKey,
-    uint256 rewardPeriodStart,
-    uint256 rewardPeriodEndExclusive,
-    uint256 totalRewardAmount
+  event PeriodProcessed(
+    bytes32 indexed periodId,
+    uint256 periodStart,
+    uint256 periodEndExclusive,
+    uint256 totalRewardAmount,
+    uint256 totalIssuedRewardAmount,
+    uint256 numUsersRewarded
   );
 
   // Errors
@@ -143,11 +149,8 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   error InvalidProtocolFee(uint256 fee);
   error InvalidReserveAddress();
   error InvalidRewardFunctionAddress();
-  error RewardPeriodInvalid(
-    uint256 rewardPeriodStart,
-    uint256 rewardPeriodEndExclusive
-  );
-  error RewardPeriodAlreadyProcessed(bytes32 rewardPeriodKey);
+  error PeriodInvalid(uint256 periodStart, uint256 periodEndExclusive);
+  error PeriodAlreadyProcessed(bytes32 periodId);
 
   // This is needed to prevent the implementation from being initialized
   bool private initialized;
@@ -184,8 +187,8 @@ contract RewardPool is AccessControl, ReentrancyGuard {
 
     poolToken = _poolToken;
     isNativeToken = (_poolToken == NATIVE_TOKEN_ADDRESS);
-    rewardFunctionAddress = _rewardFunctionAddress;
 
+    _setRewardFunctionAddress(_rewardFunctionAddress);
     _setTimelock(_timelock);
     _setProtocolFee(_protocolFee);
     _setReserveAddress(_reserveAddress);
@@ -220,8 +223,8 @@ contract RewardPool is AccessControl, ReentrancyGuard {
 
     poolToken = _poolToken;
     isNativeToken = (_poolToken == NATIVE_TOKEN_ADDRESS);
-    rewardFunctionAddress = _rewardFunctionAddress;
 
+    _setRewardFunctionAddress(_rewardFunctionAddress);
     _setTimelock(_timelock);
     _setProtocolFee(_protocolFee);
     _setReserveAddress(_reserveAddress);
@@ -285,28 +288,40 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   }
 
   /**
-   * @dev Allows the owner to add kpis for a reward period
+   * @dev Internal function to get the period id
+   * @param periodStart Start of the reward period (unix timestamp)
+   * @param periodEndExclusive End of the reward period (unix timestamp)
+   * @return bytes32 period id
+   */
+  function _getPeriodId(
+    uint48 periodStart,
+    uint48 periodEndExclusive
+  ) internal pure returns (bytes32) {
+    if (periodStart >= periodEndExclusive)
+      revert PeriodInvalid(periodStart, periodEndExclusive);
+
+    return keccak256(abi.encode(periodStart, periodEndExclusive));
+  }
+
+  /**
+   * @dev Allows the owner to update kpis for a reward period
    * @param kpis Array of kpis to add
-   * @param rewardPeriodStart Start of the reward period (unix timestamp)
-   * @param rewardPeriodEndExclusive End of the reward period (unix timestamp)
+   * @param periodStart Start of the reward period (unix timestamp)
+   * @param periodEndExclusive End of the reward period (unix timestamp)
    * @param kpiFunctionId Bytes32 identifier of the kpi function (e.g., github commit hash)
    * @notice Allowed only for address with DEFAULT_ADMIN_ROLE
    */
-  function addKpis(
+  function updatePeriodKpis(
     IRewardFunction.Kpi[] calldata kpis,
-    uint256 rewardPeriodStart,
-    uint256 rewardPeriodEndExclusive,
+    uint48 periodStart,
+    uint48 periodEndExclusive,
     bytes32 kpiFunctionId
   ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    if (rewardPeriodStart >= rewardPeriodEndExclusive)
-      revert RewardPeriodInvalid(rewardPeriodStart, rewardPeriodEndExclusive);
+    bytes32 periodId = _getPeriodId(periodStart, periodEndExclusive);
 
-    bytes32 rewardPeriodKey = keccak256(
-      abi.encode(rewardPeriodStart, rewardPeriodEndExclusive)
-    );
+    PeriodData storage period = _periods[periodId];
 
-    if (processedPeriods[rewardPeriodKey])
-      revert RewardPeriodAlreadyProcessed(rewardPeriodKey);
+    if (period.processedAt != 0) revert PeriodAlreadyProcessed(periodId);
 
     for (uint256 i = 0; i < kpis.length; i++) {
       if (kpis[i].referrerAddress == address(0))
@@ -314,37 +329,35 @@ contract RewardPool is AccessControl, ReentrancyGuard {
 
       // if kpi is 0, remove the user from the period if already present
       if (kpis[i].kpi == 0) {
-        delete periodKpis[rewardPeriodKey][kpis[i].referrerAddress];
+        delete period.kpis[kpis[i].referrerAddress];
 
-        uint256 index = periodUsers[rewardPeriodKey].length;
+        uint256 index = period.users.length;
 
-        for (uint256 j = 0; j < periodUsers[rewardPeriodKey].length; j++) {
-          if (periodUsers[rewardPeriodKey][j] == kpis[i].referrerAddress) {
+        for (uint256 j = 0; j < period.users.length; j++) {
+          if (period.users[j] == kpis[i].referrerAddress) {
             index = j;
             break;
           }
         }
 
-        if (index < periodUsers[rewardPeriodKey].length) {
-          periodUsers[rewardPeriodKey][index] = periodUsers[rewardPeriodKey][
-            periodUsers[rewardPeriodKey].length - 1
-          ];
-          periodUsers[rewardPeriodKey].pop();
+        if (index < period.users.length) {
+          period.users[index] = period.users[period.users.length - 1];
+          period.users.pop();
         }
       } else {
-        if (periodKpis[rewardPeriodKey][kpis[i].referrerAddress] == 0) {
-          periodUsers[rewardPeriodKey].push(kpis[i].referrerAddress);
+        if (period.kpis[kpis[i].referrerAddress] == 0) {
+          period.users.push(kpis[i].referrerAddress);
         }
 
-        periodKpis[rewardPeriodKey][kpis[i].referrerAddress] = kpis[i].kpi;
+        period.kpis[kpis[i].referrerAddress] = kpis[i].kpi;
       }
 
-      emit AddKpi(
+      emit KpiUpdated(
         kpis[i].referrerAddress,
-        rewardPeriodKey,
+        periodId,
         kpis[i].kpi,
-        rewardPeriodStart,
-        rewardPeriodEndExclusive,
+        periodStart,
+        periodEndExclusive,
         kpiFunctionId
       );
     }
@@ -352,33 +365,32 @@ contract RewardPool is AccessControl, ReentrancyGuard {
 
   /**
    * @dev Allows the owner to process a reward period and distribute rewards
-   * @param rewardPeriodStart Start of the reward period (unix timestamp)
-   * @param rewardPeriodEndExclusive End of the reward period (unix timestamp)
+   * @param periodStart Start of the reward period (unix timestamp)
+   * @param periodEndExclusive End of the reward period (unix timestamp)
    * @param totalRewardAmount Total amount of rewards to distribute
    * @notice Allowed only for address with DEFAULT_ADMIN_ROLE
    */
-  function processRewardPeriod(
-    uint256 rewardPeriodStart,
-    uint256 rewardPeriodEndExclusive,
+  function processPeriod(
+    uint48 periodStart,
+    uint48 periodEndExclusive,
     uint256 totalRewardAmount
   ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    bytes32 rewardPeriodKey = keccak256(
-      abi.encode(rewardPeriodStart, rewardPeriodEndExclusive)
-    );
+    bytes32 periodId = _getPeriodId(periodStart, periodEndExclusive);
 
-    if (processedPeriods[rewardPeriodKey])
-      revert RewardPeriodAlreadyProcessed(rewardPeriodKey);
+    PeriodData storage period = _periods[periodId];
 
-    if (periodUsers[rewardPeriodKey].length == 0)
-      revert RewardPeriodInvalid(rewardPeriodStart, rewardPeriodEndExclusive);
+    if (period.processedAt != 0) revert PeriodAlreadyProcessed(periodId);
+
+    if (period.users.length == 0)
+      revert PeriodInvalid(periodStart, periodEndExclusive);
 
     IRewardFunction.Kpi[] memory kpis = new IRewardFunction.Kpi[](
-      periodUsers[rewardPeriodKey].length
+      period.users.length
     );
 
-    for (uint256 i = 0; i < periodUsers[rewardPeriodKey].length; i++) {
-      address user = periodUsers[rewardPeriodKey][i];
-      uint256 kpi = periodKpis[rewardPeriodKey][user];
+    for (uint256 i = 0; i < period.users.length; i++) {
+      address user = period.users[i];
+      uint256 kpi = period.kpis[user];
 
       kpis[i] = IRewardFunction.Kpi({referrerAddress: user, kpi: kpi});
     }
@@ -388,10 +400,13 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     ).calculateReward(kpis, totalRewardAmount);
 
     uint256[] memory rewardFunctionArgs = new uint256[](2);
-    rewardFunctionArgs[0] = rewardPeriodStart;
-    rewardFunctionArgs[1] = rewardPeriodEndExclusive;
+    rewardFunctionArgs[0] = periodStart;
+    rewardFunctionArgs[1] = periodEndExclusive;
 
-    for (uint256 i = 0; i < rewards.length; i++) {
+    uint256 totalIssuedRewardAmount = 0;
+    uint256 numUsersRewarded = 0;
+
+    for (uint32 i = 0; i < rewards.length; i++) {
       if (rewards[i].reward == 0) continue;
 
       RewardData memory rewardData = RewardData({
@@ -400,23 +415,57 @@ contract RewardPool is AccessControl, ReentrancyGuard {
         idempotencyKey: keccak256(
           abi.encode(
             rewards[i].referrerAddress,
-            rewardPeriodStart,
-            rewardPeriodEndExclusive
+            periodStart,
+            periodEndExclusive
           )
         )
       });
 
-      _addReward(rewardData, rewardFunctionArgs);
+      _addReward(rewardData, rewardFunctionArgs, i);
+      totalIssuedRewardAmount += rewards[i].reward;
+      numUsersRewarded++;
     }
 
-    emit RewardPeriodProcessed(
-      rewardPeriodKey,
-      rewardPeriodStart,
-      rewardPeriodEndExclusive,
-      totalRewardAmount
+    emit PeriodProcessed(
+      periodId,
+      periodStart,
+      periodEndExclusive,
+      totalRewardAmount,
+      totalIssuedRewardAmount,
+      numUsersRewarded
     );
 
-    processedPeriods[rewardPeriodKey] = true;
+    period.processedAt = uint48(block.timestamp);
+  }
+
+  /**
+   * @dev Returns the kpi of a user for a given period
+   * @param periodStart Start of the reward period (unix timestamp)
+   * @param periodEndExclusive End of the reward period (unix timestamp)
+   * @param user Address of the user
+   * @return uint256 kpi
+   */
+  function getPeriodKpi(
+    uint48 periodStart,
+    uint48 periodEndExclusive,
+    address user
+  ) external view returns (uint256) {
+    bytes32 periodId = _getPeriodId(periodStart, periodEndExclusive);
+    return _periods[periodId].kpis[user];
+  }
+
+  /**
+   * @dev Returns true if a period has been processed
+   * @param periodStart Start of the reward period (unix timestamp)
+   * @param periodEndExclusive End of the reward period (unix timestamp)
+   * @return bool true if the period has been processed
+   */
+  function isPeriodProcessed(
+    uint48 periodStart,
+    uint48 periodEndExclusive
+  ) external view returns (bool) {
+    bytes32 periodId = _getPeriodId(periodStart, periodEndExclusive);
+    return _periods[periodId].processedAt != 0;
   }
 
   /**
@@ -429,52 +478,56 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     RewardData[] calldata rewards,
     uint256[] calldata rewardFunctionArgs
   ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    for (uint256 i = 0; i < rewards.length; i++) {
-      if (rewards[i].user == address(0)) revert ZeroAddressNotAllowed(i);
-      if (rewards[i].amount == 0) revert RewardAmountMustBeGreaterThanZero(i);
-      if (rewards[i].idempotencyKey == bytes32(0))
-        revert EmptyIdempotencyKey(i);
-      _addReward(rewards[i], rewardFunctionArgs);
+    for (uint32 i = 0; i < rewards.length; i++) {
+      _addReward(rewards[i], rewardFunctionArgs, i);
     }
   }
 
   function _addReward(
     RewardData memory reward,
-    uint256[] memory rewardFunctionArgs
+    uint256[] memory rewardFunctionArgs,
+    uint32 index
   ) internal {
-    if (!processedIdempotencyKeys[reward.idempotencyKey]) {
-      processedIdempotencyKeys[reward.idempotencyKey] = true;
+    if (reward.user == address(0)) revert ZeroAddressNotAllowed(index);
+    if (reward.amount == 0) revert RewardAmountMustBeGreaterThanZero(index);
+    if (reward.idempotencyKey == bytes32(0)) revert EmptyIdempotencyKey(index);
 
-      uint256 feeAmount = Math.mulDiv(
-        reward.amount,
-        protocolFee,
-        FEE_DENOMINATOR
-      );
+    if (processedIdempotencyKeys[reward.idempotencyKey]) {
+      emit AddRewardSkipped(reward.user, reward.amount, reward.idempotencyKey);
+      return;
+    }
 
-      if (feeAmount > 0) {
-        _transferPoolToken(reserveAddress, feeAmount);
-        emit ProtocolFeeCollected(
-          reward.user,
-          reward.amount,
-          feeAmount,
-          protocolFee
-        );
-      }
+    processedIdempotencyKeys[reward.idempotencyKey] = true;
 
-      pendingRewards[reward.user] += reward.amount;
-      totalPendingRewards += reward.amount;
+    uint256 feeAmount = Math.mulDiv(
+      reward.amount,
+      protocolFee,
+      FEE_DENOMINATOR
+    );
 
-      // Old event for backwards compatibility
-      emit AddReward(reward.user, reward.amount, rewardFunctionArgs);
-      emit AddRewardWithIdempotency(
+    if (feeAmount > 0) {
+      _transferPoolToken(reserveAddress, feeAmount);
+      emit ProtocolFeeCollected(
         reward.user,
         reward.amount,
-        reward.idempotencyKey,
-        rewardFunctionArgs
+        feeAmount,
+        protocolFee
       );
-    } else {
-      emit AddRewardSkipped(reward.user, reward.amount, reward.idempotencyKey);
     }
+
+    pendingRewards[reward.user] += reward.amount;
+    totalPendingRewards += reward.amount;
+
+    // Old event for backwards compatibility
+    emit AddReward(reward.user, reward.amount, rewardFunctionArgs);
+    emit AddRewardWithIdempotency(
+      reward.user,
+      reward.amount,
+      reward.idempotencyKey,
+      rewardFunctionArgs
+    );
+
+    processedIdempotencyKeys[reward.idempotencyKey] = true;
   }
 
   /**
