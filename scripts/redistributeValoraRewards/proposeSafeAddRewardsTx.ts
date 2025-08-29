@@ -110,19 +110,6 @@ export async function proposeSafeAddRewardsTx({
 
   const safeTxHash = await protocolKit.getTransactionHash(safeTx)
 
-  console.info(
-    {
-      safeTxHash,
-      safeAddress,
-      networkId,
-      safeTx,
-      rewardPoolAddress,
-      rewardAmounts,
-      valoraRewards,
-    },
-    `Created Safe Add Rewards Tx`,
-  )
-
   // 3. Propose transaction to Safe Transaction Service
   if (!dryRun) {
     const response = await fetch(

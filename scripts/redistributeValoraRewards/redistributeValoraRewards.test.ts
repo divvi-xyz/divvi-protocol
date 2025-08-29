@@ -7,6 +7,7 @@ import { proposeSafeAddRewardsTx } from './proposeSafeAddRewardsTx'
 import { proposeSafeClaimOrDepositRewardTx } from './proposeSafeClaimOrDepositRewardTx'
 import { waitForSafeTxExecuted } from './waitForSafeTxExecuted'
 import { listGCSFiles } from '../utils/uploadFileToCloudStorage'
+import { checkAndProposeTokenApproval } from './checkAndProposeTokenApproval'
 
 // Mock all external dependencies
 jest.mock('../utils', () => ({
@@ -27,6 +28,10 @@ jest.mock('./proposeSafeClaimOrDepositRewardTx', () => ({
 
 jest.mock('./waitForSafeTxExecuted', () => ({
   waitForSafeTxExecuted: jest.fn(),
+}))
+
+jest.mock('./checkAndProposeTokenApproval', () => ({
+  checkAndProposeTokenApproval: jest.fn(),
 }))
 
 jest.mock('../utils/uploadFileToCloudStorage', () => ({
@@ -141,6 +146,12 @@ describe('redistributeValoraRewards', () => {
       .mockResolvedValueOnce(mockSafeTxResponse) // First call for claiming
       .mockResolvedValueOnce(mockSafeTxResponse) // Second call for depositing
 
+    // Mock checkAndProposeTokenApproval (no approval needed)
+    jest.mocked(checkAndProposeTokenApproval).mockResolvedValue({
+      safeTxUrl: null,
+      safeTxHash: null,
+    })
+
     // Mock proposeSafeAddRewardsTx
     jest.mocked(proposeSafeAddRewardsTx).mockResolvedValue(mockSafeTxResponse)
 
@@ -188,6 +199,17 @@ describe('redistributeValoraRewards', () => {
       dryRun: false,
     })
 
+    // Verify token approval was checked
+    expect(checkAndProposeTokenApproval).toHaveBeenCalledWith({
+      safeAddress: '0x9eCfE3dDFAf1BB9B55f56b84471406893c5E29ad',
+      rewardPoolAddress: campaigns.find((c) => c.protocol === 'celo-pg')!
+        .valoraRewardsPoolAddress,
+      rewardAmount: BigInt('1000000000000000000'),
+      networkId: NetworkId['celo-mainnet'],
+      alchemyKey: 'test-alchemy-key',
+      dryRun: false,
+    })
+
     // Verify deposit transaction was proposed
     expect(proposeSafeClaimOrDepositRewardTx).toHaveBeenNthCalledWith(2, {
       safeAddress: '0x9eCfE3dDFAf1BB9B55f56b84471406893c5E29ad',
@@ -215,7 +237,7 @@ describe('redistributeValoraRewards', () => {
         '2025-07-01T00:00:00.000Z_2025-08-01T00:00:00.000Z/rewards.json',
     })
 
-    // Verify all transactions were waited for
+    // Verify all transactions were waited for (claim + deposit + add rewards)
     expect(waitForSafeTxExecuted).toHaveBeenCalledTimes(3)
 
     // Verify success message
@@ -252,6 +274,12 @@ describe('redistributeValoraRewards', () => {
       .mocked(proposeSafeClaimOrDepositRewardTx)
       .mockResolvedValueOnce(mockSafeTxResponse)
       .mockResolvedValueOnce(mockSafeTxResponse)
+
+    // Mock checkAndProposeTokenApproval (no approval needed)
+    jest.mocked(checkAndProposeTokenApproval).mockResolvedValue({
+      safeTxUrl: null,
+      safeTxHash: null,
+    })
 
     // Mock proposeSafeAddRewardsTx
     jest.mocked(proposeSafeAddRewardsTx).mockResolvedValue(mockSafeTxResponse)
@@ -450,6 +478,12 @@ describe('redistributeValoraRewards', () => {
       .mockResolvedValueOnce(mockSafeTxResponse)
       .mockResolvedValueOnce(mockSafeTxResponse)
 
+    // Mock checkAndProposeTokenApproval (no approval needed)
+    jest.mocked(checkAndProposeTokenApproval).mockResolvedValue({
+      safeTxUrl: null,
+      safeTxHash: null,
+    })
+
     // Mock proposeSafeAddRewardsTx
     jest.mocked(proposeSafeAddRewardsTx).mockResolvedValue(mockSafeTxResponse)
 
@@ -499,6 +533,12 @@ describe('redistributeValoraRewards', () => {
       .mockResolvedValueOnce(mockSafeTxResponse)
       .mockResolvedValueOnce(mockSafeTxResponse)
 
+    // Mock checkAndProposeTokenApproval (no approval needed)
+    jest.mocked(checkAndProposeTokenApproval).mockResolvedValue({
+      safeTxUrl: null,
+      safeTxHash: null,
+    })
+
     // Mock waitForSafeTxExecuted
     jest.mocked(waitForSafeTxExecuted).mockResolvedValue(undefined)
 
@@ -516,6 +556,124 @@ describe('redistributeValoraRewards', () => {
 
     await expect(redistributeValoraRewards(args)).rejects.toThrow(
       'Add rewards transaction creation failed',
+    )
+  })
+
+  it('should handle case when token approval is needed', async () => {
+    // Mock getViemPublicClient
+    jest
+      .mocked(getViemPublicClient)
+      .mockReturnValue(
+        mockViemClient as unknown as ReturnType<typeof getViemPublicClient>,
+      )
+
+    // Mock contract call to return pending rewards
+    mockViemClient.readContract.mockResolvedValue(BigInt('1000000000000000000'))
+
+    // Mock listGCSFiles
+    jest.mocked(listGCSFiles).mockResolvedValue(mockGcsFiles)
+
+    // Mock getRewards
+    jest.mocked(getRewards).mockResolvedValue({
+      filename:
+        '2025-07-01T00:00:00.000Z_2025-08-01T00:00:00.000Z/rewards.json',
+      rewardAmounts: mockRewardAmounts,
+    })
+
+    // Mock proposeSafeClaimOrDepositRewardTx for claiming
+    jest
+      .mocked(proposeSafeClaimOrDepositRewardTx)
+      .mockResolvedValueOnce(mockSafeTxResponse) // First call for claiming
+      .mockResolvedValueOnce(mockSafeTxResponse) // Second call for depositing
+
+    // Mock checkAndProposeTokenApproval (approval needed)
+    jest.mocked(checkAndProposeTokenApproval).mockResolvedValue({
+      safeTxUrl: 'https://safe.example.com/approval/123',
+      safeTxHash:
+        '0xapprovalhash123456789012345678901234567890123456789012345678901234567890',
+    })
+
+    // Mock proposeSafeAddRewardsTx
+    jest.mocked(proposeSafeAddRewardsTx).mockResolvedValue(mockSafeTxResponse)
+
+    // Mock waitForSafeTxExecuted
+    jest.mocked(waitForSafeTxExecuted).mockResolvedValue(undefined)
+
+    const args = {
+      protocol: 'celo-pg',
+      startTimestamp: '2025-07-01T00:00:00.000Z',
+      endTimestampExclusive: '2025-08-01T00:00:00.000Z',
+      dryRun: false,
+    }
+
+    // Spy on console.log to verify output
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
+
+    await redistributeValoraRewards(args)
+
+    // Verify approval was checked and proposed
+    expect(checkAndProposeTokenApproval).toHaveBeenCalledWith({
+      safeAddress: '0x9eCfE3dDFAf1BB9B55f56b84471406893c5E29ad',
+      rewardPoolAddress: campaigns.find((c) => c.protocol === 'celo-pg')!
+        .valoraRewardsPoolAddress,
+      rewardAmount: BigInt('1000000000000000000'),
+      networkId: NetworkId['celo-mainnet'],
+      alchemyKey: 'test-alchemy-key',
+      dryRun: false,
+    })
+
+    // Verify approval transaction was waited for
+    expect(waitForSafeTxExecuted).toHaveBeenCalledWith(
+      '0xapprovalhash123456789012345678901234567890123456789012345678901234567890',
+      NetworkId['celo-mainnet'],
+    )
+
+    // Verify all transactions were waited for (claim + approval + deposit + add rewards)
+    expect(waitForSafeTxExecuted).toHaveBeenCalledTimes(4)
+
+    consoleSpy.mockRestore()
+  })
+
+  it('should handle errors from checkAndProposeTokenApproval', async () => {
+    // Mock getViemPublicClient
+    jest
+      .mocked(getViemPublicClient)
+      .mockReturnValue(
+        mockViemClient as unknown as ReturnType<typeof getViemPublicClient>,
+      )
+
+    // Mock contract call to return pending rewards
+    mockViemClient.readContract.mockResolvedValue(BigInt('1000000000000000000'))
+
+    // Mock listGCSFiles
+    jest.mocked(listGCSFiles).mockResolvedValue(mockGcsFiles)
+
+    // Mock getRewards
+    jest.mocked(getRewards).mockResolvedValue({
+      filename:
+        '2025-07-01T00:00:00.000Z_2025-08-01T00:00:00.000Z/rewards.json',
+      rewardAmounts: mockRewardAmounts,
+    })
+
+    // Mock proposeSafeClaimOrDepositRewardTx for claiming
+    jest
+      .mocked(proposeSafeClaimOrDepositRewardTx)
+      .mockResolvedValueOnce(mockSafeTxResponse) // First call for claiming
+
+    // Mock checkAndProposeTokenApproval to throw error
+    jest
+      .mocked(checkAndProposeTokenApproval)
+      .mockRejectedValue(new Error('Token approval failed'))
+
+    const args = {
+      protocol: 'celo-pg',
+      startTimestamp: '2025-07-01T00:00:00.000Z',
+      endTimestampExclusive: '2025-08-01T00:00:00.000Z',
+      dryRun: false,
+    }
+
+    await expect(redistributeValoraRewards(args)).rejects.toThrow(
+      'Token approval failed',
     )
   })
 })

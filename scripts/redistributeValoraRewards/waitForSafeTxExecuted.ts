@@ -1,7 +1,11 @@
 import { NetworkId } from '../types'
 import { NETWORK_ID_TO_SAFE_CONFIG } from './constants'
+import readline from 'readline'
 
-async function checkSafeTxExecuted(safeTxHash: string, networkId: NetworkId) {
+async function checkSafeTxExecutedAndSuccessful(
+  safeTxHash: string,
+  networkId: NetworkId,
+) {
   const safeConfig = NETWORK_ID_TO_SAFE_CONFIG[networkId]
 
   if (!safeConfig) {
@@ -22,62 +26,39 @@ async function checkSafeTxExecuted(safeTxHash: string, networkId: NetworkId) {
     throw new Error(`Failed to fetch transaction: ${response.statusText}`)
   }
 
-  const data = (await response.json()) as { isExecuted: boolean }
+  const data = (await response.json()) as {
+    isExecuted: boolean
+    isSuccessful: boolean
+  }
 
-  return data.isExecuted
+  return data.isExecuted && data.isSuccessful
 }
 
 export async function waitForSafeTxExecuted(
   safeTxHash: string,
   networkId: NetworkId,
-  maxRetries: number = 10,
-  initialDelay: number = 2000,
 ): Promise<void> {
-  // Wait 1 minute before checking the status of the Safe transaction
-  await new Promise((resolve) => setTimeout(resolve, 1 * 60 * 1000))
-
-  let delay = initialDelay
-  let retries = 0
-
-  while (retries < maxRetries) {
-    try {
-      const isExecuted = await checkSafeTxExecuted(safeTxHash, networkId)
-
-      if (isExecuted) {
-        console.log(`✅ Safe transaction ${safeTxHash} has been executed`)
-        return
-      }
-
-      console.log(
-        `⏳ Waiting for Safe transaction ${safeTxHash} to be executed... (attempt ${retries + 1}/${maxRetries})`,
-      )
-
-      // Wait with exponential backoff
-      await new Promise((resolve) => setTimeout(resolve, delay))
-
-      // Exponential backoff: double the delay for next iteration
-      delay *= 2
-      retries++
-    } catch (error) {
-      console.warn(
-        `⚠️ Error checking Safe transaction status (attempt ${retries + 1}/${maxRetries}):`,
-        error,
-      )
-
-      if (retries >= maxRetries - 1) {
-        throw new Error(
-          `Failed to confirm Safe transaction execution after ${maxRetries} attempts: ${error}`,
-        )
-      }
-
-      // Wait with exponential backoff even on error
-      await new Promise((resolve) => setTimeout(resolve, delay))
-      delay *= 2
-      retries++
-    }
-  }
-
-  throw new Error(
-    `Safe transaction ${safeTxHash} was not executed within the maximum retry limit`,
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  })
+  await new Promise((resolve) =>
+    rl.question(
+      'Press enter key when the Safe transaction has been signed and executed...',
+      resolve,
+    ),
   )
+  rl.close()
+  console.log('Waiting for Safe transaction to appear on chain...')
+  while (true) {
+    const isExecutedAndSuccessful = await checkSafeTxExecutedAndSuccessful(
+      safeTxHash,
+      networkId,
+    )
+    if (isExecutedAndSuccessful) {
+      break
+    }
+    await new Promise((resolve) => setTimeout(resolve, 60 * 1000))
+  }
+  console.log('Safe transaction executed on chain and successful')
 }

@@ -7,10 +7,12 @@ import { getRewards } from './getRewards'
 import { proposeSafeAddRewardsTx } from './proposeSafeAddRewardsTx'
 import { proposeSafeClaimOrDepositRewardTx } from './proposeSafeClaimOrDepositRewardTx'
 import { waitForSafeTxExecuted } from './waitForSafeTxExecuted'
+
 import {
   VALORA_DIVVI_IDENTIFIER,
   VALORA_MEDIUM_SECURITY_SAFE_ADDRESS,
 } from './constants'
+import { checkAndProposeTokenApproval } from './checkAndProposeTokenApproval'
 
 async function getArgs() {
   const argv = await yargs
@@ -115,7 +117,32 @@ export async function redistributeValoraRewards(
       console.log(
         `\n⏳ Waiting for claim transaction ${claimRewardsSafeTxHash} to be executed...`,
       )
-      await waitForSafeTxExecuted(claimRewardsSafeTxHash, campaign.networkId)
+      await waitForSafeTxExecuted(claimRewardsSafeTxHash!, campaign.networkId)
+    }
+
+    // Check and propose token approval before deposit
+    const { safeTxUrl: approvalSafeTxUrl, safeTxHash: approvalSafeTxHash } =
+      await checkAndProposeTokenApproval({
+        safeAddress: VALORA_DIVVI_IDENTIFIER,
+        rewardPoolAddress: campaign.valoraRewardsPoolAddress,
+        rewardAmount: rewards,
+        networkId: campaign.networkId,
+        alchemyKey: process.env.ALCHEMY_KEY!,
+        dryRun: args.dryRun,
+      })
+
+    if (approvalSafeTxUrl) {
+      console.log(
+        `\n\nToken approval Safe tx url: ${approvalSafeTxUrl}\nSign and execute the tx on the Safe to continue`,
+      )
+
+      // Wait until the approval tx is executed
+      if (!args.dryRun) {
+        console.log(
+          `\n⏳ Waiting for approval transaction ${approvalSafeTxHash} to be executed...`,
+        )
+        await waitForSafeTxExecuted(approvalSafeTxHash!, campaign.networkId)
+      }
     }
 
     const {
@@ -140,7 +167,7 @@ export async function redistributeValoraRewards(
       console.log(
         `\n⏳ Waiting for deposit transaction ${depositRewardsSafeTxHash} to be executed...`,
       )
-      await waitForSafeTxExecuted(depositRewardsSafeTxHash, campaign.networkId)
+      await waitForSafeTxExecuted(depositRewardsSafeTxHash!, campaign.networkId)
     }
 
     const { safeTxUrl: addRewardsSafeTxUrl, safeTxHash: addRewardsSafeTxHash } =
@@ -165,7 +192,7 @@ export async function redistributeValoraRewards(
       console.log(
         `\n⏳ Waiting for add rewards transaction ${addRewardsSafeTxHash} to be executed...`,
       )
-      await waitForSafeTxExecuted(addRewardsSafeTxHash, campaign.networkId)
+      await waitForSafeTxExecuted(addRewardsSafeTxHash!, campaign.networkId)
     }
 
     console.log(`\n\nRewards successfully redistributed for ${args.protocol}!`)

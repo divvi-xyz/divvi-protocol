@@ -72,18 +72,6 @@ export async function proposeSafeClaimOrDepositRewardTx({
 
   const safeTxHash = await protocolKit.getTransactionHash(safeTx)
 
-  console.info(
-    {
-      safeTxHash,
-      safeAddress,
-      networkId,
-      safeTx,
-      rewardPoolAddress,
-      rewardAmount,
-    },
-    `Created Safe ${isClaiming ? 'Claim Reward' : 'Deposit'} Tx`,
-  )
-
   // 3. Propose transaction to Safe Transaction Service
   if (!dryRun) {
     const response = await fetch(
