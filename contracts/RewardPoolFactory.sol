@@ -21,7 +21,7 @@ contract RewardPoolFactory is
   // Events
   event RewardPoolCreated(
     address indexed poolToken,
-    bytes32 rewardFunctionId,
+    address rewardFunctionAddress,
     address indexed owner,
     address indexed manager,
     uint256 timelock,
@@ -92,14 +92,14 @@ contract RewardPoolFactory is
   /**
    * @dev Creates a new RewardPool contract using minimal proxy pattern
    * @param _poolToken Address of the token used for rewards
-   * @param _rewardFunctionId Bytes32 identifier of the reward function (e.g. git commit hash)
+   * @param _rewardFunctionAddress Address of the reward function
    * @param _manager Address that will have MANAGER_ROLE in the RewardPool
    * @param _timelock Timestamp when manager withdrawals will be allowed
    * @return The address of the newly created RewardPool contract
    */
   function createRewardPool(
     address _poolToken,
-    bytes32 _rewardFunctionId,
+    address _rewardFunctionAddress,
     address _manager,
     uint256 _timelock
   ) external returns (address) {
@@ -110,7 +110,7 @@ contract RewardPoolFactory is
     address clone = implementation.clone();
     RewardPool(payable(clone)).initialize(
       _poolToken,
-      _rewardFunctionId,
+      _rewardFunctionAddress,
       defaultOwner,
       _manager,
       _timelock,
@@ -120,7 +120,7 @@ contract RewardPoolFactory is
 
     emit RewardPoolCreated(
       _poolToken,
-      _rewardFunctionId,
+      _rewardFunctionAddress,
       defaultOwner,
       _manager,
       _timelock,

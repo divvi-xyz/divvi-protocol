@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { Contract, TransactionReceipt } from 'ethers'
+import { Contract, TransactionReceipt, AbiCoder } from 'ethers'
 import hre from 'hardhat'
 import {
   loadFixture,
@@ -11,10 +11,6 @@ import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
 
 const CONTRACT_NAME = 'RewardPool'
 const NATIVE_TOKEN_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
-const MOCK_REWARD_FUNCTION_ID = hre.ethers.zeroPadValue(
-  '0xa1b2c3d4e5f67890abcdef1234567890abcdef12',
-  32,
-)
 const MOCK_REWARD_FUNCTION_ARGS = [1000, 2000]
 const WEEK_IN_SECONDS = 60 * 60 * 24 * 7
 const TIMELOCK = WEEK_IN_SECONDS
@@ -38,16 +34,20 @@ describe(CONTRACT_NAME, function () {
     const MockERC20 = await hre.ethers.getContractFactory('MockERC20')
     const mockERC20 = await MockERC20.deploy('MockERC20', 'MOCK')
 
+    const LinearReward = await hre.ethers.getContractFactory('LinearReward')
+    const linearReward = await LinearReward.deploy()
+
     const RewardPool = await hre.ethers.getContractFactory(CONTRACT_NAME)
 
     const tokenAddress =
       tokenType === 'native'
         ? NATIVE_TOKEN_ADDRESS
         : await mockERC20.getAddress()
+    const rewardFunctionAddress = await linearReward.getAddress()
 
     const implementation = await RewardPool.deploy(
       tokenAddress,
-      MOCK_REWARD_FUNCTION_ID,
+      rewardFunctionAddress,
       owner.address,
       manager.address,
       (await time.latest()) + TIMELOCK,
@@ -72,6 +72,7 @@ describe(CONTRACT_NAME, function () {
       user1,
       user2,
       stranger,
+      rewardFunctionAddress,
     }
   }
 
@@ -115,7 +116,7 @@ describe(CONTRACT_NAME, function () {
   describe('Initialization', function () {
     tokenTypes.forEach(function ({ tokenType, deployFixture }) {
       it(`initializes correclty with ${tokenType} token`, async function () {
-        const { rewardPool, mockERC20, owner, manager } =
+        const { rewardPool, mockERC20, owner, manager, rewardFunctionAddress } =
           await loadFixture(deployFixture)
 
         const expectedTokenAddress =
@@ -127,8 +128,8 @@ describe(CONTRACT_NAME, function () {
         expect(await rewardPool.isNativeToken()).to.equal(
           tokenType === 'native',
         )
-        expect(await rewardPool.rewardFunctionId()).to.equal(
-          MOCK_REWARD_FUNCTION_ID,
+        expect(await rewardPool.rewardFunctionAddress()).to.equal(
+          rewardFunctionAddress,
         )
         expect(
           await rewardPool.hasRole(
@@ -148,13 +149,13 @@ describe(CONTRACT_NAME, function () {
           .to.emit(rewardPool, 'PoolInitialized')
           .withArgs(
             expectedTokenAddress,
-            MOCK_REWARD_FUNCTION_ID,
+            rewardFunctionAddress,
             currentTimelock,
           )
       })
 
       it(`reverts when trying to initialize after deployment with ${tokenType} token`, async function () {
-        const { rewardPool, mockERC20, owner, manager } =
+        const { rewardPool, mockERC20, owner, manager, rewardFunctionAddress } =
           await loadFixture(deployFixture)
 
         const tokenAddress =
@@ -165,7 +166,7 @@ describe(CONTRACT_NAME, function () {
         await expect(
           rewardPool.initialize(
             tokenAddress,
-            MOCK_REWARD_FUNCTION_ID,
+            rewardFunctionAddress,
             owner.address,
             manager.address,
             (await time.latest()) + TIMELOCK,
@@ -1078,6 +1079,416 @@ describe(CONTRACT_NAME, function () {
             rewardAmount,
           )
         })
+      })
+    })
+  })
+
+  describe('KPI management', function () {
+    let rewardPool: Contract
+    let owner: HardhatEthersSigner
+    let user1: HardhatEthersSigner
+    let user2: HardhatEthersSigner
+    let stranger: HardhatEthersSigner
+    let pool: Contract
+    let rewardFunctionAddress: string
+    const mockKpiFunctionId = hre.ethers.keccak256(
+      hre.ethers.toUtf8Bytes('mock-kpi-function'),
+    )
+    const mockStartTime = 1000000
+    const mockEndTime = 2000000
+    const mockRewardPeriodKey = hre.ethers.keccak256(
+      AbiCoder.defaultAbiCoder().encode(
+        ['uint256', 'uint256'],
+        [mockStartTime, mockEndTime],
+      ),
+    )
+    let mockKpis: { referrerAddress: string; kpi: number }[]
+
+    function getIdempotencyKey(
+      user: string,
+      periodStart: number = mockStartTime,
+      periodEnd: number = mockEndTime,
+    ) {
+      return hre.ethers.keccak256(
+        AbiCoder.defaultAbiCoder().encode(
+          ['address', 'uint256', 'uint256'],
+          [user, periodStart, periodEnd],
+        ),
+      )
+    }
+
+    beforeEach(async function () {
+      const deployment = await loadFixture(deployERC20RewardPoolContract)
+      rewardPool = deployment.rewardPool
+      owner = deployment.owner
+      user1 = deployment.user1
+      user2 = deployment.user2
+      stranger = deployment.stranger
+      rewardFunctionAddress = deployment.rewardFunctionAddress
+
+      // Connect with owner
+      pool = rewardPool.connect(owner) as typeof rewardPool
+
+      mockKpis = [
+        {
+          referrerAddress: user1.address,
+          kpi: 100,
+        },
+        {
+          referrerAddress: user2.address,
+          kpi: 200,
+        },
+      ]
+    })
+
+    describe('Add KPI', function () {
+      it('allows owner to add and update kpis', async function () {
+        await expect(
+          pool.addKpis(mockKpis, mockStartTime, mockEndTime, mockKpiFunctionId),
+        )
+          .to.emit(rewardPool, 'AddKpi')
+          .withArgs(
+            user1.address,
+            mockRewardPeriodKey,
+            100,
+            mockStartTime,
+            mockEndTime,
+            mockKpiFunctionId,
+          )
+          .to.emit(rewardPool, 'AddKpi')
+          .withArgs(
+            user2.address,
+            mockRewardPeriodKey,
+            200,
+            mockStartTime,
+            mockEndTime,
+            mockKpiFunctionId,
+          )
+
+        expect(
+          await rewardPool.periodKpis(mockRewardPeriodKey, user1.address),
+        ).to.equal(100)
+        expect(
+          await rewardPool.periodKpis(mockRewardPeriodKey, user2.address),
+        ).to.equal(200)
+
+        expect(await rewardPool.processedPeriods(mockRewardPeriodKey)).to.equal(
+          false,
+        )
+
+        await expect(
+          pool.addKpis(
+            [
+              {
+                referrerAddress: user1.address,
+                kpi: 150,
+              },
+            ],
+            mockStartTime,
+            mockEndTime,
+            mockKpiFunctionId,
+          ),
+        )
+          .to.emit(rewardPool, 'AddKpi')
+          .withArgs(
+            user1.address,
+            mockRewardPeriodKey,
+            150,
+            mockStartTime,
+            mockEndTime,
+            mockKpiFunctionId,
+          )
+
+        expect(
+          await rewardPool.periodKpis(mockRewardPeriodKey, user1.address),
+        ).to.equal(150)
+      })
+
+      it('allows owner to add kpis with zero kpi', async function () {
+        await expect(
+          pool.addKpis(
+            [
+              {
+                referrerAddress: user1.address,
+                kpi: 100,
+              },
+              {
+                referrerAddress: user2.address,
+                kpi: 0,
+              },
+            ],
+            mockStartTime,
+            mockEndTime,
+            mockKpiFunctionId,
+          ),
+        )
+          .to.emit(rewardPool, 'AddKpi')
+          .withArgs(
+            user1.address,
+            mockRewardPeriodKey,
+            100,
+            mockStartTime,
+            mockEndTime,
+            mockKpiFunctionId,
+          )
+          .to.emit(rewardPool, 'AddKpi')
+          .withArgs(
+            user2.address,
+            mockRewardPeriodKey,
+            0,
+            mockStartTime,
+            mockEndTime,
+            mockKpiFunctionId,
+          )
+
+        expect(
+          await rewardPool.periodKpis(mockRewardPeriodKey, user1.address),
+        ).to.equal(100)
+        expect(
+          await rewardPool.periodKpis(mockRewardPeriodKey, user2.address),
+        ).to.equal(0)
+
+        await expect(
+          pool.addKpis(
+            [
+              {
+                referrerAddress: user1.address,
+                kpi: 0,
+              },
+            ],
+            mockStartTime,
+            mockEndTime,
+            mockKpiFunctionId,
+          ),
+        )
+          .to.emit(rewardPool, 'AddKpi')
+          .withArgs(
+            user1.address,
+            mockRewardPeriodKey,
+            0,
+            mockStartTime,
+            mockEndTime,
+            mockKpiFunctionId,
+          )
+
+        expect(
+          await rewardPool.periodKpis(mockRewardPeriodKey, user1.address),
+        ).to.equal(0)
+        expect(
+          await rewardPool.periodKpis(mockRewardPeriodKey, user2.address),
+        ).to.equal(0)
+      })
+
+      it('reverts when kpis are added for zero address', async function () {
+        const kpis = [
+          {
+            referrerAddress: hre.ethers.ZeroAddress,
+            kpi: 100,
+          },
+        ]
+
+        await expect(
+          pool.addKpis(kpis, mockStartTime, mockEndTime, mockKpiFunctionId),
+        ).to.be.revertedWithCustomError(rewardPool, 'ZeroAddressNotAllowed')
+      })
+
+      it('reverts when start time is greater than end time', async function () {
+        await expect(
+          pool.addKpis(mockKpis, mockEndTime, mockStartTime, mockKpiFunctionId),
+        ).to.be.revertedWithCustomError(rewardPool, 'RewardPeriodInvalid')
+      })
+
+      it('reverts if kpi period is already processed', async function () {
+        await pool.addKpis(
+          mockKpis,
+          mockStartTime,
+          mockEndTime,
+          mockKpiFunctionId,
+        )
+
+        await pool.processRewardPeriod(mockStartTime, mockEndTime, 100)
+
+        await expect(
+          pool.addKpis(mockKpis, mockStartTime, mockEndTime, mockKpiFunctionId),
+        ).to.be.revertedWithCustomError(
+          rewardPool,
+          'RewardPeriodAlreadyProcessed',
+        )
+      })
+
+      it('does not allow non-owner to add kpis', async function () {
+        const poolWithStranger = pool.connect(stranger) as typeof rewardPool
+
+        await expect(
+          poolWithStranger.addKpis(
+            mockKpis,
+            mockStartTime,
+            mockEndTime,
+            mockKpiFunctionId,
+          ),
+        ).to.be.revertedWithCustomError(
+          rewardPool,
+          'AccessControlUnauthorizedAccount',
+        )
+      })
+    })
+
+    describe('Process Reward Period', function () {
+      it('allows owner to process reward period and distribute rewards', async function () {
+        await pool.addKpis(
+          mockKpis,
+          mockStartTime,
+          mockEndTime,
+          mockKpiFunctionId,
+        )
+
+        await expect(pool.processRewardPeriod(mockStartTime, mockEndTime, 100))
+          .to.emit(rewardPool, 'RewardPeriodProcessed')
+          .withArgs(mockRewardPeriodKey, mockStartTime, mockEndTime, 100)
+          .to.emit(rewardPool, 'AddRewardWithIdempotency')
+          .withArgs(user1.address, 33, getIdempotencyKey(user1.address), [
+            mockStartTime,
+            mockEndTime,
+          ])
+          .to.emit(rewardPool, 'AddRewardWithIdempotency')
+          .withArgs(user2.address, 66, getIdempotencyKey(user2.address), [
+            mockStartTime,
+            mockEndTime,
+          ])
+
+        expect(await rewardPool.processedPeriods(mockRewardPeriodKey)).to.equal(
+          true,
+        )
+
+        expect(await rewardPool.pendingRewards(user1.address)).to.equal(33)
+        expect(await rewardPool.pendingRewards(user2.address)).to.equal(66)
+      })
+
+      it('handles some users with zero rewards', async function () {
+        await pool.addKpis(
+          [
+            {
+              referrerAddress: user1.address,
+              kpi: 0,
+            },
+            {
+              referrerAddress: user2.address,
+              kpi: 200,
+            },
+          ],
+          mockStartTime,
+          mockEndTime,
+          mockKpiFunctionId,
+        )
+
+        await expect(pool.processRewardPeriod(mockStartTime, mockEndTime, 100))
+          .to.emit(rewardPool, 'RewardPeriodProcessed')
+          .withArgs(mockRewardPeriodKey, mockStartTime, mockEndTime, 100)
+          .to.emit(rewardPool, 'AddRewardWithIdempotency')
+          .withArgs(user2.address, 100, getIdempotencyKey(user2.address), [
+            mockStartTime,
+            mockEndTime,
+          ])
+
+        expect(await rewardPool.pendingRewards(user1.address)).to.equal(0)
+        expect(await rewardPool.pendingRewards(user2.address)).to.equal(100)
+      })
+
+      it('reverts if reward period is already processed', async function () {
+        await pool.addKpis(
+          mockKpis,
+          mockStartTime,
+          mockEndTime,
+          mockKpiFunctionId,
+        )
+
+        await pool.processRewardPeriod(mockStartTime, mockEndTime, 100)
+
+        await expect(
+          pool.processRewardPeriod(mockStartTime, mockEndTime, 100),
+        ).to.be.revertedWithCustomError(
+          rewardPool,
+          'RewardPeriodAlreadyProcessed',
+        )
+      })
+
+      it('reverts if reward period has no users / kpis', async function () {
+        await pool.addKpis(
+          mockKpis,
+          mockStartTime,
+          mockEndTime,
+          mockKpiFunctionId,
+        )
+
+        await pool.addKpis(
+          [
+            {
+              referrerAddress: user1.address,
+              kpi: 0,
+            },
+            {
+              referrerAddress: user2.address,
+              kpi: 0,
+            },
+          ],
+          mockStartTime,
+          mockEndTime,
+          mockKpiFunctionId,
+        )
+        await expect(
+          pool.processRewardPeriod(mockStartTime, mockEndTime, 100),
+        ).to.be.revertedWithCustomError(rewardPool, 'RewardPeriodInvalid')
+      })
+
+      it('does not allow non-owner to process reward period', async function () {
+        const poolWithStranger = pool.connect(stranger) as typeof rewardPool
+
+        await expect(
+          poolWithStranger.processRewardPeriod(mockStartTime, mockEndTime, 100),
+        ).to.be.revertedWithCustomError(
+          rewardPool,
+          'AccessControlUnauthorizedAccount',
+        )
+      })
+    })
+
+    describe('Set Reward Function Address', function () {
+      it('allows owner to set reward function address', async function () {
+        const anotherRewardFunctionAddress =
+          '0x1234567890123456789012345678901234567890'
+        await expect(
+          pool.setRewardFunctionAddress(anotherRewardFunctionAddress),
+        )
+          .to.emit(rewardPool, 'RewardFunctionAddressUpdated')
+          .withArgs(anotherRewardFunctionAddress, rewardFunctionAddress)
+
+        expect(await rewardPool.rewardFunctionAddress()).to.equal(
+          anotherRewardFunctionAddress,
+        )
+      })
+
+      it('reverts if reward function address is zero address', async function () {
+        await expect(
+          pool.setRewardFunctionAddress(hre.ethers.ZeroAddress),
+        ).to.be.revertedWithCustomError(
+          rewardPool,
+          'InvalidRewardFunctionAddress',
+        )
+      })
+
+      it('does not allow non-owner to set reward function address', async function () {
+        const poolWithStranger = pool.connect(stranger) as typeof rewardPool
+        const anotherRewardFunctionAddress =
+          '0x1234567890123456789012345678901234567890'
+
+        await expect(
+          poolWithStranger.setRewardFunctionAddress(
+            anotherRewardFunctionAddress,
+          ),
+        ).to.be.revertedWithCustomError(
+          rewardPool,
+          'AccessControlUnauthorizedAccount',
+        )
       })
     })
   })
