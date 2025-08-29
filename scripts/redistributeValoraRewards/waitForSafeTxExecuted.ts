@@ -50,12 +50,14 @@ export async function waitForSafeTxExecuted(
   )
   rl.close()
   console.log('Waiting for Safe transaction to appear on chain...')
-  while (true) {
+  let isOnChain = false
+  while (!isOnChain) {
     const isExecutedAndSuccessful = await checkSafeTxExecutedAndSuccessful(
       safeTxHash,
       networkId,
     )
     if (isExecutedAndSuccessful) {
+      isOnChain = true
       break
     }
     await new Promise((resolve) => setTimeout(resolve, 60 * 1000))
