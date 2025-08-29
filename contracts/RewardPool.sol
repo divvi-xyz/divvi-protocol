@@ -110,14 +110,14 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     address indexed user,
     bytes32 indexed periodId,
     uint256 amount,
-    uint256 periodStart,
-    uint256 periodEndExclusive,
+    uint48 periodStart,
+    uint48 periodEndExclusive,
     bytes32 kpiFunctionId
   );
   event PeriodProcessed(
     bytes32 indexed periodId,
-    uint256 periodStart,
-    uint256 periodEndExclusive,
+    uint48 periodStart,
+    uint48 periodEndExclusive,
     uint256 totalRewardAmount,
     uint256 totalIssuedRewardAmount,
     uint256 numUsersRewarded
@@ -151,7 +151,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   error InvalidProtocolFee(uint256 fee);
   error InvalidReserveAddress();
   error InvalidRewardFunctionAddress();
-  error PeriodInvalid(uint256 periodStart, uint256 periodEndExclusive);
+  error PeriodInvalid(uint48 periodStart, uint48 periodEndExclusive);
   error PeriodAlreadyProcessed(bytes32 periodId);
 
   // This is needed to prevent the implementation from being initialized
