@@ -6,6 +6,7 @@ import {ReentrancyGuard} from '@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Math} from '@openzeppelin/contracts/utils/math/Math.sol';
+import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 import {IRewardFunction} from './rewardFunctions/IRewardFunction.sol';
 
 /**
@@ -14,6 +15,7 @@ import {IRewardFunction} from './rewardFunctions/IRewardFunction.sol';
  */
 contract RewardPool is AccessControl, ReentrancyGuard {
   using SafeERC20 for IERC20;
+  using EnumerableSet for EnumerableSet.AddressSet;
 
   // Constants
   address public constant NATIVE_TOKEN_ADDRESS =
@@ -44,7 +46,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
 
   struct PeriodData {
     mapping(address => uint256) kpis;
-    address[] users;
+    EnumerableSet.AddressSet users;
     uint48 processedAt; // epoch seconds at which the period was processed and rewards distributed. 0 if not processed yet.
   }
 
@@ -327,30 +329,8 @@ contract RewardPool is AccessControl, ReentrancyGuard {
       if (kpis[i].referrerAddress == address(0))
         revert ZeroAddressNotAllowed(i);
 
-      // if kpi is 0, remove the user from the period if already present
-      if (kpis[i].kpi == 0) {
-        delete period.kpis[kpis[i].referrerAddress];
-
-        uint256 index = period.users.length;
-
-        for (uint256 j = 0; j < period.users.length; j++) {
-          if (period.users[j] == kpis[i].referrerAddress) {
-            index = j;
-            break;
-          }
-        }
-
-        if (index < period.users.length) {
-          period.users[index] = period.users[period.users.length - 1];
-          period.users.pop();
-        }
-      } else {
-        if (period.kpis[kpis[i].referrerAddress] == 0) {
-          period.users.push(kpis[i].referrerAddress);
-        }
-
-        period.kpis[kpis[i].referrerAddress] = kpis[i].kpi;
-      }
+      period.users.add(kpis[i].referrerAddress);
+      period.kpis[kpis[i].referrerAddress] = kpis[i].kpi;
 
       emit KpiUpdated(
         kpis[i].referrerAddress,
@@ -381,15 +361,15 @@ contract RewardPool is AccessControl, ReentrancyGuard {
 
     if (period.processedAt != 0) revert PeriodAlreadyProcessed(periodId);
 
-    if (period.users.length == 0)
+    if (period.users.length() == 0)
       revert PeriodInvalid(periodStart, periodEndExclusive);
 
     IRewardFunction.Kpi[] memory kpis = new IRewardFunction.Kpi[](
-      period.users.length
+      period.users.length()
     );
 
-    for (uint256 i = 0; i < period.users.length; i++) {
-      address user = period.users[i];
+    for (uint256 i = 0; i < period.users.length(); i++) {
+      address user = period.users.at(i);
       uint256 kpi = period.kpis[user];
 
       kpis[i] = IRewardFunction.Kpi({referrerAddress: user, kpi: kpi});
@@ -452,6 +432,20 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   ) external view returns (uint256) {
     bytes32 periodId = _getPeriodId(periodStart, periodEndExclusive);
     return _periods[periodId].kpis[user];
+  }
+
+  /**
+   * @dev Returns the users for a given period
+   * @param periodStart Start of the reward period (unix timestamp)
+   * @param periodEndExclusive End of the reward period (unix timestamp)
+   * @return address[] array of users
+   */
+  function getPeriodUsers(
+    uint48 periodStart,
+    uint48 periodEndExclusive
+  ) external view returns (address[] memory) {
+    bytes32 periodId = _getPeriodId(periodStart, periodEndExclusive);
+    return _periods[periodId].users.values();
   }
 
   /**

@@ -1141,7 +1141,7 @@ describe(CONTRACT_NAME, function () {
       ]
     })
 
-    describe('Add KPI', function () {
+    describe('Update KPI', function () {
       it('allows owner to add and update kpis', async function () {
         await expect(
           pool.updatePeriodKpis(
@@ -1184,6 +1184,10 @@ describe(CONTRACT_NAME, function () {
             user2.address,
           ),
         ).to.equal(200)
+
+        expect(
+          await rewardPool.getPeriodUsers(mockStartTime, mockEndTime),
+        ).to.deep.equal([user1.address, user2.address])
 
         expect(
           await rewardPool.isPeriodProcessed(mockStartTime, mockEndTime),
@@ -1273,6 +1277,10 @@ describe(CONTRACT_NAME, function () {
           ),
         ).to.equal(0)
 
+        expect(
+          await rewardPool.getPeriodUsers(mockStartTime, mockEndTime),
+        ).to.deep.equal([user1.address, user2.address])
+
         await expect(
           pool.updatePeriodKpis(
             [
@@ -1310,6 +1318,10 @@ describe(CONTRACT_NAME, function () {
             user2.address,
           ),
         ).to.equal(0)
+
+        expect(
+          await rewardPool.getPeriodUsers(mockStartTime, mockEndTime),
+        ).to.deep.equal([user1.address, user2.address])
       })
 
       it('reverts when kpis are added for zero address', async function () {
@@ -1462,28 +1474,6 @@ describe(CONTRACT_NAME, function () {
       })
 
       it('reverts if reward period has no users / kpis', async function () {
-        await pool.updatePeriodKpis(
-          mockKpis,
-          mockStartTime,
-          mockEndTime,
-          mockKpiFunctionId,
-        )
-
-        await pool.updatePeriodKpis(
-          [
-            {
-              referrerAddress: user1.address,
-              kpi: 0,
-            },
-            {
-              referrerAddress: user2.address,
-              kpi: 0,
-            },
-          ],
-          mockStartTime,
-          mockEndTime,
-          mockKpiFunctionId,
-        )
         await expect(
           pool.processPeriod(mockStartTime, mockEndTime, 100),
         ).to.be.revertedWithCustomError(rewardPool, 'PeriodInvalid')
