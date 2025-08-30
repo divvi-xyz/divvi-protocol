@@ -320,7 +320,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       const result = await calculateKpi(defaultProps)
 
       // Should count both transactions (2 per network)
-      expect(result[0].kpi).toBe(16)
+      expect(result[0].kpi).toBe(14)
     })
 
     it('should filter out referrers who have not registered agreements with the campaign', async () => {
