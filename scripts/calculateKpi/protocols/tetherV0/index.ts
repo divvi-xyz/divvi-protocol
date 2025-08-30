@@ -37,8 +37,8 @@ const networkToTokenAddress: Partial<Record<NetworkId, Address>> = {
   [NetworkId['ink-mainnet']]: '0x0200C29006150606B650577BBE7B6248F58470c1',
   [NetworkId['op-mainnet']]: '0x01bff41798a0bcf287b996046ca68b395dbc1071',
   [NetworkId['arbitrum-one']]: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
-  [NetworkId['berachain-mainnet']]:
-    '0x779ded0c9e1022225f8e0630b35a9b54be713736',
+  // [NetworkId['berachain-mainnet']]:
+  //   '0x779ded0c9e1022225f8e0630b35a9b54be713736',
 }
 
 async function getEligibleTransactionsInfoByReferrer({
