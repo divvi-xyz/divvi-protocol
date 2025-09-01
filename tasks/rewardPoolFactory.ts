@@ -98,9 +98,37 @@ task('reward-pool-factory:upgrade', 'Upgrade RewardPoolFactory contract')
   .addParam('proxyAddress', 'Address of the RewardPoolFactory proxy')
   .addFlag('useDefender', 'Deploy using OpenZeppelin Defender')
   .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
+  .addFlag(
+    'callInitializeV2',
+    'Call initializeV2 reinitializer (for V1 to V2 upgrade)',
+  )
+  .addOptionalParam(
+    'defaultProtocolFee',
+    'Default protocol fee (e.g., 0.05 for 5%)',
+    '0',
+  )
+  .addOptionalParam(
+    'defaultReserveAddress',
+    'Default reserve address for protocol fees',
+  )
   .setAction(async (taskArgs, hre) => {
+    if (taskArgs.callInitializeV2 && !taskArgs.defaultReserveAddress) {
+      throw new Error(
+        'defaultReserveAddress is required when calling initializeV2',
+      )
+    }
+
     await upgradeContract(hre, CONTRACT_NAME, taskArgs.proxyAddress, {
       useDefender: taskArgs.useDefender,
       defenderDeploySalt: taskArgs.defenderDeploySalt,
+      defenderUpgradeApprovalProcessId:
+        taskArgs.defenderUpgradeApprovalProcessId,
+      ...(taskArgs.callInitializeV2 && {
+        reinitializerName: 'initializeV2',
+        reinitializerArgs: [
+          hre.ethers.parseEther(taskArgs.defaultProtocolFee),
+          taskArgs.defaultReserveAddress,
+        ],
+      }),
     })
   })

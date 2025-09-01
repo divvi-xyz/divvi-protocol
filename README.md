@@ -218,6 +218,30 @@ yarn hardhat divvi-registry:upgrade \
     --proxy-address 0x2f5E320698dB89CbefB810Fa19264103d99aAFB1
 ```
 
+To upgrade RewardPoolFactory from V1 to V2 (with protocol fee support), run:
+
+```bash
+# Local upgrade
+yarn hardhat reward-pool-factory:upgrade \
+    --network <NETWORK> \
+    --use-defender \
+    --defender-deploy-salt <SALT> \
+    --proxy-address <PROXY_ADDRESS> \
+    --call-initialize-v2 \
+    --default-protocol-fee <PROTOCOL_FEE> \
+    --default-reserve-address <RESERVE_ADDRESS>
+
+# With Defender (requires manual reinitializer call after approval)
+yarn hardhat reward-pool-factory:upgrade \
+    --network <NETWORK> \
+    --use-defender \
+    --defender-deploy-salt <SALT> \
+    --proxy-address <PROXY_ADDRESS> \
+    --call-initialize-v2 \
+    --default-protocol-fee <PROTOCOL_FEE> \
+    --default-reserve-address <RESERVE_ADDRESS>
+```
+
 To deploy DataAvailability, run:
 
 ```bash
