@@ -182,6 +182,9 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     if (initialized) revert AlreadyInitialized();
     initialized = true;
 
+    if (_owner == address(0)) revert ZeroAddressNotAllowed(0);
+    if (_manager == address(0)) revert ZeroAddressNotAllowed(1);
+
     _grantRole(DEFAULT_ADMIN_ROLE, _owner);
     _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
     _grantRole(MANAGER_ROLE, _manager);
@@ -217,6 +220,9 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     address _reserveAddress
   ) {
     initialized = true;
+
+    if (_owner == address(0)) revert ZeroAddressNotAllowed(0);
+    if (_manager == address(0)) revert ZeroAddressNotAllowed(1);
 
     _grantRole(DEFAULT_ADMIN_ROLE, _owner);
     _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
