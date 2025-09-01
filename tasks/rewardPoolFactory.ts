@@ -121,8 +121,6 @@ task('reward-pool-factory:upgrade', 'Upgrade RewardPoolFactory contract')
     await upgradeContract(hre, CONTRACT_NAME, taskArgs.proxyAddress, {
       useDefender: taskArgs.useDefender,
       defenderDeploySalt: taskArgs.defenderDeploySalt,
-      defenderUpgradeApprovalProcessId:
-        taskArgs.defenderUpgradeApprovalProcessId,
       ...(taskArgs.callInitializeV2 && {
         reinitializerName: 'initializeV2',
         reinitializerArgs: [
