@@ -218,7 +218,7 @@ yarn hardhat divvi-registry:upgrade \
     --proxy-address 0x2f5E320698dB89CbefB810Fa19264103d99aAFB1
 ```
 
-To upgrade RewardPoolFactory from V1 to V2 (with protocol fee support), run:
+To upgrade an existingRewardPoolFactory from V1 to V2 (with protocol fee support), run:
 
 ```bash
 # Local upgrade
