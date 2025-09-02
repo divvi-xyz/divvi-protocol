@@ -9,13 +9,13 @@ function calculateStage({
   uniqueWallets: number
   gasUsage: bigint
 }) {
-  if (uniqueWallets >= 1000000 && gasUsage >= 100000000000n) {
+  if (uniqueWallets >= 1_000_000 && gasUsage >= 100_000_000_000n) {
     return 4
-  } else if (uniqueWallets >= 10000 && gasUsage >= 50000000000n) {
+  } else if (uniqueWallets >= 10_000 && gasUsage >= 50_000_000_000n) {
     return 3
-  } else if (uniqueWallets >= 2500 && gasUsage >= 10000000000n) {
+  } else if (uniqueWallets >= 2_500 && gasUsage >= 10_000_000_000n) {
     return 2
-  } else if (uniqueWallets >= 100 && gasUsage >= 1000000000n) {
+  } else if (uniqueWallets >= 100 && gasUsage >= 1_000_000_000n) {
     return 1
   } else {
     return 0
