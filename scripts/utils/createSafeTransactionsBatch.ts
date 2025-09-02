@@ -71,7 +71,7 @@ export const createAddRewardSafeTransactionJSON = ({
           ),
         )
         rewardDataItems.push(
-          `${reward.referrerId}, ${reward.rewardAmount}, ${idempotencyKey}`,
+          `"${reward.referrerId}", "${reward.rewardAmount}", "${idempotencyKey}"`,
         )
       } else {
         users.push(reward.referrerId)
