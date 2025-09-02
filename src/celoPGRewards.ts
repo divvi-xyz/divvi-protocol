@@ -2,7 +2,13 @@ import { KpiRow } from './resultDirectory'
 import { BigNumber } from 'bignumber.js'
 import { getReferrerMetricsFromKpi } from '../scripts/calculateRewards/getReferrerMetricsFromKpi'
 
-export function calculateStage({ uniqueWallets, gasUsage }: { uniqueWallets: number, gasUsage: bigint }) {
+export function calculateStage({
+  uniqueWallets,
+  gasUsage,
+}: {
+  uniqueWallets: number
+  gasUsage: bigint
+}) {
   if (uniqueWallets >= 1000000 && gasUsage >= 100000000000n) {
     return 4
   } else if (uniqueWallets >= 10000 && gasUsage >= 50000000000n) {
@@ -76,7 +82,10 @@ export function calculateRewards({
         referralCount: referrerReferrals[referrerId],
         uniqueWallets: referrerReferrals[referrerId],
         gasUsage: referrerKpis[referrerId],
-        stage: calculateStage({ uniqueWallets: referrerReferrals[referrerId], gasUsage: referrerKpis[referrerId] }),
+        stage: calculateStage({
+          uniqueWallets: referrerReferrals[referrerId],
+          gasUsage: referrerKpis[referrerId],
+        }),
         rewardAmount: rewardAmount.toFixed(0, BigNumber.ROUND_DOWN),
       }
     },
