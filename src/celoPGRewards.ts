@@ -2,7 +2,7 @@ import { KpiRow } from './resultDirectory'
 import { BigNumber } from 'bignumber.js'
 import { getReferrerMetricsFromKpi } from '../scripts/calculateRewards/getReferrerMetricsFromKpi'
 
-export function calculateStage({
+function calculateStage({
   uniqueWallets,
   gasUsage,
 }: {
