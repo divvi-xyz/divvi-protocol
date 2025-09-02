@@ -6,7 +6,7 @@ import {ReentrancyGuard} from '@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Math} from '@openzeppelin/contracts/utils/math/Math.sol';
-import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
+import {EnumerableMap} from '@openzeppelin/contracts/utils/structs/EnumerableMap.sol';
 import {IRewardFunction} from './rewardFunctions/IRewardFunction.sol';
 
 /**
@@ -15,7 +15,7 @@ import {IRewardFunction} from './rewardFunctions/IRewardFunction.sol';
  */
 contract RewardPool is AccessControl, ReentrancyGuard {
   using SafeERC20 for IERC20;
-  using EnumerableSet for EnumerableSet.AddressSet;
+  using EnumerableMap for EnumerableMap.AddressToUintMap;
 
   // Constants
   address public constant NATIVE_TOKEN_ADDRESS =
@@ -45,8 +45,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   }
 
   struct PeriodData {
-    mapping(address => uint256) kpis;
-    EnumerableSet.AddressSet users;
+    EnumerableMap.AddressToUintMap kpis;
     uint48 processedAt; // epoch seconds at which the period was processed and rewards distributed. 0 if not processed yet.
   }
 
@@ -329,8 +328,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
       if (kpis[i].referrerAddress == address(0))
         revert ZeroAddressNotAllowed(i);
 
-      period.users.add(kpis[i].referrerAddress);
-      period.kpis[kpis[i].referrerAddress] = kpis[i].kpi;
+      period.kpis.set(kpis[i].referrerAddress, kpis[i].kpi);
 
       emit KpiUpdated(
         kpis[i].referrerAddress,
@@ -361,16 +359,15 @@ contract RewardPool is AccessControl, ReentrancyGuard {
 
     if (period.processedAt != 0) revert PeriodAlreadyProcessed(periodId);
 
-    if (period.users.length() == 0)
-      revert PeriodInvalid(periodStart, periodEndExclusive);
+    if (period.kpis.length() == 0)
+      revert InvalidPeriod(periodStart, periodEndExclusive);
 
     IRewardFunction.Kpi[] memory kpis = new IRewardFunction.Kpi[](
-      period.users.length()
+      period.kpis.length()
     );
 
-    for (uint256 i = 0; i < period.users.length(); i++) {
-      address user = period.users.at(i);
-      uint256 kpi = period.kpis[user];
+    for (uint256 i = 0; i < period.kpis.length(); i++) {
+      (address user, uint256 kpi) = period.kpis.at(i);
 
       kpis[i] = IRewardFunction.Kpi({referrerAddress: user, kpi: kpi});
     }
@@ -401,9 +398,11 @@ contract RewardPool is AccessControl, ReentrancyGuard {
         )
       });
 
-      _addReward(rewardData, rewardFunctionArgs, i);
-      totalIssuedRewardAmount += rewards[i].reward;
-      numUsersRewarded++;
+      if (_addReward(rewardData, rewardFunctionArgs, i)) {
+        // Only count if reward was added. This can only happen if a reward was manually issued for the period's idempotency key.
+        totalIssuedRewardAmount += rewards[i].reward;
+        numUsersRewarded++;
+      }
     }
 
     emit PeriodProcessed(
@@ -431,7 +430,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     address user
   ) external view returns (uint256) {
     bytes32 periodId = _getPeriodId(periodStart, periodEndExclusive);
-    return _periods[periodId].kpis[user];
+    return _periods[periodId].kpis.get(user);
   }
 
   /**
@@ -445,7 +444,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     uint48 periodEndExclusive
   ) external view returns (address[] memory) {
     bytes32 periodId = _getPeriodId(periodStart, periodEndExclusive);
-    return _periods[periodId].users.values();
+    return _periods[periodId].kpis.keys();
   }
 
   /**
@@ -481,14 +480,14 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     RewardData memory reward,
     uint256[] memory rewardFunctionArgs,
     uint32 index
-  ) internal {
+  ) internal returns (bool) {
     if (reward.user == address(0)) revert ZeroAddressNotAllowed(index);
     if (reward.amount == 0) revert RewardAmountMustBeGreaterThanZero(index);
     if (reward.idempotencyKey == bytes32(0)) revert EmptyIdempotencyKey(index);
 
     if (processedIdempotencyKeys[reward.idempotencyKey]) {
       emit AddRewardSkipped(reward.user, reward.amount, reward.idempotencyKey);
-      return;
+      return false;
     }
 
     processedIdempotencyKeys[reward.idempotencyKey] = true;
@@ -521,7 +520,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
       rewardFunctionArgs
     );
 
-    processedIdempotencyKeys[reward.idempotencyKey] = true;
+    return true;
   }
 
   /**

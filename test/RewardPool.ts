@@ -1350,7 +1350,7 @@ describe(CONTRACT_NAME, function () {
             mockStartTime,
             mockKpiFunctionId,
           ),
-        ).to.be.revertedWithCustomError(rewardPool, 'PeriodInvalid')
+        ).to.be.revertedWithCustomError(rewardPool, 'InvalidPeriod')
       })
 
       it('reverts if kpi period is already processed', async function () {
@@ -1458,6 +1458,39 @@ describe(CONTRACT_NAME, function () {
         expect(await rewardPool.pendingRewards(user2.address)).to.equal(100)
       })
 
+      it('does not add reward if idempotency key is already processed', async function () {
+        const idempotencyKey = getIdempotencyKey(user1.address)
+
+        await pool.addRewards(
+          [
+            {
+              user: user1.address,
+              amount: 100,
+              idempotencyKey,
+            },
+          ],
+          [mockStartTime, mockEndTime],
+        )
+
+        await pool.updatePeriodKpis(
+          mockKpis,
+          mockStartTime,
+          mockEndTime,
+          mockKpiFunctionId,
+        )
+
+        await expect(pool.processPeriod(mockStartTime, mockEndTime, 100))
+          .to.emit(rewardPool, 'PeriodProcessed')
+          .withArgs(mockRewardPeriodKey, mockStartTime, mockEndTime, 100, 66, 1)
+          .to.emit(rewardPool, 'AddRewardSkipped')
+          .withArgs(user1.address, 33, idempotencyKey)
+          .to.emit(rewardPool, 'AddRewardWithIdempotency')
+          .withArgs(user2.address, 66, getIdempotencyKey(user2.address), [
+            mockStartTime,
+            mockEndTime,
+          ])
+      })
+
       it('reverts if reward period is already processed', async function () {
         await pool.updatePeriodKpis(
           mockKpis,
@@ -1476,7 +1509,7 @@ describe(CONTRACT_NAME, function () {
       it('reverts if reward period has no users / kpis', async function () {
         await expect(
           pool.processPeriod(mockStartTime, mockEndTime, 100),
-        ).to.be.revertedWithCustomError(rewardPool, 'PeriodInvalid')
+        ).to.be.revertedWithCustomError(rewardPool, 'InvalidPeriod')
       })
 
       it('does not allow non-owner to process reward period', async function () {
