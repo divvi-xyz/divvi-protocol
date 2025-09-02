@@ -3,7 +3,7 @@ import { deployContract } from './helpers/deployHelpers'
 
 task('reward-pool:deploy', 'Deploy RewardPool contract')
   .addParam('poolToken', 'Address of the token used for rewards')
-  .addOptionalParam('rewardFunction', 'Identifier of the reward function')
+  .addParam('rewardFunctionAddress', 'Address of the reward function')
   .addOptionalParam('ownerAddress', 'Address to use as owner')
   .addOptionalParam('managerAddress', 'Address that will have MANAGER_ROLE')
   .addOptionalParam(
@@ -27,17 +27,12 @@ task('reward-pool:deploy', 'Deploy RewardPool contract')
 
     const managerAddress = taskArgs.managerAddress || ownerAddress
 
-    const rewardFunctionId = hre.ethers.zeroPadValue(
-      taskArgs.rewardFunction || '0x00',
-      32,
-    )
-
     await deployContract(
       hre,
       'RewardPool',
       [
         taskArgs.poolToken,
-        rewardFunctionId,
+        taskArgs.rewardFunctionAddress,
         ownerAddress,
         managerAddress,
         taskArgs.timelock,
