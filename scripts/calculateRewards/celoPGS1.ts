@@ -1,6 +1,6 @@
 import yargs from 'yargs'
 import { BigNumber } from 'bignumber.js'
-import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
+import { calculateRewards } from '../../src/celoPGRewards'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 
@@ -59,7 +59,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
 
   const kpiData = await resultDirectory.readKpi()
 
-  const rewards = calculateSqrtProportionalPrizeContest({
+  const rewards = calculateRewards({
     kpiData,
     rewards: BigNumber(rewardAmount),
     excludedReferrers: {},
