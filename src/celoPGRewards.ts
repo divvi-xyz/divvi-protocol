@@ -56,6 +56,7 @@ export function calculateRewards({
 
   const totalPower = Object.entries(referrerPowerKpis).reduce(
     (sum, [referrerId, value]) => {
+      // exclude referrers in the exclude list
       if (referrerId.toLowerCase() in excludedReferrers) {
         if (excludedReferrers[referrerId.toLowerCase()].shouldWarn) {
           console.warn(
@@ -68,6 +69,7 @@ export function calculateRewards({
         }
         return sum
       }
+
       return sum.plus(value)
     },
     BigNumber(0),
