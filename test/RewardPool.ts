@@ -17,8 +17,11 @@ const TIMELOCK = WEEK_IN_SECONDS
 const MANAGER_CAPITAL = hre.ethers.parseEther('1000')
 
 // Helper function to generate idempotency keys for testing
-function generateTestIdempotencyKey(user: string, nonce: number = 0): string {
-  return hre.ethers.keccak256(hre.ethers.toUtf8Bytes(`${user}-${nonce}`))
+function generateTestIdempotencyKey(
+  referrer: string,
+  nonce: number = 0,
+): string {
+  return hre.ethers.keccak256(hre.ethers.toUtf8Bytes(`${referrer}-${nonce}`))
 }
 
 describe(CONTRACT_NAME, function () {
@@ -380,12 +383,12 @@ describe(CONTRACT_NAME, function () {
       // Prepare reward data
       const rewards = [
         {
-          user: user1.address,
+          referrer: user1.address,
           amount: hre.ethers.parseEther('10'),
           idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
         },
         {
-          user: user2.address,
+          referrer: user2.address,
           amount: hre.ethers.parseEther('20'),
           idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
         },
@@ -433,7 +436,7 @@ describe(CONTRACT_NAME, function () {
     it('allows adding multiple rewards for the same user with different idempotency keys', async function () {
       // First reward
       const firstReward = {
-        user: user1.address,
+        referrer: user1.address,
         amount: hre.ethers.parseEther('10'),
         idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
       }
@@ -441,7 +444,7 @@ describe(CONTRACT_NAME, function () {
 
       // Second reward with different idempotency key
       const secondReward = {
-        user: user1.address,
+        referrer: user1.address,
         amount: hre.ethers.parseEther('15'),
         idempotencyKey: generateTestIdempotencyKey(user1.address, 2),
       }
@@ -457,7 +460,7 @@ describe(CONTRACT_NAME, function () {
 
     it('skips rewards with duplicate idempotency keys', async function () {
       const reward = {
-        user: user1.address,
+        referrer: user1.address,
         amount: hre.ethers.parseEther('10'),
         idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
       }
@@ -489,7 +492,7 @@ describe(CONTRACT_NAME, function () {
 
     it('reverts when zero address is provided as user', async function () {
       const reward = {
-        user: hre.ethers.ZeroAddress,
+        referrer: hre.ethers.ZeroAddress,
         amount: hre.ethers.parseEther('10'),
         idempotencyKey: generateTestIdempotencyKey(hre.ethers.ZeroAddress, 1),
       }
@@ -501,7 +504,7 @@ describe(CONTRACT_NAME, function () {
 
     it('reverts when zero amount is provided', async function () {
       const reward = {
-        user: user1.address,
+        referrer: user1.address,
         amount: 0,
         idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
       }
@@ -516,7 +519,7 @@ describe(CONTRACT_NAME, function () {
 
     it('reverts when empty idempotency key is provided', async function () {
       const reward = {
-        user: user1.address,
+        referrer: user1.address,
         amount: hre.ethers.parseEther('10'),
         idempotencyKey: hre.ethers.ZeroHash,
       }
@@ -531,7 +534,7 @@ describe(CONTRACT_NAME, function () {
       const poolWithStranger = rewardPool.connect(stranger) as typeof rewardPool
 
       const reward = {
-        user: user1.address,
+        referrer: user1.address,
         amount: hre.ethers.parseEther('10'),
         idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
       }
@@ -546,12 +549,12 @@ describe(CONTRACT_NAME, function () {
 
     it('processes mixed batch with new and duplicate idempotency keys', async function () {
       const reward1 = {
-        user: user1.address,
+        referrer: user1.address,
         amount: hre.ethers.parseEther('10'),
         idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
       }
       const reward2 = {
-        user: user2.address,
+        referrer: user2.address,
         amount: hre.ethers.parseEther('20'),
         idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
       }
@@ -561,7 +564,7 @@ describe(CONTRACT_NAME, function () {
 
       // Second batch - mix of new and duplicate
       const reward3 = {
-        user: user1.address,
+        referrer: user1.address,
         amount: hre.ethers.parseEther('15'),
         idempotencyKey: generateTestIdempotencyKey(user1.address, 2), // New key
       }
@@ -634,7 +637,7 @@ describe(CONTRACT_NAME, function () {
 
           // Add rewards
           const reward = {
-            user: user1.address,
+            referrer: user1.address,
             amount: rewardAmount,
             idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
           }
@@ -1007,7 +1010,7 @@ describe(CONTRACT_NAME, function () {
 
           const rewards = [
             {
-              user: user1.address,
+              referrer: user1.address,
               amount: rewardAmount,
               idempotencyKey: hre.ethers.keccak256(
                 hre.ethers.toUtf8Bytes('test-key-1'),
@@ -1064,7 +1067,7 @@ describe(CONTRACT_NAME, function () {
           const idempotencyKey = generateTestIdempotencyKey(user1.address, 1)
           const rewardData = [
             {
-              user: user1.address,
+              referrer: user1.address,
               amount: rewardAmount,
               idempotencyKey: idempotencyKey,
             },
@@ -1102,17 +1105,17 @@ describe(CONTRACT_NAME, function () {
         [mockStartTime, mockEndTime],
       ),
     )
-    let mockKpis: { referrerAddress: string; kpi: number }[]
+    let mockKpis: { referrer: string; kpi: number }[]
 
     function getIdempotencyKey(
-      user: string,
+      referrer: string,
       periodStart: number = mockStartTime,
       periodEnd: number = mockEndTime,
     ) {
       return hre.ethers.keccak256(
         AbiCoder.defaultAbiCoder().encode(
           ['address', 'uint256', 'uint256'],
-          [user, periodStart, periodEnd],
+          [referrer, periodStart, periodEnd],
         ),
       )
     }
@@ -1131,11 +1134,11 @@ describe(CONTRACT_NAME, function () {
 
       mockKpis = [
         {
-          referrerAddress: user1.address,
+          referrer: user1.address,
           kpi: 100,
         },
         {
-          referrerAddress: user2.address,
+          referrer: user2.address,
           kpi: 200,
         },
       ]
@@ -1186,7 +1189,7 @@ describe(CONTRACT_NAME, function () {
         ).to.equal(200)
 
         expect(
-          await rewardPool.getPeriodUsers(mockStartTime, mockEndTime),
+          await rewardPool.getPeriodReferrers(mockStartTime, mockEndTime),
         ).to.deep.equal([user1.address, user2.address])
 
         expect(
@@ -1197,7 +1200,7 @@ describe(CONTRACT_NAME, function () {
           pool.updatePeriodKpis(
             [
               {
-                referrerAddress: user1.address,
+                referrer: user1.address,
                 kpi: 150,
               },
             ],
@@ -1230,11 +1233,11 @@ describe(CONTRACT_NAME, function () {
           pool.updatePeriodKpis(
             [
               {
-                referrerAddress: user1.address,
+                referrer: user1.address,
                 kpi: 100,
               },
               {
-                referrerAddress: user2.address,
+                referrer: user2.address,
                 kpi: 0,
               },
             ],
@@ -1278,14 +1281,14 @@ describe(CONTRACT_NAME, function () {
         ).to.equal(0)
 
         expect(
-          await rewardPool.getPeriodUsers(mockStartTime, mockEndTime),
+          await rewardPool.getPeriodReferrers(mockStartTime, mockEndTime),
         ).to.deep.equal([user1.address, user2.address])
 
         await expect(
           pool.updatePeriodKpis(
             [
               {
-                referrerAddress: user1.address,
+                referrer: user1.address,
                 kpi: 0,
               },
             ],
@@ -1320,14 +1323,14 @@ describe(CONTRACT_NAME, function () {
         ).to.equal(0)
 
         expect(
-          await rewardPool.getPeriodUsers(mockStartTime, mockEndTime),
+          await rewardPool.getPeriodReferrers(mockStartTime, mockEndTime),
         ).to.deep.equal([user1.address, user2.address])
       })
 
       it('reverts when kpis are added for zero address', async function () {
         const kpis = [
           {
-            referrerAddress: hre.ethers.ZeroAddress,
+            referrer: hre.ethers.ZeroAddress,
             kpi: 100,
           },
         ]
@@ -1425,11 +1428,11 @@ describe(CONTRACT_NAME, function () {
         await pool.updatePeriodKpis(
           [
             {
-              referrerAddress: user1.address,
+              referrer: user1.address,
               kpi: 0,
             },
             {
-              referrerAddress: user2.address,
+              referrer: user2.address,
               kpi: 200,
             },
           ],
@@ -1464,7 +1467,7 @@ describe(CONTRACT_NAME, function () {
         await pool.addRewards(
           [
             {
-              user: user1.address,
+              referrer: user1.address,
               amount: 100,
               idempotencyKey,
             },

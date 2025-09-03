@@ -5,7 +5,7 @@ import { Contract } from 'ethers'
 
 interface Kpi {
   kpi: bigint
-  referrerAddress: string
+  referrer: string
 }
 
 describe('LinearReward', function () {
@@ -34,15 +34,15 @@ describe('LinearReward', function () {
       const kpis = [
         {
           kpi: 100n,
-          referrerAddress: user1.address,
+          referrer: user1.address,
         },
         {
           kpi: 200n,
-          referrerAddress: user2.address,
+          referrer: user2.address,
         },
         {
           kpi: 300n,
-          referrerAddress: user3.address,
+          referrer: user3.address,
         },
       ]
       const totalRewardAmount = 600n
@@ -54,18 +54,18 @@ describe('LinearReward', function () {
 
       expect(rewards).to.have.length(3)
       expect(rewards[0].reward).to.equal(100n) // 600 * 100 / 600
-      expect(rewards[0].referrerAddress).to.equal(user1.address)
+      expect(rewards[0].referrer).to.equal(user1.address)
       expect(rewards[1].reward).to.equal(200n) // 600 * 200 / 600
-      expect(rewards[1].referrerAddress).to.equal(user2.address)
+      expect(rewards[1].referrer).to.equal(user2.address)
       expect(rewards[2].reward).to.equal(300n) // 600 * 300 / 600
-      expect(rewards[2].referrerAddress).to.equal(user3.address)
+      expect(rewards[2].referrer).to.equal(user3.address)
     })
 
     it('should handle single KPI', async function () {
       const kpis = [
         {
           kpi: 500n,
-          referrerAddress: user1.address,
+          referrer: user1.address,
         },
       ]
       const totalRewardAmount = 1000n
@@ -77,18 +77,18 @@ describe('LinearReward', function () {
 
       expect(rewards).to.have.length(1)
       expect(rewards[0].reward).to.equal(1000n)
-      expect(rewards[0].referrerAddress).to.equal(user1.address)
+      expect(rewards[0].referrer).to.equal(user1.address)
     })
 
     it('should handle zero total reward amount', async function () {
       const kpis = [
         {
           kpi: 100n,
-          referrerAddress: user1.address,
+          referrer: user1.address,
         },
         {
           kpi: 200n,
-          referrerAddress: user2.address,
+          referrer: user2.address,
         },
       ]
       const totalRewardAmount = 0n
@@ -107,11 +107,11 @@ describe('LinearReward', function () {
       const kpis = [
         {
           kpi: 0n,
-          referrerAddress: user1.address,
+          referrer: user1.address,
         },
         {
           kpi: 100n,
-          referrerAddress: user2.address,
+          referrer: user2.address,
         },
       ]
       const totalRewardAmount = 100n
@@ -130,11 +130,11 @@ describe('LinearReward', function () {
       const kpis = [
         {
           kpi: 1000000n,
-          referrerAddress: user1.address,
+          referrer: user1.address,
         },
         {
           kpi: 2000000n,
-          referrerAddress: user2.address,
+          referrer: user2.address,
         },
       ]
       const totalRewardAmount = 1500000n

@@ -39,7 +39,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
 
   // Data structures
   struct RewardData {
-    address user;
+    address referrer;
     uint256 amount;
     bytes32 idempotencyKey;
   }
@@ -73,22 +73,22 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   event Withdraw(uint256 amount);
   event TimelockExtended(uint256 newTimelock, uint256 previousTimelock);
   event AddReward(
-    address indexed user,
+    address indexed referrer,
     uint256 amount,
     uint256[] rewardFunctionArgs
   );
   event AddRewardWithIdempotency(
-    address indexed user,
+    address indexed referrer,
     uint256 amount,
     bytes32 indexed idempotencyKey,
     uint256[] rewardFunctionArgs
   );
   event AddRewardSkipped(
-    address indexed user,
+    address indexed referrer,
     uint256 amount,
     bytes32 indexed idempotencyKey
   );
-  event ClaimReward(address indexed user, uint256 amount);
+  event ClaimReward(address indexed referrer, uint256 amount);
   event RescueToken(address token, uint256 amount);
   event ProtocolFeeUpdated(uint256 newProtocolFee, uint256 previousProtocolFee);
   event ReserveAddressUpdated(
@@ -96,7 +96,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     address previousReserveAddress
   );
   event ProtocolFeeCollected(
-    address indexed user,
+    address indexed referrer,
     uint256 rewardAmount,
     uint256 feeAmount,
     uint256 protocolFee
@@ -106,7 +106,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     address previousRewardFunctionAddress
   );
   event KpiUpdated(
-    address indexed user,
+    address indexed referrer,
     bytes32 indexed periodId,
     uint256 amount,
     uint48 periodStart,
@@ -325,13 +325,12 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     if (period.processedAt != 0) revert PeriodAlreadyProcessed(periodId);
 
     for (uint256 i = 0; i < kpis.length; i++) {
-      if (kpis[i].referrerAddress == address(0))
-        revert ZeroAddressNotAllowed(i);
+      if (kpis[i].referrer == address(0)) revert ZeroAddressNotAllowed(i);
 
-      period.kpis.set(kpis[i].referrerAddress, kpis[i].kpi);
+      period.kpis.set(kpis[i].referrer, kpis[i].kpi);
 
       emit KpiUpdated(
-        kpis[i].referrerAddress,
+        kpis[i].referrer,
         periodId,
         kpis[i].kpi,
         periodStart,
@@ -367,9 +366,9 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     );
 
     for (uint256 i = 0; i < period.kpis.length(); i++) {
-      (address user, uint256 kpi) = period.kpis.at(i);
+      (address referrer, uint256 kpi) = period.kpis.at(i);
 
-      kpis[i] = IRewardFunction.Kpi({referrerAddress: user, kpi: kpi});
+      kpis[i] = IRewardFunction.Kpi({referrer: referrer, kpi: kpi});
     }
 
     IRewardFunction.Reward[] memory rewards = IRewardFunction(
@@ -387,14 +386,10 @@ contract RewardPool is AccessControl, ReentrancyGuard {
       if (rewards[i].reward == 0) continue;
 
       RewardData memory rewardData = RewardData({
-        user: rewards[i].referrerAddress,
+        referrer: rewards[i].referrer,
         amount: rewards[i].reward,
         idempotencyKey: keccak256(
-          abi.encode(
-            rewards[i].referrerAddress,
-            periodStart,
-            periodEndExclusive
-          )
+          abi.encode(rewards[i].referrer, periodStart, periodEndExclusive)
         )
       });
 
@@ -418,28 +413,28 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   }
 
   /**
-   * @dev Returns the kpi of a user for a given period
+   * @dev Returns the kpi of a referrer for a given period
    * @param periodStart Start of the reward period (unix timestamp)
    * @param periodEndExclusive End of the reward period (unix timestamp)
-   * @param user Address of the user
+   * @param referrer Address of the referrer
    * @return uint256 kpi
    */
   function getPeriodKpi(
     uint48 periodStart,
     uint48 periodEndExclusive,
-    address user
+    address referrer
   ) external view returns (uint256) {
     bytes32 periodId = _getPeriodId(periodStart, periodEndExclusive);
-    return _periods[periodId].kpis.get(user);
+    return _periods[periodId].kpis.get(referrer);
   }
 
   /**
-   * @dev Returns the users for a given period
+   * @dev Returns the referrers for a given period
    * @param periodStart Start of the reward period (unix timestamp)
    * @param periodEndExclusive End of the reward period (unix timestamp)
-   * @return address[] array of users
+   * @return address[] array of referrers
    */
-  function getPeriodUsers(
+  function getPeriodReferrers(
     uint48 periodStart,
     uint48 periodEndExclusive
   ) external view returns (address[] memory) {
@@ -462,7 +457,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   }
 
   /**
-   * @dev Increases amounts available for users to claim with idempotency protection
+   * @dev Increases amounts available for referrers to claim with idempotency protection
    * @param rewards Array of reward items to process
    * @param rewardFunctionArgs Arguments used to calculate rewards
    * @notice Allowed only for address with DEFAULT_ADMIN_ROLE
@@ -481,12 +476,16 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     uint256[] memory rewardFunctionArgs,
     uint32 index
   ) internal returns (bool) {
-    if (reward.user == address(0)) revert ZeroAddressNotAllowed(index);
+    if (reward.referrer == address(0)) revert ZeroAddressNotAllowed(index);
     if (reward.amount == 0) revert RewardAmountMustBeGreaterThanZero(index);
     if (reward.idempotencyKey == bytes32(0)) revert EmptyIdempotencyKey(index);
 
     if (processedIdempotencyKeys[reward.idempotencyKey]) {
-      emit AddRewardSkipped(reward.user, reward.amount, reward.idempotencyKey);
+      emit AddRewardSkipped(
+        reward.referrer,
+        reward.amount,
+        reward.idempotencyKey
+      );
       return false;
     }
 
@@ -501,20 +500,20 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     if (feeAmount > 0) {
       _transferPoolToken(reserveAddress, feeAmount);
       emit ProtocolFeeCollected(
-        reward.user,
+        reward.referrer,
         reward.amount,
         feeAmount,
         protocolFee
       );
     }
 
-    pendingRewards[reward.user] += reward.amount;
+    pendingRewards[reward.referrer] += reward.amount;
     totalPendingRewards += reward.amount;
 
     // Old event for backwards compatibility
-    emit AddReward(reward.user, reward.amount, rewardFunctionArgs);
+    emit AddReward(reward.referrer, reward.amount, rewardFunctionArgs);
     emit AddRewardWithIdempotency(
-      reward.user,
+      reward.referrer,
       reward.amount,
       reward.idempotencyKey,
       rewardFunctionArgs
@@ -535,15 +534,15 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   }
 
   /**
-   * @dev Allows user to claim their rewards
+   * @dev Allows referrer to claim their rewards
    * @param amount Amount to claim
    */
   function claimReward(uint256 amount) external nonReentrant {
     if (amount == 0) revert AmountMustBeGreaterThanZero();
 
-    uint256 userPendingRewards = pendingRewards[msg.sender];
-    if (amount > userPendingRewards)
-      revert InsufficientRewardBalance(amount, userPendingRewards);
+    uint256 referrerPendingRewards = pendingRewards[msg.sender];
+    if (amount > referrerPendingRewards)
+      revert InsufficientRewardBalance(amount, referrerPendingRewards);
 
     uint256 balance = poolBalance();
     if (amount > balance) revert InsufficientPoolBalance(amount, balance);
