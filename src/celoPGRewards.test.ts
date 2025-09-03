@@ -49,7 +49,10 @@ describe('calculateRewards', () => {
         uniqueWallets: 50,
         gasUsage: 25_000_000_000n, // 25B
         stage: 0,
-        rewardAmount: '176480',
+        sqrtOnlyReward: '176480', // Pure √KPI on full pool
+        baseReward: '141184', // 80% pool share
+        stageBonus: '0', // Stage 0 gets no bonus
+        rewardAmount: '141184', // Total new system reward
       },
       {
         referrerId: '0xstage1',
@@ -58,7 +61,10 @@ describe('calculateRewards', () => {
         uniqueWallets: 150,
         gasUsage: 1_500_000_000n, // 1.5B
         stage: 1,
-        rewardAmount: '43228',
+        sqrtOnlyReward: '43228',
+        baseReward: '34582',
+        stageBonus: '20000', // Stage 1 gets bonus
+        rewardAmount: '54582',
       },
       {
         referrerId: '0xstage2',
@@ -67,7 +73,10 @@ describe('calculateRewards', () => {
         uniqueWallets: 3_000,
         gasUsage: 15_000_000_000n, // 15B
         stage: 2,
-        rewardAmount: '136701',
+        sqrtOnlyReward: '136701',
+        baseReward: '109360',
+        stageBonus: '40000', // Stage 2 gets higher bonus
+        rewardAmount: '149360',
       },
       {
         referrerId: '0xstage3',
@@ -76,7 +85,10 @@ describe('calculateRewards', () => {
         uniqueWallets: 12_000,
         gasUsage: 60_000_000_000n, // 60B
         stage: 3,
-        rewardAmount: '273402',
+        sqrtOnlyReward: '273402',
+        baseReward: '218721',
+        stageBonus: '60000', // Stage 3 gets even higher bonus
+        rewardAmount: '278721',
       },
       {
         referrerId: '0xstage4',
@@ -85,7 +97,10 @@ describe('calculateRewards', () => {
         uniqueWallets: 1_100_000,
         gasUsage: 110_000_000_000n, // 110B
         stage: 4,
-        rewardAmount: '370188',
+        sqrtOnlyReward: '370188',
+        baseReward: '296150',
+        stageBonus: '80000', // Stage 4 gets highest bonus
+        rewardAmount: '376150',
       },
     ])
   })
@@ -121,6 +136,9 @@ describe('calculateRewards', () => {
         uniqueWallets: 1,
         gasUsage: 100n,
         stage: 0,
+        sqrtOnlyReward: '0', // Excluded from all calculations
+        baseReward: '0', // Excluded
+        stageBonus: '0', // Excluded
         rewardAmount: '0', // Excluded
       },
       {
@@ -130,7 +148,10 @@ describe('calculateRewards', () => {
         uniqueWallets: 1,
         gasUsage: 400n,
         stage: 0,
-        rewardAmount: '30000', // Gets all rewards
+        sqrtOnlyReward: '30000', // Pure √KPI would give all
+        baseReward: '24000', // Gets 80% of pool (stage 0 = no bonus)
+        stageBonus: '0', // Stage 0 gets no stage bonus
+        rewardAmount: '24000', // Total: base + bonus
       },
     ])
   })
@@ -160,7 +181,10 @@ describe('calculateRewards', () => {
         uniqueWallets: 1,
         gasUsage: 100n,
         stage: 0,
-        rewardAmount: '1000',
+        sqrtOnlyReward: '1000', // Pure √KPI would give full amount
+        baseReward: '800', // New system: 80% base reward
+        stageBonus: '0', // Stage 0 gets no stage bonus
+        rewardAmount: '800', // Total: 800 + 0
       },
     ])
   })
@@ -180,6 +204,9 @@ describe('calculateRewards', () => {
         uniqueWallets: 1,
         gasUsage: 100n,
         stage: 0,
+        sqrtOnlyReward: '0', // Zero rewards = zero for all fields
+        baseReward: '0',
+        stageBonus: '0',
         rewardAmount: '0',
       },
     ])
