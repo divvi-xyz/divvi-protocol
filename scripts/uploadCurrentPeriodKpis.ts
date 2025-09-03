@@ -9,6 +9,7 @@ import yargs from 'yargs'
 import { BigNumber } from 'bignumber.js'
 import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
+import { main as calculateRewardsCeloPGS1 } from './calculateRewards/celoPGS1'
 import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV0'
 import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
 import { main as calculateRewardsBaseV0 } from './calculateRewards/baseV0'
@@ -308,6 +309,144 @@ const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '10000000000', // 10000 USDT
             excludedReferrers: {},
+          })
+        },
+      },
+    ],
+  },
+  {
+    protocol: 'celo-pg-s1',
+    rewardsPeriods: [
+      {
+        startTimestamp: '2025-08-26T00:00:00Z',
+        endTimestampExclusive: '2025-09-09T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }) => {
+          await calculateRewardsCeloPGS1({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '25000',
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-09-09T00:00:00Z',
+        endTimestampExclusive: '2025-09-23T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }) => {
+          await calculateRewardsCeloPGS1({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '25000',
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-09-23T00:00:00Z',
+        endTimestampExclusive: '2025-10-07T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }) => {
+          await calculateRewardsCeloPGS1({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '25000',
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-10-07T00:00:00Z',
+        endTimestampExclusive: '2025-10-21T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }) => {
+          await calculateRewardsCeloPGS1({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            // TODO: reward both CELO and OP
+            rewardAmount: '25000',
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-10-21T00:00:00Z',
+        endTimestampExclusive: '2025-11-04T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }) => {
+          await calculateRewardsCeloPGS1({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            // TODO: reward both CELO and OP
+            rewardAmount: '25000',
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-11-04T00:00:00Z',
+        endTimestampExclusive: '2025-11-18T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }) => {
+          await calculateRewardsCeloPGS1({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            // TODO: reward both CELO and OP
+            rewardAmount: '25000',
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-11-18T00:00:00Z',
+        endTimestampExclusive: '2025-12-02T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }) => {
+          await calculateRewardsCeloPGS1({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            // TODO: reward both CELO and OP
+            rewardAmount: '25000',
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-12-02T00:00:00Z',
+        endTimestampExclusive: '2025-12-16T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }) => {
+          await calculateRewardsCeloPGS1({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            // TODO: reward both CELO and OP
+            rewardAmount: '25000',
           })
         },
       },
