@@ -4,8 +4,8 @@ import { calculateRewards } from '../../src/celoPGRewards'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 
-// TODO(sbw): haven't deployed RewardPool yet.
-const REWARD_POOL_ADDRESS = '0x0000000000000000000000000000000000000000'
+// TODO: support both CELO and OP reward pools
+const REWARD_POOL_ADDRESS = '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5' // on Celo mainnet
 
 function parseArgs() {
   const args = yargs
@@ -45,11 +45,10 @@ function parseArgs() {
     startTimestamp: args['start-timestamp'],
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
-    proportionLinear: args['proportion-linear'],
   }
 }
 
-async function main(args: ReturnType<typeof parseArgs>) {
+export async function main(args: ReturnType<typeof parseArgs>) {
   const {
     resultDirectory,
     startTimestamp,
@@ -71,6 +70,7 @@ async function main(args: ReturnType<typeof parseArgs>) {
     rewards,
     startTimestamp: new Date(startTimestamp),
     endTimestampExclusive: new Date(endTimestampExclusive),
+    useIdempotency: true,
   })
 
   await resultDirectory.writeRewards(rewards)
