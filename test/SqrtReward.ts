@@ -5,7 +5,7 @@ import { Contract } from 'ethers'
 
 interface Kpi {
   kpi: bigint
-  referrerAddress: string
+  referrer: string
 }
 
 describe('SqrtReward', function () {
@@ -34,15 +34,15 @@ describe('SqrtReward', function () {
       const kpis = [
         {
           kpi: 100n,
-          referrerAddress: user1.address,
+          referrer: user1.address,
         }, // sqrt(100 * 10^6) = sqrt(100,000,000) = 10,000
         {
           kpi: 400n,
-          referrerAddress: user2.address,
+          referrer: user2.address,
         }, // sqrt(400 * 10^6) = sqrt(400,000,000) = 20,000
         {
           kpi: 900n,
-          referrerAddress: user3.address,
+          referrer: user3.address,
         }, // sqrt(900 * 10^6) = sqrt(900,000,000) = 30,000
       ]
       const totalRewardAmount = 600n
@@ -55,18 +55,18 @@ describe('SqrtReward', function () {
       expect(rewards).to.have.length(3)
       // total sqrt = 10,000 + 20,000 + 30,000 = 60,000
       expect(rewards[0].reward).to.equal(100n) // 600 * 10,000 / 60,000
-      expect(rewards[0].referrerAddress).to.equal(user1.address)
+      expect(rewards[0].referrer).to.equal(user1.address)
       expect(rewards[1].reward).to.equal(200n) // 600 * 20,000 / 60,000
-      expect(rewards[1].referrerAddress).to.equal(user2.address)
+      expect(rewards[1].referrer).to.equal(user2.address)
       expect(rewards[2].reward).to.equal(300n) // 600 * 30,000 / 60,000
-      expect(rewards[2].referrerAddress).to.equal(user3.address)
+      expect(rewards[2].referrer).to.equal(user3.address)
     })
 
     it('should handle single KPI', async function () {
       const kpis = [
         {
           kpi: 400n,
-          referrerAddress: user1.address,
+          referrer: user1.address,
         }, // sqrt(400 * 10^6) = sqrt(400,000,000) = 20,000
       ]
       const totalRewardAmount = 1000n
@@ -78,18 +78,18 @@ describe('SqrtReward', function () {
 
       expect(rewards).to.have.length(1)
       expect(rewards[0].reward).to.equal(1000n) // 1000 * 20,000 / 20,000
-      expect(rewards[0].referrerAddress).to.equal(user1.address)
+      expect(rewards[0].referrer).to.equal(user1.address)
     })
 
     it('should handle zero total reward amount', async function () {
       const kpis = [
         {
           kpi: 100n,
-          referrerAddress: user1.address,
+          referrer: user1.address,
         },
         {
           kpi: 400n,
-          referrerAddress: user2.address,
+          referrer: user2.address,
         },
       ]
       const totalRewardAmount = 0n
@@ -108,11 +108,11 @@ describe('SqrtReward', function () {
       const kpis = [
         {
           kpi: 0n,
-          referrerAddress: user1.address,
+          referrer: user1.address,
         }, // sqrt(0 * 10^6) = sqrt(0) = 0
         {
           kpi: 100n,
-          referrerAddress: user2.address,
+          referrer: user2.address,
         }, // sqrt(100 * 10^6) = sqrt(100,000,000) = 10,000
       ]
       const totalRewardAmount = 100n
@@ -131,15 +131,15 @@ describe('SqrtReward', function () {
       const kpis = [
         {
           kpi: 2n,
-          referrerAddress: user1.address,
+          referrer: user1.address,
         }, // sqrt(2 * 10^6) = sqrt(2,000,000) ≈ 1,414
         {
           kpi: 5n,
-          referrerAddress: user2.address,
+          referrer: user2.address,
         }, // sqrt(5 * 10^6) = sqrt(5,000,000) ≈ 2,236
         {
           kpi: 10n,
-          referrerAddress: user3.address,
+          referrer: user3.address,
         }, // sqrt(10 * 10^6) = sqrt(10,000,000) ≈ 3,162
       ]
       const totalRewardAmount = 60n
