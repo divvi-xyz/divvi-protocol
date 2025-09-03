@@ -75,7 +75,7 @@ Use `ethers` in Hardhat console to interact with the contract:
 ```
 const RewardPool = await ethers.getContractFactory("RewardPool")
 const rewardPool = await RewardPool.attach('0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0')
-await rewardPool.rewardFunctionId()
+await rewardPool.rewardFunctionAddress()
 ```
 
 ## Scripts

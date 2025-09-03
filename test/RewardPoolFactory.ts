@@ -7,10 +7,6 @@ import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
 const CONTRACT_NAME = 'RewardPoolFactory'
 const IMPLEMENTATION_NAME = 'RewardPool'
 const NATIVE_TOKEN_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
-const MOCK_REWARD_FUNCTION_ID = hre.ethers.zeroPadValue(
-  '0xa1b2c3d4e5f67890abcdef1234567890abcdef12',
-  32,
-)
 const WEEK_IN_SECONDS = 60 * 60 * 24 * 7
 const TRANSFER_DELAY = WEEK_IN_SECONDS
 const TIMELOCK = WEEK_IN_SECONDS
@@ -20,11 +16,15 @@ describe(CONTRACT_NAME, function () {
     const [deployer, owner, manager, user1, user2, stranger] =
       await hre.ethers.getSigners()
 
+    const LinearReward = await hre.ethers.getContractFactory('LinearReward')
+    const linearReward = await LinearReward.deploy()
+    const rewardFunctionAddress = await linearReward.getAddress()
+
     // Deploy implementation
     const RewardPool = await hre.ethers.getContractFactory(IMPLEMENTATION_NAME)
     const implementation = await RewardPool.deploy(
       NATIVE_TOKEN_ADDRESS,
-      MOCK_REWARD_FUNCTION_ID,
+      rewardFunctionAddress,
       owner.address,
       manager.address,
       (await time.latest()) + TIMELOCK,
@@ -58,6 +58,7 @@ describe(CONTRACT_NAME, function () {
       user1,
       user2,
       stranger,
+      rewardFunctionAddress,
     }
   }
 
@@ -173,6 +174,7 @@ describe(CONTRACT_NAME, function () {
     let owner: HardhatEthersSigner
     let manager: HardhatEthersSigner
     let user1: HardhatEthersSigner
+    let rewardFunctionAddress: string
 
     beforeEach(async function () {
       const deployment = await loadFixture(deployFactoryContract)
@@ -180,17 +182,17 @@ describe(CONTRACT_NAME, function () {
       owner = deployment.owner
       manager = deployment.manager
       user1 = deployment.user1
+      rewardFunctionAddress = deployment.rewardFunctionAddress
     })
 
     it('creates a new RewardPool clone', async function () {
       const poolToken = await hre.ethers.getSigner(user1.address)
-      const rewardFunctionId = MOCK_REWARD_FUNCTION_ID
       const poolManager = user1.address
       const timelock = (await time.latest()) + TIMELOCK
 
       const tx = await factory.createRewardPool(
         poolToken.address,
-        rewardFunctionId,
+        rewardFunctionAddress,
         poolManager,
         timelock,
       )
@@ -207,7 +209,7 @@ describe(CONTRACT_NAME, function () {
         .to.emit(factory, 'RewardPoolCreated')
         .withArgs(
           poolToken.address,
-          rewardFunctionId,
+          rewardFunctionAddress,
           owner.address,
           poolManager,
           timelock,
@@ -222,7 +224,6 @@ describe(CONTRACT_NAME, function () {
       )
 
       expect(await rewardPool.poolToken()).to.equal(poolToken.address)
-      expect(await rewardPool.rewardFunctionId()).to.equal(rewardFunctionId)
       expect(
         await rewardPool.hasRole(
           await rewardPool.DEFAULT_ADMIN_ROLE(),
@@ -247,7 +248,7 @@ describe(CONTRACT_NAME, function () {
       await expect(
         factory.createRewardPool(
           hre.ethers.ZeroAddress,
-          MOCK_REWARD_FUNCTION_ID,
+          rewardFunctionAddress,
           manager.address,
           (await time.latest()) + TIMELOCK,
         ),
@@ -258,7 +259,7 @@ describe(CONTRACT_NAME, function () {
       await expect(
         factory.createRewardPool(
           user1.address,
-          MOCK_REWARD_FUNCTION_ID,
+          rewardFunctionAddress,
           hre.ethers.ZeroAddress,
           (await time.latest()) + TIMELOCK,
         ),
@@ -273,6 +274,8 @@ describe(CONTRACT_NAME, function () {
     let stranger: HardhatEthersSigner
     let factoryWithOwner: Contract
     let factoryWithStranger: Contract
+    let rewardFunctionAddress: string
+
     beforeEach(async function () {
       const deployment = await loadFixture(deployFactoryContract)
       factory = deployment.factory
@@ -281,6 +284,7 @@ describe(CONTRACT_NAME, function () {
       stranger = deployment.stranger
       factoryWithOwner = factory.connect(owner) as typeof factory
       factoryWithStranger = factory.connect(stranger) as typeof factory
+      rewardFunctionAddress = deployment.rewardFunctionAddress
     })
 
     it('initializes with correct default values', async function () {
@@ -390,13 +394,12 @@ describe(CONTRACT_NAME, function () {
 
       // Create a new pool using the same factory instance (not a new deployment)
       const poolToken = user1.address
-      const rewardFunctionId = MOCK_REWARD_FUNCTION_ID
       const poolManager = user1.address
       const timelock = (await time.latest()) + TIMELOCK
 
       const tx = await factory.createRewardPool(
         poolToken,
-        rewardFunctionId,
+        rewardFunctionAddress,
         poolManager,
         timelock,
       )
