@@ -3,6 +3,7 @@ import { BigNumber } from 'bignumber.js'
 import { calculateRewards } from '../../src/celoPGRewards'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
+import { parseEther } from 'viem'
 
 // TODO: support both CELO and OP reward pools
 const REWARD_POOL_ADDRESS = '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5' // on Celo mainnet
@@ -60,7 +61,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
 
   const rewards = calculateRewards({
     kpiData,
-    rewards: BigNumber(rewardAmount),
+    rewards: BigNumber(parseEther(rewardAmount)),
     excludedReferrers: {},
   })
 
