@@ -13,6 +13,5 @@
     "@nomicfoundation/hardhat-ignition",
     "tsc-watch"
   ],
-  "ignoreBinaries": ["gcloud"],
-  "ignore": ["src/campaigns.ts"]
+  "ignoreBinaries": ["gcloud"]
 }

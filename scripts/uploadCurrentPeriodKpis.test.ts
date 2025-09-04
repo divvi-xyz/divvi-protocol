@@ -1,10 +1,12 @@
 import { it } from '@jest/globals'
-import { Campaign, uploadCurrentPeriodKpis } from './uploadCurrentPeriodKpis'
+import { uploadCurrentPeriodKpis } from './uploadCurrentPeriodKpis'
+import { Campaign } from '../src/campaigns'
 import { fetchReferrals } from './fetchReferrals'
 import { calculateKpi } from './calculateKpi'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
+import { NetworkId } from './types'
 
 // Mock all the dependencies
 jest.mock('./fetchReferrals')
@@ -27,6 +29,10 @@ const mockCalculateRewardsCeloPG = jest.mocked(calculateRewardsCeloPG)
 describe('uploadCurrentPeriodKpis', () => {
   const mockCampaigns: Campaign[] = [
     {
+      providerAddress: '0x0',
+      rewardsPoolAddress: '0x0',
+      networkId: NetworkId['celo-mainnet'],
+      valoraRewardsPoolAddress: null,
       protocol: 'celo-pg',
       rewardsPeriods: [
         {
@@ -95,6 +101,10 @@ describe('uploadCurrentPeriodKpis', () => {
       ],
     },
     {
+      providerAddress: '0x0',
+      rewardsPoolAddress: '0x0',
+      networkId: NetworkId['celo-mainnet'],
+      valoraRewardsPoolAddress: null,
       protocol: 'scout-game-v0',
       rewardsPeriods: [
         {
@@ -104,6 +114,10 @@ describe('uploadCurrentPeriodKpis', () => {
       ],
     },
     {
+      providerAddress: '0x0',
+      rewardsPoolAddress: '0x0',
+      networkId: NetworkId['celo-mainnet'],
+      valoraRewardsPoolAddress: null,
       protocol: 'celo-transactions',
       rewardsPeriods: [
         {
