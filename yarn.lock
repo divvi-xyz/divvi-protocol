@@ -2215,32 +2215,32 @@
   resolved "https://registry.yarnpkg.com/@rtsao/scc/-/scc-1.1.0.tgz#927dd2fae9bc3361403ac2c7a00c32ddce9ad7e8"
   integrity sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==
 
-"@safe-global/protocol-kit@^6.1.0":
-  version "6.1.0"
-  resolved "https://registry.yarnpkg.com/@safe-global/protocol-kit/-/protocol-kit-6.1.0.tgz#0c987b08acb274da08a7b04ee06277e40b5d3fa8"
-  integrity sha512-2f8jH6SLeNGZB6HnvU8aDV4L4HLOelwW042yGg/s6sZAJEvh7I+yejmIbsK8o02+fbXgdssNdqTD4I90erBiZQ==
+"@safe-global/protocol-kit@^6.1.1":
+  version "6.1.1"
+  resolved "https://registry.yarnpkg.com/@safe-global/protocol-kit/-/protocol-kit-6.1.1.tgz#f9c262f7b9fbafa0f58e2e9185b3e4cb28d43e26"
+  integrity sha512-SlRosKB52h1CV2gMlKG4UOvh2j4tXuzz1GZ/yQ1HD0Zvm5azUlaytFwKzHun9xNVvfe+vvSNHUEGX2Umy+rQ9A==
   dependencies:
-    "@safe-global/safe-deployments" "^1.37.35"
-    "@safe-global/safe-modules-deployments" "^2.2.10"
+    "@safe-global/safe-deployments" "^1.37.42"
+    "@safe-global/safe-modules-deployments" "^2.2.14"
     "@safe-global/types-kit" "^3.0.0"
     abitype "^1.0.2"
-    semver "^7.7.1"
+    semver "^7.7.2"
     viem "^2.21.8"
   optionalDependencies:
     "@noble/curves" "^1.6.0"
     "@peculiar/asn1-schema" "^2.3.13"
 
-"@safe-global/safe-deployments@^1.37.35":
-  version "1.37.39"
-  resolved "https://registry.yarnpkg.com/@safe-global/safe-deployments/-/safe-deployments-1.37.39.tgz#82ef37a9d13d9923016f6aeca3aba6e9c39aa2e6"
-  integrity sha512-vrGtmCJPjUQpvP0jPVvhKeOPVwcVk3St9bvDKcP46Cb38KaGaEd43hcJSpZoF+roogWvJcEAZ0Q4QYjG40uDUQ==
+"@safe-global/safe-deployments@^1.37.42":
+  version "1.37.42"
+  resolved "https://registry.yarnpkg.com/@safe-global/safe-deployments/-/safe-deployments-1.37.42.tgz#dea932a447fe2c76d894df8de4f0aed72ed7fcef"
+  integrity sha512-hu/GEQhO5lmHsSeVJavtVysdqy16VAumd3pgILN9bTj82ImlHWgkFNYXyeOSbjPvmizdnVVEUzH49yBmoM6oMQ==
   dependencies:
     semver "^7.6.2"
 
-"@safe-global/safe-modules-deployments@^2.2.10":
-  version "2.2.11"
-  resolved "https://registry.yarnpkg.com/@safe-global/safe-modules-deployments/-/safe-modules-deployments-2.2.11.tgz#6b0856ff6ce017fbb463a8fe2c9e0faa73fae887"
-  integrity sha512-19ZR9gUwqvPkji/Dsd2mBmVVPTVFbQMHvDbnWZ1W9M83eUlJIUnl/hKlyyJDTOw/PisIrYGL5hIY74WI//KFBQ==
+"@safe-global/safe-modules-deployments@^2.2.14":
+  version "2.2.14"
+  resolved "https://registry.yarnpkg.com/@safe-global/safe-modules-deployments/-/safe-modules-deployments-2.2.14.tgz#420731687dbc5dfbeb2da0143e73e225979eb39b"
+  integrity sha512-tSwTXIroF7ynxcWKGBsEspHspYcuvd5yF0Y85xFe3Gk4rGoQ20onalF4N8yHsa4+exIXpHEyKiysWqVBmwgDpw==
 
 "@safe-global/types-kit@^3.0.0":
   version "3.0.0"
