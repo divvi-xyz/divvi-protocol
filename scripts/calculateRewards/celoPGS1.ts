@@ -1,11 +1,12 @@
 import yargs from 'yargs'
 import { BigNumber } from 'bignumber.js'
-import { calculateSqrtProportionalPrizeContest } from '../../src/proportionalPrizeContest'
+import { calculateRewards } from '../../src/celoPGRewards'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
+import { parseEther } from 'viem'
 
-// TODO(sbw): haven't deployed RewardPool yet.
-const REWARD_POOL_ADDRESS = '0x0000000000000000000000000000000000000000'
+// TODO: support both CELO and OP reward pools
+const REWARD_POOL_ADDRESS = '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5' // on Celo mainnet
 
 function parseArgs() {
   const args = yargs
@@ -45,11 +46,10 @@ function parseArgs() {
     startTimestamp: args['start-timestamp'],
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
-    proportionLinear: args['proportion-linear'],
   }
 }
 
-async function main(args: ReturnType<typeof parseArgs>) {
+export async function main(args: ReturnType<typeof parseArgs>) {
   const {
     resultDirectory,
     startTimestamp,
@@ -59,11 +59,28 @@ async function main(args: ReturnType<typeof parseArgs>) {
 
   const kpiData = await resultDirectory.readKpi()
 
-  const rewards = calculateSqrtProportionalPrizeContest({
+  const rewards = calculateRewards({
     kpiData,
-    rewards: BigNumber(rewardAmount),
+    rewards: BigNumber(parseEther(rewardAmount)),
     excludedReferrers: {},
   })
+
+  const totalTransactionsPerReferrer: {
+    [referrerId: string]: number
+  } = {}
+
+  for (const { referrerId, metadata } of kpiData) {
+    if (!metadata) continue
+
+    totalTransactionsPerReferrer[referrerId] =
+      (totalTransactionsPerReferrer[referrerId] ?? 0) +
+      (metadata['totalTransactions'] ?? 0)
+  }
+
+  const rewardsWithMetadata = rewards.map((reward) => ({
+    ...reward,
+    totalTransactions: totalTransactionsPerReferrer[reward.referrerId],
+  }))
 
   createAddRewardSafeTransactionJSON({
     filePath: resultDirectory.safeTransactionsFilePath,
@@ -71,9 +88,10 @@ async function main(args: ReturnType<typeof parseArgs>) {
     rewards,
     startTimestamp: new Date(startTimestamp),
     endTimestampExclusive: new Date(endTimestampExclusive),
+    useIdempotency: true,
   })
 
-  await resultDirectory.writeRewards(rewards)
+  await resultDirectory.writeRewards(rewardsWithMetadata)
 }
 
 if (require.main === module) {
