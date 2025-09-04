@@ -9,13 +9,13 @@ function calculateStage({
   uniqueWallets: number
   gasUsage: bigint
 }) {
-  if (uniqueWallets >= 1_000_000 && gasUsage >= 100_000_000_000n) {
+  if (uniqueWallets >= 1_000_000 && gasUsage >= 50_000_000_000n) {
     return 4
-  } else if (uniqueWallets >= 10_000 && gasUsage >= 50_000_000_000n) {
+  } else if (uniqueWallets >= 10_000 && gasUsage >= 25_000_000_000n) {
     return 3
-  } else if (uniqueWallets >= 2_500 && gasUsage >= 10_000_000_000n) {
+  } else if (uniqueWallets >= 2_500 && gasUsage >= 5_000_000_000n) {
     return 2
-  } else if (uniqueWallets >= 100 && gasUsage >= 1_000_000_000n) {
+  } else if (uniqueWallets >= 100 && gasUsage >= 500_000_000n) {
     return 1
   } else {
     return 0
@@ -26,7 +26,7 @@ export function calculateRewards({
   kpiData,
   rewards,
   excludedReferrers,
-  stageBonusRatio = 0.2, // 20% for stage bonuses, 80% for base rewards
+  stageBonusRatio = 0.25, // 25% for stage bonuses, 75% for base rewards
 }: {
   kpiData: KpiRow[]
   rewards: BigNumber
@@ -54,6 +54,18 @@ export function calculateRewards({
     {} as Record<string, BigNumber>,
   )
 
+  // Calculate stage for each referrer once
+  const referrerStages = Object.entries(referrerKpis).reduce(
+    (acc, [referrerId, kpi]) => {
+      acc[referrerId] = calculateStage({
+        uniqueWallets: referrerReferrals[referrerId],
+        gasUsage: kpi,
+      })
+      return acc
+    },
+    {} as Record<string, number>,
+  )
+
   const totalPower = Object.entries(referrerPowerKpis).reduce(
     (sum, [referrerId, value]) => {
       // exclude referrers in the exclude list
@@ -70,21 +82,15 @@ export function calculateRewards({
         return sum
       }
 
+      // exclude stage 0 referrers from all rewards
+      const stage = referrerStages[referrerId]
+      if (stage === 0) {
+        return sum
+      }
+
       return sum.plus(value)
     },
     BigNumber(0),
-  )
-
-  // Calculate stage weights and total stage weight
-  const referrerStages = Object.entries(referrerKpis).reduce(
-    (acc, [referrerId, kpi]) => {
-      acc[referrerId] = calculateStage({
-        uniqueWallets: referrerReferrals[referrerId],
-        gasUsage: kpi,
-      })
-      return acc
-    },
-    {} as Record<string, number>,
   )
 
   const totalStageWeight = Object.entries(referrerStages).reduce(
@@ -104,18 +110,22 @@ export function calculateRewards({
       const stage = referrerStages[referrerId]
 
       // Calculate pure sqrt reward for comparison (full pool, no stage logic)
-      const sqrtOnlyProportion = isExcluded
-        ? BigNumber(0)
-        : referrerPowerKpis[referrerId].div(totalPower)
+      // Stage 0 gets no rewards at all
+      const sqrtOnlyProportion =
+        isExcluded || stage === 0
+          ? BigNumber(0)
+          : referrerPowerKpis[referrerId].div(totalPower)
       const sqrtOnlyReward = rewards.times(sqrtOnlyProportion)
 
-      // Calculate base reward (e.g. 80% of total pool if stageBonusRatio is 0.2)
-      const baseProportion = isExcluded
-        ? BigNumber(0)
-        : referrerPowerKpis[referrerId].div(totalPower)
+      // Calculate base reward (e.g. 75% of total pool if stageBonusRatio is 0.25)
+      // Stage 0 gets no rewards at all
+      const baseProportion =
+        isExcluded || stage === 0
+          ? BigNumber(0)
+          : referrerPowerKpis[referrerId].div(totalPower)
       const baseReward = baseRewardPool.times(baseProportion)
 
-      // Calculate stage bonus (e.g. 20% of total pool if stageBonusRatio is 0.2)
+      // Calculate stage bonus (e.g. 25% of total pool if stageBonusRatio is 0.25)
       // Only qualified stages (1+) get stage bonuses. Stage 0 gets 0.
       const stageProportion =
         isExcluded || totalStageWeight === 0 || stage === 0
