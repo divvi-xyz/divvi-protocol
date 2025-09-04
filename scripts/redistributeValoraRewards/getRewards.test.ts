@@ -1,9 +1,9 @@
 import { Address } from 'viem'
-import { Protocol } from '../../../scripts/types'
-import { getLatestRewards } from './getLatestRewards'
+import { Protocol } from '../types'
+import { getRewards } from './getRewards'
 import nock, { restore, cleanAll } from 'nock'
 
-describe('getLatestRewards', () => {
+describe('getRewards', () => {
   const mockGcsFiles = [
     {
       name: 'kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
@@ -20,10 +20,6 @@ describe('getLatestRewards', () => {
     {
       name: 'kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
       url: 'https://storage.googleapis.com/bucket/kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
-    },
-    {
-      name: 'kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/kpi.json',
-      url: 'https://storage.googleapis.com/bucket/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/kpi.json',
     },
   ]
 
@@ -51,66 +47,44 @@ describe('getLatestRewards', () => {
   })
 
   describe('success cases', () => {
-    it('should return the latest rewards file for a protocol', async () => {
+    it('should return the expected rewards file for a protocol', async () => {
       nock('https://storage.googleapis.com')
         .get(
-          '/bucket/kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
+          '/bucket/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         )
         .reply(200, mockRewardAmounts)
 
-      const result = await getLatestRewards({
+      const result = await getRewards({
         gcsFiles: mockGcsFiles,
         protocol: 'base-v0' as Protocol,
+        startTimestamp: '2025-01-01T00:00:00.000Z',
+        endTimestampExclusive: '2025-02-01T00:00:00.000Z',
       })
 
       expect(result).toEqual({
         filename:
-          'kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
+          'kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         rewardAmounts: mockRewardAmounts,
       })
     })
 
-    it('should filter files correctly by protocol', async () => {
+    it('should filter files correctly by protocol and period', async () => {
       nock('https://storage.googleapis.com')
         .get(
           '/bucket/kpi/celo-pg/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         )
         .reply(200, mockRewardAmounts)
 
-      const result = await getLatestRewards({
+      const result = await getRewards({
         gcsFiles: mockGcsFiles,
         protocol: 'celo-pg' as Protocol,
+        startTimestamp: '2025-01-01T00:00:00.000Z',
+        endTimestampExclusive: '2025-02-01T00:00:00.000Z',
       })
 
       expect(result).toEqual({
         filename:
           'kpi/celo-pg/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
-        rewardAmounts: mockRewardAmounts,
-      })
-    })
-
-    it('should handle single rewards file for a protocol', async () => {
-      const singleFileGcsFiles = [
-        {
-          name: 'kpi/scout-game-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
-          url: 'https://storage.googleapis.com/bucket/kpi/scout-game-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
-        },
-      ]
-
-      nock('https://storage.googleapis.com')
-        .get(
-          '/bucket/kpi/scout-game-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
-        )
-        .reply(200, mockRewardAmounts)
-
-      const result = await getLatestRewards({
-        gcsFiles: singleFileGcsFiles,
-        protocol: 'scout-game-v0' as Protocol,
-      })
-
-      expect(result).toEqual({
-        filename:
-          'kpi/scout-game-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         rewardAmounts: mockRewardAmounts,
       })
     })
@@ -127,15 +101,17 @@ describe('getLatestRewards', () => {
         },
       ]
 
-      nock('https://storage.googleapis.com')
+      nock('https://storage.googleapis.com/bucket')
         .get(
-          '/bucket/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
+          '/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         )
         .reply(200, mockRewardAmounts)
 
-      const result = await getLatestRewards({
+      const result = await getRewards({
         gcsFiles: mixedFiles,
         protocol: 'base-v0' as Protocol,
+        startTimestamp: '2025-01-01T00:00:00.000Z',
+        endTimestampExclusive: '2025-02-01T00:00:00.000Z',
       })
 
       expect(result).toEqual({
@@ -149,48 +125,62 @@ describe('getLatestRewards', () => {
   describe('error cases', () => {
     it('should throw error when no rewards file found for protocol', async () => {
       await expect(
-        getLatestRewards({
+        getRewards({
           gcsFiles: mockGcsFiles,
           protocol: 'non-existent-protocol' as Protocol,
+          startTimestamp: '2025-01-01T00:00:00.000Z',
+          endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
-      ).rejects.toThrow('No rewards file found for non-existent-protocol')
+      ).rejects.toThrow(
+        'No rewards file found for non-existent-protocol for period 2025-01-01T00:00:00.000Z to 2025-02-01T00:00:00.000Z',
+      )
     })
 
     it('should throw error when no GCS files provided', async () => {
       await expect(
-        getLatestRewards({
+        getRewards({
           gcsFiles: [],
           protocol: 'base-v0' as Protocol,
+          startTimestamp: '2025-01-01T00:00:00.000Z',
+          endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
-      ).rejects.toThrow('No rewards file found for base-v0')
+      ).rejects.toThrow(
+        'No rewards file found for base-v0 for period 2025-01-01T00:00:00.000Z to 2025-02-01T00:00:00.000Z',
+      )
     })
 
     it('should throw error when fetch fails with non-ok response', async () => {
       nock('https://storage.googleapis.com')
         .get(
-          '/bucket/kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
+          '/bucket/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         )
         .reply(404, 'File not found')
 
       await expect(
-        getLatestRewards({
+        getRewards({
           gcsFiles: mockGcsFiles,
           protocol: 'base-v0' as Protocol,
+          startTimestamp: '2025-01-01T00:00:00.000Z',
+          endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
-      ).rejects.toThrow('Failed to fetch rewards file')
+      ).rejects.toThrow(
+        'No rewards file found for base-v0 for period 2025-01-01T00:00:00.000Z to 2025-02-01T00:00:00.000Z',
+      )
     })
 
     it('should throw error when fetch throws an exception', async () => {
       nock('https://storage.googleapis.com')
         .get(
-          '/bucket/kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
+          '/bucket/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         )
         .replyWithError('Network error')
 
       await expect(
-        getLatestRewards({
+        getRewards({
           gcsFiles: mockGcsFiles,
           protocol: 'base-v0' as Protocol,
+          startTimestamp: '2025-01-01T00:00:00.000Z',
+          endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
       ).rejects.toThrow('Network error')
     })
@@ -198,14 +188,16 @@ describe('getLatestRewards', () => {
     it('should throw error when JSON parsing fails', async () => {
       nock('https://storage.googleapis.com')
         .get(
-          '/bucket/kpi/base-v0/2025-03-01T00:00:00.000Z_2025-04-01T00:00:00.000Z/rewards.json',
+          '/bucket/kpi/base-v0/2025-01-01T00:00:00.000Z_2025-02-01T00:00:00.000Z/rewards.json',
         )
         .reply(200, 'Invalid JSON')
 
       await expect(
-        getLatestRewards({
+        getRewards({
           gcsFiles: mockGcsFiles,
           protocol: 'base-v0' as Protocol,
+          startTimestamp: '2025-01-01T00:00:00.000Z',
+          endTimestampExclusive: '2025-02-01T00:00:00.000Z',
         }),
       ).rejects.toThrow('Unexpected token')
     })

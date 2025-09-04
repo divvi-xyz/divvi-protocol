@@ -1,39 +1,48 @@
 export const rewardPoolAbi = [
   {
-    inputs: [],
+    inputs: [
+      {
+        internalType: 'address',
+        name: '_poolToken',
+        type: 'address',
+      },
+      {
+        internalType: 'bytes32',
+        name: '_rewardFunctionId',
+        type: 'bytes32',
+      },
+      {
+        internalType: 'address',
+        name: '_owner',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: '_manager',
+        type: 'address',
+      },
+      {
+        internalType: 'uint256',
+        name: '_timelock',
+        type: 'uint256',
+      },
+      {
+        internalType: 'uint256',
+        name: '_protocolFee',
+        type: 'uint256',
+      },
+      {
+        internalType: 'address',
+        name: '_reserveAddress',
+        type: 'address',
+      },
+    ],
     stateMutability: 'nonpayable',
     type: 'constructor',
   },
   {
     inputs: [],
     name: 'AccessControlBadConfirmation',
-    type: 'error',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'uint48',
-        name: 'schedule',
-        type: 'uint48',
-      },
-    ],
-    name: 'AccessControlEnforcedDefaultAdminDelay',
-    type: 'error',
-  },
-  {
-    inputs: [],
-    name: 'AccessControlEnforcedDefaultAdminRules',
-    type: 'error',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'address',
-        name: 'defaultAdmin',
-        type: 'address',
-      },
-    ],
-    name: 'AccessControlInvalidDefaultAdmin',
     type: 'error',
   },
   {
@@ -53,14 +62,8 @@ export const rewardPoolAbi = [
     type: 'error',
   },
   {
-    inputs: [
-      {
-        internalType: 'address',
-        name: 'target',
-        type: 'address',
-      },
-    ],
-    name: 'AddressEmptyCode',
+    inputs: [],
+    name: 'AlreadyInitialized',
     type: 'error',
   },
   {
@@ -85,22 +88,6 @@ export const rewardPoolAbi = [
     type: 'error',
   },
   {
-    inputs: [
-      {
-        internalType: 'uint256',
-        name: 'usersLength',
-        type: 'uint256',
-      },
-      {
-        internalType: 'uint256',
-        name: 'amountsLength',
-        type: 'uint256',
-      },
-    ],
-    name: 'ArraysLengthMismatch',
-    type: 'error',
-  },
-  {
     inputs: [],
     name: 'CannotRescuePoolToken',
     type: 'error',
@@ -108,22 +95,12 @@ export const rewardPoolAbi = [
   {
     inputs: [
       {
-        internalType: 'address',
-        name: 'implementation',
-        type: 'address',
+        internalType: 'uint256',
+        name: 'index',
+        type: 'uint256',
       },
     ],
-    name: 'ERC1967InvalidImplementation',
-    type: 'error',
-  },
-  {
-    inputs: [],
-    name: 'ERC1967NonPayable',
-    type: 'error',
-  },
-  {
-    inputs: [],
-    name: 'FailedCall',
+    name: 'EmptyIdempotencyKey',
     type: 'error',
   },
   {
@@ -159,8 +136,19 @@ export const rewardPoolAbi = [
     type: 'error',
   },
   {
+    inputs: [
+      {
+        internalType: 'uint256',
+        name: 'fee',
+        type: 'uint256',
+      },
+    ],
+    name: 'InvalidProtocolFee',
+    type: 'error',
+  },
+  {
     inputs: [],
-    name: 'InvalidInitialization',
+    name: 'InvalidReserveAddress',
     type: 'error',
   },
   {
@@ -171,11 +159,6 @@ export const rewardPoolAbi = [
   {
     inputs: [],
     name: 'NativeTransferFailed',
-    type: 'error',
-  },
-  {
-    inputs: [],
-    name: 'NotInitializing',
     type: 'error',
   },
   {
@@ -192,22 +175,6 @@ export const rewardPoolAbi = [
       },
     ],
     name: 'RewardAmountMustBeGreaterThanZero',
-    type: 'error',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'uint8',
-        name: 'bits',
-        type: 'uint8',
-      },
-      {
-        internalType: 'uint256',
-        name: 'value',
-        type: 'uint256',
-      },
-    ],
-    name: 'SafeCastOverflowedUintDowncast',
     type: 'error',
   },
   {
@@ -271,22 +238,6 @@ export const rewardPoolAbi = [
   },
   {
     inputs: [],
-    name: 'UUPSUnauthorizedCallContext',
-    type: 'error',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'bytes32',
-        name: 'slot',
-        type: 'bytes32',
-      },
-    ],
-    name: 'UUPSUnsupportedProxiableUUID',
-    type: 'error',
-  },
-  {
-    inputs: [],
     name: 'UseDepositFunction',
     type: 'error',
   },
@@ -341,39 +292,14 @@ export const rewardPoolAbi = [
         name: 'amount',
         type: 'uint256',
       },
-    ],
-    name: 'ClaimReward',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [],
-    name: 'DefaultAdminDelayChangeCanceled',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
       {
-        indexed: false,
-        internalType: 'uint48',
-        name: 'newDelay',
-        type: 'uint48',
-      },
-      {
-        indexed: false,
-        internalType: 'uint48',
-        name: 'effectSchedule',
-        type: 'uint48',
+        indexed: true,
+        internalType: 'bytes32',
+        name: 'idempotencyKey',
+        type: 'bytes32',
       },
     ],
-    name: 'DefaultAdminDelayChangeScheduled',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [],
-    name: 'DefaultAdminTransferCanceled',
+    name: 'AddRewardSkipped',
     type: 'event',
   },
   {
@@ -382,17 +308,48 @@ export const rewardPoolAbi = [
       {
         indexed: true,
         internalType: 'address',
-        name: 'newAdmin',
+        name: 'user',
         type: 'address',
       },
       {
         indexed: false,
-        internalType: 'uint48',
-        name: 'acceptSchedule',
-        type: 'uint48',
+        internalType: 'uint256',
+        name: 'amount',
+        type: 'uint256',
+      },
+      {
+        indexed: true,
+        internalType: 'bytes32',
+        name: 'idempotencyKey',
+        type: 'bytes32',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256[]',
+        name: 'rewardFunctionArgs',
+        type: 'uint256[]',
       },
     ],
-    name: 'DefaultAdminTransferScheduled',
+    name: 'AddRewardWithIdempotency',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'user',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'amount',
+        type: 'uint256',
+      },
+    ],
+    name: 'ClaimReward',
     type: 'event',
   },
   {
@@ -406,19 +363,6 @@ export const rewardPoolAbi = [
       },
     ],
     name: 'Deposit',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: 'uint64',
-        name: 'version',
-        type: 'uint64',
-      },
-    ],
-    name: 'Initialized',
     type: 'event',
   },
   {
@@ -450,6 +394,56 @@ export const rewardPoolAbi = [
     anonymous: false,
     inputs: [
       {
+        indexed: true,
+        internalType: 'address',
+        name: 'user',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'rewardAmount',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'feeAmount',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'protocolFee',
+        type: 'uint256',
+      },
+    ],
+    name: 'ProtocolFeeCollected',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'newProtocolFee',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'previousProtocolFee',
+        type: 'uint256',
+      },
+    ],
+    name: 'ProtocolFeeUpdated',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
         indexed: false,
         internalType: 'address',
         name: 'token',
@@ -463,6 +457,25 @@ export const rewardPoolAbi = [
       },
     ],
     name: 'RescueToken',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'newReserveAddress',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'previousReserveAddress',
+        type: 'address',
+      },
+    ],
+    name: 'ReserveAddressUpdated',
     type: 'event',
   },
   {
@@ -563,19 +576,6 @@ export const rewardPoolAbi = [
     anonymous: false,
     inputs: [
       {
-        indexed: true,
-        internalType: 'address',
-        name: 'implementation',
-        type: 'address',
-      },
-    ],
-    name: 'Upgraded',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
         indexed: false,
         internalType: 'uint256',
         name: 'amount',
@@ -593,6 +593,19 @@ export const rewardPoolAbi = [
         internalType: 'bytes32',
         name: '',
         type: 'bytes32',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'FEE_DENOMINATOR',
+    outputs: [
+      {
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256',
       },
     ],
     stateMutability: 'view',
@@ -625,36 +638,28 @@ export const rewardPoolAbi = [
     type: 'function',
   },
   {
-    inputs: [],
-    name: 'UPGRADE_INTERFACE_VERSION',
-    outputs: [
-      {
-        internalType: 'string',
-        name: '',
-        type: 'string',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'acceptDefaultAdminTransfer',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
     inputs: [
       {
-        internalType: 'address[]',
-        name: 'users',
-        type: 'address[]',
-      },
-      {
-        internalType: 'uint256[]',
-        name: 'amounts',
-        type: 'uint256[]',
+        components: [
+          {
+            internalType: 'address',
+            name: 'user',
+            type: 'address',
+          },
+          {
+            internalType: 'uint256',
+            name: 'amount',
+            type: 'uint256',
+          },
+          {
+            internalType: 'bytes32',
+            name: 'idempotencyKey',
+            type: 'bytes32',
+          },
+        ],
+        internalType: 'struct RewardPool.RewardData[]',
+        name: 'rewards',
+        type: 'tuple[]',
       },
       {
         internalType: 'uint256[]',
@@ -670,39 +675,6 @@ export const rewardPoolAbi = [
   {
     inputs: [
       {
-        internalType: 'address',
-        name: 'newAdmin',
-        type: 'address',
-      },
-    ],
-    name: 'beginDefaultAdminTransfer',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'cancelDefaultAdminTransfer',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'uint48',
-        name: 'newDelay',
-        type: 'uint48',
-      },
-    ],
-    name: 'changeDefaultAdminDelay',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
         internalType: 'uint256',
         name: 'amount',
         type: 'uint256',
@@ -711,45 +683,6 @@ export const rewardPoolAbi = [
     name: 'claimReward',
     outputs: [],
     stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'defaultAdmin',
-    outputs: [
-      {
-        internalType: 'address',
-        name: '',
-        type: 'address',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'defaultAdminDelay',
-    outputs: [
-      {
-        internalType: 'uint48',
-        name: '',
-        type: 'uint48',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'defaultAdminDelayIncreaseWait',
-    outputs: [
-      {
-        internalType: 'uint48',
-        name: '',
-        type: 'uint48',
-      },
-    ],
-    stateMutability: 'view',
     type: 'function',
   },
   {
@@ -857,11 +790,6 @@ export const rewardPoolAbi = [
         type: 'address',
       },
       {
-        internalType: 'uint48',
-        name: '_changeDefaultAdminDelay',
-        type: 'uint48',
-      },
-      {
         internalType: 'address',
         name: '_manager',
         type: 'address',
@@ -871,6 +799,16 @@ export const rewardPoolAbi = [
         name: '_timelock',
         type: 'uint256',
       },
+      {
+        internalType: 'uint256',
+        name: '_protocolFee',
+        type: 'uint256',
+      },
+      {
+        internalType: 'address',
+        name: '_reserveAddress',
+        type: 'address',
+      },
     ],
     name: 'initialize',
     outputs: [],
@@ -878,8 +816,14 @@ export const rewardPoolAbi = [
     type: 'function',
   },
   {
-    inputs: [],
-    name: 'isNativeToken',
+    inputs: [
+      {
+        internalType: 'bytes32',
+        name: 'idempotencyKey',
+        type: 'bytes32',
+      },
+    ],
+    name: 'isIdempotencyKeyProcessed',
     outputs: [
       {
         internalType: 'bool',
@@ -892,48 +836,12 @@ export const rewardPoolAbi = [
   },
   {
     inputs: [],
-    name: 'owner',
+    name: 'isNativeToken',
     outputs: [
       {
-        internalType: 'address',
+        internalType: 'bool',
         name: '',
-        type: 'address',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'pendingDefaultAdmin',
-    outputs: [
-      {
-        internalType: 'address',
-        name: 'newAdmin',
-        type: 'address',
-      },
-      {
-        internalType: 'uint48',
-        name: 'schedule',
-        type: 'uint48',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'pendingDefaultAdminDelay',
-    outputs: [
-      {
-        internalType: 'uint48',
-        name: 'newDelay',
-        type: 'uint48',
-      },
-      {
-        internalType: 'uint48',
-        name: 'schedule',
-        type: 'uint48',
+        type: 'bool',
       },
     ],
     stateMutability: 'view',
@@ -985,13 +893,32 @@ export const rewardPoolAbi = [
     type: 'function',
   },
   {
-    inputs: [],
-    name: 'proxiableUUID',
-    outputs: [
+    inputs: [
       {
         internalType: 'bytes32',
         name: '',
         type: 'bytes32',
+      },
+    ],
+    name: 'processedIdempotencyKeys',
+    outputs: [
+      {
+        internalType: 'bool',
+        name: '',
+        type: 'bool',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'protocolFee',
+    outputs: [
+      {
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256',
       },
     ],
     stateMutability: 'view',
@@ -1006,7 +933,7 @@ export const rewardPoolAbi = [
       },
       {
         internalType: 'address',
-        name: 'account',
+        name: 'callerConfirmation',
         type: 'address',
       },
     ],
@@ -1026,6 +953,19 @@ export const rewardPoolAbi = [
     name: 'rescueToken',
     outputs: [],
     stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'reserveAddress',
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
+    stateMutability: 'view',
     type: 'function',
   },
   {
@@ -1060,8 +1000,27 @@ export const rewardPoolAbi = [
     type: 'function',
   },
   {
-    inputs: [],
-    name: 'rollbackDefaultAdminDelay',
+    inputs: [
+      {
+        internalType: 'uint256',
+        name: '_protocolFee',
+        type: 'uint256',
+      },
+    ],
+    name: 'setProtocolFee',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: '_reserveAddress',
+        type: 'address',
+      },
+    ],
+    name: 'setReserveAddress',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
@@ -1109,24 +1068,6 @@ export const rewardPoolAbi = [
       },
     ],
     stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'address',
-        name: 'newImplementation',
-        type: 'address',
-      },
-      {
-        internalType: 'bytes',
-        name: 'data',
-        type: 'bytes',
-      },
-    ],
-    name: 'upgradeToAndCall',
-    outputs: [],
-    stateMutability: 'payable',
     type: 'function',
   },
   {
