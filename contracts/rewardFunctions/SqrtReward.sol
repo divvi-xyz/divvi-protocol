@@ -30,7 +30,7 @@ contract SqrtReward is IRewardFunction {
           Math.sqrt(kpis[i].kpi * 1e6),
           totalSqrtKpi
         ),
-        referrerAddress: kpis[i].referrerAddress
+        referrer: kpis[i].referrer
       });
     }
   }

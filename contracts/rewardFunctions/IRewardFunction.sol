@@ -4,12 +4,12 @@ pragma solidity ^0.8.24;
 interface IRewardFunction {
   struct Kpi {
     uint256 kpi;
-    address referrerAddress;
+    address referrer;
   }
 
   struct Reward {
     uint256 reward;
-    address referrerAddress;
+    address referrer;
   }
 
   function calculateReward(
