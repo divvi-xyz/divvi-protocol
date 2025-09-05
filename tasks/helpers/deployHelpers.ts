@@ -36,6 +36,11 @@ type WithoutDefender = {
   approvalProcessId?: never
 }
 
+type ReinitializerConfig = {
+  reinitializerName?: string
+  reinitializerArgs?: any[]
+}
+
 // Contract deployment helper
 export async function deployContract(
   hre: HardhatRuntimeEnvironment,
@@ -144,7 +149,7 @@ export async function upgradeContract(
   hre: HardhatRuntimeEnvironment,
   contractName: string,
   proxyAddress: string,
-  config: DefenderConfig = {},
+  config: DefenderConfig & ReinitializerConfig = {},
 ) {
   const Contract = await hre.ethers.getContractFactory(contractName)
 
@@ -157,6 +162,22 @@ export async function upgradeContract(
       config.defenderUpgradeApprovalProcessId || 'default',
     )
     console.log(`Proxy Address: ${proxyAddress}`)
+
+    if (config.reinitializerName) {
+      console.log(
+        '\n⚠️  WARNING: Defender does not yet support reinitializer calls during upgrades.',
+      )
+      console.log(
+        'See: https://github.com/OpenZeppelin/openzeppelin-upgrades/issues/569',
+      )
+      console.log('The upgrade will proceed without calling the reinitializer.')
+      console.log(
+        'You will need to call the reinitializer manually after the upgrade is approved.',
+      )
+      console.log(
+        `Reinitializer to call: ${config.reinitializerName}(${config.reinitializerArgs?.join(', ') || ''})`,
+      )
+    }
 
     const currentImplementationAddress = await getImplementationAddress(
       hre.ethers.provider,
@@ -187,7 +208,26 @@ export async function upgradeContract(
   } else {
     console.log(`Upgrading ${contractName} with local signer`)
     console.log(`Proxy Address: ${proxyAddress}`)
-    const result = await hre.upgrades.upgradeProxy(proxyAddress, Contract)
+
+    if (config.reinitializerName) {
+      console.log(
+        `Reinitializer function: ${config.reinitializerName}(${config.reinitializerArgs?.join(', ') || ''})`,
+      )
+    }
+
+    const result = await hre.upgrades.upgradeProxy(
+      proxyAddress,
+      Contract,
+      // Add reinitializer call if specified
+      config.reinitializerName
+        ? {
+            call: {
+              fn: config.reinitializerName,
+              args: config.reinitializerArgs || [],
+            },
+          }
+        : {},
+    )
     await result.waitForDeployment()
 
     newImplementationAddress = await getImplementationAddress(

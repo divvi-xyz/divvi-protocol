@@ -80,6 +80,118 @@ describe(CONTRACT_NAME, function () {
     })
   })
 
+  describe('Reinitializer (V1 to V2 upgrade)', function () {
+    async function deployV1Factory() {
+      // Note: This simulates a V1 factory for testing the reinitializer.
+      // In reality, a V1 factory wouldn't have the protocol fee parameters,
+      // but since we don't have the actual V1 implementation available,
+      // we use the current implementation and test the reinitializer behavior.
+      const [deployer, owner, user1] = await hre.ethers.getSigners()
+
+      const LinearReward = await hre.ethers.getContractFactory('LinearReward')
+      const linearReward = await LinearReward.deploy()
+      const rewardFunctionAddress = await linearReward.getAddress()
+
+      const RewardPool =
+        await hre.ethers.getContractFactory(IMPLEMENTATION_NAME)
+      const implementation = await RewardPool.deploy(
+        NATIVE_TOKEN_ADDRESS,
+        rewardFunctionAddress,
+        owner.address,
+        owner.address,
+        (await time.latest()) + TIMELOCK,
+        0,
+        deployer.address,
+      )
+      await implementation.waitForDeployment()
+
+      const Factory = await hre.ethers.getContractFactory(CONTRACT_NAME)
+      const factory = await hre.upgrades.deployProxy(
+        Factory,
+        [
+          owner.address,
+          TRANSFER_DELAY,
+          await implementation.getAddress(),
+          0,
+          deployer.address,
+          owner.address,
+        ],
+        { kind: 'uups' },
+      )
+      await factory.waitForDeployment()
+
+      return { factory, owner, user1 }
+    }
+
+    it('initializes correctly and sets owner automatically', async function () {
+      const { factory, owner, user1 } = await loadFixture(deployV1Factory)
+
+      const protocolFee = hre.ethers.parseEther('0.05')
+      const reserveAddress = user1.address
+      const implementationAddress = user1.address
+
+      await (factory.connect(owner) as typeof factory).initializeV2(
+        protocolFee,
+        reserveAddress,
+        implementationAddress,
+      )
+
+      expect(await factory.defaultProtocolFee()).to.equal(protocolFee)
+      expect(await factory.defaultReserveAddress()).to.equal(reserveAddress)
+      expect(await factory.implementation()).to.equal(implementationAddress)
+      expect(await factory.defaultOwner()).to.equal(owner.address)
+    })
+
+    it('reverts when called by non-admin', async function () {
+      const { factory, user1 } = await loadFixture(deployV1Factory)
+
+      await expect(
+        (factory.connect(user1) as typeof factory).initializeV2(
+          hre.ethers.parseEther('0.05'),
+          user1.address,
+          user1.address,
+        ),
+      ).to.be.revertedWithCustomError(
+        factory,
+        'AccessControlUnauthorizedAccount',
+      )
+    })
+
+    it('can only be called once', async function () {
+      const { factory, owner, user1 } = await loadFixture(deployV1Factory)
+
+      const protocolFee = hre.ethers.parseEther('0.05')
+      const reserveAddress = user1.address
+      const implementationAddress = user1.address
+
+      await (factory.connect(owner) as typeof factory).initializeV2(
+        protocolFee,
+        reserveAddress,
+        implementationAddress,
+      )
+
+      await expect(
+        (factory.connect(owner) as typeof factory).initializeV2(
+          protocolFee,
+          reserveAddress,
+          implementationAddress,
+        ),
+      ).to.be.revertedWithCustomError(factory, 'InvalidInitialization')
+    })
+
+    it('reverts when called with zero implementation address', async function () {
+      const { factory, owner, user1 } = await loadFixture(deployV1Factory)
+
+      await expect(
+        (factory.connect(owner) as typeof factory).initializeV2(
+          hre.ethers.parseEther('0.05'),
+          user1.address,
+          hre.ethers.ZeroAddress,
+        ),
+      ).to.be.revertedWithCustomError(factory, 'ZeroAddressNotAllowed')
+    })
+  })
+
   describe('Create RewardPool', function () {
     let factory: Contract
     let owner: HardhatEthersSigner
