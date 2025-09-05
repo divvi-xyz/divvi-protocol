@@ -224,8 +224,6 @@ To upgrade an existingRewardPoolFactory from V1 to V2 (with protocol fee / rewar
 # Local upgrade
 yarn hardhat reward-pool-factory:upgrade \
     --network <NETWORK> \
-    --use-defender \
-    --defender-deploy-salt <SALT> \
     --proxy-address <PROXY_ADDRESS> \
     --call-initialize-v2 \
     --default-protocol-fee <PROTOCOL_FEE> \
