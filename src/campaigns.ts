@@ -10,27 +10,47 @@ import { main as calculateRewardsLiskV0 } from '../scripts/calculateRewards/lisk
 import { main as calculateRewardsBaseV0 } from '../scripts/calculateRewards/baseV0'
 import { main as calculateRewardsTetherV0 } from '../scripts/calculateRewards/tetherV0'
 
-export type Campaign = {
+type CampaignBase = {
   providerAddress: Address
   protocol: Protocol
   rewardsPoolAddress: Address
   networkId: NetworkId
-  rewardsPeriods: {
-    startTimestamp: string
-    endTimestampExclusive: string
-    calculateRewards?: (args: {
-      resultDirectory: ResultDirectory
-      startTimestamp: string
-      endTimestampExclusive: string
-    }) => Promise<void>
-    calculateRewardSlices?: (args: {
-      resultDirectory: ResultDirectory
-      startTimestamp: string
-      endTimestampExclusive: string
-    }) => Promise<void>
-  }[]
-  valoraRewardsPoolAddress: Address | null // reward pool for redistributing valora rewards
+  valoraRewardsPoolAddress: Address | null
 }
+
+type CalculateRewardsArgs = (args: {
+  resultDirectory: ResultDirectory
+  startTimestamp: string
+  endTimestampExclusive: string
+}) => Promise<void>
+
+type RewardPeriodWithKpi = {
+  startTimestamp: string
+  endTimestampExclusive: string
+  rewardAmount: string
+  calculateRewards?: never
+  calculateRewardSlices?: CalculateRewardsArgs
+}
+
+type RewardPeriodWithoutKpi = {
+  startTimestamp: string
+  endTimestampExclusive: string
+  rewardAmount?: never
+  calculateRewards?: CalculateRewardsArgs
+  calculateRewardSlices?: CalculateRewardsArgs
+}
+
+export type Campaign = CampaignBase &
+  (
+    | {
+        useRewardPoolWithKpi: true
+        rewardsPeriods: RewardPeriodWithKpi[]
+      }
+    | {
+        useRewardPoolWithKpi?: false
+        rewardsPeriods: RewardPeriodWithoutKpi[]
+      }
+  )
 
 const excludedReferrersFromTetherV0 = [
   [

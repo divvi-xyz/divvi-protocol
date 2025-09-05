@@ -1,6 +1,9 @@
 import { writeFileSync, mkdirSync } from 'fs'
 import { dirname } from 'path'
-import { createAddRewardSafeTransactionJSON } from './createSafeTransactionsBatch'
+import {
+  createAddRewardSafeTransactionJSON,
+  createUpdateKpiAndProcessRewardsSafeTransactionJSON,
+} from './createSafeTransactionsBatch'
 
 // Mock fs and path modules
 jest.mock('fs', () => ({
@@ -238,6 +241,90 @@ describe('createAddRewardSafeTransactionJSON', () => {
       expect(secondRewards).toEqual(
         '[["0x1111111111111111111111111111111111111111", "1000000000000000000", "0xef2e1fcded1ae3b33d51b37f94ead3acd4f57529223bea1c170fc2ca54a5e1d2"]]',
       )
+    })
+  })
+})
+
+describe('createUpdateKpiAndProcessRewardsSafeTransactionJSON', () => {
+  const mockFilePath = 'test-transactions.json'
+  const mockRewardPoolAddress = '0x1234567890123456789012345678901234567890'
+  const mockKpis = [
+    {
+      referrer: '0x1111111111111111111111111111111111111111',
+      kpi: BigInt('1000000000000000000'),
+    },
+    {
+      referrer: '0x2222222222222222222222222222222222222222',
+      kpi: BigInt('2000000000000000000'),
+    },
+  ]
+  const mockKpiFunctionId = '0x1234567890123456789012345678901234567890'
+  const mockRewardAmount = BigInt('1000000000000000000')
+  const mockStartTimestamp = new Date('2023-03-01T00:00:00Z')
+  const mockEndTimestampExclusive = new Date('2023-04-01T00:00:00Z')
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('should create directory and write transaction batch JSON to file', () => {
+    createUpdateKpiAndProcessRewardsSafeTransactionJSON({
+      filePath: mockFilePath,
+      rewardPoolAddress: mockRewardPoolAddress,
+      kpis: mockKpis,
+      kpiFunctionId: mockKpiFunctionId,
+      rewardAmount: mockRewardAmount,
+      startTimestamp: mockStartTimestamp,
+      endTimestampExclusive: mockEndTimestampExclusive,
+    })
+
+    expect(dirname).toHaveBeenCalledWith(mockFilePath)
+    expect(mkdirSync).toHaveBeenCalledWith('test-directory', {
+      recursive: true,
+    })
+
+    expect(writeFileSync).toHaveBeenCalledTimes(1)
+    expect(writeFileSync).toHaveBeenCalledWith(
+      mockFilePath,
+      expect.any(String),
+      { encoding: 'utf-8' },
+    )
+
+    const transactionJSON = JSON.parse(
+      (writeFileSync as jest.Mock).mock.calls[0][1],
+    )
+    expect(transactionJSON).toEqual({
+      meta: {},
+      transactions: [
+        {
+          to: '0x1234567890123456789012345678901234567890',
+          value: '0',
+          data: null,
+          contractMethod: expect.objectContaining({
+            name: 'updatePeriodKpis',
+          }),
+          contractInputsValues: {
+            kpis: `[["0x1111111111111111111111111111111111111111", "1000000000000000000"], ["0x2222222222222222222222222222222222222222", "2000000000000000000"]]`,
+            periodStart: '1677628800',
+            periodEndExclusive: '1680307200',
+            kpiFunctionId:
+              '0x0000000000000000000000001234567890123456789012345678901234567890',
+          },
+        },
+        {
+          to: '0x1234567890123456789012345678901234567890',
+          value: '0',
+          data: null,
+          contractMethod: expect.objectContaining({
+            name: 'processPeriod',
+          }),
+          contractInputsValues: {
+            periodStart: '1677628800',
+            periodEndExclusive: '1680307200',
+            totalRewardAmount: '1000000000000000000',
+          },
+        },
+      ],
     })
   })
 })

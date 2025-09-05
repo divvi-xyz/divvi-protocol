@@ -40,6 +40,7 @@ jobs:
             --calculation-timestamp ${{ github.event.inputs.timestamp }} \
             --protocols ${{ github.event.inputs.protocols }} \
             --redis-connection ${{ secrets.REDIS_CONNECTION }}
+            --kpi-function-id ${{ github.sha }}
       - name: Notify Slack on Failure
         if: ${{ failure() || cancelled() }}
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
