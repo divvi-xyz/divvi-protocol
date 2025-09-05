@@ -12,6 +12,8 @@ import './tasks/mockToken'
 import './tasks/divviRegistry'
 import './tasks/dataAvailability'
 import './tasks/rewardPoolFactory'
+import './tasks/linearReward'
+import './tasks/sqrtReward'
 
 dotenv.config()
 
