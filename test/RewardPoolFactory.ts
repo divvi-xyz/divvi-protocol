@@ -88,11 +88,15 @@ describe(CONTRACT_NAME, function () {
       // we use the current implementation and test the reinitializer behavior.
       const [deployer, owner, user1] = await hre.ethers.getSigners()
 
+      const LinearReward = await hre.ethers.getContractFactory('LinearReward')
+      const linearReward = await LinearReward.deploy()
+      const rewardFunctionAddress = await linearReward.getAddress()
+
       const RewardPool =
         await hre.ethers.getContractFactory(IMPLEMENTATION_NAME)
       const implementation = await RewardPool.deploy(
         NATIVE_TOKEN_ADDRESS,
-        MOCK_REWARD_FUNCTION_ID,
+        rewardFunctionAddress,
         owner.address,
         owner.address,
         (await time.latest()) + TIMELOCK,
@@ -124,14 +128,17 @@ describe(CONTRACT_NAME, function () {
 
       const protocolFee = hre.ethers.parseEther('0.05')
       const reserveAddress = user1.address
+      const implementationAddress = user1.address
 
       await (factory.connect(owner) as typeof factory).initializeV2(
         protocolFee,
         reserveAddress,
+        implementationAddress,
       )
 
       expect(await factory.defaultProtocolFee()).to.equal(protocolFee)
       expect(await factory.defaultReserveAddress()).to.equal(reserveAddress)
+      expect(await factory.implementation()).to.equal(implementationAddress)
       expect(await factory.defaultOwner()).to.equal(owner.address)
     })
 
@@ -141,6 +148,7 @@ describe(CONTRACT_NAME, function () {
       await expect(
         (factory.connect(user1) as typeof factory).initializeV2(
           hre.ethers.parseEther('0.05'),
+          user1.address,
           user1.address,
         ),
       ).to.be.revertedWithCustomError(
@@ -154,18 +162,33 @@ describe(CONTRACT_NAME, function () {
 
       const protocolFee = hre.ethers.parseEther('0.05')
       const reserveAddress = user1.address
+      const implementationAddress = user1.address
 
       await (factory.connect(owner) as typeof factory).initializeV2(
         protocolFee,
         reserveAddress,
+        implementationAddress,
       )
 
       await expect(
         (factory.connect(owner) as typeof factory).initializeV2(
           protocolFee,
           reserveAddress,
+          implementationAddress,
         ),
       ).to.be.revertedWithCustomError(factory, 'InvalidInitialization')
+    })
+
+    it('reverts when called with zero implementation address', async function () {
+      const { factory, owner, user1 } = await loadFixture(deployV1Factory)
+
+      await expect(
+        (factory.connect(owner) as typeof factory).initializeV2(
+          hre.ethers.parseEther('0.05'),
+          user1.address,
+          hre.ethers.ZeroAddress,
+        ),
+      ).to.be.revertedWithCustomError(factory, 'ZeroAddressNotAllowed')
     })
   })
 

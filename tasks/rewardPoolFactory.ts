@@ -111,11 +111,22 @@ task('reward-pool-factory:upgrade', 'Upgrade RewardPoolFactory contract')
     'defaultReserveAddress',
     'Default reserve address for protocol fees',
   )
+  .addOptionalParam(
+    'implementationAddress',
+    'Address of the new RewardPool implementation contract',
+  )
   .setAction(async (taskArgs, hre) => {
-    if (taskArgs.callInitializeV2 && !taskArgs.defaultReserveAddress) {
-      throw new Error(
-        'defaultReserveAddress is required when calling initializeV2',
-      )
+    if (taskArgs.callInitializeV2) {
+      if (!taskArgs.defaultReserveAddress) {
+        throw new Error(
+          'defaultReserveAddress is required when calling initializeV2',
+        )
+      }
+      if (!taskArgs.implementationAddress) {
+        throw new Error(
+          'implementationAddress is required when calling initializeV2',
+        )
+      }
     }
 
     await upgradeContract(hre, CONTRACT_NAME, taskArgs.proxyAddress, {
@@ -126,6 +137,7 @@ task('reward-pool-factory:upgrade', 'Upgrade RewardPoolFactory contract')
         reinitializerArgs: [
           hre.ethers.parseEther(taskArgs.defaultProtocolFee),
           taskArgs.defaultReserveAddress,
+          taskArgs.implementationAddress,
         ],
       }),
     })

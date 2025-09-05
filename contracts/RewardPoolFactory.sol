@@ -93,6 +93,7 @@ contract RewardPoolFactory is
    * @dev Reinitializer for V2 upgrade - sets newly added state variables for protocol fee support
    * @param _defaultProtocolFee Default protocol fee numerator (denominator is 10^18)
    * @param _defaultReserveAddress Default address that will receive protocol fees
+   * @param _implementationAddress Address of the RewardPool implementation contract
    *
    * **Protocol Fee:** Uses 18-decimal fixed-point arithmetic (e.g., 0.05 * 1e18 for 5%)
    *
@@ -102,14 +103,17 @@ contract RewardPoolFactory is
    */
   function initializeV2(
     uint256 _defaultProtocolFee,
-    address _defaultReserveAddress
+    address _defaultReserveAddress,
+    address _implementationAddress
   ) public reinitializer(2) onlyRole(DEFAULT_ADMIN_ROLE) {
     if (_defaultReserveAddress == address(0)) revert ZeroAddressNotAllowed();
+    if (_implementationAddress == address(0)) revert ZeroAddressNotAllowed();
     if (_defaultProtocolFee > 1e18)
       revert InvalidProtocolFee(_defaultProtocolFee);
 
     defaultProtocolFee = _defaultProtocolFee;
     defaultReserveAddress = _defaultReserveAddress;
+    implementation = _implementationAddress;
     defaultOwner = owner(); // Use current factory owner as default owner for pools
   }
 
