@@ -39,7 +39,7 @@ jobs:
           yarn ts-node scripts/uploadCurrentPeriodKpis.ts \
             --calculation-timestamp ${{ github.event.inputs.timestamp }} \
             --protocols ${{ github.event.inputs.protocols }} \
-            --redis-connection ${{ secrets.REDIS_CONNECTION }}
+            --redis-connection ${{ secrets.REDIS_CONNECTION }} \
             --kpi-function-id ${{ github.sha }}
       - name: Notify Slack on Failure
         if: ${{ failure() || cancelled() }}
