@@ -168,9 +168,10 @@ export async function uploadCurrentPeriodKpis(
     )
 
     // These are the output files calculateKpi writes with ResultDirectory
-    const outputFilePathCsv = join(outputDir, 'kpi.csv')
-    const outputFilePathJson = join(outputDir, 'kpi.json')
-    const campaignFilePaths = [outputFilePathCsv, outputFilePathJson]
+    const campaignFilePaths = [
+      `${resultDirectory.kpiFileSuffix}.csv`,
+      `${resultDirectory.kpiFileSuffix}.json`,
+    ]
 
     if (campaign.useRewardPoolWithKpi && currentPeriod.rewardAmount) {
       await createRewardPoolWithKpiTxAndSimulateRewards({
@@ -182,13 +183,10 @@ export async function uploadCurrentPeriodKpis(
         excludedReferrers: {},
         kpiFunctionId: args.kpiFunctionId,
       })
-      const rewardsFilePathCsv = join(outputDir, 'rewards.csv')
-      const rewardsFilePathJson = join(outputDir, 'rewards.json')
-      const safeTransactionsJson = join(outputDir, 'safe-transactions.json')
       campaignFilePaths.push(
-        rewardsFilePathCsv,
-        rewardsFilePathJson,
-        safeTransactionsJson,
+        `${resultDirectory.rewardsFileSuffix}.csv`,
+        `${resultDirectory.rewardsFileSuffix}.json`,
+        resultDirectory.safeTransactionsFilePath,
       )
     }
 
@@ -198,13 +196,10 @@ export async function uploadCurrentPeriodKpis(
         startTimestamp: currentPeriod.startTimestamp,
         endTimestampExclusive: currentPeriod.endTimestampExclusive,
       })
-      const rewardsFilePathCsv = join(outputDir, 'rewards.csv')
-      const rewardsFilePathJson = join(outputDir, 'rewards.json')
-      const safeTransactionsJson = join(outputDir, 'safe-transactions.json')
       campaignFilePaths.push(
-        rewardsFilePathCsv,
-        rewardsFilePathJson,
-        safeTransactionsJson,
+        `${resultDirectory.rewardsFileSuffix}.csv`,
+        `${resultDirectory.rewardsFileSuffix}.json`,
+        resultDirectory.safeTransactionsFilePath,
       )
     }
 

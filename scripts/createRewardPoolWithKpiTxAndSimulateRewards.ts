@@ -97,7 +97,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args.startTimestamp)
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const resultDirectory = args.resultDirectory
-  const rewardAmount = args.rewardAmount
+  const rewardAmount = BigInt(args.rewardAmount)
   const kpiData = await resultDirectory.readKpi()
   const campaign = campaigns.find((c) => c.protocol === args.protocol)
   if (!campaign) {
@@ -131,7 +131,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     startTimestamp,
     endTimestampExclusive,
     kpiFunctionId: args.kpiFunctionId,
-    rewardAmount: BigInt(rewardAmount),
+    rewardAmount,
   })
 
   // get the reward function address from the reward pool contract and use it to simulate the rewards calculation
@@ -145,7 +145,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     address: rewardFunctionAddress,
     abi: rewardFunctionAbi,
     functionName: 'calculateReward',
-    args: [kpis, BigInt(rewardAmount)],
+    args: [kpis, rewardAmount],
   })
 
   const rewardsWithMetadata = rewards.map((reward) => ({
