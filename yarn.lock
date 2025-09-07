@@ -1134,15 +1134,15 @@
     "@google-cloud/logging" "^11.0.0"
     google-auth-library "^9.0.0"
 
-"@google-cloud/logging@^11.0.0", "@google-cloud/logging@^11.2.0":
-  version "11.2.0"
-  resolved "https://registry.yarnpkg.com/@google-cloud/logging/-/logging-11.2.0.tgz#d282f136467cc4500932f1fa6d4fe58325eb2db2"
-  integrity sha512-Ma94jvuoMpbgNniwtelOt8w82hxK62FuOXZonEv0Hyk3B+/YVuLG/SWNyY9yMso/RXnPEc1fP2qo9kDrjf/b2w==
+"@google-cloud/logging@^11.0.0", "@google-cloud/logging@^11.2.1":
+  version "11.2.1"
+  resolved "https://registry.yarnpkg.com/@google-cloud/logging/-/logging-11.2.1.tgz#5fe9d7a093e717d071994f95c398d4fadd57ea96"
+  integrity sha512-2h9HBJG3OAsvzXmb81qXmaTPfXYU7KJTQUxunoOKFGnY293YQ/eCkW1Y5mHLocwpEqeqQYT/Qvl6Tk+Q7PfStw==
   dependencies:
     "@google-cloud/common" "^5.0.0"
     "@google-cloud/paginator" "^5.0.0"
     "@google-cloud/projectify" "^4.0.0"
-    "@google-cloud/promisify" "^4.0.0"
+    "@google-cloud/promisify" "4.0.0"
     "@opentelemetry/api" "^1.7.0"
     arrify "^2.0.1"
     dot-prop "^6.0.0"
@@ -1169,7 +1169,7 @@
   resolved "https://registry.yarnpkg.com/@google-cloud/projectify/-/projectify-4.0.0.tgz#d600e0433daf51b88c1fa95ac7f02e38e80a07be"
   integrity sha512-MmaX6HeSvyPbWGwFq7mXdo0uQZLGBYCwziiLIGq5JVX+/bdI3SAq6bP98trV5eTWfLuvsMcIC1YJOF2vfteLFA==
 
-"@google-cloud/promisify@<4.1.0", "@google-cloud/promisify@^4.0.0":
+"@google-cloud/promisify@4.0.0", "@google-cloud/promisify@<4.1.0", "@google-cloud/promisify@^4.0.0":
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/@google-cloud/promisify/-/promisify-4.0.0.tgz#a906e533ebdd0f754dca2509933334ce58b8c8b1"
   integrity sha512-Orxzlfb9c67A15cq2JQEyVc7wEsmFBmHjZWZYQMUyJ1qivXyMwdyNOs9odi79hze+2zqdTtu1E19IM/FtqZ10g==
@@ -3490,12 +3490,12 @@
   dependencies:
     "@google-cloud/functions-framework" "^3.1.3"
 
-"@valora/logging@^1.3.19":
-  version "1.3.19"
-  resolved "https://registry.yarnpkg.com/@valora/logging/-/logging-1.3.19.tgz#07a0f7cc24940467973d6dff4d77d83335330e71"
-  integrity sha512-LiI6UvtSyeeApjXrvUfwb/emopD0D+gus97tAlYVP4ngvFVm88BZHokw/RNnJgNZFiE0R+8knLlSmKEAEi2Lvg==
+"@valora/logging@^1.3.20":
+  version "1.3.20"
+  resolved "https://registry.yarnpkg.com/@valora/logging/-/logging-1.3.20.tgz#24115552d23bf6e98ff3825b5b2dbfe495bead75"
+  integrity sha512-2WtA9hC+occi4nFUyDbSli00Tnv3miZCsZL8dl5lEv7iVZ/UkW5iJ7BIldNElqDu/uTOPIDXQoBFDWGSGOostg==
   dependencies:
-    "@google-cloud/logging" "^11.2.0"
+    "@google-cloud/logging" "^11.2.1"
     "@google-cloud/logging-bunyan" "^5.1.0"
     "@types/bunyan" "^1.8.11"
     "@types/fast-redact" "^3.0.4"
