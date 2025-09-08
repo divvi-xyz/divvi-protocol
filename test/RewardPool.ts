@@ -184,10 +184,14 @@ describe(CONTRACT_NAME, function () {
       const RewardPool = await hre.ethers.getContractFactory(CONTRACT_NAME)
       const [deployer] = await hre.ethers.getSigners()
 
+      const LinearReward = await hre.ethers.getContractFactory('LinearReward')
+      const linearReward = await LinearReward.deploy()
+      const rewardFunctionAddress = await linearReward.getAddress()
+
       await expect(
         RewardPool.deploy(
           NATIVE_TOKEN_ADDRESS,
-          MOCK_REWARD_FUNCTION_ID,
+          rewardFunctionAddress,
           hre.ethers.ZeroAddress, // zero owner
           deployer.address,
           (await time.latest()) + TIMELOCK,
@@ -203,10 +207,14 @@ describe(CONTRACT_NAME, function () {
       const RewardPool = await hre.ethers.getContractFactory(CONTRACT_NAME)
       const [deployer] = await hre.ethers.getSigners()
 
+      const LinearReward = await hre.ethers.getContractFactory('LinearReward')
+      const linearReward = await LinearReward.deploy()
+      const rewardFunctionAddress = await linearReward.getAddress()
+
       await expect(
         RewardPool.deploy(
           NATIVE_TOKEN_ADDRESS,
-          MOCK_REWARD_FUNCTION_ID,
+          rewardFunctionAddress,
           deployer.address,
           hre.ethers.ZeroAddress, // zero manager
           (await time.latest()) + TIMELOCK,
