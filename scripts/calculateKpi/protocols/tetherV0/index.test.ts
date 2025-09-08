@@ -208,7 +208,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       expect(result.length).toBe(0)
     })
 
-    it('should count multiple transfer events', async () => {
+    it('should count all transfer events in total value', async () => {
       mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
         const mockResponse = makeQueryResponse([
           {
