@@ -52,6 +52,7 @@ The RewardPoolFactory contract is upgradeable; it is currently deployed on the f
 | Ethereum | [`0x85Bb35A3a20B4129af1c20685E15112aE99f691e`](https://etherscan.io/address/0x85Bb35A3a20B4129af1c20685E15112aE99f691e)            | [`0xfA21FC892075CCf9c7fAC95Bd985D7d0bF62A478`](https://etherscan.io/address/0xfA21FC892075CCf9c7fAC95Bd985D7d0bF62A478)            |
 | Optimism | [`0x85Bb35A3a20B4129af1c20685E15112aE99f691e`](https://optimistic.etherscan.io/address/0x85Bb35A3a20B4129af1c20685E15112aE99f691e) | [`0xfA21FC892075CCf9c7fAC95Bd985D7d0bF62A478`](https://optimistic.etherscan.io/address/0xfA21FC892075CCf9c7fAC95Bd985D7d0bF62A478) |
 | Morph    | [`0x0Aa092Aa51cFc48Af2e43c8A27fD01D612873b2f`](https://explorer.morphl2.io/address/0x0Aa092Aa51cFc48Af2e43c8A27fD01D612873b2f)     | [`0x388BC65195A898d87cE412EDeEB183126FCF25a6`](https://explorer.morphl2.io/address/0x388BC65195A898d87cE412EDeEB183126FCF25a6)     |
+| Mantle   | [`0xaA6Dee13B78e3E31B85FFdBf70Bc94b801e8DFC8`](https://mantlescan.xyz/address/0xaA6Dee13B78e3E31B85FFdBf70Bc94b801e8DFC8)          | [`0x65ca93A46da89a0DDae23FEc07Af255f75B25A77`](https://mantlescan.xyz/address/0x65ca93A46da89a0DDae23FEc07Af255f75B25A77)          |
 
 ## Registry Contract (v0) -- Deprecated
 

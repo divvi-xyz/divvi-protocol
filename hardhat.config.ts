@@ -41,7 +41,7 @@ const config: HardhatUserConfig = {
       chainId: 42220,
     },
     mainnet: {
-      url: `https://eth-mainnet.g.alchemy.com/public`,
+      url: `https://ethereum-rpc.publicnode.com`,
       accounts,
       chainId: 1,
     },
@@ -71,7 +71,7 @@ const config: HardhatUserConfig = {
       chainId: 137,
     },
     mantle: {
-      url: 'https://mantle-mainnet.g.alchemy.com/public',
+      url: 'https://mantle-rpc.publicnode.com',
       accounts,
       chainId: 5000,
     },
