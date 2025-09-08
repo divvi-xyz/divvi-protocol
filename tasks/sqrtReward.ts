@@ -8,7 +8,6 @@ task('sqrt-reward:deploy', 'Deploy SqrtReward contract')
   .addOptionalParam('defenderDeploySalt', 'Salt to use for CREATE2 deployments')
   .setAction(async (taskArgs, hre) => {
     await deployContract(hre, CONTRACT_NAME, [], {
-      isUpgradeable: true,
       useDefender: taskArgs.useDefender,
       defenderDeploySalt: taskArgs.defenderDeploySalt,
     })
