@@ -179,6 +179,52 @@ describe(CONTRACT_NAME, function () {
         ).to.be.revertedWithCustomError(rewardPool, 'AlreadyInitialized')
       })
     })
+
+    it('reverts when owner is zero address', async function () {
+      const RewardPool = await hre.ethers.getContractFactory(CONTRACT_NAME)
+      const [deployer] = await hre.ethers.getSigners()
+
+      const LinearReward = await hre.ethers.getContractFactory('LinearReward')
+      const linearReward = await LinearReward.deploy()
+      const rewardFunctionAddress = await linearReward.getAddress()
+
+      await expect(
+        RewardPool.deploy(
+          NATIVE_TOKEN_ADDRESS,
+          rewardFunctionAddress,
+          hre.ethers.ZeroAddress, // zero owner
+          deployer.address,
+          (await time.latest()) + TIMELOCK,
+          0,
+          deployer.address,
+        ),
+      )
+        .to.be.revertedWithCustomError(RewardPool, 'ZeroAddressNotAllowed')
+        .withArgs(0)
+    })
+
+    it('reverts when manager is zero address', async function () {
+      const RewardPool = await hre.ethers.getContractFactory(CONTRACT_NAME)
+      const [deployer] = await hre.ethers.getSigners()
+
+      const LinearReward = await hre.ethers.getContractFactory('LinearReward')
+      const linearReward = await LinearReward.deploy()
+      const rewardFunctionAddress = await linearReward.getAddress()
+
+      await expect(
+        RewardPool.deploy(
+          NATIVE_TOKEN_ADDRESS,
+          rewardFunctionAddress,
+          deployer.address,
+          hre.ethers.ZeroAddress, // zero manager
+          (await time.latest()) + TIMELOCK,
+          0,
+          deployer.address,
+        ),
+      )
+        .to.be.revertedWithCustomError(RewardPool, 'ZeroAddressNotAllowed')
+        .withArgs(1)
+    })
   })
 
   describe('Deposit', function () {
