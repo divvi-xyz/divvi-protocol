@@ -71,10 +71,11 @@ export async function main(args: ReturnType<typeof parseArgs>) {
 
   for (const { referrerId, metadata } of kpiData) {
     if (!metadata) continue
-
     totalTransactionsPerReferrer[referrerId] =
       (totalTransactionsPerReferrer[referrerId] ?? 0) +
-      (metadata['totalTransactions'] ?? 0)
+      (typeof metadata['totalTransactions'] === 'number'
+        ? metadata['totalTransactions']
+        : 0)
   }
 
   const rewardsWithMetadata = rewards.map((reward) => ({
