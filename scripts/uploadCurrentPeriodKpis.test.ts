@@ -6,6 +6,7 @@ import { calculateKpi } from './calculateKpi'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import { ResultDirectory } from '../src/resultDirectory'
 import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
+import { main as createRewardPoolWithKpiTxAndSimulateRewards } from './createRewardPoolWithKpiTxAndSimulateRewards'
 import { NetworkId } from './types'
 
 // Mock all the dependencies
@@ -20,6 +21,7 @@ jest.mock('./calculateKpi/protocols', () => ({
     'celo-pg': (...args: unknown[]) => mockHandler(...args),
   },
 }))
+jest.mock('./createRewardPoolWithKpiTxAndSimulateRewards')
 
 const mockFetchReferrals = jest.mocked(fetchReferrals)
 const mockCalculateKpi = jest.mocked(calculateKpi)
@@ -126,12 +128,28 @@ describe('uploadCurrentPeriodKpis', () => {
         },
       ],
     },
+    {
+      providerAddress: '0x0',
+      rewardsPoolAddress: '0x1',
+      networkId: NetworkId['celo-mainnet'],
+      valoraRewardsPoolAddress: null,
+      protocol: 'celo-pg-s1',
+      useRewardPoolWithKpi: true,
+      rewardsPeriods: [
+        {
+          startTimestamp: '2025-06-14T00:00:00Z',
+          endTimestampExclusive: '2025-06-21T00:00:00Z',
+          rewardAmount: '100000',
+        },
+      ],
+    },
   ]
   const defaultArgs = {
     dryRun: false,
     calculationTimestamp: '2025-06-15T14:45:00Z',
     redisConnection: 'redis://localhost:6379',
     protocols: 'celo-pg',
+    kpiFunctionId: '1234567890',
   }
 
   beforeEach(() => {
@@ -219,7 +237,7 @@ describe('uploadCurrentPeriodKpis', () => {
       )
 
       // Should call fetchReferrals for all active campaigns
-      expect(mockFetchReferrals).toHaveBeenCalledTimes(3)
+      expect(mockFetchReferrals).toHaveBeenCalledTimes(4)
       expect(mockFetchReferrals).toHaveBeenCalledWith(
         expect.objectContaining({
           protocol: 'celo-pg',
@@ -233,6 +251,11 @@ describe('uploadCurrentPeriodKpis', () => {
       expect(mockFetchReferrals).toHaveBeenCalledWith(
         expect.objectContaining({
           protocol: 'celo-transactions',
+        }),
+      )
+      expect(mockFetchReferrals).toHaveBeenCalledWith(
+        expect.objectContaining({
+          protocol: 'celo-pg-s1',
         }),
       )
     })
@@ -300,6 +323,25 @@ describe('uploadCurrentPeriodKpis', () => {
         'divvi-campaign-data-production',
         true,
       )
+    })
+  })
+
+  describe('reward pool with kpi', () => {
+    it('should call createRewardPoolWithKpiTxAndSimulateRewards', async () => {
+      await uploadCurrentPeriodKpis(
+        { ...defaultArgs, protocols: 'celo-pg-s1' },
+        mockCampaigns,
+      )
+
+      expect(createRewardPoolWithKpiTxAndSimulateRewards).toHaveBeenCalledWith({
+        protocol: 'celo-pg-s1',
+        kpiFunctionId: '1234567890',
+        startTimestamp: '2025-06-14T00:00:00Z',
+        endTimestampExclusive: '2025-06-21T00:00:00Z',
+        rewardAmount: '100000',
+        excludedReferrers: {},
+        resultDirectory: expect.any(Object),
+      })
     })
   })
 })

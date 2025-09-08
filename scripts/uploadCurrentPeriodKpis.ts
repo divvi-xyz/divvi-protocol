@@ -7,6 +7,7 @@ import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import yargs from 'yargs'
 import { ResultDirectory } from '../src/resultDirectory'
 import { Campaign, campaigns } from '../src/campaigns'
+import { main as createRewardPoolWithKpiTxAndSimulateRewards } from './createRewardPoolWithKpiTxAndSimulateRewards'
 
 async function getArgs() {
   const argv = await yargs
@@ -32,6 +33,11 @@ async function getArgs() {
       type: 'string',
       description:
         'redis connection string, to run locally use redis://127.0.0.1:6379',
+    })
+    .option('kpi-function-id', {
+      type: 'string',
+      description: 'the kpi function id (e.g., github commit hash)',
+      demandOption: true,
     }).argv
 
   return {
@@ -39,6 +45,7 @@ async function getArgs() {
     calculationTimestamp: argv['calculation-timestamp'],
     redisConnection: argv['redis-connection'],
     protocols: argv['protocols'],
+    kpiFunctionId: argv['kpi-function-id'],
   }
 }
 
@@ -161,9 +168,27 @@ export async function uploadCurrentPeriodKpis(
     )
 
     // These are the output files calculateKpi writes with ResultDirectory
-    const outputFilePathCsv = join(outputDir, 'kpi.csv')
-    const outputFilePathJson = join(outputDir, 'kpi.json')
-    const campaignFilePaths = [outputFilePathCsv, outputFilePathJson]
+    const campaignFilePaths = [
+      `${resultDirectory.kpiFileSuffix}.csv`,
+      `${resultDirectory.kpiFileSuffix}.json`,
+    ]
+
+    if (campaign.useRewardPoolWithKpi && currentPeriod.rewardAmount) {
+      await createRewardPoolWithKpiTxAndSimulateRewards({
+        resultDirectory,
+        startTimestamp: currentPeriod.startTimestamp,
+        endTimestampExclusive: currentPeriod.endTimestampExclusive,
+        rewardAmount: currentPeriod.rewardAmount,
+        protocol: campaign.protocol,
+        excludedReferrers: {},
+        kpiFunctionId: args.kpiFunctionId,
+      })
+      campaignFilePaths.push(
+        `${resultDirectory.rewardsFileSuffix}.csv`,
+        `${resultDirectory.rewardsFileSuffix}.json`,
+        resultDirectory.safeTransactionsFilePath,
+      )
+    }
 
     if (currentPeriod.calculateRewards) {
       await currentPeriod.calculateRewards({
@@ -171,13 +196,10 @@ export async function uploadCurrentPeriodKpis(
         startTimestamp: currentPeriod.startTimestamp,
         endTimestampExclusive: currentPeriod.endTimestampExclusive,
       })
-      const rewardsFilePathCsv = join(outputDir, 'rewards.csv')
-      const rewardsFilePathJson = join(outputDir, 'rewards.json')
-      const safeTransactionsJson = join(outputDir, 'safe-transactions.json')
       campaignFilePaths.push(
-        rewardsFilePathCsv,
-        rewardsFilePathJson,
-        safeTransactionsJson,
+        `${resultDirectory.rewardsFileSuffix}.csv`,
+        `${resultDirectory.rewardsFileSuffix}.json`,
+        resultDirectory.safeTransactionsFilePath,
       )
     }
 
