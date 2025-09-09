@@ -110,9 +110,12 @@ export async function main(args: ReturnType<typeof parseArgs>) {
 
     totalTransactionsPerReferrer[referrerId] =
       (totalTransactionsPerReferrer[referrerId] ?? 0) +
-      Object.values(metadata).reduce((sum, networkData) => {
-        return sum + (networkData.txCount ?? 0)
-      }, 0)
+      Object.values(metadata as Record<string, { txCount?: number }>).reduce(
+        (sum, networkData) => {
+          return sum + (networkData.txCount ?? 0)
+        },
+        0,
+      )
   }
 
   const rewardsWithMetadata = rewards.map((reward) => ({

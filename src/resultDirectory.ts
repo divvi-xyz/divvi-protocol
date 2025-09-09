@@ -8,10 +8,7 @@ export interface KpiRow {
   referrerId: string
   userAddress: string
   kpi: string
-  metadata?:
-    | { [key: string]: number }
-    // Type for Tether V0 segmented by network
-    | { [key: string]: { [key: string]: number } }
+  metadata?: Record<string, unknown>
 }
 
 interface ReferralRow {
