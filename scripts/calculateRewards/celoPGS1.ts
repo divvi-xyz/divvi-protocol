@@ -4,6 +4,12 @@ import { calculateRewards } from '../../src/celoPGRewards'
 import { ResultDirectory } from '../../src/resultDirectory'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { parseEther } from 'viem'
+import {
+  ExcludedReferrers,
+  getDivviRewardsExcludedReferrers,
+} from '../utils/divviRewardsExcludedReferrers'
+import fs from 'fs'
+import { parse } from 'csv-parse/sync'
 
 // TODO: support both CELO and OP reward pools
 const REWARD_POOL_ADDRESS = '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5' // on Celo mainnet
@@ -33,8 +39,31 @@ function parseArgs() {
       type: 'string',
       demandOption: true,
     })
+    .option('excluded-referrers-csv', {
+      alias: 'x',
+      description: 'the excluded referrers for this time period in CSV format',
+      type: 'string',
+    })
     .strict()
     .parseSync()
+
+  const excludedReferrers: Record<
+    string,
+    { referrerId: string; shouldWarn?: boolean }
+  > = !args['excluded-referrers-csv']
+    ? {}
+    : parse(fs.readFileSync(args['excluded-referrers-csv'], 'utf8'), {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+      }).reduce((acc: ExcludedReferrers, row: { referrerId: string }) => {
+        const address = row['referrerId'].toLowerCase()
+        acc[address] = {
+          referrerId: address,
+          shouldWarn: false,
+        }
+        return acc
+      }, {} as ExcludedReferrers)
 
   return {
     resultDirectory: new ResultDirectory({
@@ -46,6 +75,7 @@ function parseArgs() {
     startTimestamp: args['start-timestamp'],
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
+    excludedReferrers,
   }
 }
 
@@ -59,10 +89,20 @@ export async function main(args: ReturnType<typeof parseArgs>) {
 
   const kpiData = await resultDirectory.readKpi()
 
+  let excludedReferrers = await getDivviRewardsExcludedReferrers()
+  if (
+    args.excludedReferrers &&
+    Object.keys(args.excludedReferrers).length > 0
+  ) {
+    excludedReferrers = { ...excludedReferrers, ...args.excludedReferrers }
+  }
+
+  await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
+
   const rewards = calculateRewards({
     kpiData,
     rewards: BigNumber(parseEther(rewardAmount)),
-    excludedReferrers: {},
+    excludedReferrers,
   })
 
   const totalTransactionsPerReferrer: {
