@@ -25,6 +25,7 @@ interface SheetRow {
   twitterHandle: string
   telegramHandle: string
   discordUsername: string
+  appUrl: string
 }
 
 interface EntityRow {
@@ -33,6 +34,8 @@ interface EntityRow {
   twitterHandle: string
   telegramHandle: string
   discordUsername: string
+  // It's just a website -- we don't actually do any verification that it's an "app"
+  websiteUrl: string
 }
 
 async function readFromGoogleSheets(
@@ -69,6 +72,7 @@ async function readFromGoogleSheets(
     twitterHandle: row[2] || '',
     telegramHandle: row[3] || '',
     discordUsername: row[4] || '',
+    appUrl: row[5] || '',
   }))
 
   // Transform to entities format (similar to builderInfo2Entities.ts)
@@ -80,6 +84,7 @@ async function readFromGoogleSheets(
       twitterHandle: row.twitterHandle,
       telegramHandle: row.telegramHandle,
       discordUsername: row.discordUsername,
+      websiteUrl: row.appUrl,
     }))
 
   return entities
