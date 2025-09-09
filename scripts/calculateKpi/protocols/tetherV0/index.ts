@@ -306,7 +306,7 @@ export async function calculateKpi({
               metadata: {},
             }
           }
-          kpiByReferrer[referrerId].kpi += txCount
+          kpiByReferrer[referrerId].kpi += totalValue.toNumber()
           kpiByReferrer[referrerId].metadata![networkId] = {
             txCount,
             addresses: Array.from(addresses),
@@ -408,7 +408,8 @@ export async function calculateKpiBatch({
                 metadata: {},
               }
             }
-            kpiByUserAndReferrer[userAddress][referrerId].kpi += txCount
+            kpiByUserAndReferrer[userAddress][referrerId].kpi +=
+              totalValue.toNumber()
             kpiByUserAndReferrer[userAddress][referrerId].metadata![networkId] =
               {
                 txCount,

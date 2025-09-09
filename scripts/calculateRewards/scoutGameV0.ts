@@ -100,7 +100,8 @@ export async function main(args: ReturnType<typeof parseArgs>) {
 
     for (const [key, value] of Object.entries(metadata)) {
       segmentedKpiPerReferrer[referrerId][key] =
-        (segmentedKpiPerReferrer[referrerId][key] ?? 0n) + BigInt(value)
+        (segmentedKpiPerReferrer[referrerId][key] ?? 0n) +
+        BigInt(value as string)
     }
   }
 
