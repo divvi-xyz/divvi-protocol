@@ -75,6 +75,27 @@ const excludedReferrersFromTetherV0 = [
     ),
 ]
 
+const excludedReferrersFromCeloPGS1 = [
+  [
+    '0x37b5a29b9532940414bbc59c616696daba16169c',
+    '0xe70ffe8d559207261a17834c58786bfd53cd8642',
+    '0x4ea48e01f1314db0925653e30617b254d1cf5366',
+    '0x10265305e8b7ce057d70875f0fd44f2ee48456cb',
+    '0xd59b83de618561c8ff4e98fc29a1b96abcbfb18a',
+  ]
+    .map((address) => address.toLowerCase())
+    .reduce(
+      (acc, address) => {
+        acc[address] = {
+          referrerId: address,
+          shouldWarn: false,
+        }
+        return acc
+      },
+      {} as Record<string, { referrerId: string; shouldWarn: boolean }>,
+    ),
+]
+
 export const campaigns: Campaign[] = [
   {
     providerAddress: '0x0423189886d7966f0dd7e7d256898daeee625dca',
@@ -381,6 +402,7 @@ export const campaigns: Campaign[] = [
             startTimestamp,
             endTimestampExclusive,
             rewardAmount: '25000',
+            excludedReferrers: excludedReferrersFromCeloPGS1[0],
           })
         },
       },
@@ -397,6 +419,7 @@ export const campaigns: Campaign[] = [
             startTimestamp,
             endTimestampExclusive,
             rewardAmount: '25000',
+            excludedReferrers: {},
           })
         },
       },
@@ -413,6 +436,7 @@ export const campaigns: Campaign[] = [
             startTimestamp,
             endTimestampExclusive,
             rewardAmount: '25000',
+            excludedReferrers: {},
           })
         },
       },
@@ -430,6 +454,7 @@ export const campaigns: Campaign[] = [
             endTimestampExclusive,
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
+            excludedReferrers: {},
           })
         },
       },
@@ -447,6 +472,7 @@ export const campaigns: Campaign[] = [
             endTimestampExclusive,
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
+            excludedReferrers: {},
           })
         },
       },
@@ -464,6 +490,7 @@ export const campaigns: Campaign[] = [
             endTimestampExclusive,
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
+            excludedReferrers: {},
           })
         },
       },
@@ -481,6 +508,7 @@ export const campaigns: Campaign[] = [
             endTimestampExclusive,
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
+            excludedReferrers: {},
           })
         },
       },
@@ -498,6 +526,7 @@ export const campaigns: Campaign[] = [
             endTimestampExclusive,
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
+            excludedReferrers: {},
           })
         },
       },
