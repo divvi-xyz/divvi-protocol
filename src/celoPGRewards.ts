@@ -26,6 +26,7 @@ export function calculateRewards({
   kpiData,
   rewards,
   excludedReferrers,
+  previousStageData = [],
   stageBonusRatio = 0.25, // 25% for stage bonuses, 75% for base rewards
 }: {
   kpiData: KpiRow[]
@@ -37,9 +38,14 @@ export function calculateRewards({
       shouldWarn?: boolean
     }
   >
+  previousStageData: KpiRow[][]
   stageBonusRatio?: number
 }) {
   const { referrerReferrals, referrerKpis } = getReferrerMetricsFromKpi(kpiData)
+  const {
+    referrerReferrals: stageReferrerReferrals,
+    referrerKpis: stageReferrerKpis,
+  } = getReferrerMetricsFromKpi([...kpiData, ...previousStageData.flat()])
 
   // Split reward pools
   const baseRewardPool = rewards.times(1 - stageBonusRatio)
@@ -55,15 +61,25 @@ export function calculateRewards({
   )
 
   // Calculate stage for each referrer once
-  const referrerStages = Object.entries(referrerKpis).reduce(
+  const referrerStages = Object.entries(stageReferrerKpis).reduce(
     (acc, [referrerId, kpi]) => {
-      acc[referrerId] = calculateStage({
-        uniqueWallets: referrerReferrals[referrerId],
-        gasUsage: kpi,
-      })
+      let uniqueWallets = stageReferrerReferrals[referrerId]
+      let gasUsage = kpi
+
+      acc[referrerId] = {
+        stage: calculateStage({
+          uniqueWallets,
+          gasUsage,
+        }),
+        uniqueWallets,
+        gasUsage,
+      }
       return acc
     },
-    {} as Record<string, number>,
+    {} as Record<
+      string,
+      { stage: number; uniqueWallets: number; gasUsage: bigint }
+    >,
   )
 
   const totalPower = Object.entries(referrerPowerKpis).reduce(
@@ -83,7 +99,7 @@ export function calculateRewards({
       }
 
       // exclude stage 0 referrers from all rewards
-      const stage = referrerStages[referrerId]
+      const stage = referrerStages[referrerId].stage
       if (stage === 0) {
         return sum
       }
@@ -94,7 +110,7 @@ export function calculateRewards({
   )
 
   const totalStageWeight = Object.entries(referrerStages).reduce(
-    (sum, [referrerId, stage]) => {
+    (sum, [referrerId, { stage }]) => {
       if (referrerId.toLowerCase() in excludedReferrers) {
         return sum
       }
@@ -107,7 +123,11 @@ export function calculateRewards({
   const rewardsPerReferrer = Object.entries(referrerKpis).map(
     ([referrerId, kpi]) => {
       const isExcluded = referrerId.toLowerCase() in excludedReferrers
-      const stage = referrerStages[referrerId]
+      const {
+        stage,
+        uniqueWallets: uniqueWalletsForStageCalculation,
+        gasUsage: gasUsageForStageCalculation,
+      } = referrerStages[referrerId]
 
       // Calculate pure sqrt reward for comparison (full pool, no stage logic)
       // Stage 0 gets no rewards at all
@@ -146,6 +166,8 @@ export function calculateRewards({
         baseReward: baseReward.toFixed(0, BigNumber.ROUND_DOWN),
         stageBonus: stageBonus.toFixed(0, BigNumber.ROUND_DOWN),
         rewardAmount: totalReward.toFixed(0, BigNumber.ROUND_DOWN),
+        uniqueWalletsForStageCalculation,
+        gasUsageForStageCalculation,
       }
     },
   )

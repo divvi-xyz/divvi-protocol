@@ -1,7 +1,7 @@
 import yargs from 'yargs'
 import { BigNumber } from 'bignumber.js'
 import { calculateRewards } from '../../src/celoPGRewards'
-import { ResultDirectory } from '../../src/resultDirectory'
+import { KpiRow, ResultDirectory } from '../../src/resultDirectory'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { parseEther } from 'viem'
 import {
@@ -44,6 +44,16 @@ function parseArgs() {
       description: 'the excluded referrers for this time period in CSV format',
       type: 'string',
     })
+    .option('previous-start-timestamp', {
+      description: 'previous start timestamp',
+      type: 'string',
+      implies: ['previous-end-timestamp'],
+    })
+    .option('previous-end-timestamp', {
+      description: 'previous end timestamp',
+      type: 'string',
+      implies: ['previous-start-timestamp'],
+    })
     .strict()
     .parseSync()
 
@@ -65,6 +75,16 @@ function parseArgs() {
         return acc
       }, {} as ExcludedReferrers)
 
+  let previousResultDirectory: ResultDirectory | null = null
+  if (args['previous-start-timestamp'] && args['previous-end-timestamp']) {
+    previousResultDirectory = new ResultDirectory({
+      datadir: args.datadir,
+      name: 'celo-pg-s1',
+      startTimestamp: new Date(args['previous-start-timestamp']),
+      endTimestampExclusive: new Date(args['previous-end-timestamp']),
+    })
+  }
+
   return {
     resultDirectory: new ResultDirectory({
       datadir: args.datadir,
@@ -76,6 +96,7 @@ function parseArgs() {
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
     excludedReferrers,
+    previousResultDirectory,
   }
 }
 
@@ -85,6 +106,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     startTimestamp,
     endTimestampExclusive,
     rewardAmount,
+    previousResultDirectory,
   } = args
 
   const kpiData = await resultDirectory.readKpi()
@@ -99,10 +121,17 @@ export async function main(args: ReturnType<typeof parseArgs>) {
 
   await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
+  let previousStageData: KpiRow[][] = []
+  if (previousResultDirectory) {
+    // TODO(sbw): read previous stage data
+    previousStageData = []
+  }
+
   const rewards = calculateRewards({
     kpiData,
     rewards: BigNumber(parseEther(rewardAmount)),
     excludedReferrers,
+    previousStageData,
   })
 
   const totalTransactionsPerReferrer: {
