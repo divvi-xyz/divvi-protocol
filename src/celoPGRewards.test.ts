@@ -54,6 +54,8 @@ describe('calculateRewards', () => {
         baseReward: '0', // Stage 0 gets no rewards at all
         stageBonus: '0', // Stage 0 gets no bonus
         rewardAmount: '0', // Stage 0 gets no rewards at all
+        uniqueWalletsForStageCalculation: 0,
+        gasUsageForStageCalculation: '0',
       },
       {
         referrerId: '0xstage1',
@@ -66,6 +68,8 @@ describe('calculateRewards', () => {
         baseReward: '39369',
         stageBonus: '25000', // Stage 1 gets bonus
         rewardAmount: '64369',
+        uniqueWalletsForStageCalculation: 0,
+        gasUsageForStageCalculation: '0',
       },
       {
         referrerId: '0xstage2',
@@ -78,6 +82,8 @@ describe('calculateRewards', () => {
         baseReward: '124497',
         stageBonus: '50000', // Stage 2 gets higher bonus
         rewardAmount: '174497',
+        uniqueWalletsForStageCalculation: 0,
+        gasUsageForStageCalculation: '0',
       },
       {
         referrerId: '0xstage3',
@@ -90,6 +96,8 @@ describe('calculateRewards', () => {
         baseReward: '248994',
         stageBonus: '75000', // Stage 3 gets even higher bonus
         rewardAmount: '323994',
+        uniqueWalletsForStageCalculation: 0,
+        gasUsageForStageCalculation: '0',
       },
       {
         referrerId: '0xstage4',
@@ -102,6 +110,8 @@ describe('calculateRewards', () => {
         baseReward: '337139',
         stageBonus: '100000', // Stage 4 gets highest bonus
         rewardAmount: '437139',
+        uniqueWalletsForStageCalculation: 0,
+        gasUsageForStageCalculation: '0',
       },
     ])
   })
@@ -137,6 +147,8 @@ describe('calculateRewards', () => {
         baseReward: '0', // Excluded
         stageBonus: '0', // Excluded
         rewardAmount: '0', // Excluded
+        uniqueWalletsForStageCalculation: 0,
+        gasUsageForStageCalculation: '0',
       },
       {
         referrerId: '0xreferrer2',
@@ -149,6 +161,8 @@ describe('calculateRewards', () => {
         baseReward: '22500', // 75% of pool (25% goes to stage bonus)
         stageBonus: '7500', // 25% of pool (stage 1 gets full stage bonus since only qualified referrer)
         rewardAmount: '30000', // Total: 22500 + 7500
+        uniqueWalletsForStageCalculation: 0,
+        gasUsageForStageCalculation: '0',
       },
     ])
   })
@@ -184,6 +198,8 @@ describe('calculateRewards', () => {
         baseReward: '750', // 75% of pool (25% goes to stage bonus)
         stageBonus: '250', // 25% of pool (gets full stage bonus since only referrer)
         rewardAmount: '1000', // Total: 750 + 250
+        uniqueWalletsForStageCalculation: 0,
+        gasUsageForStageCalculation: '0',
       },
     ])
   })
@@ -208,6 +224,8 @@ describe('calculateRewards', () => {
         baseReward: '0',
         stageBonus: '0',
         rewardAmount: '0',
+        uniqueWalletsForStageCalculation: 0,
+        gasUsageForStageCalculation: '0',
       },
     ])
   })
