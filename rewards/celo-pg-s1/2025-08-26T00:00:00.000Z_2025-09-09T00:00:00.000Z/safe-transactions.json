@@ -1,0 +1,47 @@
+{
+  "meta": {},
+  "transactions": [
+    {
+      "to": "0xb14e0d244746FE8Ad6dA763B44f43669fab620f5",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "idempotencyKey",
+                "type": "bytes32"
+              }
+            ],
+            "internalType": "struct RewardPool.RewardData[]",
+            "name": "rewards",
+            "type": "tuple[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "rewardFunctionArgs",
+            "type": "uint256[]"
+          }
+        ],
+        "name": "addRewards",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "rewards": "[[\"0xe6e6c0ddf053822bbbc1f39218f30ea25fca58dd\", \"1907788781039512915625\", \"0x53dbd683d0c8b1f2bc876bd18f6cecd8e8e52862cfb47c8fdc98aec5fd89e7a8\"], [\"0x2c2bc76b97bce84a5a9c6e2835ab13306b964cf1\", \"9461408994847793589750\", \"0x5dc8d40a13686bc62fd66e147c72708f4a705c7626436c8c30aa2d3ae6ba9135\"], [\"0x03909bb1e9799336d4a8c49b74343c2a85fdad9d\", \"1830489792860515882812\", \"0x42baf9523cf6ce7779ba384156c3a8a53d0a7fef17b0864c6cd70e3f54fe9e35\"], [\"0x66582d24fead72555adac681cc621cacbb208324\", \"8144811529968834903250\", \"0x1b9171d7767715122b13f0c242ee34964568d27a00d4f17f890b0969775e94bd\"], [\"0x91090d6c03c9f2d05db069b1729ba45f1925517b\", \"3655500901283342708750\", \"0x1080b2dafdaa88d83122a4a43117b5a2d255a043067b1d6f43ae3a5823363128\"]]",
+        "rewardFunctionArgs": "[1756166400, 1757376000]"
+      }
+    }
+  ]
+}
