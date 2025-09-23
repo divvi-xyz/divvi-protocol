@@ -127,7 +127,6 @@ export async function main(args: ReturnType<typeof parseArgs>) {
         return previousKpi
       }),
     )
-    console.log('previousStageData', previousStageData)
   }
 
   const rewards = calculateRewards({
