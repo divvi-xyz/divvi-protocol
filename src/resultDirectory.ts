@@ -121,6 +121,10 @@ export class ResultDirectory {
     ])
   }
 
+  async readRewards<T>() {
+    return (await this._readJson(this.rewardsFileSuffix)) as T[]
+  }
+
   async readKpi() {
     return (await this._readJson(this.kpiFileSuffix)) as KpiRow[]
   }
