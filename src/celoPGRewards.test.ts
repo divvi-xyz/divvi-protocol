@@ -38,6 +38,7 @@ describe('calculateRewards', () => {
       kpiData,
       rewards: new BigNumber('1000000'),
       excludedReferrers: {},
+      previousStageData: {},
     })
 
     // Verify sqrt-based calculation, KPI aggregation, and all 5 stages
@@ -120,6 +121,7 @@ describe('calculateRewards', () => {
       excludedReferrers: {
         '0xreferrer1': { referrerId: '0xreferrer1' }, // Lowercase in exclude list
       },
+      previousStageData: {},
     })
 
     // referrer1 excluded, referrer2 reaches stage 1 and gets all rewards
@@ -157,6 +159,7 @@ describe('calculateRewards', () => {
         kpiData: [],
         rewards: new BigNumber('1000'),
         excludedReferrers: {},
+        previousStageData: {},
       }),
     ).toStrictEqual([])
   })
@@ -167,6 +170,7 @@ describe('calculateRewards', () => {
         kpiData: createUsers('0xref1', 100, '10000000'), // 100 wallets, 1B total gas = stage 1
         rewards: new BigNumber('1000'),
         excludedReferrers: {},
+        previousStageData: {},
       }),
     ).toStrictEqual([
       {
@@ -190,6 +194,7 @@ describe('calculateRewards', () => {
         kpiData: [{ referrerId: '0xref1', userAddress: '0xuser1', kpi: '100' }],
         rewards: new BigNumber('0'),
         excludedReferrers: {},
+        previousStageData: {},
       }),
     ).toStrictEqual([
       {
