@@ -421,12 +421,14 @@ export const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '25000',
             excludedReferrers: {},
-            previousResultDirectories: [new ResultDirectory({
-              datadir: 'rewards',
-              name: 'celo-pg-s1',
-              startTimestamp: new Date('2025-08-26T00:00:00Z'),
-              endTimestampExclusive: new Date('2025-09-09T00:00:00Z'),
-            })],
+            previousResultDirectories: [
+              new ResultDirectory({
+                datadir: 'rewards',
+                name: 'celo-pg-s1',
+                startTimestamp: new Date('2025-08-26T00:00:00Z'),
+                endTimestampExclusive: new Date('2025-09-09T00:00:00Z'),
+              }),
+            ],
           })
         },
       },
