@@ -1,7 +1,7 @@
 import yargs from 'yargs'
 import { BigNumber } from 'bignumber.js'
 import { calculateRewards } from '../../src/celoPGRewards'
-import { ResultDirectory } from '../../src/resultDirectory'
+import { KpiRow, ResultDirectory } from '../../src/resultDirectory'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { parseEther } from 'viem'
 import {
@@ -13,12 +13,6 @@ import { parse } from 'csv-parse/sync'
 
 // TODO: support both CELO and OP reward pools
 const REWARD_POOL_ADDRESS = '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5' // on Celo mainnet
-
-interface RewardRow {
-  referrerId: string
-  uniqueWalletsForStageCalculation: number
-  gasUsageForStageCalculation: string
-}
 
 function parseArgs() {
   const args = yargs
@@ -127,23 +121,10 @@ export async function main(args: ReturnType<typeof parseArgs>) {
 
   await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
-  let previousStageData: Record<
-    string,
-    { uniqueWallets: number; gasUsage: bigint }
-  > = {}
+  let previousStageData: KpiRow[][] = []
   if (previousResultDirectory) {
-    const previousRewards =
-      await previousResultDirectory.readRewards<RewardRow>()
-    previousStageData = previousRewards.reduce(
-      (acc, reward) => {
-        acc[reward.referrerId] = {
-          uniqueWallets: reward.uniqueWalletsForStageCalculation,
-          gasUsage: BigInt(reward.gasUsageForStageCalculation),
-        }
-        return acc
-      },
-      {} as Record<string, { uniqueWallets: number; gasUsage: bigint }>,
-    )
+    // TODO(sbw): read previous stage data
+    previousStageData = []
   }
 
   const rewards = calculateRewards({

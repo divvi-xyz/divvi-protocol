@@ -38,7 +38,7 @@ describe('calculateRewards', () => {
       kpiData,
       rewards: new BigNumber('1000000'),
       excludedReferrers: {},
-      previousStageData: {},
+      previousStageData: [],
     })
 
     // Verify sqrt-based calculation, KPI aggregation, and all 5 stages
@@ -48,70 +48,70 @@ describe('calculateRewards', () => {
         kpi: 25_000_000_000n,
         referralCount: 50,
         uniqueWallets: 50,
+        uniqueWalletsForStageCalculation: 50,
         gasUsage: 25_000_000_000n, // 25B
+        gasUsageForStageCalculation: 25_000_000_000n,
         stage: 0,
         sqrtOnlyReward: '0', // Stage 0 gets no rewards at all
         baseReward: '0', // Stage 0 gets no rewards at all
         stageBonus: '0', // Stage 0 gets no bonus
         rewardAmount: '0', // Stage 0 gets no rewards at all
-        uniqueWalletsForStageCalculation: 0,
-        gasUsageForStageCalculation: '0',
       },
       {
         referrerId: '0xstage1',
         kpi: 1_500_000_000n,
         referralCount: 150,
         uniqueWallets: 150,
+        uniqueWalletsForStageCalculation: 150,
         gasUsage: 1_500_000_000n, // 1.5B
+        gasUsageForStageCalculation: 1_500_000_000n,
         stage: 1,
         sqrtOnlyReward: '52492',
         baseReward: '39369',
         stageBonus: '25000', // Stage 1 gets bonus
         rewardAmount: '64369',
-        uniqueWalletsForStageCalculation: 0,
-        gasUsageForStageCalculation: '0',
       },
       {
         referrerId: '0xstage2',
         kpi: 15_000_000_000n,
         referralCount: 3000,
         uniqueWallets: 3_000,
+        uniqueWalletsForStageCalculation: 3_000,
         gasUsage: 15_000_000_000n, // 15B
+        gasUsageForStageCalculation: 15_000_000_000n,
         stage: 2,
         sqrtOnlyReward: '165996',
         baseReward: '124497',
         stageBonus: '50000', // Stage 2 gets higher bonus
         rewardAmount: '174497',
-        uniqueWalletsForStageCalculation: 0,
-        gasUsageForStageCalculation: '0',
       },
       {
         referrerId: '0xstage3',
         kpi: 60_000_000_000n,
         referralCount: 12_000,
         uniqueWallets: 12_000,
+        uniqueWalletsForStageCalculation: 12_000,
         gasUsage: 60_000_000_000n, // 60B
+        gasUsageForStageCalculation: 60_000_000_000n,
         stage: 3,
         sqrtOnlyReward: '331992',
         baseReward: '248994',
         stageBonus: '75000', // Stage 3 gets even higher bonus
         rewardAmount: '323994',
-        uniqueWalletsForStageCalculation: 0,
-        gasUsageForStageCalculation: '0',
       },
       {
         referrerId: '0xstage4',
         kpi: 110_000_000_000n,
         referralCount: 1_100_000,
         uniqueWallets: 1_100_000,
+        uniqueWalletsForStageCalculation: 1_100_000,
         gasUsage: 110_000_000_000n, // 110B
+        gasUsageForStageCalculation: 110_000_000_000n,
         stage: 4,
         sqrtOnlyReward: '449519',
         baseReward: '337139',
         stageBonus: '100000', // Stage 4 gets highest bonus
         rewardAmount: '437139',
-        uniqueWalletsForStageCalculation: 0,
-        gasUsageForStageCalculation: '0',
       },
     ])
   })
@@ -131,7 +131,7 @@ describe('calculateRewards', () => {
       excludedReferrers: {
         '0xreferrer1': { referrerId: '0xreferrer1' }, // Lowercase in exclude list
       },
-      previousStageData: {},
+      previousStageData: [],
     })
 
     // referrer1 excluded, referrer2 reaches stage 1 and gets all rewards
@@ -141,28 +141,28 @@ describe('calculateRewards', () => {
         kpi: 5_000n, // 50 * 100
         referralCount: 50,
         uniqueWallets: 50,
+        uniqueWalletsForStageCalculation: 50,
         gasUsage: 5_000n,
+        gasUsageForStageCalculation: 5_000n,
         stage: 0,
         sqrtOnlyReward: '0', // Excluded from all calculations
         baseReward: '0', // Excluded
         stageBonus: '0', // Excluded
         rewardAmount: '0', // Excluded
-        uniqueWalletsForStageCalculation: 0,
-        gasUsageForStageCalculation: '0',
       },
       {
         referrerId: '0xreferrer2',
         kpi: 750_000_000n, // 150 * 5M
         referralCount: 150,
         uniqueWallets: 150,
+        uniqueWalletsForStageCalculation: 150,
         gasUsage: 750_000_000n,
+        gasUsageForStageCalculation: 750_000_000n,
         stage: 1,
         sqrtOnlyReward: '30000', // Gets all rewards since it's the only qualified referrer
         baseReward: '22500', // 75% of pool (25% goes to stage bonus)
         stageBonus: '7500', // 25% of pool (stage 1 gets full stage bonus since only qualified referrer)
         rewardAmount: '30000', // Total: 22500 + 7500
-        uniqueWalletsForStageCalculation: 0,
-        gasUsageForStageCalculation: '0',
       },
     ])
   })
@@ -173,7 +173,7 @@ describe('calculateRewards', () => {
         kpiData: [],
         rewards: new BigNumber('1000'),
         excludedReferrers: {},
-        previousStageData: {},
+        previousStageData: [],
       }),
     ).toStrictEqual([])
   })
@@ -184,7 +184,7 @@ describe('calculateRewards', () => {
         kpiData: createUsers('0xref1', 100, '10000000'), // 100 wallets, 1B total gas = stage 1
         rewards: new BigNumber('1000'),
         excludedReferrers: {},
-        previousStageData: {},
+        previousStageData: [],
       }),
     ).toStrictEqual([
       {
@@ -192,14 +192,14 @@ describe('calculateRewards', () => {
         kpi: 1_000_000_000n, // 100 * 10M
         referralCount: 100,
         uniqueWallets: 100,
+        uniqueWalletsForStageCalculation: 100,
         gasUsage: 1_000_000_000n,
+        gasUsageForStageCalculation: 1_000_000_000n,
         stage: 1,
         sqrtOnlyReward: '1000', // Gets all rewards since it's the only referrer
         baseReward: '750', // 75% of pool (25% goes to stage bonus)
         stageBonus: '250', // 25% of pool (gets full stage bonus since only referrer)
         rewardAmount: '1000', // Total: 750 + 250
-        uniqueWalletsForStageCalculation: 0,
-        gasUsageForStageCalculation: '0',
       },
     ])
   })
@@ -210,7 +210,7 @@ describe('calculateRewards', () => {
         kpiData: [{ referrerId: '0xref1', userAddress: '0xuser1', kpi: '100' }],
         rewards: new BigNumber('0'),
         excludedReferrers: {},
-        previousStageData: {},
+        previousStageData: [],
       }),
     ).toStrictEqual([
       {
@@ -218,14 +218,14 @@ describe('calculateRewards', () => {
         kpi: 100n,
         referralCount: 1,
         uniqueWallets: 1,
+        uniqueWalletsForStageCalculation: 1,
         gasUsage: 100n,
+        gasUsageForStageCalculation: 100n,
         stage: 0,
         sqrtOnlyReward: '0', // Zero rewards = zero for all fields
         baseReward: '0',
         stageBonus: '0',
         rewardAmount: '0',
-        uniqueWalletsForStageCalculation: 0,
-        gasUsageForStageCalculation: '0',
       },
     ])
   })
