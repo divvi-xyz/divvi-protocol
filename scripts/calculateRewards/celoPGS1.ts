@@ -14,6 +14,12 @@ import { parse } from 'csv-parse/sync'
 // TODO: support both CELO and OP reward pools
 const REWARD_POOL_ADDRESS = '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5' // on Celo mainnet
 
+interface RewardRow {
+  referrerId: string
+  uniqueWalletsForStageCalculation: number
+  gasUsageForStageCalculation: string
+}
+
 function parseArgs() {
   const args = yargs
     .option('datadir', {
@@ -44,6 +50,16 @@ function parseArgs() {
       description: 'the excluded referrers for this time period in CSV format',
       type: 'string',
     })
+    .option('previous-start-timestamp', {
+      description: 'previous start timestamp',
+      type: 'string',
+      implies: ['previous-end-timestamp'],
+    })
+    .option('previous-end-timestamp', {
+      description: 'previous end timestamp',
+      type: 'string',
+      implies: ['previous-start-timestamp'],
+    })
     .strict()
     .parseSync()
 
@@ -65,6 +81,16 @@ function parseArgs() {
         return acc
       }, {} as ExcludedReferrers)
 
+  let previousResultDirectory: ResultDirectory | null = null
+  if (args['previous-start-timestamp'] && args['previous-end-timestamp']) {
+    previousResultDirectory = new ResultDirectory({
+      datadir: args.datadir,
+      name: 'celo-pg-s1',
+      startTimestamp: new Date(args['previous-start-timestamp']),
+      endTimestampExclusive: new Date(args['previous-end-timestamp']),
+    })
+  }
+
   return {
     resultDirectory: new ResultDirectory({
       datadir: args.datadir,
@@ -76,6 +102,7 @@ function parseArgs() {
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
     excludedReferrers,
+    previousResultDirectory,
   }
 }
 
@@ -85,6 +112,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     startTimestamp,
     endTimestampExclusive,
     rewardAmount,
+    previousResultDirectory,
   } = args
 
   const kpiData = await resultDirectory.readKpi()
@@ -99,10 +127,30 @@ export async function main(args: ReturnType<typeof parseArgs>) {
 
   await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
+  let previousStageData: Record<
+    string,
+    { uniqueWallets: number; gasUsage: bigint }
+  > = {}
+  if (previousResultDirectory) {
+    const previousRewards =
+      await previousResultDirectory.readRewards<RewardRow>()
+    previousStageData = previousRewards.reduce(
+      (acc, reward) => {
+        acc[reward.referrerId] = {
+          uniqueWallets: reward.uniqueWalletsForStageCalculation,
+          gasUsage: BigInt(reward.gasUsageForStageCalculation),
+        }
+        return acc
+      },
+      {} as Record<string, { uniqueWallets: number; gasUsage: bigint }>,
+    )
+  }
+
   const rewards = calculateRewards({
     kpiData,
     rewards: BigNumber(parseEther(rewardAmount)),
     excludedReferrers,
+    previousStageData,
   })
 
   const totalTransactionsPerReferrer: {

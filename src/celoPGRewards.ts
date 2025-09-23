@@ -26,6 +26,7 @@ export function calculateRewards({
   kpiData,
   rewards,
   excludedReferrers,
+  previousStageData,
   stageBonusRatio = 0.25, // 25% for stage bonuses, 75% for base rewards
 }: {
   kpiData: KpiRow[]
@@ -37,6 +38,7 @@ export function calculateRewards({
       shouldWarn?: boolean
     }
   >
+  previousStageData: Record<string, { uniqueWallets: number; gasUsage: bigint }>
   stageBonusRatio?: number
 }) {
   const { referrerReferrals, referrerKpis } = getReferrerMetricsFromKpi(kpiData)
@@ -57,9 +59,18 @@ export function calculateRewards({
   // Calculate stage for each referrer once
   const referrerStages = Object.entries(referrerKpis).reduce(
     (acc, [referrerId, kpi]) => {
+      let uniqueWallets = referrerReferrals[referrerId]
+      let gasUsage = kpi
+
+      const previousStage = previousStageData[referrerId]
+      if (previousStage) {
+        uniqueWallets = uniqueWallets + previousStage.uniqueWallets
+        gasUsage = gasUsage + previousStage.gasUsage
+      }
+
       acc[referrerId] = calculateStage({
-        uniqueWallets: referrerReferrals[referrerId],
-        gasUsage: kpi,
+        uniqueWallets,
+        gasUsage,
       })
       return acc
     },
@@ -146,6 +157,9 @@ export function calculateRewards({
         baseReward: baseReward.toFixed(0, BigNumber.ROUND_DOWN),
         stageBonus: stageBonus.toFixed(0, BigNumber.ROUND_DOWN),
         rewardAmount: totalReward.toFixed(0, BigNumber.ROUND_DOWN),
+        // TODO(sbw): add uniqueWalletsForStageCalculation and gasUsageForStageCalculation
+        uniqueWalletsForStageCalculation: 0,
+        gasUsageForStageCalculation: '0',
       }
     },
   )

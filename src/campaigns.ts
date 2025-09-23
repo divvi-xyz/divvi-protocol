@@ -403,6 +403,7 @@ export const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '25000',
             excludedReferrers: excludedReferrersFromCeloPGS1[0],
+            previousResultDirectory: null,
           })
         },
       },
@@ -420,6 +421,7 @@ export const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '25000',
             excludedReferrers: {},
+            previousResultDirectory: null,
           })
         },
       },
@@ -437,6 +439,7 @@ export const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '25000',
             excludedReferrers: {},
+            previousResultDirectory: null,
           })
         },
       },
@@ -455,6 +458,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
+            previousResultDirectory: null,
           })
         },
       },
@@ -473,6 +477,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
+            previousResultDirectory: null,
           })
         },
       },
@@ -491,6 +496,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
+            previousResultDirectory: null,
           })
         },
       },
@@ -509,6 +515,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
+            previousResultDirectory: null,
           })
         },
       },
@@ -527,6 +534,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
+            previousResultDirectory: null,
           })
         },
       },
