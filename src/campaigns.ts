@@ -379,6 +379,40 @@ export const campaigns: Campaign[] = [
           })
         },
       },
+      {
+        startTimestamp: '2025-09-30T00:00:00Z',
+        endTimestampExclusive: '2025-10-31T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }) => {
+          await calculateRewardsTetherV0({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '15000000000', // 15000 USDT
+            excludedReferrers: {},
+          })
+        },
+      },
+      {
+        startTimestamp: '2025-10-31T00:00:00Z',
+        endTimestampExclusive: '2025-12-01T00:00:00Z',
+        calculateRewards: async ({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+        }) => {
+          await calculateRewardsTetherV0({
+            resultDirectory,
+            startTimestamp,
+            endTimestampExclusive,
+            rewardAmount: '15000000000', // 15000 USDT
+            excludedReferrers: {},
+          })
+        },
+      },
     ],
   },
   {
