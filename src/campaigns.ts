@@ -441,7 +441,7 @@ export const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '25000',
             excludedReferrers: {},
-            previousKpiFiles: [''],
+            previousKpiFiles: [],
           })
         },
       },
@@ -460,7 +460,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
-            previousKpiFiles: [''],
+            previousKpiFiles: [],
           })
         },
       },
@@ -479,7 +479,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
-            previousKpiFiles: [''],
+            previousKpiFiles: [],
           })
         },
       },
@@ -498,7 +498,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
-            previousKpiFiles: [''],
+            previousKpiFiles: [],
           })
         },
       },
@@ -517,7 +517,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
-            previousKpiFiles: [''],
+            previousKpiFiles: [],
           })
         },
       },
@@ -536,7 +536,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
-            previousKpiFiles: [''],
+            previousKpiFiles: [],
           })
         },
       },
