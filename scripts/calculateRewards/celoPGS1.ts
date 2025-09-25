@@ -1,6 +1,6 @@
 import yargs from 'yargs'
 import { BigNumber } from 'bignumber.js'
-import { calculateRewards } from '../../src/celoPGRewards'
+import { calculateRewards, calculateStageV0 } from '../../src/celoPGRewards'
 import { KpiRow, ResultDirectory } from '../../src/resultDirectory'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { parseEther } from 'viem'
@@ -23,6 +23,8 @@ async function readKpiFile(url: string) {
     return JSON.parse(fs.readFileSync(url, 'utf8')) as KpiRow[]
   }
 }
+
+const stageFunctions = [calculateStageV0]
 
 function parseArgs() {
   const args = yargs
@@ -61,6 +63,12 @@ function parseArgs() {
       string: true,
       default: [],
     })
+    .option('stage-function-version', {
+      description: 'the version of the stage function',
+      type: 'number',
+      choices: stageFunctions.map((_, index) => index),
+      demandOption: true,
+    })
     .strict()
     .parseSync()
 
@@ -94,6 +102,7 @@ function parseArgs() {
     rewardAmount: args['reward-amount'],
     excludedReferrers,
     previousKpiFiles: args['previous-kpi-files'],
+    stageFunction: stageFunctions[args['stage-function-version']],
   }
 }
 
@@ -104,6 +113,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     endTimestampExclusive,
     rewardAmount,
     previousKpiFiles,
+    stageFunction,
   } = args
 
   const kpiData = await resultDirectory.readKpi()
@@ -128,6 +138,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     rewards: BigNumber(parseEther(rewardAmount)),
     excludedReferrers,
     previousStageData,
+    stageFunction,
   })
 
   const totalTransactionsPerReferrer: {

@@ -2,7 +2,7 @@ import { KpiRow } from './resultDirectory'
 import { BigNumber } from 'bignumber.js'
 import { getReferrerMetricsFromKpi } from '../scripts/calculateRewards/getReferrerMetricsFromKpi'
 
-function calculateStage({
+export function calculateStageV0({
   uniqueWallets,
   gasUsage,
 }: {
@@ -26,6 +26,7 @@ export function calculateRewards({
   kpiData,
   rewards,
   excludedReferrers,
+  stageFunction,
   previousStageData = [],
   stageBonusRatio = 0.25, // 25% for stage bonuses, 75% for base rewards
 }: {
@@ -38,6 +39,13 @@ export function calculateRewards({
       shouldWarn?: boolean
     }
   >
+  stageFunction: ({
+    uniqueWallets,
+    gasUsage,
+  }: {
+    uniqueWallets: number
+    gasUsage: bigint
+  }) => number
   previousStageData: KpiRow[][]
   stageBonusRatio?: number
 }) {
@@ -67,7 +75,7 @@ export function calculateRewards({
       let gasUsage = kpi
 
       acc[referrerId] = {
-        stage: calculateStage({
+        stage: stageFunction({
           uniqueWallets,
           gasUsage,
         }),
