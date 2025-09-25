@@ -9,6 +9,22 @@ import { main as calculateRewardsScoutGame } from '../scripts/calculateRewards/s
 import { main as calculateRewardsLiskV0 } from '../scripts/calculateRewards/liskV0'
 import { main as calculateRewardsBaseV0 } from '../scripts/calculateRewards/baseV0'
 import { main as calculateRewardsTetherV0 } from '../scripts/calculateRewards/tetherV0'
+import { toPeriodFolderName } from '../scripts/utils/dateFormatting'
+
+export const STORAGE_BUCKET_NAME = 'divvi-campaign-data-production'
+export const DATADIR = 'kpi'
+
+function getKpiFileUrl(
+  campaignName: string,
+  startTimestamp: string,
+  endTimestampExclusive: string,
+) {
+  const periodFolderName = toPeriodFolderName({
+    startTimestamp: new Date(startTimestamp),
+    endTimestampExclusive: new Date(endTimestampExclusive),
+  })
+  return `https://storage.googleapis.com/${STORAGE_BUCKET_NAME}/${DATADIR}/${campaignName}/${periodFolderName}/kpi.json`
+}
 
 type CampaignBase = {
   providerAddress: Address
@@ -456,7 +472,7 @@ export const campaigns: Campaign[] = [
             rewardAmount: '25000',
             excludedReferrers: {},
             previousKpiFiles: [
-              'https://storage.googleapis.com/divvi-campaign-data-production/kpi/celo-pg-s1/2025-08-26T00:00:00.000Z_2025-09-09T00:00:00.000Z/kpi.json',
+              getKpiFileUrl('celo-pg-s1', '2025-08-26T00:00:00Z', '2025-09-09T00:00:00Z'),
             ],
           })
         },
