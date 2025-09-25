@@ -1,5 +1,5 @@
 import { BigNumber } from 'bignumber.js'
-import { calculateRewards } from './celoPGRewards'
+import { calculateRewards, calculateStageV0 } from './celoPGRewards'
 import { KpiRow } from './resultDirectory'
 
 // Helper function to create multiple users for a referrer
@@ -39,6 +39,7 @@ describe('calculateRewards', () => {
       rewards: new BigNumber('1000000'),
       excludedReferrers: {},
       previousStageData: [],
+      stageFunction: calculateStageV0,
     })
 
     // Verify sqrt-based calculation, KPI aggregation, and all 5 stages
@@ -132,6 +133,7 @@ describe('calculateRewards', () => {
         '0xreferrer1': { referrerId: '0xreferrer1' }, // Lowercase in exclude list
       },
       previousStageData: [],
+      stageFunction: calculateStageV0,
     })
 
     // referrer1 excluded, referrer2 reaches stage 1 and gets all rewards
@@ -174,6 +176,7 @@ describe('calculateRewards', () => {
         rewards: new BigNumber('1000'),
         excludedReferrers: {},
         previousStageData: [],
+        stageFunction: calculateStageV0,
       }),
     ).toStrictEqual([])
   })
@@ -185,6 +188,7 @@ describe('calculateRewards', () => {
         rewards: new BigNumber('1000'),
         excludedReferrers: {},
         previousStageData: [],
+        stageFunction: calculateStageV0,
       }),
     ).toStrictEqual([
       {
@@ -211,6 +215,7 @@ describe('calculateRewards', () => {
         rewards: new BigNumber('0'),
         excludedReferrers: {},
         previousStageData: [],
+        stageFunction: calculateStageV0,
       }),
     ).toStrictEqual([
       {
