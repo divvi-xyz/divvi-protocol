@@ -6,12 +6,8 @@ import { toPeriodFolderName } from './utils/dateFormatting'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import yargs from 'yargs'
 import { ResultDirectory } from '../src/resultDirectory'
-import {
-  Campaign,
-  campaigns,
-  STORAGE_BUCKET_NAME,
-  DATADIR,
-} from '../src/campaigns'
+import { campaigns, STORAGE_BUCKET_NAME, DATADIR } from '../src/campaigns'
+import { Campaign } from '../src/types'
 import { main as createRewardPoolWithKpiTxAndSimulateRewards } from './createRewardPoolWithKpiTxAndSimulateRewards'
 
 async function getArgs() {
