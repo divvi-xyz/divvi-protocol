@@ -6,7 +6,12 @@ import { toPeriodFolderName } from './utils/dateFormatting'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import yargs from 'yargs'
 import { ResultDirectory } from '../src/resultDirectory'
-import { Campaign, campaigns, STORAGE_BUCKET_NAME, DATADIR } from '../src/campaigns'
+import {
+  Campaign,
+  campaigns,
+  STORAGE_BUCKET_NAME,
+  DATADIR,
+} from '../src/campaigns'
 import { main as createRewardPoolWithKpiTxAndSimulateRewards } from './createRewardPoolWithKpiTxAndSimulateRewards'
 
 async function getArgs() {
@@ -217,11 +222,7 @@ export async function uploadCurrentPeriodKpis(
     }
 
     const validPaths = campaignFilePaths.filter((path) => path !== null)
-    await uploadFilesToGCS(
-      validPaths,
-      STORAGE_BUCKET_NAME,
-      args.dryRun,
-    )
+    await uploadFilesToGCS(validPaths, STORAGE_BUCKET_NAME, args.dryRun)
     console.log(`🎉 Uploaded files for campaign ${campaign.protocol}`)
   }
 

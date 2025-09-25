@@ -472,7 +472,11 @@ export const campaigns: Campaign[] = [
             rewardAmount: '25000',
             excludedReferrers: {},
             previousKpiFiles: [
-              getKpiFileUrl('celo-pg-s1', '2025-08-26T00:00:00Z', '2025-09-09T00:00:00Z'),
+              getKpiFileUrl(
+                'celo-pg-s1',
+                '2025-08-26T00:00:00Z',
+                '2025-09-09T00:00:00Z',
+              ),
             ],
           })
         },
