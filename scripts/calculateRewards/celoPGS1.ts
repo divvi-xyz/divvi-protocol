@@ -10,9 +10,19 @@ import {
 } from '../utils/divviRewardsExcludedReferrers'
 import fs from 'fs'
 import { parse } from 'csv-parse/sync'
+import axios from 'axios'
 
 // TODO: support both CELO and OP reward pools
 const REWARD_POOL_ADDRESS = '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5' // on Celo mainnet
+
+async function readKpiFile(url: string) {
+  if (url.startsWith('https://')) {
+    const response = await axios.get(url)
+    return response.data as KpiRow[]
+  } else {
+    return JSON.parse(fs.readFileSync(url, 'utf8')) as KpiRow[]
+  }
+}
 
 function parseArgs() {
   const args = yargs
@@ -44,8 +54,9 @@ function parseArgs() {
       description: 'the excluded referrers for this time period in CSV format',
       type: 'string',
     })
-    .option('previous-timestamps', {
-      description: 'previous start and end timestamps, separated by a comma',
+    .option('previous-kpi-files', {
+      description:
+        'URL of the kpi file that should be include in stage calculation',
       type: 'array',
       string: true,
       default: [],
@@ -71,18 +82,6 @@ function parseArgs() {
         return acc
       }, {} as ExcludedReferrers)
 
-  const previousResultDirectories: ResultDirectory[] = args[
-    'previous-timestamps'
-  ].map((timestamps: string) => {
-    const [startTimestamp, endTimestampExclusive] = timestamps.split(',')
-    return new ResultDirectory({
-      datadir: args.datadir,
-      name: 'celo-pg-s1',
-      startTimestamp: new Date(startTimestamp),
-      endTimestampExclusive: new Date(endTimestampExclusive),
-    })
-  })
-
   return {
     resultDirectory: new ResultDirectory({
       datadir: args.datadir,
@@ -94,7 +93,7 @@ function parseArgs() {
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
     excludedReferrers,
-    previousResultDirectories,
+    previousKpiFiles: args['previous-kpi-files'],
   }
 }
 
@@ -104,7 +103,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     startTimestamp,
     endTimestampExclusive,
     rewardAmount,
-    previousResultDirectories,
+    previousKpiFiles,
   } = args
 
   const kpiData = await resultDirectory.readKpi()
@@ -120,13 +119,8 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
   let previousStageData: KpiRow[][] = []
-  if (previousResultDirectories.length > 0) {
-    previousStageData = await Promise.all(
-      previousResultDirectories.map(async (previousResultDirectory) => {
-        const previousKpi = await previousResultDirectory.readKpi()
-        return previousKpi
-      }),
-    )
+  if (previousKpiFiles.length > 0) {
+    previousStageData = await Promise.all(previousKpiFiles.map(readKpiFile))
   }
 
   const rewards = calculateRewards({

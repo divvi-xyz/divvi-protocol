@@ -437,7 +437,7 @@ export const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '25000',
             excludedReferrers: excludedReferrersFromCeloPGS1[0],
-            previousResultDirectories: [],
+            previousKpiFiles: [],
           })
         },
       },
@@ -455,13 +455,8 @@ export const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '25000',
             excludedReferrers: {},
-            previousResultDirectories: [
-              new ResultDirectory({
-                datadir: 'rewards',
-                name: 'celo-pg-s1',
-                startTimestamp: new Date('2025-08-26T00:00:00Z'),
-                endTimestampExclusive: new Date('2025-09-09T00:00:00Z'),
-              }),
+            previousKpiFiles: [
+              'https://storage.googleapis.com/divvi-campaign-data-production/kpi/celo-pg-s1/2025-08-26T00:00:00.000Z_2025-09-09T00:00:00.000Z/kpi.json',
             ],
           })
         },
@@ -480,7 +475,7 @@ export const campaigns: Campaign[] = [
             endTimestampExclusive,
             rewardAmount: '25000',
             excludedReferrers: {},
-            previousResultDirectories: [],
+            previousKpiFiles: [],
           })
         },
       },
@@ -499,7 +494,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
-            previousResultDirectories: [],
+            previousKpiFiles: [],
           })
         },
       },
@@ -518,7 +513,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
-            previousResultDirectories: [],
+            previousKpiFiles: [],
           })
         },
       },
@@ -537,7 +532,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
-            previousResultDirectories: [],
+            previousKpiFiles: [],
           })
         },
       },
@@ -556,7 +551,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
-            previousResultDirectories: [],
+            previousKpiFiles: [],
           })
         },
       },
@@ -575,7 +570,7 @@ export const campaigns: Campaign[] = [
             // TODO: reward both CELO and OP
             rewardAmount: '25000',
             excludedReferrers: {},
-            previousResultDirectories: [],
+            previousKpiFiles: [],
           })
         },
       },
