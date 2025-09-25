@@ -56,6 +56,7 @@ const excludedReferrersFromCeloPGS1 = [
     '0x10265305e8b7ce057d70875f0fd44f2ee48456cb',
     '0xd59b83de618561c8ff4e98fc29a1b96abcbfb18a',
   ]),
+  excludeRecord(['0xda404bfda2a5dcda88fd2aa9b9e0c32a677bc8eb']),
 ]
 
 const tetherV0Campaign: Campaign = {
@@ -176,7 +177,7 @@ const celoPGS1Campaign: Campaign = {
           startTimestamp,
           endTimestampExclusive,
           rewardAmount: '25000',
-          excludedReferrers: {},
+          excludedReferrers: excludedReferrersFromCeloPGS1[1],
           previousKpiFiles: [
             getKpiFileUrl(
               'celo-pg-s1',
