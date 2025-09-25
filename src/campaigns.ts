@@ -64,248 +64,252 @@ const excludedReferrersFromCeloPGS1 = [
     ),
 ]
 
+const tetherV0Campaign: Campaign = {
+  providerAddress: '0xe451b7Cd488aD2Bf6bfdECD7702a2967329cC1D0',
+  protocol: 'tether-v0',
+  rewardsPoolAddress: '0xb575210cdf52b18000ae24be4981e9abc7716f98',
+  networkId: NetworkId['ethereum-mainnet'],
+  valoraRewardsPoolAddress: null,
+  rewardsPeriods: [
+    {
+      startTimestamp: '2025-07-28T00:00:00Z',
+      endTimestampExclusive: '2025-08-30T00:00:00Z',
+      calculateRewards: async ({
+        resultDirectory,
+        startTimestamp,
+        endTimestampExclusive,
+      }) => {
+        await calculateRewardsTetherV0({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+          rewardAmount: '5000000000', // 5000 USDT
+          excludedReferrers: excludedReferrersFromTetherV0[0],
+        })
+      },
+    },
+    {
+      startTimestamp: '2025-08-30T00:00:00Z',
+      endTimestampExclusive: '2025-09-30T00:00:00Z',
+      calculateRewards: async ({
+        resultDirectory,
+        startTimestamp,
+        endTimestampExclusive,
+      }) => {
+        await calculateRewardsTetherV0({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+          rewardAmount: '10000000000', // 10000 USDT
+          excludedReferrers: {},
+        })
+      },
+    },
+    {
+      startTimestamp: '2025-09-30T00:00:00Z',
+      endTimestampExclusive: '2025-10-31T00:00:00Z',
+      calculateRewards: async ({
+        resultDirectory,
+        startTimestamp,
+        endTimestampExclusive,
+      }) => {
+        await calculateRewardsTetherV0({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+          rewardAmount: '15000000000', // 15000 USDT
+          excludedReferrers: {},
+        })
+      },
+    },
+    {
+      startTimestamp: '2025-10-31T00:00:00Z',
+      endTimestampExclusive: '2025-12-01T00:00:00Z',
+      calculateRewards: async ({
+        resultDirectory,
+        startTimestamp,
+        endTimestampExclusive,
+      }) => {
+        await calculateRewardsTetherV0({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+          rewardAmount: '15000000000', // 15000 USDT
+          excludedReferrers: {},
+        })
+      },
+    },
+  ],
+}
+
+const celoPGS1Campaign: Campaign = {
+  protocol: 'celo-pg-s1',
+  providerAddress: '0xd452036ca4552c51706e77eD2b2Bf0f3c1E24E7A',
+  // TODO: support both CELO and OP reward pools
+  rewardsPoolAddress: '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5',
+  networkId: NetworkId['celo-mainnet'],
+  valoraRewardsPoolAddress: null,
+  rewardsPeriods: [
+    {
+      startTimestamp: '2025-08-26T00:00:00Z',
+      endTimestampExclusive: '2025-09-09T00:00:00Z',
+      calculateRewards: async ({
+        resultDirectory,
+        startTimestamp,
+        endTimestampExclusive,
+      }) => {
+        await calculateRewardsCeloPGS1({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+          rewardAmount: '25000',
+          excludedReferrers: excludedReferrersFromCeloPGS1[0],
+          previousKpiFiles: [],
+        })
+      },
+    },
+    {
+      startTimestamp: '2025-09-09T00:00:00Z',
+      endTimestampExclusive: '2025-09-23T00:00:00Z',
+      calculateRewards: async ({
+        resultDirectory,
+        startTimestamp,
+        endTimestampExclusive,
+      }) => {
+        await calculateRewardsCeloPGS1({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+          rewardAmount: '25000',
+          excludedReferrers: {},
+          previousKpiFiles: [
+            getKpiFileUrl(
+              'celo-pg-s1',
+              '2025-08-26T00:00:00Z',
+              '2025-09-09T00:00:00Z',
+            ),
+          ],
+        })
+      },
+    },
+    {
+      startTimestamp: '2025-09-23T00:00:00Z',
+      endTimestampExclusive: '2025-10-07T00:00:00Z',
+      calculateRewards: async ({
+        resultDirectory,
+        startTimestamp,
+        endTimestampExclusive,
+      }) => {
+        await calculateRewardsCeloPGS1({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+          rewardAmount: '25000',
+          excludedReferrers: {},
+          previousKpiFiles: [],
+        })
+      },
+    },
+    {
+      startTimestamp: '2025-10-07T00:00:00Z',
+      endTimestampExclusive: '2025-10-21T00:00:00Z',
+      calculateRewards: async ({
+        resultDirectory,
+        startTimestamp,
+        endTimestampExclusive,
+      }) => {
+        await calculateRewardsCeloPGS1({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+          // TODO: reward both CELO and OP
+          rewardAmount: '25000',
+          excludedReferrers: {},
+          previousKpiFiles: [],
+        })
+      },
+    },
+    {
+      startTimestamp: '2025-10-21T00:00:00Z',
+      endTimestampExclusive: '2025-11-04T00:00:00Z',
+      calculateRewards: async ({
+        resultDirectory,
+        startTimestamp,
+        endTimestampExclusive,
+      }) => {
+        await calculateRewardsCeloPGS1({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+          // TODO: reward both CELO and OP
+          rewardAmount: '25000',
+          excludedReferrers: {},
+          previousKpiFiles: [],
+        })
+      },
+    },
+    {
+      startTimestamp: '2025-11-04T00:00:00Z',
+      endTimestampExclusive: '2025-11-18T00:00:00Z',
+      calculateRewards: async ({
+        resultDirectory,
+        startTimestamp,
+        endTimestampExclusive,
+      }) => {
+        await calculateRewardsCeloPGS1({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+          // TODO: reward both CELO and OP
+          rewardAmount: '25000',
+          excludedReferrers: {},
+          previousKpiFiles: [],
+        })
+      },
+    },
+    {
+      startTimestamp: '2025-11-18T00:00:00Z',
+      endTimestampExclusive: '2025-12-02T00:00:00Z',
+      calculateRewards: async ({
+        resultDirectory,
+        startTimestamp,
+        endTimestampExclusive,
+      }) => {
+        await calculateRewardsCeloPGS1({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+          // TODO: reward both CELO and OP
+          rewardAmount: '25000',
+          excludedReferrers: {},
+          previousKpiFiles: [],
+        })
+      },
+    },
+    {
+      startTimestamp: '2025-12-02T00:00:00Z',
+      endTimestampExclusive: '2025-12-16T00:00:00Z',
+      calculateRewards: async ({
+        resultDirectory,
+        startTimestamp,
+        endTimestampExclusive,
+      }) => {
+        await calculateRewardsCeloPGS1({
+          resultDirectory,
+          startTimestamp,
+          endTimestampExclusive,
+          // TODO: reward both CELO and OP
+          rewardAmount: '25000',
+          excludedReferrers: {},
+          previousKpiFiles: [],
+        })
+      },
+    },
+  ],
+}
+
 export const campaigns: Campaign[] = [
   ...pastCampaigns,
-  {
-    providerAddress: '0xe451b7Cd488aD2Bf6bfdECD7702a2967329cC1D0',
-    protocol: 'tether-v0',
-    rewardsPoolAddress: '0xb575210cdf52b18000ae24be4981e9abc7716f98',
-    networkId: NetworkId['ethereum-mainnet'],
-    valoraRewardsPoolAddress: null,
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-07-28T00:00:00Z',
-        endTimestampExclusive: '2025-08-30T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsTetherV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '5000000000', // 5000 USDT
-            excludedReferrers: excludedReferrersFromTetherV0[0],
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-08-30T00:00:00Z',
-        endTimestampExclusive: '2025-09-30T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsTetherV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '10000000000', // 10000 USDT
-            excludedReferrers: {},
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-09-30T00:00:00Z',
-        endTimestampExclusive: '2025-10-31T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsTetherV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '15000000000', // 15000 USDT
-            excludedReferrers: {},
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-10-31T00:00:00Z',
-        endTimestampExclusive: '2025-12-01T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsTetherV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '15000000000', // 15000 USDT
-            excludedReferrers: {},
-          })
-        },
-      },
-    ],
-  },
-  {
-    protocol: 'celo-pg-s1',
-    providerAddress: '0xd452036ca4552c51706e77eD2b2Bf0f3c1E24E7A',
-    // TODO: support both CELO and OP reward pools
-    rewardsPoolAddress: '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5',
-    networkId: NetworkId['celo-mainnet'],
-    valoraRewardsPoolAddress: null,
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-08-26T00:00:00Z',
-        endTimestampExclusive: '2025-09-09T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsCeloPGS1({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '25000',
-            excludedReferrers: excludedReferrersFromCeloPGS1[0],
-            previousKpiFiles: [],
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-09-09T00:00:00Z',
-        endTimestampExclusive: '2025-09-23T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsCeloPGS1({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '25000',
-            excludedReferrers: {},
-            previousKpiFiles: [
-              getKpiFileUrl(
-                'celo-pg-s1',
-                '2025-08-26T00:00:00Z',
-                '2025-09-09T00:00:00Z',
-              ),
-            ],
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-09-23T00:00:00Z',
-        endTimestampExclusive: '2025-10-07T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsCeloPGS1({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '25000',
-            excludedReferrers: {},
-            previousKpiFiles: [],
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-10-07T00:00:00Z',
-        endTimestampExclusive: '2025-10-21T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsCeloPGS1({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            // TODO: reward both CELO and OP
-            rewardAmount: '25000',
-            excludedReferrers: {},
-            previousKpiFiles: [],
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-10-21T00:00:00Z',
-        endTimestampExclusive: '2025-11-04T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsCeloPGS1({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            // TODO: reward both CELO and OP
-            rewardAmount: '25000',
-            excludedReferrers: {},
-            previousKpiFiles: [],
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-11-04T00:00:00Z',
-        endTimestampExclusive: '2025-11-18T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsCeloPGS1({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            // TODO: reward both CELO and OP
-            rewardAmount: '25000',
-            excludedReferrers: {},
-            previousKpiFiles: [],
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-11-18T00:00:00Z',
-        endTimestampExclusive: '2025-12-02T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsCeloPGS1({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            // TODO: reward both CELO and OP
-            rewardAmount: '25000',
-            excludedReferrers: {},
-            previousKpiFiles: [],
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-12-02T00:00:00Z',
-        endTimestampExclusive: '2025-12-16T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsCeloPGS1({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            // TODO: reward both CELO and OP
-            rewardAmount: '25000',
-            excludedReferrers: {},
-            previousKpiFiles: [],
-          })
-        },
-      },
-    ],
-  },
+  tetherV0Campaign,
+  celoPGS1Campaign,
 ]
