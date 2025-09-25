@@ -21,8 +21,23 @@ function getKpiFileUrl(
   return `https://storage.googleapis.com/${STORAGE_BUCKET_NAME}/${DATADIR}/${campaignName}/${periodFolderName}/kpi.json`
 }
 
+function excludeRecord(addresses: string[]) {
+  return addresses
+    .map((address) => address.toLowerCase())
+    .reduce(
+      (acc, address) => {
+        acc[address] = {
+          referrerId: address,
+          shouldWarn: false,
+        }
+        return acc
+      },
+      {} as Record<string, { referrerId: string; shouldWarn: boolean }>,
+    )
+}
+
 const excludedReferrersFromTetherV0 = [
-  [
+  excludeRecord([
     '0x45Cb8FbAf94CF87236c39c791a210c9605E18F06',
     '0x19B324e287E9aBC4706a4Cd09d08d5281d481c42',
     '0x747Cee5Bf7cCfD94371ee91BB8C9275Cd18A4f7e',
@@ -30,39 +45,17 @@ const excludedReferrersFromTetherV0 = [
     '0x48E8583049a03D10D621c8Bb907942ab83Cf25B0',
     '0xdA404bFDA2a5dCDa88FD2aa9B9e0C32a677bc8eB',
     '0xd59B83De618561c8FF4E98fC29a1b96ABcBFB18a',
-  ]
-    .map((address) => address.toLowerCase())
-    .reduce(
-      (acc, address) => {
-        acc[address] = {
-          referrerId: address,
-          shouldWarn: false,
-        }
-        return acc
-      },
-      {} as Record<string, { referrerId: string; shouldWarn: boolean }>,
-    ),
+  ]),
 ]
 
 const excludedReferrersFromCeloPGS1 = [
-  [
+  excludeRecord([
     '0x37b5a29b9532940414bbc59c616696daba16169c',
     '0xe70ffe8d559207261a17834c58786bfd53cd8642',
     '0x4ea48e01f1314db0925653e30617b254d1cf5366',
     '0x10265305e8b7ce057d70875f0fd44f2ee48456cb',
     '0xd59b83de618561c8ff4e98fc29a1b96abcbfb18a',
-  ]
-    .map((address) => address.toLowerCase())
-    .reduce(
-      (acc, address) => {
-        acc[address] = {
-          referrerId: address,
-          shouldWarn: false,
-        }
-        return acc
-      },
-      {} as Record<string, { referrerId: string; shouldWarn: boolean }>,
-    ),
+  ]),
 ]
 
 const tetherV0Campaign: Campaign = {
