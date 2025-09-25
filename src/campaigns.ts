@@ -4,7 +4,7 @@ import { main as calculateRewardsTetherV0 } from '../scripts/calculateRewards/te
 import { toPeriodFolderName } from '../scripts/utils/dateFormatting'
 import { Campaign } from './types'
 import { pastCampaigns } from './pastCampaings'
-import { calculateStageV0 } from './celoPGRewards'
+import { calculateStageV0, calculateStageV1 } from './celoPGRewards'
 
 export const STORAGE_BUCKET_NAME = 'divvi-campaign-data-production'
 export const DATADIR = 'kpi'
@@ -191,7 +191,7 @@ const celoPGS1Campaign: Campaign = {
               '2025-09-09T00:00:00Z',
             ),
           ],
-          stageFunction: calculateStageV0,
+          stageFunction: calculateStageV1,
         })
       },
     },
@@ -210,7 +210,7 @@ const celoPGS1Campaign: Campaign = {
           rewardAmount: '25000',
           excludedReferrers: {},
           previousKpiFiles: [],
-          stageFunction: calculateStageV0,
+          stageFunction: calculateStageV1,
         })
       },
     },
@@ -230,7 +230,7 @@ const celoPGS1Campaign: Campaign = {
           rewardAmount: '25000',
           excludedReferrers: {},
           previousKpiFiles: [],
-          stageFunction: calculateStageV0,
+          stageFunction: calculateStageV1,
         })
       },
     },
@@ -250,7 +250,7 @@ const celoPGS1Campaign: Campaign = {
           rewardAmount: '25000',
           excludedReferrers: {},
           previousKpiFiles: [],
-          stageFunction: calculateStageV0,
+          stageFunction: calculateStageV1,
         })
       },
     },
@@ -270,7 +270,7 @@ const celoPGS1Campaign: Campaign = {
           rewardAmount: '25000',
           excludedReferrers: {},
           previousKpiFiles: [],
-          stageFunction: calculateStageV0,
+          stageFunction: calculateStageV1,
         })
       },
     },
@@ -290,7 +290,7 @@ const celoPGS1Campaign: Campaign = {
           rewardAmount: '25000',
           excludedReferrers: {},
           previousKpiFiles: [],
-          stageFunction: calculateStageV0,
+          stageFunction: calculateStageV1,
         })
       },
     },
@@ -310,7 +310,7 @@ const celoPGS1Campaign: Campaign = {
           rewardAmount: '25000',
           excludedReferrers: {},
           previousKpiFiles: [],
-          stageFunction: calculateStageV0,
+          stageFunction: calculateStageV1,
         })
       },
     },

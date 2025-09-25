@@ -1,6 +1,10 @@
 import yargs from 'yargs'
 import { BigNumber } from 'bignumber.js'
-import { calculateRewards, calculateStageV0 } from '../../src/celoPGRewards'
+import {
+  calculateRewards,
+  calculateStageV0,
+  calculateStageV1,
+} from '../../src/celoPGRewards'
 import { KpiRow, ResultDirectory } from '../../src/resultDirectory'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
 import { parseEther } from 'viem'
@@ -24,7 +28,7 @@ async function readKpiFile(url: string) {
   }
 }
 
-const stageFunctions = [calculateStageV0]
+const stageFunctions = [calculateStageV0, calculateStageV1]
 
 function parseArgs() {
   const args = yargs

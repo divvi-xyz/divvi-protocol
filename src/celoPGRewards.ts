@@ -22,6 +22,28 @@ export function calculateStageV0({
   }
 }
 
+export function calculateStageV1({
+  uniqueWallets,
+  gasUsage,
+}: {
+  uniqueWallets: number
+  gasUsage: bigint
+}) {
+  if (uniqueWallets >= 100_000 && gasUsage >= 500_000_000_000n) {
+    return 5
+  } else if (uniqueWallets >= 10_000 && gasUsage >= 25_000_000_000n) {
+    return 4
+  } else if (uniqueWallets >= 2_500 && gasUsage >= 2_500_000_000n) {
+    return 3
+  } else if (uniqueWallets >= 100 && gasUsage >= 250_000_000n) {
+    return 2
+  } else if (uniqueWallets >= 10 && gasUsage >= 50_000_000n) {
+    return 1
+  } else {
+    return 0
+  }
+}
+
 export function calculateRewards({
   kpiData,
   rewards,
