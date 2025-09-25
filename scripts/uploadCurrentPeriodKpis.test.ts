@@ -1,6 +1,6 @@
 import { it } from '@jest/globals'
 import { uploadCurrentPeriodKpis } from './uploadCurrentPeriodKpis'
-import { Campaign } from '../src/campaigns'
+import { Campaign } from '../src/types'
 import { fetchReferrals } from './fetchReferrals'
 import { calculateKpi } from './calculateKpi'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
