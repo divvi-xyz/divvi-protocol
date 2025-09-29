@@ -56,7 +56,17 @@ const excludedReferrersFromCeloPGS1 = [
     '0x10265305e8b7ce057d70875f0fd44f2ee48456cb',
     '0xd59b83de618561c8ff4e98fc29a1b96abcbfb18a',
   ]),
-  excludeRecord(['0xda404bfda2a5dcda88fd2aa9b9e0c32a677bc8eb']),
+  excludeRecord([
+    '0x37b5a29b9532940414bbc59c616696daba16169c', // FunBear
+    '0xe70ffe8d559207261a17834c58786bfd53cd8642', // Doeg
+    '0xba7a463cf9f68046311616bb4c787923828f0644', // Premio
+    '0x3207d4728c32391405c7122e59ccb115a4af31ea', // HealFi
+    '0x10265305e8b7ce057d70875f0fd44f2ee48456cb', // Spinit
+    '0xd7c271d20c9e323336bfc843aeb8dec23b346352', // Learna
+    '0x53eaf4cd171842d8144e45211308e5d90b4b0088', // Sovseas
+    '0x2298947e6c1d6c282c258b3e5f8989670a8e346f', // Dezenmart
+    '0xda404bfda2a5dcda88fd2aa9b9e0c32a677bc8eb', // Contriboost
+  ]),
 ]
 
 const tetherV0Campaign: Campaign = {
