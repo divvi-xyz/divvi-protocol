@@ -2,6 +2,14 @@ import { KpiRow } from './resultDirectory'
 import { BigNumber } from 'bignumber.js'
 import { getReferrerMetricsFromKpi } from '../scripts/calculateRewards/getReferrerMetricsFromKpi'
 
+//
+// Consider these stage values "internal" or "private" (they're not necessarily
+// what we show builders, etc.)
+//
+// Sometimes we map the stages we calculate below to different values before
+// displaying them. E.g., we calculate stage 1, but display it as 0; or we
+// calculate stage 0, but display it as N/A.
+//
 export function calculateStageV0({
   uniqueWallets,
   gasUsage,
