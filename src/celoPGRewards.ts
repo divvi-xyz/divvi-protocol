@@ -206,6 +206,7 @@ export function calculateRewards({
         rewardAmount: totalReward.toFixed(0, BigNumber.ROUND_DOWN),
         uniqueWalletsForStageCalculation,
         gasUsageForStageCalculation,
+        isExcluded,
       }
     },
   )
