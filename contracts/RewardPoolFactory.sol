@@ -21,7 +21,7 @@ contract RewardPoolFactory is
   // Events
   event RewardPoolCreated(
     address indexed poolToken,
-    bytes32 rewardFunctionId,
+    address rewardFunctionAddress,
     address indexed owner,
     address indexed manager,
     uint256 timelock,
@@ -90,16 +90,44 @@ contract RewardPoolFactory is
   }
 
   /**
+   * @dev Reinitializer for V2 upgrade - sets newly added state variables for protocol fee support
+   * @param _defaultProtocolFee Default protocol fee numerator (denominator is 10^18)
+   * @param _defaultReserveAddress Default address that will receive protocol fees
+   * @param _implementationAddress Address of the RewardPool implementation contract
+   *
+   * **Protocol Fee:** Uses 18-decimal fixed-point arithmetic (e.g., 0.05 * 1e18 for 5%)
+   *
+   * This function is designed to be called once during the upgrade from V1 to V2.
+   * It initializes the new state variables that were added for protocol fee support.
+   * The defaultOwner is automatically set to the current factory owner (owner()).
+   */
+  function initializeV2(
+    uint256 _defaultProtocolFee,
+    address _defaultReserveAddress,
+    address _implementationAddress
+  ) public reinitializer(2) onlyRole(DEFAULT_ADMIN_ROLE) {
+    if (_defaultReserveAddress == address(0)) revert ZeroAddressNotAllowed();
+    if (_implementationAddress == address(0)) revert ZeroAddressNotAllowed();
+    if (_defaultProtocolFee > 1e18)
+      revert InvalidProtocolFee(_defaultProtocolFee);
+
+    defaultProtocolFee = _defaultProtocolFee;
+    defaultReserveAddress = _defaultReserveAddress;
+    implementation = _implementationAddress;
+    defaultOwner = owner(); // Use current factory owner as default owner for pools
+  }
+
+  /**
    * @dev Creates a new RewardPool contract using minimal proxy pattern
    * @param _poolToken Address of the token used for rewards
-   * @param _rewardFunctionId Bytes32 identifier of the reward function (e.g. git commit hash)
+   * @param _rewardFunctionAddress Address of the reward function
    * @param _manager Address that will have MANAGER_ROLE in the RewardPool
    * @param _timelock Timestamp when manager withdrawals will be allowed
    * @return The address of the newly created RewardPool contract
    */
   function createRewardPool(
     address _poolToken,
-    bytes32 _rewardFunctionId,
+    address _rewardFunctionAddress,
     address _manager,
     uint256 _timelock
   ) external returns (address) {
@@ -110,7 +138,7 @@ contract RewardPoolFactory is
     address clone = implementation.clone();
     RewardPool(payable(clone)).initialize(
       _poolToken,
-      _rewardFunctionId,
+      _rewardFunctionAddress,
       defaultOwner,
       _manager,
       _timelock,
@@ -120,7 +148,7 @@ contract RewardPoolFactory is
 
     emit RewardPoolCreated(
       _poolToken,
-      _rewardFunctionId,
+      _rewardFunctionAddress,
       defaultOwner,
       _manager,
       _timelock,

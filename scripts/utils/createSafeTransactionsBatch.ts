@@ -1,6 +1,7 @@
 import { writeFileSync, mkdirSync } from 'fs'
 import { dirname } from 'path'
-import { keccak256, toBytes } from 'viem'
+import { keccak256, pad, toBytes } from 'viem'
+import { rewardPoolWithKpiAbi } from '../../abis/RewardPoolWithKpi'
 
 // ABI definitions for both versions of addRewards
 const LEGACY_ADD_REWARDS_ABI = {
@@ -71,7 +72,7 @@ export const createAddRewardSafeTransactionJSON = ({
           ),
         )
         rewardDataItems.push(
-          `${reward.referrerId}, ${reward.rewardAmount}, ${idempotencyKey}`,
+          `"${reward.referrerId}", "${reward.rewardAmount}", "${idempotencyKey}"`,
         )
       } else {
         users.push(reward.referrerId)
@@ -114,6 +115,77 @@ export const createAddRewardSafeTransactionJSON = ({
         data: null,
         contractMethod,
         contractInputsValues,
+      },
+    ],
+  }
+
+  // Create directory if it doesn't exist
+  mkdirSync(dirname(filePath), { recursive: true })
+  writeFileSync(filePath, JSON.stringify(transactionsBatch, null, 2) + '\n', {
+    encoding: 'utf-8',
+  })
+}
+
+export const createUpdateKpiAndProcessRewardsSafeTransactionJSON = ({
+  filePath,
+  rewardPoolAddress,
+  kpis,
+  kpiFunctionId,
+  rewardAmount,
+  startTimestamp,
+  endTimestampExclusive,
+}: {
+  filePath: string
+  rewardPoolAddress: string
+  kpis: {
+    referrer: string
+    kpi: bigint
+  }[]
+  kpiFunctionId: string
+  rewardAmount: bigint
+  startTimestamp: Date
+  endTimestampExclusive: Date
+}) => {
+  const periodStart = BigInt(startTimestamp.getTime() / 1000).toString()
+  const periodEndExclusive = BigInt(
+    endTimestampExclusive.getTime() / 1000,
+  ).toString()
+  const updatePeriodKpisMethod = rewardPoolWithKpiAbi.find(
+    (item) => item.type === 'function' && item.name === 'updatePeriodKpis',
+  )
+  const processPeriodMethod = rewardPoolWithKpiAbi.find(
+    (item) => item.type === 'function' && item.name === 'processPeriod',
+  )
+
+  const updatePeriodKpisMethodInputs = {
+    kpis: `[${kpis.map((kpi) => `["${kpi.referrer}", "${kpi.kpi}"]`).join(', ')}]`,
+    periodStart,
+    periodEndExclusive,
+    kpiFunctionId: pad(kpiFunctionId as `0x${string}`, { size: 32 }),
+  }
+
+  const processPeriodMethodInputs = {
+    periodStart,
+    periodEndExclusive,
+    totalRewardAmount: rewardAmount.toString(),
+  }
+
+  const transactionsBatch = {
+    meta: {},
+    transactions: [
+      {
+        to: rewardPoolAddress,
+        value: '0',
+        data: null,
+        contractMethod: updatePeriodKpisMethod,
+        contractInputsValues: updatePeriodKpisMethodInputs,
+      },
+      {
+        to: rewardPoolAddress,
+        value: '0',
+        data: null,
+        contractMethod: processPeriodMethod,
+        contractInputsValues: processPeriodMethodInputs,
       },
     ],
   }

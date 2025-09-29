@@ -34,7 +34,8 @@ const getExpectedMetadata = (
       'ink-mainnet',
       'op-mainnet',
       'arbitrum-one',
-      'berachain-mainnet',
+      // Disabled because Berachain hypersync node is unreliable
+      // 'berachain-mainnet',
     ].reduce(
       (acc, chain) => {
         acc[chain] = {
@@ -122,7 +123,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       await calculateKpi(defaultProps)
 
       // Verify getBlockRange was called for each network
-      expect(mockGetBlockRange).toHaveBeenCalledTimes(8)
+      expect(mockGetBlockRange).toHaveBeenCalledTimes(7)
     })
 
     it('should handle networks with no eligible transactions', async () => {
@@ -207,7 +208,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       expect(result.length).toBe(0)
     })
 
-    it('should count each transaction only once even if it has multiple transfer events', async () => {
+    it('should count all transfer events in total value', async () => {
       mockPaginateQuery.mockImplementation(async (_client, _query, onPage) => {
         const mockResponse = makeQueryResponse([
           {
@@ -240,8 +241,8 @@ describe('Tether V0 Protocol KPI Calculation', () => {
 
       const result = await calculateKpi(defaultProps)
 
-      // Should count as 1 transaction per network, not 2
-      expect(result[0].kpi).toBe(8)
+      // Count all transfer events
+      expect(result[0].kpi).toBe(28000000)
     })
 
     it('should not count transactions with net transfer value below minimum threshold', async () => {
@@ -319,7 +320,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       const result = await calculateKpi(defaultProps)
 
       // Should count both transactions (2 per network)
-      expect(result[0].kpi).toBe(16)
+      expect(result[0].kpi).toBe(28000000)
     })
 
     it('should filter out referrers who have not registered agreements with the campaign', async () => {
@@ -377,7 +378,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       // Should only include the registered referrer
       expect(result).toEqual([
         {
-          kpi: 8, // 1 transaction * 8 networks
+          kpi: 14000000, // 1 transaction * 7 networks * 2000000
           referrerId: 'registered-referrer',
           userAddress: testAddress,
           metadata: getExpectedMetadata(),
@@ -482,19 +483,19 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       // Should group by referrer ID: referrer1 has 2 transactions, referrer2 has 1, referrer3 has 1
       expect(result).toEqual([
         {
-          kpi: 16, // 2 transactions * 8 networks
+          kpi: 28000000, // 2 transactions * 7 networks * 2000000
           referrerId: 'referrer1',
           userAddress: testAddress,
           metadata: getExpectedMetadata(BigNumber(4).shiftedBy(6), 2),
         },
         {
-          kpi: 8, // 1 transaction * 8 networks
+          kpi: 14000000, // 1 transaction * 7 networks * 2000000
           referrerId: 'referrer2',
           userAddress: testAddress,
           metadata: getExpectedMetadata(),
         },
         {
-          kpi: 8, // 1 transaction * 8 networks
+          kpi: 14000000, // 1 transaction * 7 networks * 2000000
           referrerId: 'referrer3',
           userAddress: testAddress,
           metadata: getExpectedMetadata(),
@@ -559,13 +560,13 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       // Should only include transactions with valid referrer IDs
       expect(result).toEqual([
         {
-          kpi: 8, // 1 transaction * 8 networks
+          kpi: 14000000, // 1 transaction * 7 networks * 2000000
           referrerId: 'referrer1',
           userAddress: testAddress,
           metadata: getExpectedMetadata(),
         },
         {
-          kpi: 8, // 1 transaction * 8 networks
+          kpi: 14000000, // 1 transaction * 7 networks * 2000000
           referrerId: 'referrer2',
           userAddress: testAddress,
           metadata: getExpectedMetadata(),
@@ -693,9 +694,9 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       expect(userAddresses).toContain(testUsers[1].address)
       expect(userAddresses).toContain(testUsers[2].address)
 
-      // Check that each user has the correct KPI (1 transaction * 8 networks)
+      // Check that each user has the correct KPI (1 transaction * 7 networks * 2000000)
       result.forEach((userResult) => {
-        expect(userResult.kpi).toBe(8)
+        expect(userResult.kpi).toBe(14000000)
       })
     })
 
@@ -762,7 +763,7 @@ describe('Tether V0 Protocol KPI Calculation', () => {
       // Should only return result for the first user
       expect(result).toHaveLength(1)
       expect(result[0].userAddress).toBe(testUsers[0].address)
-      expect(result[0].kpi).toBe(8)
+      expect(result[0].kpi).toBe(14000000)
     })
   })
 })

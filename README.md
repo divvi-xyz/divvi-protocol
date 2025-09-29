@@ -75,7 +75,7 @@ Use `ethers` in Hardhat console to interact with the contract:
 ```
 const RewardPool = await ethers.getContractFactory("RewardPool")
 const rewardPool = await RewardPool.attach('0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0')
-await rewardPool.rewardFunctionId()
+await rewardPool.rewardFunctionAddress()
 ```
 
 ## Scripts
@@ -216,6 +216,30 @@ yarn hardhat divvi-registry:upgrade \
     --defender-deploy-salt <SALT> \
     --defender-upgrade-approval-process-id f1d0a27d-c2f1-4f87-b36c-d3c308283702 \
     --proxy-address 0x2f5E320698dB89CbefB810Fa19264103d99aAFB1
+```
+
+To upgrade an existingRewardPoolFactory from V1 to V2 (with protocol fee / reward function support), run:
+
+```bash
+# Local upgrade
+yarn hardhat reward-pool-factory:upgrade \
+    --network <NETWORK> \
+    --proxy-address <PROXY_ADDRESS> \
+    --call-initialize-v2 \
+    --default-protocol-fee <PROTOCOL_FEE> \
+    --default-reserve-address <RESERVE_ADDRESS> \
+    --implementation-address <IMPLEMENTATION_ADDRESS>
+
+# With Defender (requires manual reinitializer call after approval)
+yarn hardhat reward-pool-factory:upgrade \
+    --network <NETWORK> \
+    --use-defender \
+    --defender-deploy-salt <SALT> \
+    --proxy-address <PROXY_ADDRESS> \
+    --call-initialize-v2 \
+    --default-protocol-fee <PROTOCOL_FEE> \
+    --default-reserve-address <RESERVE_ADDRESS> \
+    --implementation-address <IMPLEMENTATION_ADDRESS>
 ```
 
 To deploy DataAvailability, run:

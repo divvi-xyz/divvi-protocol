@@ -1,16 +1,34 @@
 import yargs from 'yargs'
 import { BigNumber } from 'bignumber.js'
-import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import { ResultDirectory } from '../../src/resultDirectory'
-import { calculateProportionalPrizeContest } from '../../src/proportionalPrizeContest'
 import {
-  getDivviRewardsExcludedReferrers,
+  calculateRewards,
+  calculateStageV0,
+  calculateStageV1,
+} from '../../src/celoPGRewards'
+import { KpiRow, ResultDirectory } from '../../src/resultDirectory'
+import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
+import { parseEther } from 'viem'
+import {
   ExcludedReferrers,
+  getDivviRewardsExcludedReferrers,
 } from '../utils/divviRewardsExcludedReferrers'
 import fs from 'fs'
 import { parse } from 'csv-parse/sync'
+import axios from 'axios'
 
-const REWARD_POOL_ADDRESS = '0xB575210cdF52B18000aE24Be4981e9ABC7716F98' // on Ethereum mainnet
+// TODO: support both CELO and OP reward pools
+const REWARD_POOL_ADDRESS = '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5' // on Celo mainnet
+
+async function readKpiFile(url: string) {
+  if (url.startsWith('https://')) {
+    const response = await axios.get(url)
+    return response.data as KpiRow[]
+  } else {
+    return JSON.parse(fs.readFileSync(url, 'utf8')) as KpiRow[]
+  }
+}
+
+const stageFunctions = [calculateStageV0, calculateStageV1]
 
 function parseArgs() {
   const args = yargs
@@ -33,8 +51,7 @@ function parseArgs() {
     })
     .option('reward-amount', {
       alias: 'r',
-      description:
-        'the reward amount for this time period in USDT with 6 decimals',
+      description: 'the reward amount for this time period in CELO in decimals',
       type: 'string',
       demandOption: true,
     })
@@ -42,6 +59,19 @@ function parseArgs() {
       alias: 'x',
       description: 'the excluded referrers for this time period in CSV format',
       type: 'string',
+    })
+    .option('previous-kpi-files', {
+      description:
+        'URL of the kpi file that should be include in stage calculation',
+      type: 'array',
+      string: true,
+      default: [],
+    })
+    .option('stage-function-version', {
+      description: 'the version of the stage function',
+      type: 'number',
+      choices: stageFunctions.map((_, index) => index),
+      demandOption: true,
     })
     .strict()
     .parseSync()
@@ -67,7 +97,7 @@ function parseArgs() {
   return {
     resultDirectory: new ResultDirectory({
       datadir: args.datadir,
-      name: 'tether-v0',
+      name: 'celo-pg-s1',
       startTimestamp: new Date(args['start-timestamp']),
       endTimestampExclusive: new Date(args['end-timestamp']),
     }),
@@ -75,14 +105,21 @@ function parseArgs() {
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
     excludedReferrers,
+    previousKpiFiles: args['previous-kpi-files'],
+    stageFunction: stageFunctions[args['stage-function-version']],
   }
 }
 
 export async function main(args: ReturnType<typeof parseArgs>) {
-  const startTimestamp = new Date(args.startTimestamp)
-  const endTimestampExclusive = new Date(args.endTimestampExclusive)
-  const resultDirectory = args.resultDirectory
-  const rewardAmount = args.rewardAmount
+  const {
+    resultDirectory,
+    startTimestamp,
+    endTimestampExclusive,
+    rewardAmount,
+    previousKpiFiles,
+    stageFunction,
+  } = args
+
   const kpiData = await resultDirectory.readKpi()
 
   let excludedReferrers = await getDivviRewardsExcludedReferrers()
@@ -95,10 +132,17 @@ export async function main(args: ReturnType<typeof parseArgs>) {
 
   await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
-  const rewards = calculateProportionalPrizeContest({
+  let previousStageData: KpiRow[][] = []
+  if (previousKpiFiles.length > 0) {
+    previousStageData = await Promise.all(previousKpiFiles.map(readKpiFile))
+  }
+
+  const rewards = calculateRewards({
     kpiData,
-    rewards: new BigNumber(rewardAmount),
+    rewards: BigNumber(parseEther(rewardAmount)),
     excludedReferrers,
+    previousStageData,
+    stageFunction,
   })
 
   const totalTransactionsPerReferrer: {
@@ -110,33 +154,28 @@ export async function main(args: ReturnType<typeof parseArgs>) {
 
     totalTransactionsPerReferrer[referrerId] =
       (totalTransactionsPerReferrer[referrerId] ?? 0) +
-      Object.values(metadata as Record<string, { txCount?: number }>).reduce(
-        (sum, networkData) => {
-          return sum + (networkData.txCount ?? 0)
-        },
-        0,
-      )
+      (typeof metadata['totalTransactions'] === 'number'
+        ? metadata['totalTransactions']
+        : 0)
   }
 
   const rewardsWithMetadata = rewards.map((reward) => ({
     ...reward,
-    totalTransactions: totalTransactionsPerReferrer[reward.referrerId] ?? 0,
-    totalValue: reward.kpi,
+    totalTransactions: totalTransactionsPerReferrer[reward.referrerId],
   }))
 
   createAddRewardSafeTransactionJSON({
     filePath: resultDirectory.safeTransactionsFilePath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
     rewards,
-    startTimestamp,
-    endTimestampExclusive,
+    startTimestamp: new Date(startTimestamp),
+    endTimestampExclusive: new Date(endTimestampExclusive),
     useIdempotency: true,
   })
 
   await resultDirectory.writeRewards(rewardsWithMetadata)
 }
 
-// Only run main if this file is being executed directly
 if (require.main === module) {
   main(parseArgs()).catch((error) => {
     console.error(error)

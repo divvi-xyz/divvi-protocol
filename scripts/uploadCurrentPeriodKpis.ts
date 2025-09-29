@@ -1,4 +1,3 @@
-import { Protocol } from './types'
 import { fetchReferrals } from './fetchReferrals'
 import { protocolFilters } from './protocolFilters'
 import { calculateKpi } from './calculateKpi'
@@ -6,314 +5,10 @@ import { join } from 'path'
 import { toPeriodFolderName } from './utils/dateFormatting'
 import { uploadFilesToGCS } from './utils/uploadFileToCloudStorage'
 import yargs from 'yargs'
-import { BigNumber } from 'bignumber.js'
 import { ResultDirectory } from '../src/resultDirectory'
-import { main as calculateRewardsCeloPG } from './calculateRewards/celoPG'
-import { main as calculateRewardsScoutGame } from './calculateRewards/scoutGameV0'
-import { main as calculateRewardsLiskV0 } from './calculateRewards/liskV0'
-import { main as calculateRewardsBaseV0 } from './calculateRewards/baseV0'
-import { main as calculateRewardsTetherV0 } from './calculateRewards/tetherV0'
-import { main as calculateRewardSlices } from './calculateRewards/slices'
-
-const excludedReferrersFromTetherV0 = [
-  [
-    '0x45Cb8FbAf94CF87236c39c791a210c9605E18F06',
-    '0x19B324e287E9aBC4706a4Cd09d08d5281d481c42',
-    '0x747Cee5Bf7cCfD94371ee91BB8C9275Cd18A4f7e',
-    '0x4AEacDA4b6Df4d6c98EDddf1f1F2F4d7Ed81268d',
-    '0x48E8583049a03D10D621c8Bb907942ab83Cf25B0',
-    '0xdA404bFDA2a5dCDa88FD2aa9B9e0C32a677bc8eB',
-    '0xd59B83De618561c8FF4E98fC29a1b96ABcBFB18a',
-  ]
-    .map((address) => address.toLowerCase())
-    .reduce(
-      (acc, address) => {
-        acc[address] = {
-          referrerId: address,
-          shouldWarn: false,
-        }
-        return acc
-      },
-      {} as Record<string, { referrerId: string; shouldWarn: boolean }>,
-    ),
-]
-
-export interface Campaign {
-  protocol: Protocol
-  rewardsPeriods: {
-    startTimestamp: string
-    endTimestampExclusive: string
-    calculateRewards?: (args: {
-      resultDirectory: ResultDirectory
-      startTimestamp: string
-      endTimestampExclusive: string
-    }) => Promise<void>
-    calculateRewardSlices?: (args: {
-      resultDirectory: ResultDirectory
-      startTimestamp: string
-      endTimestampExclusive: string
-    }) => Promise<void>
-  }[]
-}
-
-const campaigns: Campaign[] = [
-  {
-    protocol: 'celo-pg',
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-05-15T00:00:00Z',
-        endTimestampExclusive: '2025-06-01T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsCeloPG({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '25000',
-            proportionLinear: 0.8,
-          })
-        },
-        calculateRewardSlices: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardSlices({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '100000',
-            rewardType: 'builder',
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-06-01T00:00:00Z',
-        endTimestampExclusive: '2025-07-01T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsCeloPG({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '50000',
-            proportionLinear: 0.1,
-          })
-        },
-        calculateRewardSlices: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardSlices({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '200000',
-            rewardType: 'builder',
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-07-01T00:00:00Z',
-        endTimestampExclusive: '2025-08-01T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsCeloPG({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '75000',
-            proportionLinear: 0.1,
-          })
-        },
-        calculateRewardSlices: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardSlices({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '300000',
-            rewardType: 'builder',
-          })
-        },
-      },
-    ],
-  },
-  {
-    protocol: 'scout-game-v0',
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-06-03T00:00:00Z',
-        endTimestampExclusive: '2025-06-10T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsScoutGame({
-            resultDirectory,
-            startTimestamp: new Date(startTimestamp),
-            endTimestampExclusive: new Date(endTimestampExclusive),
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-06-10T00:00:00Z',
-        endTimestampExclusive: '2025-06-17T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsScoutGame({
-            resultDirectory,
-            startTimestamp: new Date(startTimestamp),
-            endTimestampExclusive: new Date(endTimestampExclusive),
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-06-17T00:00:00Z',
-        endTimestampExclusive: '2025-06-24T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsScoutGame({
-            resultDirectory,
-            startTimestamp: new Date(startTimestamp),
-            endTimestampExclusive: new Date(endTimestampExclusive),
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-06-24T00:00:00Z',
-        endTimestampExclusive: '2025-07-01T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsScoutGame({
-            resultDirectory,
-            startTimestamp: new Date(startTimestamp),
-            endTimestampExclusive: new Date(endTimestampExclusive),
-          })
-        },
-      },
-    ],
-  },
-  {
-    protocol: 'lisk-v0',
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-06-05T00:00:00Z',
-        endTimestampExclusive: '2025-07-01T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsLiskV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            maximumRewardProportion: new BigNumber(0.2),
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-07-01T00:00:00Z',
-        endTimestampExclusive: '2025-08-01T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsLiskV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            maximumRewardProportion: new BigNumber(0.2),
-          })
-        },
-      },
-    ],
-  },
-  {
-    protocol: 'base-v0',
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-06-30T00:00:00Z',
-        endTimestampExclusive: '2025-08-01T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsBaseV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-          })
-        },
-      },
-    ],
-  },
-  {
-    protocol: 'tether-v0',
-    rewardsPeriods: [
-      {
-        startTimestamp: '2025-07-28T00:00:00Z',
-        endTimestampExclusive: '2025-08-30T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsTetherV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '5000000000', // 5000 USDT
-            excludedReferrers: excludedReferrersFromTetherV0[0],
-          })
-        },
-      },
-      {
-        startTimestamp: '2025-08-30T00:00:00Z',
-        endTimestampExclusive: '2025-09-30T00:00:00Z',
-        calculateRewards: async ({
-          resultDirectory,
-          startTimestamp,
-          endTimestampExclusive,
-        }) => {
-          await calculateRewardsTetherV0({
-            resultDirectory,
-            startTimestamp,
-            endTimestampExclusive,
-            rewardAmount: '10000000000', // 10000 USDT
-            excludedReferrers: {},
-          })
-        },
-      },
-    ],
-  },
-]
+import { campaigns, STORAGE_BUCKET_NAME, DATADIR } from '../src/campaigns'
+import { Campaign } from '../src/types'
+import { main as createRewardPoolWithKpiTxAndSimulateRewards } from './createRewardPoolWithKpiTxAndSimulateRewards'
 
 async function getArgs() {
   const argv = await yargs
@@ -339,6 +34,11 @@ async function getArgs() {
       type: 'string',
       description:
         'redis connection string, to run locally use redis://127.0.0.1:6379',
+    })
+    .option('kpi-function-id', {
+      type: 'string',
+      description: 'the kpi function id (e.g., github commit hash)',
+      demandOption: true,
     }).argv
 
   return {
@@ -346,6 +46,7 @@ async function getArgs() {
     calculationTimestamp: argv['calculation-timestamp'],
     redisConnection: argv['redis-connection'],
     protocols: argv['protocols'],
+    kpiFunctionId: argv['kpi-function-id'],
   }
 }
 
@@ -424,7 +125,7 @@ export async function uploadCurrentPeriodKpis(
       `🧮 Calculating KPIs for campaign ${campaign.protocol}, from ${currentPeriod.startTimestamp} to ${endTimestampExclusive} (exclusive)`,
     )
 
-    const datadir = 'kpi'
+    const datadir = DATADIR
 
     const outputDir = join(
       datadir,
@@ -468,9 +169,27 @@ export async function uploadCurrentPeriodKpis(
     )
 
     // These are the output files calculateKpi writes with ResultDirectory
-    const outputFilePathCsv = join(outputDir, 'kpi.csv')
-    const outputFilePathJson = join(outputDir, 'kpi.json')
-    const campaignFilePaths = [outputFilePathCsv, outputFilePathJson]
+    const campaignFilePaths = [
+      `${resultDirectory.kpiFileSuffix}.csv`,
+      `${resultDirectory.kpiFileSuffix}.json`,
+    ]
+
+    if (campaign.useRewardPoolWithKpi && currentPeriod.rewardAmount) {
+      await createRewardPoolWithKpiTxAndSimulateRewards({
+        resultDirectory,
+        startTimestamp: currentPeriod.startTimestamp,
+        endTimestampExclusive: currentPeriod.endTimestampExclusive,
+        rewardAmount: currentPeriod.rewardAmount,
+        protocol: campaign.protocol,
+        excludedReferrers: {},
+        kpiFunctionId: args.kpiFunctionId,
+      })
+      campaignFilePaths.push(
+        `${resultDirectory.rewardsFileSuffix}.csv`,
+        `${resultDirectory.rewardsFileSuffix}.json`,
+        resultDirectory.safeTransactionsFilePath,
+      )
+    }
 
     if (currentPeriod.calculateRewards) {
       await currentPeriod.calculateRewards({
@@ -478,13 +197,10 @@ export async function uploadCurrentPeriodKpis(
         startTimestamp: currentPeriod.startTimestamp,
         endTimestampExclusive: currentPeriod.endTimestampExclusive,
       })
-      const rewardsFilePathCsv = join(outputDir, 'rewards.csv')
-      const rewardsFilePathJson = join(outputDir, 'rewards.json')
-      const safeTransactionsJson = join(outputDir, 'safe-transactions.json')
       campaignFilePaths.push(
-        rewardsFilePathCsv,
-        rewardsFilePathJson,
-        safeTransactionsJson,
+        `${resultDirectory.rewardsFileSuffix}.csv`,
+        `${resultDirectory.rewardsFileSuffix}.json`,
+        resultDirectory.safeTransactionsFilePath,
       )
     }
 
@@ -502,11 +218,7 @@ export async function uploadCurrentPeriodKpis(
     }
 
     const validPaths = campaignFilePaths.filter((path) => path !== null)
-    await uploadFilesToGCS(
-      validPaths,
-      'divvi-campaign-data-production',
-      args.dryRun,
-    )
+    await uploadFilesToGCS(validPaths, STORAGE_BUCKET_NAME, args.dryRun)
     console.log(`🎉 Uploaded files for campaign ${campaign.protocol}`)
   }
 

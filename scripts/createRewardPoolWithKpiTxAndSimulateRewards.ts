@@ -1,19 +1,27 @@
 import yargs from 'yargs'
-import { BigNumber } from 'bignumber.js'
-import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
-import { ResultDirectory } from '../../src/resultDirectory'
-import { calculateProportionalPrizeContest } from '../../src/proportionalPrizeContest'
+import { createUpdateKpiAndProcessRewardsSafeTransactionJSON } from './utils/createSafeTransactionsBatch'
+import { ResultDirectory } from '../src/resultDirectory'
 import {
   getDivviRewardsExcludedReferrers,
   ExcludedReferrers,
-} from '../utils/divviRewardsExcludedReferrers'
+} from './utils/divviRewardsExcludedReferrers'
 import fs from 'fs'
 import { parse } from 'csv-parse/sync'
-
-const REWARD_POOL_ADDRESS = '0xB575210cdF52B18000aE24Be4981e9ABC7716F98' // on Ethereum mainnet
+import { protocols } from './types'
+import { campaigns } from '../src/campaigns'
+import { getReferrerMetricsFromKpi } from './calculateRewards/getReferrerMetricsFromKpi'
+import { getViemPublicClient } from './utils'
+import { rewardFunctionAbi } from '../abis/RewardFunction'
+import { rewardPoolWithKpiAbi } from '../abis/RewardPoolWithKpi'
 
 function parseArgs() {
   const args = yargs
+    .option('protocol', {
+      description: 'the protocol to calculate rewards for',
+      type: 'string',
+      demandOption: true,
+      choices: protocols,
+    })
     .option('datadir', {
       description: 'the directory to store the results',
       type: 'string',
@@ -33,8 +41,13 @@ function parseArgs() {
     })
     .option('reward-amount', {
       alias: 'r',
-      description:
-        'the reward amount for this time period in USDT with 6 decimals',
+      description: 'the reward amount for this time period in smallest units',
+      type: 'string',
+      demandOption: true,
+    })
+    .option('kpi-function-id', {
+      alias: 'k',
+      description: 'the kpi function id (e.g., github commit hash)',
       type: 'string',
       demandOption: true,
     })
@@ -67,7 +80,7 @@ function parseArgs() {
   return {
     resultDirectory: new ResultDirectory({
       datadir: args.datadir,
-      name: 'tether-v0',
+      name: args.protocol,
       startTimestamp: new Date(args['start-timestamp']),
       endTimestampExclusive: new Date(args['end-timestamp']),
     }),
@@ -75,6 +88,8 @@ function parseArgs() {
     endTimestampExclusive: args['end-timestamp'],
     rewardAmount: args['reward-amount'],
     excludedReferrers,
+    protocol: args.protocol,
+    kpiFunctionId: args['kpi-function-id'],
   }
 }
 
@@ -82,8 +97,13 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const startTimestamp = new Date(args.startTimestamp)
   const endTimestampExclusive = new Date(args.endTimestampExclusive)
   const resultDirectory = args.resultDirectory
-  const rewardAmount = args.rewardAmount
+  const rewardAmount = BigInt(args.rewardAmount)
   const kpiData = await resultDirectory.readKpi()
+  const campaign = campaigns.find((c) => c.protocol === args.protocol)
+  if (!campaign) {
+    throw new Error(`Campaign ${args.protocol} not found`)
+  }
+  const rewardPoolAddress = campaign.rewardsPoolAddress
 
   let excludedReferrers = await getDivviRewardsExcludedReferrers()
   if (
@@ -95,43 +115,44 @@ export async function main(args: ReturnType<typeof parseArgs>) {
 
   await resultDirectory.writeExcludeList(Object.values(excludedReferrers))
 
-  const rewards = calculateProportionalPrizeContest({
-    kpiData,
-    rewards: new BigNumber(rewardAmount),
-    excludedReferrers,
+  // group kpis by referrer and remove excluded referrers
+  const { referrerReferrals, referrerKpis } = getReferrerMetricsFromKpi(kpiData)
+  const kpis = Object.entries(referrerKpis)
+    .filter(([referrerId]) => !(referrerId.toLowerCase() in excludedReferrers))
+    .map(([referrerId, kpi]) => ({
+      kpi,
+      referrer: referrerId as `0x${string}`,
+    }))
+
+  createUpdateKpiAndProcessRewardsSafeTransactionJSON({
+    filePath: resultDirectory.safeTransactionsFilePath,
+    rewardPoolAddress,
+    kpis,
+    startTimestamp,
+    endTimestampExclusive,
+    kpiFunctionId: args.kpiFunctionId,
+    rewardAmount,
   })
 
-  const totalTransactionsPerReferrer: {
-    [referrerId: string]: number
-  } = {}
-
-  for (const { referrerId, metadata } of kpiData) {
-    if (!metadata) continue
-
-    totalTransactionsPerReferrer[referrerId] =
-      (totalTransactionsPerReferrer[referrerId] ?? 0) +
-      Object.values(metadata as Record<string, { txCount?: number }>).reduce(
-        (sum, networkData) => {
-          return sum + (networkData.txCount ?? 0)
-        },
-        0,
-      )
-  }
+  // get the reward function address from the reward pool contract and use it to simulate the rewards calculation
+  const publicClient = getViemPublicClient(campaign.networkId)
+  const rewardFunctionAddress = await publicClient.readContract({
+    address: rewardPoolAddress,
+    abi: rewardPoolWithKpiAbi,
+    functionName: 'rewardFunctionAddress',
+  })
+  const rewards = await publicClient.readContract({
+    address: rewardFunctionAddress,
+    abi: rewardFunctionAbi,
+    functionName: 'calculateReward',
+    args: [kpis, rewardAmount],
+  })
 
   const rewardsWithMetadata = rewards.map((reward) => ({
     ...reward,
-    totalTransactions: totalTransactionsPerReferrer[reward.referrerId] ?? 0,
-    totalValue: reward.kpi,
+    totalKpi: referrerKpis[reward.referrer],
+    referralCount: referrerReferrals[reward.referrer],
   }))
-
-  createAddRewardSafeTransactionJSON({
-    filePath: resultDirectory.safeTransactionsFilePath,
-    rewardPoolAddress: REWARD_POOL_ADDRESS,
-    rewards,
-    startTimestamp,
-    endTimestampExclusive,
-    useIdempotency: true,
-  })
 
   await resultDirectory.writeRewards(rewardsWithMetadata)
 }

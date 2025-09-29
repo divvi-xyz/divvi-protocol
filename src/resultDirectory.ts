@@ -8,7 +8,7 @@ export interface KpiRow {
   referrerId: string
   userAddress: string
   kpi: string
-  metadata?: { [key: string]: number }
+  metadata?: Record<string, unknown>
 }
 
 interface ReferralRow {
@@ -119,6 +119,10 @@ export class ResultDirectory {
       this._writeCsv(this.excludeListFileSuffix, list),
       this._writeJson(this.excludeListFileSuffix, list),
     ])
+  }
+
+  async readRewards<T>() {
+    return (await this._readJson(this.rewardsFileSuffix)) as T[]
   }
 
   async readKpi() {

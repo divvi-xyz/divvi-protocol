@@ -31,7 +31,20 @@ async function downloadFile({
   console.log(`${outputPath}`)
   fs.mkdirSync(dir, { recursive: true })
 
-  const response = await axios.get(url, { responseType: 'stream' })
+  const response = await axios.get(url, {
+    responseType: 'stream',
+    // Add cache-busting headers
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+    },
+    // Add timeout to prevent hanging requests
+    timeout: 30000, // 30 seconds
+    // Force fresh request
+    validateStatus: (status) => status === 200,
+  })
+
   const writer = fs.createWriteStream(outputPath)
 
   response.data.pipe(writer)

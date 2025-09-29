@@ -22,11 +22,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: google-github-actions/auth@b7593ed2efd1c1617e1b0254da33b86225adb2a5 # v2.1.12
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           project_id: divvi-production
           credentials_json: ${{ secrets.DIVVI_PRODUCTION_UPLOADER_SERVICE_ACCOUNT_KEY }}
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: 'package.json'
           check-latest: true
@@ -39,7 +39,8 @@ jobs:
           yarn ts-node scripts/uploadCurrentPeriodKpis.ts \
             --calculation-timestamp ${{ github.event.inputs.timestamp }} \
             --protocols ${{ github.event.inputs.protocols }} \
-            --redis-connection ${{ secrets.REDIS_CONNECTION }}
+            --redis-connection ${{ secrets.REDIS_CONNECTION }} \
+            --kpi-function-id ${{ github.sha }}
       - name: Notify Slack on Failure
         if: ${{ failure() || cancelled() }}
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
