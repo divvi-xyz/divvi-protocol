@@ -1,0 +1,35 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Divvi Protocol",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Getting started",
+        "pages": ["index"]
+      },
+      {
+        "group": "How-to guides",
+        "pages": ["overview", "fund-managers"]
+      },
+      {
+        "group": "Explanation",
+        "pages": ["yellow-paper"]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "contracts",
+          {
+            "group": "KPI calculations",
+            "icon": "calculator",
+            "autogenerate": "calculate-kpi"
+          }
+        ]
+      },
+      {
+        "group": "Community",
+        "pages": ["community-code-of-conduct"]
+      }
+    ]
+  }
+}
