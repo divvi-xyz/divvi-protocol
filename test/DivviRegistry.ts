@@ -1125,4 +1125,488 @@ describe(CONTRACT_NAME, function () {
       expect(await registry.hasRole(roleToGrant, provider.address)).to.be.false
     })
   })
+
+  describe('Claim Delegation', function () {
+    for (const useMetaTx of [false, true]) {
+      describe(`via ${useMetaTx ? 'meta-transaction' : 'direct call'}`, function () {
+        let registry: Awaited<
+          ReturnType<typeof deployDivviRegistryContract>
+        >['registry']
+        let provider: Awaited<
+          ReturnType<typeof deployDivviRegistryContract>
+        >['provider']
+        let consumer: Awaited<
+          ReturnType<typeof deployDivviRegistryContract>
+        >['consumer']
+        let extraUser: Awaited<
+          ReturnType<typeof deployDivviRegistryContract>
+        >['extraUser']
+
+        beforeEach(async function () {
+          const deployed = await deployDivviRegistryContract()
+          registry = deployed.registry
+          provider = deployed.provider
+          consumer = deployed.consumer
+          extraUser = deployed.extraUser
+
+          // Register provider as an entity
+          await executeAs(
+            registry,
+            provider,
+            'registerRewardsEntity',
+            [false],
+            useMetaTx,
+          )
+        })
+
+        describe('Setting Delegates', function () {
+          it('should allow an entity to set a chain-specific delegate', async function () {
+            const chainId = 'eip155:42161' // Arbitrum
+            await expect(
+              executeAs(
+                registry,
+                provider,
+                'setClaimDelegate',
+                [consumer.address, chainId],
+                useMetaTx,
+              ),
+            )
+              .to.emit(registry, 'ClaimDelegateSet')
+              .withArgs(provider.address, consumer.address, chainId)
+
+            // Verify delegate was set
+            expect(
+              await registry.getClaimDelegate(provider.address, chainId),
+            ).to.equal(consumer.address)
+          })
+
+          it('should allow an entity to set a global delegate', async function () {
+            const globalChainId = 'eip155:0'
+            await expect(
+              executeAs(
+                registry,
+                provider,
+                'setClaimDelegate',
+                [consumer.address, globalChainId],
+                useMetaTx,
+              ),
+            )
+              .to.emit(registry, 'ClaimDelegateSet')
+              .withArgs(provider.address, consumer.address, globalChainId)
+
+            // Global delegate should work for any chain
+            expect(
+              await registry.getClaimDelegate(provider.address, 'eip155:1'),
+            ).to.equal(consumer.address)
+            expect(
+              await registry.getClaimDelegate(provider.address, 'eip155:10'),
+            ).to.equal(consumer.address)
+          })
+
+          it('should allow updating an existing delegate', async function () {
+            const chainId = 'eip155:10' // Optimism
+            // Set initial delegate
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [consumer.address, chainId],
+              useMetaTx,
+            )
+
+            // Update to new delegate
+            await expect(
+              executeAs(
+                registry,
+                provider,
+                'setClaimDelegate',
+                [extraUser.address, chainId],
+                useMetaTx,
+              ),
+            )
+              .to.emit(registry, 'ClaimDelegateRemoved')
+              .withArgs(provider.address, consumer.address, chainId)
+              .to.emit(registry, 'ClaimDelegateSet')
+              .withArgs(provider.address, extraUser.address, chainId)
+
+            // Verify new delegate
+            expect(
+              await registry.getClaimDelegate(provider.address, chainId),
+            ).to.equal(extraUser.address)
+          })
+
+          it('should allow removing a delegate by setting to address(0)', async function () {
+            const chainId = 'eip155:1'
+            // Set delegate first
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [consumer.address, chainId],
+              useMetaTx,
+            )
+
+            // Remove delegate
+            await expect(
+              executeAs(
+                registry,
+                provider,
+                'setClaimDelegate',
+                [ethers.ZeroAddress, chainId],
+                useMetaTx,
+              ),
+            )
+              .to.emit(registry, 'ClaimDelegateRemoved')
+              .withArgs(provider.address, consumer.address, chainId)
+
+            // Verify delegate was removed
+            expect(
+              await registry.getClaimDelegate(provider.address, chainId),
+            ).to.equal(ethers.ZeroAddress)
+          })
+
+          it('should allow setting multiple chain-specific delegates', async function () {
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [consumer.address, 'eip155:1'],
+              useMetaTx,
+            )
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [extraUser.address, 'eip155:10'],
+              useMetaTx,
+            )
+
+            expect(
+              await registry.getClaimDelegate(provider.address, 'eip155:1'),
+            ).to.equal(consumer.address)
+            expect(
+              await registry.getClaimDelegate(provider.address, 'eip155:10'),
+            ).to.equal(extraUser.address)
+          })
+
+          it('should revert when non-entity tries to set delegate', async function () {
+            await expect(
+              executeAs(
+                registry,
+                consumer, // Not registered as entity
+                'setClaimDelegate',
+                [provider.address, 'eip155:1'],
+                useMetaTx,
+              ),
+            )
+              .to.be.revertedWithCustomError(registry, 'EntityDoesNotExist')
+              .withArgs(consumer.address)
+          })
+        })
+
+        describe('Getting Delegates', function () {
+          it('should return address(0) when no delegate is set', async function () {
+            expect(
+              await registry.getClaimDelegate(provider.address, 'eip155:1'),
+            ).to.equal(ethers.ZeroAddress)
+          })
+
+          it('should return chain-specific delegate over global delegate', async function () {
+            // Set global delegate
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [consumer.address, 'eip155:0'],
+              useMetaTx,
+            )
+
+            // Set chain-specific delegate for Ethereum
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [extraUser.address, 'eip155:1'],
+              useMetaTx,
+            )
+
+            // Chain-specific should override global
+            expect(
+              await registry.getClaimDelegate(provider.address, 'eip155:1'),
+            ).to.equal(extraUser.address)
+
+            // Other chains should use global
+            expect(
+              await registry.getClaimDelegate(provider.address, 'eip155:10'),
+            ).to.equal(consumer.address)
+          })
+
+          it('should fall back to global delegate when chain-specific not set', async function () {
+            // Set global delegate only
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [consumer.address, 'eip155:0'],
+              useMetaTx,
+            )
+
+            // All chains should use global delegate
+            expect(
+              await registry.getClaimDelegate(provider.address, 'eip155:1'),
+            ).to.equal(consumer.address)
+            expect(
+              await registry.getClaimDelegate(provider.address, 'eip155:10'),
+            ).to.equal(consumer.address)
+            expect(
+              await registry.getClaimDelegate(provider.address, 'eip155:42161'),
+            ).to.equal(consumer.address)
+          })
+        })
+
+        describe('Enumeration', function () {
+          it('should return all delegations via getAllClaimDelegations', async function () {
+            // Set multiple delegates
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [consumer.address, 'eip155:1'],
+              useMetaTx,
+            )
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [extraUser.address, 'eip155:10'],
+              useMetaTx,
+            )
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [consumer.address, 'eip155:0'],
+              useMetaTx,
+            )
+
+            const delegations = await registry.getAllClaimDelegations(
+              provider.address,
+            )
+
+            expect(delegations.length).to.equal(3)
+
+            // Extract chainIds for easier checking
+            const chainIds = delegations.map((d) => d.chainId)
+            expect(chainIds).to.include('eip155:1')
+            expect(chainIds).to.include('eip155:10')
+            expect(chainIds).to.include('eip155:0')
+
+            // Verify corresponding delegates
+            const delegation1 = delegations.find(
+              (d) => d.chainId === 'eip155:1',
+            )
+            const delegation10 = delegations.find(
+              (d) => d.chainId === 'eip155:10',
+            )
+            const delegation0 = delegations.find(
+              (d) => d.chainId === 'eip155:0',
+            )
+
+            expect(delegation1?.delegate).to.equal(consumer.address)
+            expect(delegation10?.delegate).to.equal(extraUser.address)
+            expect(delegation0?.delegate).to.equal(consumer.address)
+          })
+
+          it('should return empty array when no delegations exist', async function () {
+            const delegations = await registry.getAllClaimDelegations(
+              provider.address,
+            )
+
+            expect(delegations.length).to.equal(0)
+          })
+
+          it('should update getAllClaimDelegations when delegation is removed', async function () {
+            // Set two delegates
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [consumer.address, 'eip155:1'],
+              useMetaTx,
+            )
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [extraUser.address, 'eip155:10'],
+              useMetaTx,
+            )
+
+            // Remove one
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [ethers.ZeroAddress, 'eip155:1'],
+              useMetaTx,
+            )
+
+            const delegations = await registry.getAllClaimDelegations(
+              provider.address,
+            )
+
+            expect(delegations.length).to.equal(1)
+            expect(delegations[0].chainId).to.equal('eip155:10')
+            expect(delegations[0].delegate).to.equal(extraUser.address)
+          })
+        })
+
+        describe('Reverse Lookups', function () {
+          it('should track entities delegating to an address', async function () {
+            // Register consumer as entity
+            await executeAs(
+              registry,
+              consumer,
+              'registerRewardsEntity',
+              [false],
+              useMetaTx,
+            )
+
+            // Both provider and consumer delegate to extraUser
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [extraUser.address, 'eip155:1'],
+              useMetaTx,
+            )
+            await executeAs(
+              registry,
+              consumer,
+              'setClaimDelegate',
+              [extraUser.address, 'eip155:10'],
+              useMetaTx,
+            )
+
+            const entities = await registry.getEntitiesDelegatingTo(
+              extraUser.address,
+            )
+
+            expect(entities.length).to.equal(2)
+            expect(entities).to.include(provider.address)
+            expect(entities).to.include(consumer.address)
+          })
+
+          it('should update reverse lookup when delegation changes', async function () {
+            // Set delegate
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [consumer.address, 'eip155:1'],
+              useMetaTx,
+            )
+
+            let entities = await registry.getEntitiesDelegatingTo(
+              consumer.address,
+            )
+            expect(entities).to.include(provider.address)
+
+            // Change delegate
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [extraUser.address, 'eip155:1'],
+              useMetaTx,
+            )
+
+            // Old delegate should no longer have this entity
+            entities = await registry.getEntitiesDelegatingTo(consumer.address)
+            expect(entities).to.not.include(provider.address)
+
+            // New delegate should have it
+            entities = await registry.getEntitiesDelegatingTo(extraUser.address)
+            expect(entities).to.include(provider.address)
+          })
+
+          it('should remove from reverse lookup when delegation is removed', async function () {
+            // Set delegate
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [consumer.address, 'eip155:1'],
+              useMetaTx,
+            )
+
+            // Remove delegate
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [ethers.ZeroAddress, 'eip155:1'],
+              useMetaTx,
+            )
+
+            const entities = await registry.getEntitiesDelegatingTo(
+              consumer.address,
+            )
+            expect(entities).to.not.include(provider.address)
+          })
+
+          it('should maintain reverse lookup for same delegate on multiple chains', async function () {
+            // Set same delegate on multiple chains
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [consumer.address, 'eip155:1'],
+              useMetaTx,
+            )
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [consumer.address, 'eip155:10'],
+              useMetaTx,
+            )
+
+            // Should still only appear once in delegators
+            let entities = await registry.getEntitiesDelegatingTo(
+              consumer.address,
+            )
+            expect(entities.length).to.equal(1)
+            expect(entities[0]).to.equal(provider.address)
+
+            // Remove one chain delegation
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [ethers.ZeroAddress, 'eip155:1'],
+              useMetaTx,
+            )
+
+            // Should still be in delegators (has eip155:10)
+            entities = await registry.getEntitiesDelegatingTo(consumer.address)
+            expect(entities.length).to.equal(1)
+
+            // Remove all delegations
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [ethers.ZeroAddress, 'eip155:10'],
+              useMetaTx,
+            )
+
+            // Now should not be a delegate
+            entities = await registry.getEntitiesDelegatingTo(consumer.address)
+            expect(entities.length).to.equal(0)
+          })
+        })
+      })
+    }
+  })
 })
