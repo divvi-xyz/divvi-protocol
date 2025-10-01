@@ -1351,7 +1351,7 @@ describe(CONTRACT_NAME, function () {
               useMetaTx,
             )
 
-            // All chains should use global delegate
+            // All EVM chains should use global delegate
             expect(
               await registry.getClaimDelegate(provider.address, 'eip155:1'),
             ).to.equal(consumer.address)
@@ -1361,6 +1361,31 @@ describe(CONTRACT_NAME, function () {
             expect(
               await registry.getClaimDelegate(provider.address, 'eip155:42161'),
             ).to.equal(consumer.address)
+          })
+
+          it('should NOT fall back to global delegate for non-EVM chains', async function () {
+            // Set global EVM delegate
+            await executeAs(
+              registry,
+              provider,
+              'setClaimDelegate',
+              [consumer.address, 'eip155:0'],
+              useMetaTx,
+            )
+
+            // Non-EVM chains should return address(0), not the global delegate
+            expect(
+              await registry.getClaimDelegate(
+                provider.address,
+                'cosmos:cosmoshub-4',
+              ),
+            ).to.equal(ethers.ZeroAddress)
+            expect(
+              await registry.getClaimDelegate(provider.address, 'solana:5eykt'),
+            ).to.equal(ethers.ZeroAddress)
+            expect(
+              await registry.getClaimDelegate(provider.address, 'polkadot:0'),
+            ).to.equal(ethers.ZeroAddress)
           })
         })
 

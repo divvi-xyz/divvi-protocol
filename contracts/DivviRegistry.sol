@@ -529,7 +529,7 @@ contract DivviRegistry is
    * @param entity The entity address
    * @param chainId The chain ID in CAIP-2 format
    * @return delegate The delegate address, or address(0) if none set
-   * @dev Checks chain-specific delegate first, then falls back to global ("eip155:0")
+   * @dev Checks chain-specific delegate first, then falls back to global ("eip155:0") for EVM chains only
    */
   function getClaimDelegate(
     address entity,
@@ -543,8 +543,21 @@ contract DivviRegistry is
       return delegate;
     }
 
-    // Fall back to global delegate (eip155:0)
-    return entityData.claimDelegates['eip155:0'];
+    // Fall back to global delegate (eip155:0) only for EVM chains
+    if (
+      bytes(chainId).length >= 7 &&
+      bytes(chainId)[0] == 'e' &&
+      bytes(chainId)[1] == 'i' &&
+      bytes(chainId)[2] == 'p' &&
+      bytes(chainId)[3] == '1' &&
+      bytes(chainId)[4] == '5' &&
+      bytes(chainId)[5] == '5' &&
+      bytes(chainId)[6] == ':'
+    ) {
+      return entityData.claimDelegates['eip155:0'];
+    }
+
+    return address(0);
   }
 
   /**
