@@ -1365,6 +1365,8 @@ describe(CONTRACT_NAME, function () {
         })
 
         describe('Enumeration', function () {
+          type ClaimDelegation = { chainId: string; delegate: string }
+
           it('should return all delegations via getAllClaimDelegations', async function () {
             // Set multiple delegates
             await executeAs(
@@ -1396,20 +1398,20 @@ describe(CONTRACT_NAME, function () {
             expect(delegations.length).to.equal(3)
 
             // Extract chainIds for easier checking
-            const chainIds = delegations.map((d) => d.chainId)
+            const chainIds = delegations.map((d: ClaimDelegation) => d.chainId)
             expect(chainIds).to.include('eip155:1')
             expect(chainIds).to.include('eip155:10')
             expect(chainIds).to.include('eip155:0')
 
             // Verify corresponding delegates
             const delegation1 = delegations.find(
-              (d) => d.chainId === 'eip155:1',
+              (d: ClaimDelegation) => d.chainId === 'eip155:1',
             )
             const delegation10 = delegations.find(
-              (d) => d.chainId === 'eip155:10',
+              (d: ClaimDelegation) => d.chainId === 'eip155:10',
             )
             const delegation0 = delegations.find(
-              (d) => d.chainId === 'eip155:0',
+              (d: ClaimDelegation) => d.chainId === 'eip155:0',
             )
 
             expect(delegation1?.delegate).to.equal(consumer.address)
