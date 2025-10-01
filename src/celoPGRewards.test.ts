@@ -124,8 +124,9 @@ describe('calculateRewards', () => {
 
   it('should exclude referrers and redistribute rewards to non-excluded ones', () => {
     const kpiData: KpiRow[] = [
-      // Excluded referrer
+      // Excluded referrers
       ...createUsers('0xReferrer1', 50, '100'), // Mixed case, 50 wallets, low gas
+      ...createUsers('0xreferrer3', 150, '5000000'), // 150 wallets, 750M total gas, would usually reach stage 1
 
       // Non-excluded referrer - stage 1 (>= 100 wallets && >= 500M gas)
       ...createUsers('0xreferrer2', 150, '5000000'), // 150 wallets, 750M total gas
@@ -136,6 +137,7 @@ describe('calculateRewards', () => {
       rewards: new BigNumber('30000'),
       excludedReferrers: {
         '0xreferrer1': { referrerId: '0xreferrer1' }, // Lowercase in exclude list
+        '0xreferrer3': { referrerId: '0xreferrer3' }, // Lowercase in exclude list
       },
       previousStageData: [],
       stageFunction: calculateStageV0,
@@ -152,6 +154,21 @@ describe('calculateRewards', () => {
         gasUsage: 5_000n,
         gasUsageForStageCalculation: 5_000n,
         stage: 0,
+        sqrtOnlyReward: '0', // Excluded from all calculations
+        baseReward: '0', // Excluded
+        stageBonus: '0', // Excluded
+        rewardAmount: '0', // Excluded
+        isExcluded: true,
+      },
+      {
+        referrerId: '0xreferrer3',
+        kpi: 750_000_000n, // 150 * 5M
+        referralCount: 150,
+        uniqueWallets: 150,
+        uniqueWalletsForStageCalculation: 150,
+        gasUsage: 750_000_000n,
+        gasUsageForStageCalculation: 750_000_000n,
+        stage: 0, // stage 0 since excluded
         sqrtOnlyReward: '0', // Excluded from all calculations
         baseReward: '0', // Excluded
         stageBonus: '0', // Excluded

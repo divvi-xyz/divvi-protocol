@@ -13,10 +13,16 @@ import { getReferrerMetricsFromKpi } from '../scripts/calculateRewards/getReferr
 export function calculateStageV0({
   uniqueWallets,
   gasUsage,
+  isExcludedReferrer,
 }: {
   uniqueWallets: number
   gasUsage: bigint
+  isExcludedReferrer: boolean
 }) {
+  if (isExcludedReferrer) {
+    return 0
+  }
+
   if (uniqueWallets >= 1_000_000 && gasUsage >= 50_000_000_000n) {
     return 4
   } else if (uniqueWallets >= 10_000 && gasUsage >= 25_000_000_000n) {
@@ -33,10 +39,16 @@ export function calculateStageV0({
 export function calculateStageV1({
   uniqueWallets,
   gasUsage,
+  isExcludedReferrer,
 }: {
   uniqueWallets: number
   gasUsage: bigint
+  isExcludedReferrer: boolean
 }) {
+  if (isExcludedReferrer) {
+    return 0
+  }
+
   if (uniqueWallets >= 100_000 && gasUsage >= 500_000_000_000n) {
     return 5
   } else if (uniqueWallets >= 10_000 && gasUsage >= 25_000_000_000n) {
@@ -72,9 +84,11 @@ export function calculateRewards({
   stageFunction: ({
     uniqueWallets,
     gasUsage,
+    isExcludedReferrer,
   }: {
     uniqueWallets: number
     gasUsage: bigint
+    isExcludedReferrer: boolean
   }) => number
   previousStageData: KpiRow[][]
   stageBonusRatio?: number
@@ -101,13 +115,14 @@ export function calculateRewards({
   // Calculate stage for each referrer once
   const referrerStages = Object.entries(stageReferrerKpis).reduce(
     (acc, [referrerId, kpi]) => {
-      let uniqueWallets = stageReferrerReferrals[referrerId]
-      let gasUsage = kpi
+      const uniqueWallets = stageReferrerReferrals[referrerId]
+      const gasUsage = kpi
 
       acc[referrerId] = {
         stage: stageFunction({
           uniqueWallets,
           gasUsage,
+          isExcludedReferrer: referrerId.toLowerCase() in excludedReferrers,
         }),
         uniqueWallets,
         gasUsage,
