@@ -104,9 +104,9 @@ contract DivviRegistry is
   // Referral tracking
   mapping(bytes32 => address) private _registeredReferrals; // keccak256(user, provider) => consumer
 
-  // Delegation reverse lookup: delegate => set of entities that have delegated to it
-  // Note: Forward lookup (entity => delegates) is stored in EntityData.claimDelegates
-  mapping(address => EnumerableSet.AddressSet) private _delegators;
+  // Claim delegation reverse lookup: claim delegate => set of entities that have delegated to it
+  // Note: Forward lookup (entity => claim delegates) is stored in EntityData.claimDelegates
+  mapping(address => EnumerableSet.AddressSet) private _entitiesByClaimDelegate;
 
   // Role constants
   bytes32 public constant REFERRAL_REGISTRAR_ROLE =
@@ -503,7 +503,7 @@ contract DivviRegistry is
       }
       // Only remove from reverse lookup if not used on any other chain
       if (!stillUsedOnOtherChains) {
-        _delegators[previousDelegate].remove(msgSender);
+        _entitiesByClaimDelegate[previousDelegate].remove(msgSender);
       }
       emit ClaimDelegateRemoved(msgSender, previousDelegate, chainId);
     }
@@ -516,7 +516,7 @@ contract DivviRegistry is
       if (previousDelegate == address(0)) {
         entity.claimDelegatesChainIds.add(chainId);
       }
-      _delegators[delegate].add(msgSender);
+      _entitiesByClaimDelegate[delegate].add(msgSender);
       emit ClaimDelegateSet(msgSender, delegate, chainId);
     } else {
       // Remove chainId from set when delegation is removed
@@ -579,7 +579,7 @@ contract DivviRegistry is
   function getEntitiesDelegatingTo(
     address delegate
   ) external view returns (address[] memory entities) {
-    return _delegators[delegate].values();
+    return _entitiesByClaimDelegate[delegate].values();
   }
 
   // ERC2771Context overrides
