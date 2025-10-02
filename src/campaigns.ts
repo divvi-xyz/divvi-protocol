@@ -219,7 +219,7 @@ const celoPGS1Campaign: Campaign = {
           startTimestamp,
           endTimestampExclusive,
           rewardAmount: '25000',
-          excludedReferrers: {},
+          excludedReferrers: excludedReferrersFromCeloPGS1[1],
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
         })
@@ -240,7 +240,7 @@ const celoPGS1Campaign: Campaign = {
           endTimestampExclusive,
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
-          excludedReferrers: {},
+          excludedReferrers: excludedReferrersFromCeloPGS1[1],
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
         })
@@ -261,7 +261,7 @@ const celoPGS1Campaign: Campaign = {
           endTimestampExclusive,
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
-          excludedReferrers: {},
+          excludedReferrers: excludedReferrersFromCeloPGS1[1],
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
         })
@@ -282,7 +282,7 @@ const celoPGS1Campaign: Campaign = {
           endTimestampExclusive,
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
-          excludedReferrers: {},
+          excludedReferrers: excludedReferrersFromCeloPGS1[1],
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
         })
@@ -303,7 +303,7 @@ const celoPGS1Campaign: Campaign = {
           endTimestampExclusive,
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
-          excludedReferrers: {},
+          excludedReferrers: excludedReferrersFromCeloPGS1[1],
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
         })
@@ -324,7 +324,7 @@ const celoPGS1Campaign: Campaign = {
           endTimestampExclusive,
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
-          excludedReferrers: {},
+          excludedReferrers: excludedReferrersFromCeloPGS1[1],
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
         })
