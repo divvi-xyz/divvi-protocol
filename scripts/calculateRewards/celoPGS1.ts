@@ -203,6 +203,8 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   }
   const prosperityPassportData =
     (await response.json()) as ProsperityPassportData[]
+  await resultDirectory.writeProsperityPassportData(prosperityPassportData)
+
   const userToLevel = prosperityPassportData.reduce(
     (acc, data) => {
       if (data.eoas === null || data.level === null) return acc
