@@ -15,9 +15,34 @@ import {
 import fs from 'fs'
 import { parse } from 'csv-parse/sync'
 import axios from 'axios'
+import { fetchWithTimeout } from '../utils/fetchWithTimeout'
 
 // TODO: support both CELO and OP reward pools
 const REWARD_POOL_ADDRESS = '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5' // on Celo mainnet
+
+const PROSPERITY_PASSPORT_URL =
+  'https://prosperity-passport-backend-production.up.railway.app/api/accounts'
+const PROSPERITY_PASSPORT_HEADERS = {
+  'x-api-key': process.env.PROSPERITY_PASSPORT_API_KEY!,
+  accept: 'application/json',
+  'Content-Type': 'application/json',
+}
+
+interface ProsperityPassportData {
+  eoas: string[]
+  level: number
+}
+
+function calculateQualityUserScore(
+  users: string[],
+  userToLevel: Record<string, number>,
+) {
+  let score = 0
+  for (const user of users) {
+    score += userToLevel[user] ?? 0
+  }
+  return score / users.length
+}
 
 async function readKpiFile(url: string) {
   if (url.startsWith('https://')) {
@@ -159,9 +184,43 @@ export async function main(args: ReturnType<typeof parseArgs>) {
         : 0)
   }
 
+  const usersPerReferrer: {
+    [referrerId: string]: string[]
+  } = {}
+  for (const { referrerId, userAddress } of kpiData) {
+    if (!usersPerReferrer[referrerId]) {
+      usersPerReferrer[referrerId] = []
+    }
+    usersPerReferrer[referrerId].push(userAddress)
+  }
+
+  const response = await fetchWithTimeout(PROSPERITY_PASSPORT_URL, {
+    headers: PROSPERITY_PASSPORT_HEADERS,
+    method: 'GET',
+  })
+  if (!response.ok) {
+    throw new Error('Failed to fetch prosperity passport data')
+  }
+  const prosperityPassportData =
+    (await response.json()) as ProsperityPassportData[]
+  const userToLevel = prosperityPassportData.reduce(
+    (acc, data) => {
+      if (data.eoas === null || data.level === null) return acc
+      data.eoas.forEach((eoa) => {
+        acc[eoa] = data.level
+      })
+      return acc
+    },
+    {} as Record<string, number>,
+  )
+
   const rewardsWithMetadata = rewards.map((reward) => ({
     ...reward,
     totalTransactions: totalTransactionsPerReferrer[reward.referrerId],
+    qualityUserScore: calculateQualityUserScore(
+      usersPerReferrer[reward.referrerId],
+      userToLevel,
+    ),
   }))
 
   createAddRewardSafeTransactionJSON({
