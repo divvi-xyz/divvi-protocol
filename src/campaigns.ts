@@ -5,6 +5,8 @@ import { toPeriodFolderName } from '../scripts/utils/dateFormatting'
 import { Campaign } from './types'
 import { pastCampaigns } from './pastCampaings'
 import { calculateStageV0, calculateStageV1 } from './celoPGRewards'
+import { google } from 'googleapis'
+import { isAddress } from 'viem'
 
 export const STORAGE_BUCKET_NAME = 'divvi-campaign-data-production'
 export const DATADIR = 'kpi'
@@ -34,6 +36,102 @@ function excludeRecord(addresses: string[]) {
       },
       {} as Record<string, { referrerId: string; shouldWarn: boolean }>,
     )
+}
+
+/**
+ * Fetches excluded builders from Google Sheets for a given campaign provider address
+ *
+ * Required environment variables:
+ * - GOOGLE_SERVICE_ACCOUNT_JSON: Base64 encoded Google Service Account JSON
+ * - CAMPAIGN_SETTINGS_GOOGLE_SHEET_ID: Google Sheets ID containing campaign settings
+ *
+ * The Google Sheet should have the following format:
+ * - Column A: Campaign provider address (lowercase)
+ * - Column B: Comma-separated list of excluded builder addresses
+ */
+async function getExcludedBuildersFromGoogleSheet(
+  providerAddress: string,
+): Promise<string[]> {
+  try {
+    // Get Google Sheets credentials from environment variables
+    const googleServiceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+    const campaignSettingsSheetId =
+      process.env.CAMPAIGN_SETTINGS_GOOGLE_SHEET_ID
+
+    if (!googleServiceAccountJson || !campaignSettingsSheetId) {
+      console.warn(
+        'Google Sheets credentials not configured, skipping excluded builders fetch',
+      )
+      return []
+    }
+
+    // Decode the base64 encoded Google Service Account
+    const base64Decoded = Buffer.from(
+      googleServiceAccountJson,
+      'base64',
+    ).toString('utf8')
+    const credentials = JSON.parse(base64Decoded)
+
+    const auth = new google.auth.GoogleAuth({
+      credentials,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    })
+
+    const sheets = google.sheets({ version: 'v4', auth })
+    const range = 'Sheet1!A:B'
+
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: campaignSettingsSheetId,
+      range,
+    })
+
+    const values = response.data.values || []
+
+    // Find the row for this provider address
+    const campaignRow = values.find(
+      (row) => row[0]?.toLowerCase() === providerAddress.toLowerCase(),
+    )
+
+    if (!campaignRow || !campaignRow[1]) {
+      return []
+    }
+
+    // Parse the comma-separated addresses
+    const excludedBuilders = campaignRow[1]
+      .split(',')
+      .map((addr: string) => addr.trim().toLowerCase())
+      .filter((addr: string) => addr.length > 0 && isAddress(addr))
+
+    return excludedBuilders
+  } catch (error) {
+    console.error('Error fetching excluded builders from Google Sheet:', error)
+    return []
+  }
+}
+
+/**
+ * Merges hardcoded excluded referrers with Google Sheet excluded builders
+ */
+async function getMergedExcludedReferrers(
+  providerAddress: string,
+  hardcodedExcludedReferrers: Record<
+    string,
+    { referrerId: string; shouldWarn: boolean }
+  >,
+): Promise<Record<string, { referrerId: string; shouldWarn: boolean }>> {
+  const googleSheetExcludedBuilders =
+    await getExcludedBuildersFromGoogleSheet(providerAddress)
+
+  // Convert Google Sheet addresses to the same format as hardcoded excluded referrers
+  const googleSheetExcludedReferrers = excludeRecord(
+    googleSheetExcludedBuilders,
+  )
+
+  // Merge the two objects, with Google Sheet entries taking precedence
+  return {
+    ...hardcodedExcludedReferrers,
+    ...googleSheetExcludedReferrers,
+  }
 }
 
 const excludedReferrersFromTetherV0 = [
@@ -84,12 +182,16 @@ const tetherV0Campaign: Campaign = {
         startTimestamp,
         endTimestampExclusive,
       }) => {
+        const mergedExcludedReferrers = await getMergedExcludedReferrers(
+          tetherV0Campaign.providerAddress,
+          excludedReferrersFromTetherV0[0],
+        )
         await calculateRewardsTetherV0({
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
           rewardAmount: '5000000000', // 5000 USDT
-          excludedReferrers: excludedReferrersFromTetherV0[0],
+          excludedReferrers: mergedExcludedReferrers,
         })
       },
     },
@@ -101,12 +203,16 @@ const tetherV0Campaign: Campaign = {
         startTimestamp,
         endTimestampExclusive,
       }) => {
+        const mergedExcludedReferrers = await getMergedExcludedReferrers(
+          tetherV0Campaign.providerAddress,
+          {},
+        )
         await calculateRewardsTetherV0({
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
           rewardAmount: '10000000000', // 10000 USDT
-          excludedReferrers: {},
+          excludedReferrers: mergedExcludedReferrers,
         })
       },
     },
@@ -118,12 +224,16 @@ const tetherV0Campaign: Campaign = {
         startTimestamp,
         endTimestampExclusive,
       }) => {
+        const mergedExcludedReferrers = await getMergedExcludedReferrers(
+          tetherV0Campaign.providerAddress,
+          {},
+        )
         await calculateRewardsTetherV0({
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
           rewardAmount: '15000000000', // 15000 USDT
-          excludedReferrers: {},
+          excludedReferrers: mergedExcludedReferrers,
         })
       },
     },
@@ -135,12 +245,16 @@ const tetherV0Campaign: Campaign = {
         startTimestamp,
         endTimestampExclusive,
       }) => {
+        const mergedExcludedReferrers = await getMergedExcludedReferrers(
+          tetherV0Campaign.providerAddress,
+          {},
+        )
         await calculateRewardsTetherV0({
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
           rewardAmount: '15000000000', // 15000 USDT
-          excludedReferrers: {},
+          excludedReferrers: mergedExcludedReferrers,
         })
       },
     },
@@ -174,12 +288,16 @@ const celoPGS1Campaign: Campaign = {
         endTimestampExclusive,
       }) => {
         const index = 0
+        const mergedExcludedReferrers = await getMergedExcludedReferrers(
+          celoPGS1Campaign.providerAddress,
+          excludedReferrersFromCeloPGS1[0],
+        )
         await calculateRewardsCeloPGS1({
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
           rewardAmount: '25000',
-          excludedReferrers: excludedReferrersFromCeloPGS1[0],
+          excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV0,
         })
@@ -194,12 +312,16 @@ const celoPGS1Campaign: Campaign = {
         endTimestampExclusive,
       }) => {
         const index = 1
+        const mergedExcludedReferrers = await getMergedExcludedReferrers(
+          celoPGS1Campaign.providerAddress,
+          excludedReferrersFromCeloPGS1[1],
+        )
         await calculateRewardsCeloPGS1({
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
           rewardAmount: '25000',
-          excludedReferrers: excludedReferrersFromCeloPGS1[1],
+          excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
         })
@@ -214,12 +336,16 @@ const celoPGS1Campaign: Campaign = {
         endTimestampExclusive,
       }) => {
         const index = 2
+        const mergedExcludedReferrers = await getMergedExcludedReferrers(
+          celoPGS1Campaign.providerAddress,
+          excludedReferrersFromCeloPGS1[1],
+        )
         await calculateRewardsCeloPGS1({
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
           rewardAmount: '25000',
-          excludedReferrers: excludedReferrersFromCeloPGS1[1],
+          excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
         })
@@ -234,13 +360,17 @@ const celoPGS1Campaign: Campaign = {
         endTimestampExclusive,
       }) => {
         const index = 3
+        const mergedExcludedReferrers = await getMergedExcludedReferrers(
+          celoPGS1Campaign.providerAddress,
+          excludedReferrersFromCeloPGS1[1],
+        )
         await calculateRewardsCeloPGS1({
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
-          excludedReferrers: excludedReferrersFromCeloPGS1[1],
+          excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
         })
@@ -255,13 +385,17 @@ const celoPGS1Campaign: Campaign = {
         endTimestampExclusive,
       }) => {
         const index = 4
+        const mergedExcludedReferrers = await getMergedExcludedReferrers(
+          celoPGS1Campaign.providerAddress,
+          excludedReferrersFromCeloPGS1[1],
+        )
         await calculateRewardsCeloPGS1({
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
-          excludedReferrers: excludedReferrersFromCeloPGS1[1],
+          excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
         })
@@ -276,13 +410,17 @@ const celoPGS1Campaign: Campaign = {
         endTimestampExclusive,
       }) => {
         const index = 5
+        const mergedExcludedReferrers = await getMergedExcludedReferrers(
+          celoPGS1Campaign.providerAddress,
+          excludedReferrersFromCeloPGS1[1],
+        )
         await calculateRewardsCeloPGS1({
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
-          excludedReferrers: excludedReferrersFromCeloPGS1[1],
+          excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
         })
@@ -297,13 +435,17 @@ const celoPGS1Campaign: Campaign = {
         endTimestampExclusive,
       }) => {
         const index = 6
+        const mergedExcludedReferrers = await getMergedExcludedReferrers(
+          celoPGS1Campaign.providerAddress,
+          excludedReferrersFromCeloPGS1[1],
+        )
         await calculateRewardsCeloPGS1({
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
-          excludedReferrers: excludedReferrersFromCeloPGS1[1],
+          excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
         })
@@ -318,13 +460,17 @@ const celoPGS1Campaign: Campaign = {
         endTimestampExclusive,
       }) => {
         const index = 7
+        const mergedExcludedReferrers = await getMergedExcludedReferrers(
+          celoPGS1Campaign.providerAddress,
+          excludedReferrersFromCeloPGS1[1],
+        )
         await calculateRewardsCeloPGS1({
           resultDirectory,
           startTimestamp,
           endTimestampExclusive,
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
-          excludedReferrers: excludedReferrersFromCeloPGS1[1],
+          excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
         })
