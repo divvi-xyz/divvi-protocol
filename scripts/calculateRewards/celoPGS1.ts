@@ -4,6 +4,7 @@ import {
   calculateRewards,
   calculateStageV0,
   calculateStageV1,
+  getQualityUserScores,
 } from '../../src/celoPGRewards'
 import { KpiRow, ResultDirectory } from '../../src/resultDirectory'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
@@ -15,7 +16,6 @@ import {
 import fs from 'fs'
 import { parse } from 'csv-parse/sync'
 import axios from 'axios'
-import { getQualityUserScores } from '../utils/getQualityUserScores'
 
 // TODO: support both CELO and OP reward pools
 const REWARD_POOL_ADDRESS = '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5' // on Celo mainnet
