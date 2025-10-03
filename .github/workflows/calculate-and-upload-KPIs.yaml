@@ -35,6 +35,7 @@ jobs:
         env:
           HYPERSYNC_API_KEY: ${{ secrets.HYPERSYNC_API_KEY }}
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+          PROSPERITY_PASSPORT_API_KEY: ${{ secrets.PROSPERITY_PASSPORT_API_KEY }}
         run: |
           yarn ts-node scripts/uploadCurrentPeriodKpis.ts \
             --calculation-timestamp ${{ github.event.inputs.timestamp }} \
