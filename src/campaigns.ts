@@ -4,7 +4,11 @@ import { main as calculateRewardsTetherV0 } from '../scripts/calculateRewards/te
 import { toPeriodFolderName } from '../scripts/utils/dateFormatting'
 import { Campaign } from './types'
 import { pastCampaigns } from './pastCampaings'
-import { calculateStageV0, calculateStageV1, calculateStageV2 } from './celoPGRewards'
+import {
+  calculateStageV0,
+  calculateStageV1,
+  calculateStageV2,
+} from './celoPGRewards'
 import { google } from 'googleapis'
 import { isAddress } from 'viem'
 
