@@ -4,6 +4,7 @@ import {
   calculateRewards,
   calculateStageV0,
   calculateStageV1,
+  calculateStageV2,
   getQualityUserScores,
 } from '../../src/celoPGRewards'
 import { KpiRow, ResultDirectory } from '../../src/resultDirectory'
@@ -29,7 +30,7 @@ async function readKpiFile(url: string) {
   }
 }
 
-const stageFunctions = [calculateStageV0, calculateStageV1]
+const stageFunctions = [calculateStageV0, calculateStageV1, calculateStageV2]
 
 function parseArgs() {
   const args = yargs
