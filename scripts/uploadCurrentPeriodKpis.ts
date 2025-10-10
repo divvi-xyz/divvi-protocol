@@ -204,6 +204,12 @@ export async function uploadCurrentPeriodKpis(
       )
     }
 
+    if (campaign.protocol === 'celo-pg-s1') {
+      campaignFilePaths.push(
+        `${resultDirectory.prosperityPassportDataFileSuffix}.json`,
+      )
+    }
+
     if (currentPeriod.calculateRewardSlices) {
       await currentPeriod.calculateRewardSlices({
         resultDirectory,

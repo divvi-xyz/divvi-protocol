@@ -62,6 +62,10 @@ export class ResultDirectory {
     return path.join(this.resultsDirectory, 'exclude-list')
   }
 
+  get prosperityPassportDataFileSuffix() {
+    return path.join(this.resultsDirectory, 'prosperity-passport-data')
+  }
+
   includeListFilePath(fileName: string) {
     return path.join(this.resultsDirectory, `include-${fileName}`)
   }
@@ -119,6 +123,13 @@ export class ResultDirectory {
       this._writeCsv(this.excludeListFileSuffix, list),
       this._writeJson(this.excludeListFileSuffix, list),
     ])
+  }
+
+  async writeProsperityPassportData(data: any[]) {
+    await mkdir(dirname(this.prosperityPassportDataFileSuffix), {
+      recursive: true,
+    })
+    return await this._writeJson(this.prosperityPassportDataFileSuffix, data)
   }
 
   async readRewards<T>() {
