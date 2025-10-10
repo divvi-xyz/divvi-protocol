@@ -1,6 +1,61 @@
 import { KpiRow } from './resultDirectory'
 import { BigNumber } from 'bignumber.js'
 import { getReferrerMetricsFromKpi } from '../scripts/calculateRewards/getReferrerMetricsFromKpi'
+import axios from 'axios'
+import { ResultDirectory } from './resultDirectory'
+
+const PROSPERITY_PASSPORT_URL =
+  'https://prosperity-passport-backend-production.up.railway.app/api/accounts'
+const PROSPERITY_PASSPORT_HEADERS = {
+  'x-api-key': process.env.PROSPERITY_PASSPORT_API_KEY!,
+  accept: 'application/json',
+  'Content-Type': 'application/json',
+}
+
+interface ProsperityPassportData {
+  eoas: string[]
+  level: number
+}
+
+function calculateQualityUserScore(
+  users: string[],
+  userToLevel: Record<string, number>,
+) {
+  let score = 0
+  for (const user of users) {
+    score += userToLevel[user] ?? 0
+  }
+  return score / users.length
+}
+
+export async function getQualityUserScores(
+  usersPerReferrer: Record<string, string[]>,
+  resultDirectory: ResultDirectory,
+): Promise<Record<string, number>> {
+  const response = await axios.get(PROSPERITY_PASSPORT_URL, {
+    headers: PROSPERITY_PASSPORT_HEADERS,
+  })
+  const prosperityPassportData = response.data as ProsperityPassportData[]
+  await resultDirectory.writeProsperityPassportData(prosperityPassportData)
+
+  const userToLevel = prosperityPassportData.reduce(
+    (acc, data) => {
+      if (data.eoas === null || data.level === null) return acc
+      data.eoas.forEach((eoa) => {
+        acc[eoa] = data.level
+      })
+      return acc
+    },
+    {} as Record<string, number>,
+  )
+
+  return Object.fromEntries(
+    Object.entries(usersPerReferrer).map(([referrerId, users]) => [
+      referrerId,
+      calculateQualityUserScore(users, userToLevel),
+    ]),
+  )
+}
 
 //
 // Consider these stage values "internal" or "private" (they're not necessarily
@@ -46,6 +101,28 @@ export function calculateStageV1({
   } else if (uniqueWallets >= 100 && gasUsage >= 250_000_000n) {
     return 2
   } else if (uniqueWallets >= 10 && gasUsage >= 50_000_000n) {
+    return 1
+  } else {
+    return 0
+  }
+}
+
+export function calculateStageV2({
+  uniqueWallets,
+  gasUsage,
+}: {
+  uniqueWallets: number
+  gasUsage: bigint
+}) {
+  if (uniqueWallets >= 100_000 && gasUsage >= 500_000_000_000n) {
+    return 5
+  } else if (uniqueWallets >= 10_000 && gasUsage >= 25_000_000_000n) {
+    return 4
+  } else if (uniqueWallets >= 2_500 && gasUsage >= 2_500_000_000n) {
+    return 3
+  } else if (uniqueWallets >= 100 && gasUsage >= 250_000_000n) {
+    return 2
+  } else if (uniqueWallets >= 10 && gasUsage >= 25_000_000n) {
     return 1
   } else {
     return 0

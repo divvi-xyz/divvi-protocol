@@ -4,6 +4,8 @@ import {
   calculateRewards,
   calculateStageV0,
   calculateStageV1,
+  calculateStageV2,
+  getQualityUserScores,
 } from '../../src/celoPGRewards'
 import { KpiRow, ResultDirectory } from '../../src/resultDirectory'
 import { createAddRewardSafeTransactionJSON } from '../utils/createSafeTransactionsBatch'
@@ -30,7 +32,7 @@ async function readKpiFile(url: string) {
   }
 }
 
-const stageFunctions = [calculateStageV0, calculateStageV1]
+const stageFunctions = [calculateStageV0, calculateStageV1, calculateStageV2]
 
 function parseArgs() {
   const args = yargs
@@ -161,9 +163,25 @@ export async function main(args: ReturnType<typeof parseArgs>) {
         : 0)
   }
 
+  const usersPerReferrer: {
+    [referrerId: string]: string[]
+  } = {}
+  for (const { referrerId, userAddress } of kpiData) {
+    if (!usersPerReferrer[referrerId]) {
+      usersPerReferrer[referrerId] = []
+    }
+    usersPerReferrer[referrerId].push(userAddress)
+  }
+
+  const qualityUserScores = await getQualityUserScores(
+    usersPerReferrer,
+    resultDirectory,
+  )
+
   const rewardsWithMetadata = rewards.map((reward) => ({
     ...reward,
     totalTransactions: totalTransactionsPerReferrer[reward.referrerId],
+    qualityUserScore: qualityUserScores[reward.referrerId],
   }))
 
   // Get claim delegates for all referrers

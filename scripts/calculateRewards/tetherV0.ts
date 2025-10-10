@@ -14,6 +14,10 @@ import { getClaimDelegates } from './getClaimDelegates'
 
 const REWARD_POOL_ADDRESS = '0xB575210cdF52B18000aE24Be4981e9ABC7716F98' // on Ethereum mainnet
 
+// Delegation mapping for Safes that can't claim on this chain
+const BEEFY_SAFE_ADDRESS = '0x4aba01fb8e1f6bfe80c56deb367f19f35df0f4ae'
+const BEEFY_EOA_ADDRESS = '0xc9c61194682a3a5f56bf9cd5b59ee63028ab6041'
+
 function parseArgs() {
   const args = yargs
     .option('datadir', {
@@ -136,7 +140,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   createAddRewardSafeTransactionJSON({
     filePath: resultDirectory.safeTransactionsFilePath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
-    rewards,
+    rewards: rewardsWithDelegation,
     startTimestamp,
     endTimestampExclusive,
     claimDelegates,

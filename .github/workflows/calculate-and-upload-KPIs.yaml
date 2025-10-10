@@ -35,6 +35,9 @@ jobs:
         env:
           HYPERSYNC_API_KEY: ${{ secrets.HYPERSYNC_API_KEY }}
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+          PROSPERITY_PASSPORT_API_KEY: ${{ secrets.PROSPERITY_PASSPORT_API_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          CAMPAIGN_SETTINGS_GOOGLE_SHEET_ID: ${{ secrets.CAMPAIGN_SETTINGS_GOOGLE_SHEET_ID }}
         run: |
           yarn ts-node scripts/uploadCurrentPeriodKpis.ts \
             --calculation-timestamp ${{ github.event.inputs.timestamp }} \
