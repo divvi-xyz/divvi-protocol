@@ -682,44 +682,6 @@ describe(CONTRACT_NAME, function () {
         reward1.amount + reward2.amount + reward3.amount,
       )
     })
-
-    it('allows different claimDelegate to claim rewards instead of referrer', async function () {
-      const reward = {
-        referrer: user1.address,
-        claimDelegate: user2.address, // Different claim delegate
-        amount: hre.ethers.parseEther('10'),
-        idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
-      }
-
-      await expect(pool.addRewards([reward], MOCK_REWARD_FUNCTION_ARGS))
-        .to.emit(rewardPool, 'AddRewardWithClaimDelegate')
-        .withArgs(
-          user1.address,
-          user2.address,
-          reward.amount,
-          reward.idempotencyKey,
-          MOCK_REWARD_FUNCTION_ARGS,
-        )
-
-      // Reward should be credited to claimDelegate, not referrer
-      expect(await rewardPool.pendingRewards(user1.address)).to.equal(0)
-      expect(await rewardPool.pendingRewards(user2.address)).to.equal(
-        reward.amount,
-      )
-      expect(await rewardPool.totalPendingRewards()).to.equal(reward.amount)
-
-      // claimDelegate should be able to claim, referrer should not
-      const poolWithUser1 = rewardPool.connect(user1) as typeof rewardPool
-      const poolWithUser2 = rewardPool.connect(user2) as typeof rewardPool
-
-      await expect(
-        poolWithUser1.claimReward(hre.ethers.parseEther('1')),
-      ).to.be.revertedWithCustomError(rewardPool, 'InsufficientRewardBalance')
-
-      await expect(poolWithUser2.claimReward(reward.amount))
-        .to.emit(rewardPool, 'ClaimReward')
-        .withArgs(user2.address, reward.amount)
-    })
   })
 
   describe('Claim reward', function () {
@@ -861,6 +823,58 @@ describe(CONTRACT_NAME, function () {
             .withArgs(claimAmount, 0)
         })
       })
+    })
+
+    it('allows different claimDelegate to claim rewards instead of referrer', async function () {
+      const deployment = await loadFixture(deployERC20RewardPoolContract)
+      const rewardPool = deployment.rewardPool
+      const owner = deployment.owner
+      const manager = deployment.manager
+      const user1 = deployment.user1
+      const user2 = deployment.user2
+
+      // Connect with owner and manager
+      const pool = rewardPool.connect(owner) as typeof rewardPool
+      const poolWithManager = rewardPool.connect(manager) as typeof rewardPool
+
+      // Deposit funds to the pool so it has enough balance for rewards
+      await poolWithManager.deposit(hre.ethers.parseEther('1000'))
+
+      const reward = {
+        referrer: user1.address,
+        claimDelegate: user2.address, // Different claim delegate
+        amount: hre.ethers.parseEther('10'),
+        idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
+      }
+
+      await expect(pool.addRewards([reward], MOCK_REWARD_FUNCTION_ARGS))
+        .to.emit(rewardPool, 'AddRewardWithClaimDelegate')
+        .withArgs(
+          user1.address,
+          user2.address,
+          reward.amount,
+          reward.idempotencyKey,
+          MOCK_REWARD_FUNCTION_ARGS,
+        )
+
+      // Reward should be credited to claimDelegate, not referrer
+      expect(await rewardPool.pendingRewards(user1.address)).to.equal(0)
+      expect(await rewardPool.pendingRewards(user2.address)).to.equal(
+        reward.amount,
+      )
+      expect(await rewardPool.totalPendingRewards()).to.equal(reward.amount)
+
+      // claimDelegate should be able to claim, referrer should not
+      const poolWithUser1 = rewardPool.connect(user1) as typeof rewardPool
+      const poolWithUser2 = rewardPool.connect(user2) as typeof rewardPool
+
+      await expect(
+        poolWithUser1.claimReward(hre.ethers.parseEther('1')),
+      ).to.be.revertedWithCustomError(rewardPool, 'InsufficientRewardBalance')
+
+      await expect(poolWithUser2.claimReward(reward.amount))
+        .to.emit(rewardPool, 'ClaimReward')
+        .withArgs(user2.address, reward.amount)
     })
   })
 

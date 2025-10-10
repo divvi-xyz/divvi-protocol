@@ -373,7 +373,11 @@ describe('createAddRewardSafeTransactionJSON', () => {
           .mockResolvedValueOnce('0x3333333333333333333333333333333333333333')
           .mockResolvedValueOnce('0x4444444444444444444444444444444444444444'),
       }
-      jest.mocked(getViemPublicClient).mockReturnValue(mockClient as any)
+      jest
+        .mocked(getViemPublicClient)
+        .mockReturnValue(
+          mockClient as unknown as ReturnType<typeof getViemPublicClient>,
+        )
 
       const entities = [
         '0x1111111111111111111111111111111111111111',
@@ -404,7 +408,11 @@ describe('createAddRewardSafeTransactionJSON', () => {
           .fn()
           .mockResolvedValue('0x0000000000000000000000000000000000000000'),
       }
-      jest.mocked(getViemPublicClient).mockReturnValue(mockClient as any)
+      jest
+        .mocked(getViemPublicClient)
+        .mockReturnValue(
+          mockClient as unknown as ReturnType<typeof getViemPublicClient>,
+        )
 
       const entities = ['0x1111111111111111111111111111111111111111']
 
@@ -422,7 +430,11 @@ describe('createAddRewardSafeTransactionJSON', () => {
           .fn()
           .mockRejectedValue(new Error('Contract call failed')),
       }
-      jest.mocked(getViemPublicClient).mockReturnValue(mockClient as any)
+      jest
+        .mocked(getViemPublicClient)
+        .mockReturnValue(
+          mockClient as unknown as ReturnType<typeof getViemPublicClient>,
+        )
 
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation()
 
