@@ -63,7 +63,7 @@ const IDEMPOTENT_ADD_REWARDS_WITH_CLAIM_DELEGATES_ABI = {
   payable: false,
 } as const
 
-export const createAddRewardSafeTransactionJSON = async ({
+export const createAddRewardSafeTransactionJSON = ({
   filePath,
   rewardPoolAddress,
   rewards,

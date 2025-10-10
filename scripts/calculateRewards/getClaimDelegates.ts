@@ -13,14 +13,14 @@ export async function getClaimDelegates(
   networkId: NetworkId,
   divviRegistryAddress: string = DIVVI_REGISTRY_ADDRESS,
 ): Promise<Record<string, string>> {
-  const claimDelegates: Record<string, string> = {}
+  let claimDelegates: Record<string, string> = {}
 
-  try {
-    const client = getViemPublicClient(networkId)
-    const chainId = `eip155:${NETWORK_ID_TO_VIEM_CHAIN[networkId].id}`
+  const client = getViemPublicClient(networkId)
+  const chainId = `eip155:${NETWORK_ID_TO_VIEM_CHAIN[networkId].id}`
 
-    // Get claim delegates for all entities in parallel
-    const delegatePromises = entities.map(async (entity) => {
+  // Get claim delegates for all entities in parallel
+  const claimDelegatesEntries = await Promise.all(
+    entities.map(async (entity) => {
       try {
         const delegate = await client.readContract({
           address: divviRegistryAddress as Address,
@@ -28,26 +28,17 @@ export async function getClaimDelegates(
           functionName: 'getClaimDelegate',
           args: [entity as Address, chainId],
         })
-        // If delegate is 0 address, use the entity (referrerId) as fallback
-        claimDelegates[entity] = delegate === zeroAddress ? entity : delegate
-      } catch (error) {
-        console.warn(`Failed to get claim delegate for ${entity}:`, error)
-        // Fallback to using the entity (referrerId) if the call fails
-        claimDelegates[entity] = entity
+        return [entity, delegate === zeroAddress ? entity : delegate] as const
+      } catch {
+        console.warn(
+          `Failed to get claim delegate for ${entity}, falling back to entity addresses`,
+        )
+        return [entity, entity] as const
       }
-    })
+    }),
+  )
 
-    await Promise.all(delegatePromises)
-  } catch (error) {
-    console.warn(
-      'Failed to get claim delegates, falling back to entity addresses:',
-      error,
-    )
-    // Fallback: use entity addresses as claim delegates
-    entities.forEach((entity) => {
-      claimDelegates[entity] = entity
-    })
-  }
+  claimDelegates = Object.fromEntries(claimDelegatesEntries)
 
   return claimDelegates
 }

@@ -436,8 +436,6 @@ describe('createAddRewardSafeTransactionJSON', () => {
           mockClient as unknown as ReturnType<typeof getViemPublicClient>,
         )
 
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation()
-
       const entities = ['0x1111111111111111111111111111111111111111']
 
       const result = await getClaimDelegates(entities, NetworkId['op-mainnet'])
@@ -446,13 +444,6 @@ describe('createAddRewardSafeTransactionJSON', () => {
         '0x1111111111111111111111111111111111111111':
           '0x1111111111111111111111111111111111111111',
       })
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to get claim delegate for 0x1111111111111111111111111111111111111111:',
-        expect.any(Error),
-      )
-
-      consoleSpy.mockRestore()
     })
   })
 })
