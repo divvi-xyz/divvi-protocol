@@ -9,6 +9,8 @@ import {
 } from '../utils/divviRewardsExcludedReferrers'
 import fs from 'fs'
 import { parse } from 'csv-parse/sync'
+import { NetworkId } from '../types'
+import { getClaimDelegates } from './getClaimDelegates'
 
 const REWARD_POOL_ADDRESS = '0xB575210cdF52B18000aE24Be4981e9ABC7716F98' // on Ethereum mainnet
 
@@ -124,12 +126,20 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     totalValue: reward.kpi,
   }))
 
+  // Get claim delegates for all referrers
+  const referrerIds = rewards.map((r) => r.referrerId)
+  const claimDelegates = await getClaimDelegates(
+    referrerIds,
+    NetworkId['ethereum-mainnet'],
+  )
+
   createAddRewardSafeTransactionJSON({
     filePath: resultDirectory.safeTransactionsFilePath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
     rewards,
     startTimestamp,
     endTimestampExclusive,
+    claimDelegates,
     useIdempotency: true,
   })
 
