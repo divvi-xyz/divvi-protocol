@@ -1,7 +1,11 @@
 import { writeFileSync, mkdirSync } from 'fs'
 import { dirname } from 'path'
-import { keccak256, pad, toBytes } from 'viem'
+import { keccak256, pad, toBytes, Address, zeroAddress } from 'viem'
 import { rewardPoolWithKpiAbi } from '../../abis/RewardPoolWithKpi'
+import { divviRegistryAbi } from '../../abis/DivviRegistry'
+import { NetworkId } from '../types'
+import { NETWORK_ID_TO_VIEM_CHAIN } from './networks'
+import { getViemPublicClient } from '.'
 
 // ABI definitions for both versions of addRewards
 const LEGACY_ADD_REWARDS_ABI = {
@@ -40,13 +44,67 @@ const IDEMPOTENT_ADD_REWARDS_ABI = {
   payable: false,
 } as const
 
-export const createAddRewardSafeTransactionJSON = ({
+const IDEMPOTENT_ADD_REWARDS_WITH_CLAIM_DELEGATES_ABI = {
+  inputs: [
+    {
+      components: [
+        { internalType: 'address', name: 'referrer', type: 'address' },
+        { internalType: 'address', name: 'claimDelegate', type: 'address' },
+        { internalType: 'uint256', name: 'amount', type: 'uint256' },
+        { internalType: 'bytes32', name: 'idempotencyKey', type: 'bytes32' },
+      ],
+      internalType: 'struct RewardPool.RewardData[]',
+      name: 'rewards',
+      type: 'tuple[]',
+    },
+    {
+      internalType: 'uint256[]',
+      name: 'rewardFunctionArgs',
+      type: 'uint256[]',
+    },
+  ],
+  name: 'addRewards',
+  payable: false,
+} as const
+
+// DivviRegistry contract address on OP mainnet
+const DIVVI_REGISTRY_ADDRESS = '0x0000000000000000000000000000000000000000' // TODO: Replace with actual address
+
+// Function to get claim delegate from DivviRegistry
+async function getClaimDelegate(
+  entity: string,
+  chainId: string,
+): Promise<string> {
+  try {
+    // Create a public client for OP mainnet
+    const client = getViemPublicClient(NetworkId['op-mainnet'])
+
+    // Call getClaimDelegate on DivviRegistry
+    const delegate = await client.readContract({
+      address: DIVVI_REGISTRY_ADDRESS as Address,
+      abi: divviRegistryAbi,
+      functionName: 'getClaimDelegate',
+      args: [entity as Address, chainId],
+    })
+
+    // If delegate is 0 address, return the entity (referrerId)
+    return delegate === zeroAddress ? entity : delegate
+  } catch (error) {
+    console.warn(`Failed to get claim delegate for ${entity}:`, error)
+    // Fallback to using the entity (referrerId) if the call fails
+    return entity
+  }
+}
+
+export const createAddRewardSafeTransactionJSON = async ({
   filePath,
   rewardPoolAddress,
   rewards,
   startTimestamp,
   endTimestampExclusive,
+  networkId,
   useIdempotency = false,
+  useClaimDelegates = false,
 }: {
   filePath: string
   rewardPoolAddress: string
@@ -56,11 +114,15 @@ export const createAddRewardSafeTransactionJSON = ({
   }[]
   startTimestamp: Date
   endTimestampExclusive: Date
+  networkId: NetworkId
   useIdempotency?: boolean // Use new addRewards(RewardData[]) format with idempotency keys
+  useClaimDelegates?: boolean // Use new addRewards(RewardData[]) format with claim delegates
 }) => {
   const users: string[] = []
   const amounts: string[] = []
   const rewardDataItems: string[] = []
+
+  const chainId = `eip155:${NETWORK_ID_TO_VIEM_CHAIN[networkId].id}`
 
   for (const reward of rewards) {
     if (BigInt(reward.rewardAmount) > 0n) {
@@ -71,9 +133,19 @@ export const createAddRewardSafeTransactionJSON = ({
             `${reward.referrerId}-${startTimestamp.toISOString()}-${endTimestampExclusive.toISOString()}`,
           ),
         )
-        rewardDataItems.push(
-          `"${reward.referrerId}", "${reward.rewardAmount}", "${idempotencyKey}"`,
-        )
+        if (useClaimDelegates) {
+          const claimDelegate = await getClaimDelegate(
+            reward.referrerId,
+            chainId,
+          )
+          rewardDataItems.push(
+            `"${reward.referrerId}", "${claimDelegate}", "${reward.rewardAmount}", "${idempotencyKey}"`,
+          )
+        } else {
+          rewardDataItems.push(
+            `"${reward.referrerId}", "${reward.rewardAmount}", "${idempotencyKey}"`,
+          )
+        }
       } else {
         users.push(reward.referrerId)
         amounts.push(reward.rewardAmount)
@@ -82,7 +154,9 @@ export const createAddRewardSafeTransactionJSON = ({
   }
 
   const contractMethod = useIdempotency
-    ? IDEMPOTENT_ADD_REWARDS_ABI
+    ? useClaimDelegates
+      ? IDEMPOTENT_ADD_REWARDS_WITH_CLAIM_DELEGATES_ABI
+      : IDEMPOTENT_ADD_REWARDS_ABI
     : LEGACY_ADD_REWARDS_ABI
 
   // Convert timestamps to seconds for rewardFunctionArgs
