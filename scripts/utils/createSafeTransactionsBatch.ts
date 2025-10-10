@@ -87,9 +87,6 @@ export const createAddRewardSafeTransactionJSON = async ({
   const amounts: string[] = []
   const rewardDataItems: string[] = []
 
-  // Determine if we should use claim delegates based on whether the mapping is provided
-  const useClaimDelegates = claimDelegates !== undefined
-
   for (const reward of rewards) {
     if (BigInt(reward.rewardAmount) > 0n) {
       if (useIdempotency) {
@@ -99,7 +96,7 @@ export const createAddRewardSafeTransactionJSON = async ({
             `${reward.referrerId}-${startTimestamp.toISOString()}-${endTimestampExclusive.toISOString()}`,
           ),
         )
-        if (useClaimDelegates && claimDelegates) {
+        if (claimDelegates) {
           const claimDelegate =
             claimDelegates[reward.referrerId] || reward.referrerId
           rewardDataItems.push(
@@ -118,7 +115,7 @@ export const createAddRewardSafeTransactionJSON = async ({
   }
 
   const contractMethod = useIdempotency
-    ? useClaimDelegates
+    ? claimDelegates
       ? IDEMPOTENT_ADD_REWARDS_WITH_CLAIM_DELEGATES_ABI
       : IDEMPOTENT_ADD_REWARDS_ABI
     : LEGACY_ADD_REWARDS_ABI
