@@ -395,7 +395,7 @@ describe('createAddRewardSafeTransactionJSON', () => {
 
       expect(mockClient.readContract).toHaveBeenCalledTimes(2)
       expect(mockClient.readContract).toHaveBeenCalledWith({
-        address: '0x0000000000000000000000000000000000000000',
+        address: '0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277',
         abi: expect.any(Array),
         functionName: 'getClaimDelegate',
         args: ['0x1111111111111111111111111111111111111111', 'eip155:10'],
