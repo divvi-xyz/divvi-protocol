@@ -5,7 +5,7 @@ import { getViemPublicClient } from '../utils'
 import { NETWORK_ID_TO_VIEM_CHAIN } from '../utils/networks'
 
 // DivviRegistry contract address on OP mainnet
-const DIVVI_REGISTRY_ADDRESS = '0x0000000000000000000000000000000000000000' // TODO: Replace with actual address
+const DIVVI_REGISTRY_ADDRESS = '0xEdb51A8C390fC84B1c2a40e0AE9C9882Fa7b7277'
 
 // Generic helper function to get claim delegate mappings from DivviRegistry
 export async function getClaimDelegates(
@@ -28,12 +28,12 @@ export async function getClaimDelegates(
           functionName: 'getClaimDelegate',
           args: [entity as Address, chainId],
         })
-        return [entity, delegate === zeroAddress ? entity : delegate] as const
+        return [entity, delegate === zeroAddress ? entity : delegate]
       } catch {
         console.warn(
-          `Failed to get claim delegate for ${entity}, falling back to entity addresses`,
+          `Failed to get claim delegate for ${entity}, falling back to entity address`,
         )
-        return [entity, entity] as const
+        return [entity, entity]
       }
     }),
   )
