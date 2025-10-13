@@ -76,7 +76,7 @@ End of time window for calculation (exclusive)
 
 ###### getReferrerIdFromTx?
 
-(`transactionHash`, `networkId`) => `Promise`\<`null` \| `string`\>
+(`transactionHash`, `networkId`) => `Promise`\<`string` \| `null`\>
 
 ###### redis?
 
