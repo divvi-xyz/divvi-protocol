@@ -430,11 +430,13 @@ describe(CONTRACT_NAME, function () {
       const rewards = [
         {
           referrer: user1.address,
+          claimDelegate: user1.address,
           amount: hre.ethers.parseEther('10'),
           idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
         },
         {
           referrer: user2.address,
+          claimDelegate: user2.address,
           amount: hre.ethers.parseEther('20'),
           idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
         },
@@ -450,10 +452,26 @@ describe(CONTRACT_NAME, function () {
           rewards[0].idempotencyKey,
           MOCK_REWARD_FUNCTION_ARGS,
         )
+        .to.emit(rewardPool, 'AddRewardWithClaimDelegate')
+        .withArgs(
+          user1.address,
+          user1.address,
+          rewards[0].amount,
+          rewards[0].idempotencyKey,
+          MOCK_REWARD_FUNCTION_ARGS,
+        )
         .to.emit(rewardPool, 'AddReward')
         .withArgs(user2.address, rewards[1].amount, MOCK_REWARD_FUNCTION_ARGS)
         .to.emit(rewardPool, 'AddRewardWithIdempotency')
         .withArgs(
+          user2.address,
+          rewards[1].amount,
+          rewards[1].idempotencyKey,
+          MOCK_REWARD_FUNCTION_ARGS,
+        )
+        .to.emit(rewardPool, 'AddRewardWithClaimDelegate')
+        .withArgs(
+          user2.address,
           user2.address,
           rewards[1].amount,
           rewards[1].idempotencyKey,
@@ -483,6 +501,7 @@ describe(CONTRACT_NAME, function () {
       // First reward
       const firstReward = {
         referrer: user1.address,
+        claimDelegate: user1.address,
         amount: hre.ethers.parseEther('10'),
         idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
       }
@@ -491,6 +510,7 @@ describe(CONTRACT_NAME, function () {
       // Second reward with different idempotency key
       const secondReward = {
         referrer: user1.address,
+        claimDelegate: user1.address,
         amount: hre.ethers.parseEther('15'),
         idempotencyKey: generateTestIdempotencyKey(user1.address, 2),
       }
@@ -507,6 +527,7 @@ describe(CONTRACT_NAME, function () {
     it('skips rewards with duplicate idempotency keys', async function () {
       const reward = {
         referrer: user1.address,
+        claimDelegate: user1.address,
         amount: hre.ethers.parseEther('10'),
         idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
       }
@@ -536,11 +557,25 @@ describe(CONTRACT_NAME, function () {
       expect(await rewardPool.totalPendingRewards()).to.equal(reward.amount)
     })
 
-    it('reverts when zero address is provided as user', async function () {
+    it('reverts when zero address is provided as referrer', async function () {
       const reward = {
         referrer: hre.ethers.ZeroAddress,
+        claimDelegate: user1.address,
         amount: hre.ethers.parseEther('10'),
         idempotencyKey: generateTestIdempotencyKey(hre.ethers.ZeroAddress, 1),
+      }
+
+      await expect(pool.addRewards([reward], MOCK_REWARD_FUNCTION_ARGS))
+        .to.be.revertedWithCustomError(rewardPool, 'ZeroAddressNotAllowed')
+        .withArgs(0)
+    })
+
+    it('reverts when zero address is provided as claimDelegate', async function () {
+      const reward = {
+        referrer: user1.address,
+        claimDelegate: hre.ethers.ZeroAddress,
+        amount: hre.ethers.parseEther('10'),
+        idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
       }
 
       await expect(pool.addRewards([reward], MOCK_REWARD_FUNCTION_ARGS))
@@ -551,6 +586,7 @@ describe(CONTRACT_NAME, function () {
     it('reverts when zero amount is provided', async function () {
       const reward = {
         referrer: user1.address,
+        claimDelegate: user1.address,
         amount: 0,
         idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
       }
@@ -566,6 +602,7 @@ describe(CONTRACT_NAME, function () {
     it('reverts when empty idempotency key is provided', async function () {
       const reward = {
         referrer: user1.address,
+        claimDelegate: user1.address,
         amount: hre.ethers.parseEther('10'),
         idempotencyKey: hre.ethers.ZeroHash,
       }
@@ -581,6 +618,7 @@ describe(CONTRACT_NAME, function () {
 
       const reward = {
         referrer: user1.address,
+        claimDelegate: user1.address,
         amount: hre.ethers.parseEther('10'),
         idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
       }
@@ -596,11 +634,13 @@ describe(CONTRACT_NAME, function () {
     it('processes mixed batch with new and duplicate idempotency keys', async function () {
       const reward1 = {
         referrer: user1.address,
+        claimDelegate: user1.address,
         amount: hre.ethers.parseEther('10'),
         idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
       }
       const reward2 = {
         referrer: user2.address,
+        claimDelegate: user2.address,
         amount: hre.ethers.parseEther('20'),
         idempotencyKey: generateTestIdempotencyKey(user2.address, 1),
       }
@@ -611,6 +651,7 @@ describe(CONTRACT_NAME, function () {
       // Second batch - mix of new and duplicate
       const reward3 = {
         referrer: user1.address,
+        claimDelegate: user1.address,
         amount: hre.ethers.parseEther('15'),
         idempotencyKey: generateTestIdempotencyKey(user1.address, 2), // New key
       }
@@ -684,6 +725,7 @@ describe(CONTRACT_NAME, function () {
           // Add rewards
           const reward = {
             referrer: user1.address,
+            claimDelegate: user1.address,
             amount: rewardAmount,
             idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
           }
@@ -781,6 +823,58 @@ describe(CONTRACT_NAME, function () {
             .withArgs(claimAmount, 0)
         })
       })
+    })
+
+    it('allows different claimDelegate to claim rewards instead of referrer', async function () {
+      const deployment = await loadFixture(deployERC20RewardPoolContract)
+      const rewardPool = deployment.rewardPool
+      const owner = deployment.owner
+      const manager = deployment.manager
+      const user1 = deployment.user1
+      const user2 = deployment.user2
+
+      // Connect with owner and manager
+      const pool = rewardPool.connect(owner) as typeof rewardPool
+      const poolWithManager = rewardPool.connect(manager) as typeof rewardPool
+
+      // Deposit funds to the pool so it has enough balance for rewards
+      await poolWithManager.deposit(hre.ethers.parseEther('1000'))
+
+      const reward = {
+        referrer: user1.address,
+        claimDelegate: user2.address, // Different claim delegate
+        amount: hre.ethers.parseEther('10'),
+        idempotencyKey: generateTestIdempotencyKey(user1.address, 1),
+      }
+
+      await expect(pool.addRewards([reward], MOCK_REWARD_FUNCTION_ARGS))
+        .to.emit(rewardPool, 'AddRewardWithClaimDelegate')
+        .withArgs(
+          user1.address,
+          user2.address,
+          reward.amount,
+          reward.idempotencyKey,
+          MOCK_REWARD_FUNCTION_ARGS,
+        )
+
+      // Reward should be credited to claimDelegate, not referrer
+      expect(await rewardPool.pendingRewards(user1.address)).to.equal(0)
+      expect(await rewardPool.pendingRewards(user2.address)).to.equal(
+        reward.amount,
+      )
+      expect(await rewardPool.totalPendingRewards()).to.equal(reward.amount)
+
+      // claimDelegate should be able to claim, referrer should not
+      const poolWithUser1 = rewardPool.connect(user1) as typeof rewardPool
+      const poolWithUser2 = rewardPool.connect(user2) as typeof rewardPool
+
+      await expect(
+        poolWithUser1.claimReward(hre.ethers.parseEther('1')),
+      ).to.be.revertedWithCustomError(rewardPool, 'InsufficientRewardBalance')
+
+      await expect(poolWithUser2.claimReward(reward.amount))
+        .to.emit(rewardPool, 'ClaimReward')
+        .withArgs(user2.address, reward.amount)
     })
   })
 
@@ -1057,6 +1151,7 @@ describe(CONTRACT_NAME, function () {
           const rewards = [
             {
               referrer: user1.address,
+              claimDelegate: user1.address,
               amount: rewardAmount,
               idempotencyKey: hre.ethers.keccak256(
                 hre.ethers.toUtf8Bytes('test-key-1'),
@@ -1114,6 +1209,7 @@ describe(CONTRACT_NAME, function () {
           const rewardData = [
             {
               referrer: user1.address,
+              claimDelegate: user1.address,
               amount: rewardAmount,
               idempotencyKey: idempotencyKey,
             },
@@ -1514,6 +1610,7 @@ describe(CONTRACT_NAME, function () {
           [
             {
               referrer: user1.address,
+              claimDelegate: user1.address,
               amount: 100,
               idempotencyKey,
             },

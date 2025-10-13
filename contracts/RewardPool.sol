@@ -40,6 +40,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
   // Data structures
   struct RewardData {
     address referrer;
+    address claimDelegate;
     uint256 amount;
     bytes32 idempotencyKey;
   }
@@ -87,6 +88,13 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     address indexed referrer,
     uint256 amount,
     bytes32 indexed idempotencyKey
+  );
+  event AddRewardWithClaimDelegate(
+    address indexed referrer,
+    address indexed claimDelegate,
+    uint256 amount,
+    bytes32 indexed idempotencyKey,
+    uint256[] rewardFunctionArgs
   );
   event ClaimReward(address indexed referrer, uint256 amount);
   event RescueToken(address token, uint256 amount);
@@ -393,6 +401,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
 
       RewardData memory rewardData = RewardData({
         referrer: rewards[i].referrer,
+        claimDelegate: rewards[i].referrer,
         amount: rewards[i].reward,
         idempotencyKey: keccak256(
           abi.encode(rewards[i].referrer, periodStart, periodEndExclusive)
@@ -483,6 +492,7 @@ contract RewardPool is AccessControl, ReentrancyGuard {
     uint32 index
   ) internal returns (bool) {
     if (reward.referrer == address(0)) revert ZeroAddressNotAllowed(index);
+    if (reward.claimDelegate == address(0)) revert ZeroAddressNotAllowed(index);
     if (reward.amount == 0) revert RewardAmountMustBeGreaterThanZero(index);
     if (reward.idempotencyKey == bytes32(0)) revert EmptyIdempotencyKey(index);
 
@@ -513,13 +523,20 @@ contract RewardPool is AccessControl, ReentrancyGuard {
       );
     }
 
-    pendingRewards[reward.referrer] += reward.amount;
+    pendingRewards[reward.claimDelegate] += reward.amount;
     totalPendingRewards += reward.amount;
 
     // Old event for backwards compatibility
     emit AddReward(reward.referrer, reward.amount, rewardFunctionArgs);
     emit AddRewardWithIdempotency(
       reward.referrer,
+      reward.amount,
+      reward.idempotencyKey,
+      rewardFunctionArgs
+    );
+    emit AddRewardWithClaimDelegate(
+      reward.referrer,
+      reward.claimDelegate,
       reward.amount,
       reward.idempotencyKey,
       rewardFunctionArgs

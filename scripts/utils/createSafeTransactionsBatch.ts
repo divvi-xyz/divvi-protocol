@@ -40,12 +40,36 @@ const IDEMPOTENT_ADD_REWARDS_ABI = {
   payable: false,
 } as const
 
+const IDEMPOTENT_ADD_REWARDS_WITH_CLAIM_DELEGATES_ABI = {
+  inputs: [
+    {
+      components: [
+        { internalType: 'address', name: 'referrer', type: 'address' },
+        { internalType: 'address', name: 'claimDelegate', type: 'address' },
+        { internalType: 'uint256', name: 'amount', type: 'uint256' },
+        { internalType: 'bytes32', name: 'idempotencyKey', type: 'bytes32' },
+      ],
+      internalType: 'struct RewardPool.RewardData[]',
+      name: 'rewards',
+      type: 'tuple[]',
+    },
+    {
+      internalType: 'uint256[]',
+      name: 'rewardFunctionArgs',
+      type: 'uint256[]',
+    },
+  ],
+  name: 'addRewards',
+  payable: false,
+} as const
+
 export const createAddRewardSafeTransactionJSON = ({
   filePath,
   rewardPoolAddress,
   rewards,
   startTimestamp,
   endTimestampExclusive,
+  claimDelegates,
   useIdempotency = false,
 }: {
   filePath: string
@@ -56,6 +80,7 @@ export const createAddRewardSafeTransactionJSON = ({
   }[]
   startTimestamp: Date
   endTimestampExclusive: Date
+  claimDelegates?: Record<string, string> // Mapping from referrerId to claimDelegate address
   useIdempotency?: boolean // Use new addRewards(RewardData[]) format with idempotency keys
 }) => {
   const users: string[] = []
@@ -71,9 +96,17 @@ export const createAddRewardSafeTransactionJSON = ({
             `${reward.referrerId}-${startTimestamp.toISOString()}-${endTimestampExclusive.toISOString()}`,
           ),
         )
-        rewardDataItems.push(
-          `"${reward.referrerId}", "${reward.rewardAmount}", "${idempotencyKey}"`,
-        )
+        if (claimDelegates) {
+          const claimDelegate =
+            claimDelegates[reward.referrerId] || reward.referrerId
+          rewardDataItems.push(
+            `"${reward.referrerId}", "${claimDelegate}", "${reward.rewardAmount}", "${idempotencyKey}"`,
+          )
+        } else {
+          rewardDataItems.push(
+            `"${reward.referrerId}", "${reward.rewardAmount}", "${idempotencyKey}"`,
+          )
+        }
       } else {
         users.push(reward.referrerId)
         amounts.push(reward.rewardAmount)
@@ -82,7 +115,9 @@ export const createAddRewardSafeTransactionJSON = ({
   }
 
   const contractMethod = useIdempotency
-    ? IDEMPOTENT_ADD_REWARDS_ABI
+    ? claimDelegates
+      ? IDEMPOTENT_ADD_REWARDS_WITH_CLAIM_DELEGATES_ABI
+      : IDEMPOTENT_ADD_REWARDS_ABI
     : LEGACY_ADD_REWARDS_ABI
 
   // Convert timestamps to seconds for rewardFunctionArgs

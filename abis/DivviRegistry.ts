@@ -1,79 +1,229 @@
 export const divviRegistryAbi = [
-  { inputs: [], stateMutability: 'nonpayable', type: 'constructor' },
-  { inputs: [], name: 'AccessControlBadConfirmation', type: 'error' },
   {
-    inputs: [{ internalType: 'uint48', name: 'schedule', type: 'uint48' }],
+    inputs: [],
+    stateMutability: 'nonpayable',
+    type: 'constructor',
+  },
+  {
+    inputs: [],
+    name: 'AccessControlBadConfirmation',
+    type: 'error',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint48',
+        name: 'schedule',
+        type: 'uint48',
+      },
+    ],
     name: 'AccessControlEnforcedDefaultAdminDelay',
     type: 'error',
   },
-  { inputs: [], name: 'AccessControlEnforcedDefaultAdminRules', type: 'error' },
+  {
+    inputs: [],
+    name: 'AccessControlEnforcedDefaultAdminRules',
+    type: 'error',
+  },
   {
     inputs: [
-      { internalType: 'address', name: 'defaultAdmin', type: 'address' },
+      {
+        internalType: 'address',
+        name: 'defaultAdmin',
+        type: 'address',
+      },
     ],
     name: 'AccessControlInvalidDefaultAdmin',
     type: 'error',
   },
   {
     inputs: [
-      { internalType: 'address', name: 'account', type: 'address' },
-      { internalType: 'bytes32', name: 'neededRole', type: 'bytes32' },
+      {
+        internalType: 'address',
+        name: 'account',
+        type: 'address',
+      },
+      {
+        internalType: 'bytes32',
+        name: 'neededRole',
+        type: 'bytes32',
+      },
     ],
     name: 'AccessControlUnauthorizedAccount',
     type: 'error',
   },
   {
-    inputs: [{ internalType: 'address', name: 'target', type: 'address' }],
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'target',
+        type: 'address',
+      },
+    ],
     name: 'AddressEmptyCode',
     type: 'error',
   },
   {
     inputs: [
-      { internalType: 'address', name: 'provider', type: 'address' },
-      { internalType: 'address', name: 'consumer', type: 'address' },
+      {
+        internalType: 'address',
+        name: 'provider',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: 'consumer',
+        type: 'address',
+      },
     ],
     name: 'AgreementAlreadyExists',
     type: 'error',
   },
   {
     inputs: [
-      { internalType: 'address', name: 'implementation', type: 'address' },
+      {
+        internalType: 'address',
+        name: 'implementation',
+        type: 'address',
+      },
     ],
     name: 'ERC1967InvalidImplementation',
     type: 'error',
   },
-  { inputs: [], name: 'ERC1967NonPayable', type: 'error' },
   {
-    inputs: [{ internalType: 'address', name: 'entity', type: 'address' }],
+    inputs: [],
+    name: 'ERC1967NonPayable',
+    type: 'error',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'entity',
+        type: 'address',
+      },
+    ],
     name: 'EntityAlreadyExists',
     type: 'error',
   },
   {
-    inputs: [{ internalType: 'address', name: 'entity', type: 'address' }],
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'entity',
+        type: 'address',
+      },
+    ],
     name: 'EntityDoesNotExist',
     type: 'error',
   },
-  { inputs: [], name: 'FailedCall', type: 'error' },
-  { inputs: [], name: 'InvalidInitialization', type: 'error' },
-  { inputs: [], name: 'NotInitializing', type: 'error' },
   {
-    inputs: [{ internalType: 'address', name: 'provider', type: 'address' }],
+    inputs: [],
+    name: 'FailedCall',
+    type: 'error',
+  },
+  {
+    inputs: [],
+    name: 'InvalidInitialization',
+    type: 'error',
+  },
+  {
+    inputs: [],
+    name: 'NotInitializing',
+    type: 'error',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'provider',
+        type: 'address',
+      },
+    ],
     name: 'ProviderRequiresApproval',
     type: 'error',
   },
   {
     inputs: [
-      { internalType: 'uint8', name: 'bits', type: 'uint8' },
-      { internalType: 'uint256', name: 'value', type: 'uint256' },
+      {
+        internalType: 'uint8',
+        name: 'bits',
+        type: 'uint8',
+      },
+      {
+        internalType: 'uint256',
+        name: 'value',
+        type: 'uint256',
+      },
     ],
     name: 'SafeCastOverflowedUintDowncast',
     type: 'error',
   },
-  { inputs: [], name: 'UUPSUnauthorizedCallContext', type: 'error' },
   {
-    inputs: [{ internalType: 'bytes32', name: 'slot', type: 'bytes32' }],
+    inputs: [],
+    name: 'UUPSUnauthorizedCallContext',
+    type: 'error',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes32',
+        name: 'slot',
+        type: 'bytes32',
+      },
+    ],
     name: 'UUPSUnsupportedProxiableUUID',
     type: 'error',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'entity',
+        type: 'address',
+      },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'delegate',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'string',
+        name: 'chainId',
+        type: 'string',
+      },
+    ],
+    name: 'ClaimDelegateRemoved',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'entity',
+        type: 'address',
+      },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'delegate',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'string',
+        name: 'chainId',
+        type: 'string',
+      },
+    ],
+    name: 'ClaimDelegateSet',
+    type: 'event',
   },
   {
     anonymous: false,
@@ -141,7 +291,12 @@ export const divviRegistryAbi = [
   {
     anonymous: false,
     inputs: [
-      { indexed: true, internalType: 'address', name: 'user', type: 'address' },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'user',
+        type: 'address',
+      },
       {
         indexed: true,
         internalType: 'address',
@@ -173,7 +328,12 @@ export const divviRegistryAbi = [
   {
     anonymous: false,
     inputs: [
-      { indexed: true, internalType: 'address', name: 'user', type: 'address' },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'user',
+        type: 'address',
+      },
       {
         indexed: true,
         internalType: 'address',
@@ -268,7 +428,12 @@ export const divviRegistryAbi = [
   {
     anonymous: false,
     inputs: [
-      { indexed: true, internalType: 'bytes32', name: 'role', type: 'bytes32' },
+      {
+        indexed: true,
+        internalType: 'bytes32',
+        name: 'role',
+        type: 'bytes32',
+      },
       {
         indexed: true,
         internalType: 'bytes32',
@@ -288,7 +453,12 @@ export const divviRegistryAbi = [
   {
     anonymous: false,
     inputs: [
-      { indexed: true, internalType: 'bytes32', name: 'role', type: 'bytes32' },
+      {
+        indexed: true,
+        internalType: 'bytes32',
+        name: 'role',
+        type: 'bytes32',
+      },
       {
         indexed: true,
         internalType: 'address',
@@ -308,7 +478,12 @@ export const divviRegistryAbi = [
   {
     anonymous: false,
     inputs: [
-      { indexed: true, internalType: 'bytes32', name: 'role', type: 'bytes32' },
+      {
+        indexed: true,
+        internalType: 'bytes32',
+        name: 'role',
+        type: 'bytes32',
+      },
       {
         indexed: true,
         internalType: 'address',
@@ -341,28 +516,52 @@ export const divviRegistryAbi = [
   {
     inputs: [],
     name: 'DEFAULT_ADMIN_ROLE',
-    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [],
     name: 'REFERRAL_REGISTRAR_ROLE',
-    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [],
     name: 'TRUSTED_FORWARDER_ROLE',
-    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [],
     name: 'UPGRADE_INTERFACE_VERSION',
-    outputs: [{ internalType: 'string', name: '', type: 'string' }],
+    outputs: [
+      {
+        internalType: 'string',
+        name: '',
+        type: 'string',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
@@ -377,11 +576,31 @@ export const divviRegistryAbi = [
     inputs: [
       {
         components: [
-          { internalType: 'address', name: 'user', type: 'address' },
-          { internalType: 'address', name: 'rewardsProvider', type: 'address' },
-          { internalType: 'address', name: 'rewardsConsumer', type: 'address' },
-          { internalType: 'bytes32', name: 'txHash', type: 'bytes32' },
-          { internalType: 'string', name: 'chainId', type: 'string' },
+          {
+            internalType: 'address',
+            name: 'user',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'rewardsProvider',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'rewardsConsumer',
+            type: 'address',
+          },
+          {
+            internalType: 'bytes32',
+            name: 'txHash',
+            type: 'bytes32',
+          },
+          {
+            internalType: 'string',
+            name: 'chainId',
+            type: 'string',
+          },
         ],
         internalType: 'struct DivviRegistry.ReferralData[]',
         name: 'referrals',
@@ -394,7 +613,87 @@ export const divviRegistryAbi = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'address', name: 'newAdmin', type: 'address' }],
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'address',
+            name: 'user',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'rewardsProvider',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'rewardsConsumer',
+            type: 'address',
+          },
+          {
+            components: [
+              {
+                internalType: 'bytes32',
+                name: 'txHash',
+                type: 'bytes32',
+              },
+              {
+                internalType: 'string',
+                name: 'chainId',
+                type: 'string',
+              },
+            ],
+            internalType: 'struct DivviRegistry.OnchainTxData',
+            name: 'onchainTx',
+            type: 'tuple',
+          },
+          {
+            components: [
+              {
+                internalType: 'enum DivviRegistry.OffchainMessageType',
+                name: 'messageType',
+                type: 'uint8',
+              },
+              {
+                internalType: 'bytes',
+                name: 'message',
+                type: 'bytes',
+              },
+              {
+                internalType: 'bytes',
+                name: 'signature',
+                type: 'bytes',
+              },
+              {
+                internalType: 'string',
+                name: 'chainId',
+                type: 'string',
+              },
+            ],
+            internalType: 'struct DivviRegistry.OffchainMessageData',
+            name: 'offchainMessage',
+            type: 'tuple',
+          },
+        ],
+        internalType: 'struct DivviRegistry.ReferralDataV2[]',
+        name: 'referrals',
+        type: 'tuple[]',
+      },
+    ],
+    name: 'batchRegisterReferral',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'newAdmin',
+        type: 'address',
+      },
+    ],
     name: 'beginDefaultAdminTransfer',
     outputs: [],
     stateMutability: 'nonpayable',
@@ -408,7 +707,13 @@ export const divviRegistryAbi = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'uint48', name: 'newDelay', type: 'uint48' }],
+    inputs: [
+      {
+        internalType: 'uint48',
+        name: 'newDelay',
+        type: 'uint48',
+      },
+    ],
     name: 'changeDefaultAdminDelay',
     outputs: [],
     stateMutability: 'nonpayable',
@@ -417,45 +722,171 @@ export const divviRegistryAbi = [
   {
     inputs: [],
     name: 'defaultAdmin',
-    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [],
     name: 'defaultAdminDelay',
-    outputs: [{ internalType: 'uint48', name: '', type: 'uint48' }],
+    outputs: [
+      {
+        internalType: 'uint48',
+        name: '',
+        type: 'uint48',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [],
     name: 'defaultAdminDelayIncreaseWait',
-    outputs: [{ internalType: 'uint48', name: '', type: 'uint48' }],
+    outputs: [
+      {
+        internalType: 'uint48',
+        name: '',
+        type: 'uint48',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [
-      { internalType: 'address', name: 'user', type: 'address' },
-      { internalType: 'address', name: 'provider', type: 'address' },
+      {
+        internalType: 'address',
+        name: 'entity',
+        type: 'address',
+      },
+    ],
+    name: 'getAllClaimDelegations',
+    outputs: [
+      {
+        components: [
+          {
+            internalType: 'string',
+            name: 'chainId',
+            type: 'string',
+          },
+          {
+            internalType: 'address',
+            name: 'delegate',
+            type: 'address',
+          },
+        ],
+        internalType: 'struct DivviRegistry.ClaimDelegation[]',
+        name: 'delegations',
+        type: 'tuple[]',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'entity',
+        type: 'address',
+      },
+      {
+        internalType: 'string',
+        name: 'chainId',
+        type: 'string',
+      },
+    ],
+    name: 'getClaimDelegate',
+    outputs: [
+      {
+        internalType: 'address',
+        name: 'delegate',
+        type: 'address',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'delegate',
+        type: 'address',
+      },
+    ],
+    name: 'getEntitiesDelegatingTo',
+    outputs: [
+      {
+        internalType: 'address[]',
+        name: 'entities',
+        type: 'address[]',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'user',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: 'provider',
+        type: 'address',
+      },
     ],
     name: 'getReferringConsumer',
-    outputs: [{ internalType: 'address', name: 'consumer', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'bytes32', name: 'role', type: 'bytes32' }],
-    name: 'getRoleAdmin',
-    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    outputs: [
+      {
+        internalType: 'address',
+        name: 'consumer',
+        type: 'address',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [
-      { internalType: 'bytes32', name: 'role', type: 'bytes32' },
-      { internalType: 'address', name: 'account', type: 'address' },
+      {
+        internalType: 'bytes32',
+        name: 'role',
+        type: 'bytes32',
+      },
+    ],
+    name: 'getRoleAdmin',
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes32',
+        name: 'role',
+        type: 'bytes32',
+      },
+      {
+        internalType: 'address',
+        name: 'account',
+        type: 'address',
+      },
     ],
     name: 'grantRole',
     outputs: [],
@@ -464,28 +895,64 @@ export const divviRegistryAbi = [
   },
   {
     inputs: [
-      { internalType: 'address', name: 'provider', type: 'address' },
-      { internalType: 'address', name: 'consumer', type: 'address' },
+      {
+        internalType: 'address',
+        name: 'provider',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: 'consumer',
+        type: 'address',
+      },
     ],
     name: 'hasAgreement',
-    outputs: [{ internalType: 'bool', name: 'exists', type: 'bool' }],
+    outputs: [
+      {
+        internalType: 'bool',
+        name: 'exists',
+        type: 'bool',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [
-      { internalType: 'bytes32', name: 'role', type: 'bytes32' },
-      { internalType: 'address', name: 'account', type: 'address' },
+      {
+        internalType: 'bytes32',
+        name: 'role',
+        type: 'bytes32',
+      },
+      {
+        internalType: 'address',
+        name: 'account',
+        type: 'address',
+      },
     ],
     name: 'hasRole',
-    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    outputs: [
+      {
+        internalType: 'bool',
+        name: '',
+        type: 'bool',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [
-      { internalType: 'address', name: 'owner', type: 'address' },
-      { internalType: 'uint48', name: 'transferDelay', type: 'uint48' },
+      {
+        internalType: 'address',
+        name: 'owner',
+        type: 'address',
+      },
+      {
+        internalType: 'uint48',
+        name: 'transferDelay',
+        type: 'uint48',
+      },
     ],
     name: 'initialize',
     outputs: [],
@@ -493,33 +960,77 @@ export const divviRegistryAbi = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'address', name: 'entity', type: 'address' }],
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'entity',
+        type: 'address',
+      },
+    ],
     name: 'isEntityRegistered',
-    outputs: [{ internalType: 'bool', name: 'registered', type: 'bool' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'address', name: 'forwarder', type: 'address' }],
-    name: 'isTrustedForwarder',
-    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    outputs: [
+      {
+        internalType: 'bool',
+        name: 'registered',
+        type: 'bool',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [
-      { internalType: 'address', name: 'user', type: 'address' },
-      { internalType: 'address', name: 'provider', type: 'address' },
+      {
+        internalType: 'address',
+        name: 'forwarder',
+        type: 'address',
+      },
+    ],
+    name: 'isTrustedForwarder',
+    outputs: [
+      {
+        internalType: 'bool',
+        name: '',
+        type: 'bool',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'user',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: 'provider',
+        type: 'address',
+      },
     ],
     name: 'isUserReferredToProvider',
-    outputs: [{ internalType: 'bool', name: 'isReferred', type: 'bool' }],
+    outputs: [
+      {
+        internalType: 'bool',
+        name: 'isReferred',
+        type: 'bool',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [],
     name: 'owner',
-    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
@@ -527,8 +1038,16 @@ export const divviRegistryAbi = [
     inputs: [],
     name: 'pendingDefaultAdmin',
     outputs: [
-      { internalType: 'address', name: 'newAdmin', type: 'address' },
-      { internalType: 'uint48', name: 'schedule', type: 'uint48' },
+      {
+        internalType: 'address',
+        name: 'newAdmin',
+        type: 'address',
+      },
+      {
+        internalType: 'uint48',
+        name: 'schedule',
+        type: 'uint48',
+      },
     ],
     stateMutability: 'view',
     type: 'function',
@@ -537,8 +1056,16 @@ export const divviRegistryAbi = [
     inputs: [],
     name: 'pendingDefaultAdminDelay',
     outputs: [
-      { internalType: 'uint48', name: 'newDelay', type: 'uint48' },
-      { internalType: 'uint48', name: 'schedule', type: 'uint48' },
+      {
+        internalType: 'uint48',
+        name: 'newDelay',
+        type: 'uint48',
+      },
+      {
+        internalType: 'uint48',
+        name: 'schedule',
+        type: 'uint48',
+      },
     ],
     stateMutability: 'view',
     type: 'function',
@@ -546,13 +1073,23 @@ export const divviRegistryAbi = [
   {
     inputs: [],
     name: 'proxiableUUID',
-    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [
-      { internalType: 'address', name: 'rewardsProvider', type: 'address' },
+      {
+        internalType: 'address',
+        name: 'rewardsProvider',
+        type: 'address',
+      },
     ],
     name: 'registerAgreementAsConsumer',
     outputs: [],
@@ -561,7 +1098,11 @@ export const divviRegistryAbi = [
   },
   {
     inputs: [
-      { internalType: 'address', name: 'rewardsConsumer', type: 'address' },
+      {
+        internalType: 'address',
+        name: 'rewardsConsumer',
+        type: 'address',
+      },
     ],
     name: 'registerAgreementAsProvider',
     outputs: [],
@@ -569,7 +1110,13 @@ export const divviRegistryAbi = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'bool', name: 'requiresApproval', type: 'bool' }],
+    inputs: [
+      {
+        internalType: 'bool',
+        name: 'requiresApproval',
+        type: 'bool',
+      },
+    ],
     name: 'registerRewardsEntity',
     outputs: [],
     stateMutability: 'nonpayable',
@@ -577,8 +1124,16 @@ export const divviRegistryAbi = [
   },
   {
     inputs: [
-      { internalType: 'bytes32', name: 'role', type: 'bytes32' },
-      { internalType: 'address', name: 'account', type: 'address' },
+      {
+        internalType: 'bytes32',
+        name: 'role',
+        type: 'bytes32',
+      },
+      {
+        internalType: 'address',
+        name: 'account',
+        type: 'address',
+      },
     ],
     name: 'renounceRole',
     outputs: [],
@@ -586,16 +1141,36 @@ export const divviRegistryAbi = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'address', name: 'entity', type: 'address' }],
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'entity',
+        type: 'address',
+      },
+    ],
     name: 'requiresApprovalForAgreements',
-    outputs: [{ internalType: 'bool', name: 'requiresApproval', type: 'bool' }],
+    outputs: [
+      {
+        internalType: 'bool',
+        name: 'requiresApproval',
+        type: 'bool',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [
-      { internalType: 'bytes32', name: 'role', type: 'bytes32' },
-      { internalType: 'address', name: 'account', type: 'address' },
+      {
+        internalType: 'bytes32',
+        name: 'role',
+        type: 'bytes32',
+      },
+      {
+        internalType: 'address',
+        name: 'account',
+        type: 'address',
+      },
     ],
     name: 'revokeRole',
     outputs: [],
@@ -610,30 +1185,80 @@ export const divviRegistryAbi = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'bool', name: 'requiresApproval', type: 'bool' }],
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'delegate',
+        type: 'address',
+      },
+      {
+        internalType: 'string',
+        name: 'chainId',
+        type: 'string',
+      },
+    ],
+    name: 'setClaimDelegate',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bool',
+        name: 'requiresApproval',
+        type: 'bool',
+      },
+    ],
     name: 'setRequiresApprovalForRewardsAgreements',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'bytes4', name: 'interfaceId', type: 'bytes4' }],
+    inputs: [
+      {
+        internalType: 'bytes4',
+        name: 'interfaceId',
+        type: 'bytes4',
+      },
+    ],
     name: 'supportsInterface',
-    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    outputs: [
+      {
+        internalType: 'bool',
+        name: '',
+        type: 'bool',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [],
     name: 'trustedForwarder',
-    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
   {
     inputs: [
-      { internalType: 'address', name: 'newImplementation', type: 'address' },
-      { internalType: 'bytes', name: 'data', type: 'bytes' },
+      {
+        internalType: 'address',
+        name: 'newImplementation',
+        type: 'address',
+      },
+      {
+        internalType: 'bytes',
+        name: 'data',
+        type: 'bytes',
+      },
     ],
     name: 'upgradeToAndCall',
     outputs: [],
