@@ -6,6 +6,7 @@ import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import {ERC2771ContextUpgradeable} from '@openzeppelin/contracts-upgradeable/metatx/ERC2771ContextUpgradeable.sol';
 import {ContextUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol';
+import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 /**
  * @title DivviRegistry
@@ -17,10 +18,16 @@ contract DivviRegistry is
   UUPSUpgradeable,
   ERC2771ContextUpgradeable
 {
+  using EnumerableSet for EnumerableSet.AddressSet;
+  using EnumerableSet for EnumerableSet.StringSet;
+
   // Data structs
   struct EntityData {
     bool exists;
     bool requiresApproval;
+    // Claim delegation fields (for cross-chain claiming)
+    mapping(string => address) claimDelegates; // chainId => delegate address (for O(1) lookup)
+    EnumerableSet.StringSet claimDelegatesChainIds; // set of chainIds for O(1) add/remove/contains and enumeration
     // fields can be added here in a future upgrade if needed
     // this is upgrade safe as long as `EntityData` is only used in a mapping
   }
@@ -83,6 +90,11 @@ contract DivviRegistry is
     USER_ALREADY_REFERRED
   }
 
+  struct ClaimDelegation {
+    string chainId; // CAIP-2 format
+    address delegate;
+  }
+
   // Entities storage
   mapping(address => EntityData) private _entities;
 
@@ -91,6 +103,10 @@ contract DivviRegistry is
 
   // Referral tracking
   mapping(bytes32 => address) private _registeredReferrals; // keccak256(user, provider) => consumer
+
+  // Claim delegation reverse lookup: claim delegate => set of entities that have delegated to it
+  // Note: Forward lookup (entity => claim delegates) is stored in EntityData.claimDelegates
+  mapping(address => EnumerableSet.AddressSet) private _entitiesByClaimDelegate;
 
   // Role constants
   bytes32 public constant REFERRAL_REGISTRAR_ROLE =
@@ -129,6 +145,16 @@ contract DivviRegistry is
     string chainId, // CAIP-2 format
     bytes32 txHash,
     ReferralStatus status
+  );
+  event ClaimDelegateSet(
+    address indexed entity,
+    address indexed delegate,
+    string chainId
+  );
+  event ClaimDelegateRemoved(
+    address indexed entity,
+    address indexed delegate,
+    string chainId
   );
 
   // Errors
@@ -180,10 +206,11 @@ contract DivviRegistry is
       revert EntityAlreadyExists(msgSender);
     }
 
-    _entities[msgSender] = EntityData({
-      exists: true,
-      requiresApproval: requiresApproval
-    });
+    // Set fields individually (cannot construct structs with mappings/sets)
+    _entities[msgSender].exists = true;
+    _entities[msgSender].requiresApproval = requiresApproval;
+    // claimDelegates and claimDelegatesChainIds are automatically initialized as empty
+
     emit RewardsEntityRegistered(msgSender, requiresApproval);
   }
 
@@ -441,6 +468,131 @@ contract DivviRegistry is
   ) public view returns (address consumer) {
     bytes32 referralKey = keccak256(abi.encodePacked(user, provider));
     return _registeredReferrals[referralKey];
+  }
+
+  // Claim delegation functions
+
+  /**
+   * @notice Set a claim delegate for a specific chain
+   * @param delegate The address to delegate claiming to (use address(0) to remove)
+   * @param chainId The chain ID in CAIP-2 format (e.g., "eip155:1" for Ethereum, "eip155:0" for all EVM chains)
+   * @dev Only callable by registered entities
+   */
+  function setClaimDelegate(
+    address delegate,
+    string calldata chainId
+  ) external entityExists(_msgSender()) {
+    address msgSender = _msgSender();
+    EntityData storage entity = _entities[msgSender];
+    address previousDelegate = entity.claimDelegates[chainId];
+
+    // Remove from previous delegate's delegators set only if not used on other chains
+    if (previousDelegate != address(0) && previousDelegate != delegate) {
+      // Check if previousDelegate is still used on any other chain
+      bool stillUsedOnOtherChains = false;
+      uint256 length = entity.claimDelegatesChainIds.length();
+      for (uint256 i = 0; i < length; i++) {
+        string memory otherChainId = entity.claimDelegatesChainIds.at(i);
+        // Skip the current chainId we're updating
+        if (keccak256(bytes(otherChainId)) != keccak256(bytes(chainId))) {
+          if (entity.claimDelegates[otherChainId] == previousDelegate) {
+            stillUsedOnOtherChains = true;
+            break;
+          }
+        }
+      }
+      // Only remove from reverse lookup if not used on any other chain
+      if (!stillUsedOnOtherChains) {
+        _entitiesByClaimDelegate[previousDelegate].remove(msgSender);
+      }
+      emit ClaimDelegateRemoved(msgSender, previousDelegate, chainId);
+    }
+
+    // Update delegation
+    entity.claimDelegates[chainId] = delegate;
+
+    if (delegate != address(0)) {
+      // Add new chainId to set if this is the first time setting it
+      if (previousDelegate == address(0)) {
+        entity.claimDelegatesChainIds.add(chainId);
+      }
+      _entitiesByClaimDelegate[delegate].add(msgSender);
+      emit ClaimDelegateSet(msgSender, delegate, chainId);
+    } else {
+      // Remove chainId from set when delegation is removed
+      entity.claimDelegatesChainIds.remove(chainId);
+    }
+  }
+
+  /**
+   * @notice Get the claim delegate for an entity on a specific chain
+   * @param entity The entity address
+   * @param chainId The chain ID in CAIP-2 format
+   * @return delegate The delegate address, or address(0) if none set
+   * @dev Checks chain-specific delegate first, then falls back to global ("eip155:0") for EVM chains only
+   */
+  function getClaimDelegate(
+    address entity,
+    string calldata chainId
+  ) external view returns (address delegate) {
+    EntityData storage entityData = _entities[entity];
+
+    // Check chain-specific delegate first
+    delegate = entityData.claimDelegates[chainId];
+    if (delegate != address(0)) {
+      return delegate;
+    }
+
+    // Fall back to global delegate (eip155:0) only for EVM chains
+    if (
+      bytes(chainId).length >= 7 &&
+      bytes(chainId)[0] == 'e' &&
+      bytes(chainId)[1] == 'i' &&
+      bytes(chainId)[2] == 'p' &&
+      bytes(chainId)[3] == '1' &&
+      bytes(chainId)[4] == '5' &&
+      bytes(chainId)[5] == '5' &&
+      bytes(chainId)[6] == ':'
+    ) {
+      return entityData.claimDelegates['eip155:0'];
+    }
+
+    return address(0);
+  }
+
+  /**
+   * @notice Get all claim delegations for an entity
+   * @param entity The entity address
+   * @return delegations Array of ClaimDelegation structs containing chainId and delegate pairs
+   * @dev Used by UI to show all delegations for an entity
+   */
+  function getAllClaimDelegations(
+    address entity
+  ) external view returns (ClaimDelegation[] memory delegations) {
+    EntityData storage entityData = _entities[entity];
+    uint256 length = entityData.claimDelegatesChainIds.length();
+
+    delegations = new ClaimDelegation[](length);
+
+    for (uint256 i = 0; i < length; i++) {
+      string memory chainId = entityData.claimDelegatesChainIds.at(i);
+      delegations[i] = ClaimDelegation({
+        chainId: chainId,
+        delegate: entityData.claimDelegates[chainId]
+      });
+    }
+  }
+
+  /**
+   * @notice Get all entities that have delegated to a specific address
+   * @param delegate The delegate address
+   * @return entities Array of entity addresses that have delegated to this address
+   * @dev Used by UI to show "You are a delegate for: [entities]"
+   */
+  function getEntitiesDelegatingTo(
+    address delegate
+  ) external view returns (address[] memory entities) {
+    return _entitiesByClaimDelegate[delegate].values();
   }
 
   // ERC2771Context overrides
