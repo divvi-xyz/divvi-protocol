@@ -1,4 +1,4 @@
-import { KpiRow , ResultDirectory } from './resultDirectory'
+import { KpiRow, ResultDirectory } from './resultDirectory'
 import { BigNumber } from 'bignumber.js'
 import { getReferrerMetricsFromKpi } from '../scripts/calculateRewards/getReferrerMetricsFromKpi'
 import axios from 'axios'
@@ -136,7 +136,7 @@ export function calculateRewards({
   stageFunction,
   previousStageData = [],
   stageBonusRatio = 0.25, // 25% for stage bonuses
-  qualityUserScoreBonusRatio = 0.20, // 20% for quality user score bonuses
+  qualityUserScoreBonusRatio = 0.2, // 20% for quality user score bonuses
   qualityUserScores = {},
 }: {
   kpiData: KpiRow[]
@@ -297,10 +297,13 @@ export function calculateRewards({
         isExcluded || totalQualityUserScore === 0 || stage === 0
           ? BigNumber(0)
           : BigNumber(qualityScore).div(totalQualityUserScore)
-      const qualityUserScoreBonus =
-        qualityUserScoreBonusPool.times(qualityUserScoreProportion)
+      const qualityUserScoreBonus = qualityUserScoreBonusPool.times(
+        qualityUserScoreProportion,
+      )
 
-      const totalReward = baseReward.plus(stageBonus).plus(qualityUserScoreBonus)
+      const totalReward = baseReward
+        .plus(stageBonus)
+        .plus(qualityUserScoreBonus)
 
       return {
         referrerId,
