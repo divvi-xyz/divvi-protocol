@@ -75,6 +75,12 @@ function parseArgs() {
       choices: stageFunctions.map((_, index) => index),
       demandOption: true,
     })
+    .option('quality-user-score-bonus-ratio', {
+      description:
+        'the proportion of the reward pool (0.0-1.0) allocated to quality user scores',
+      type: 'number',
+      default: 0.2,
+    })
     .strict()
     .parseSync()
 
@@ -109,6 +115,7 @@ function parseArgs() {
     excludedReferrers,
     previousKpiFiles: args['previous-kpi-files'],
     stageFunction: stageFunctions[args['stage-function-version']],
+    qualityUserScoreBonusRatio: args['quality-user-score-bonus-ratio'],
   }
 }
 
@@ -120,6 +127,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     rewardAmount,
     previousKpiFiles,
     stageFunction,
+    qualityUserScoreBonusRatio,
   } = args
 
   const kpiData = await resultDirectory.readKpi()
@@ -175,6 +183,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     previousStageData,
     stageFunction,
     qualityUserScores,
+    qualityUserScoreBonusRatio,
   })
 
   const rewardsWithMetadata = rewards.map((reward) => ({

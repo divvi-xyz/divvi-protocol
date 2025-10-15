@@ -249,7 +249,7 @@ export function calculateRewards({
       }
       // Only qualified referrers (stage 1+) get quality user score bonuses
       const stage = referrerStages[referrerId]?.stage ?? 0
-      if (stage === 0) {
+      if (stage === 0 || stage === 1) {
         return sum
       }
       return sum + score
@@ -291,10 +291,10 @@ export function calculateRewards({
       const stageBonus = stageBonusPool.times(stageProportion)
 
       // Calculate quality user score bonus (e.g. 20% of total pool if qualityUserScoreBonusRatio is 0.20)
-      // Only qualified stages (1+) get quality user score bonuses. Stage 0 gets 0.
+      // Only qualified stages (1+) get quality user score bonuses. Stage 0 and 1 get 0 quality user score bonus.
       const qualityScore = qualityUserScores[referrerId] ?? 0
       const qualityUserScoreProportion =
-        isExcluded || totalQualityUserScore === 0 || stage === 0
+        isExcluded || totalQualityUserScore === 0 || stage === 0 || stage === 1
           ? BigNumber(0)
           : BigNumber(qualityScore).div(totalQualityUserScore)
       const qualityUserScoreBonus = qualityUserScoreBonusPool.times(
@@ -312,7 +312,8 @@ export function calculateRewards({
         uniqueWallets: referrerReferrals[referrerId],
         gasUsage: kpi,
         stage,
-        qualityUserScore: qualityUserScores[referrerId] ?? 0,
+        qualityUserScore:
+          stage === 0 || stage === 1 ? 0 : (qualityUserScores[referrerId] ?? 0),
         sqrtOnlyReward: sqrtOnlyReward.toFixed(0, BigNumber.ROUND_DOWN),
         baseReward: baseReward.toFixed(0, BigNumber.ROUND_DOWN),
         stageBonus: stageBonus.toFixed(0, BigNumber.ROUND_DOWN),

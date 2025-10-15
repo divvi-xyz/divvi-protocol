@@ -314,6 +314,7 @@ const celoPGS1Campaign: Campaign = {
           excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV0,
+          qualityUserScoreBonusRatio: 0.0,
         })
       },
     },
@@ -338,6 +339,7 @@ const celoPGS1Campaign: Campaign = {
           excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
+          qualityUserScoreBonusRatio: 0.0,
         })
       },
     },
@@ -362,6 +364,7 @@ const celoPGS1Campaign: Campaign = {
           excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV2,
+          qualityUserScoreBonusRatio: 0.0,
         })
       },
     },
@@ -387,6 +390,7 @@ const celoPGS1Campaign: Campaign = {
           excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV2,
+          qualityUserScoreBonusRatio: 0.2,
         })
       },
     },
@@ -412,6 +416,7 @@ const celoPGS1Campaign: Campaign = {
           excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV2,
+          qualityUserScoreBonusRatio: 0.2,
         })
       },
     },
@@ -437,6 +442,7 @@ const celoPGS1Campaign: Campaign = {
           excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV2,
+          qualityUserScoreBonusRatio: 0.2,
         })
       },
     },
@@ -462,6 +468,7 @@ const celoPGS1Campaign: Campaign = {
           excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV2,
+          qualityUserScoreBonusRatio: 0.2,
         })
       },
     },
@@ -487,6 +494,7 @@ const celoPGS1Campaign: Campaign = {
           excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV2,
+          qualityUserScoreBonusRatio: 0.2,
         })
       },
     },
