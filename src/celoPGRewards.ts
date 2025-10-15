@@ -249,7 +249,7 @@ export function calculateRewards({
       }
       // Only qualified referrers (stage 1+) get quality user score bonuses
       const stage = referrerStages[referrerId]?.stage ?? 0
-      if (stage === 0) {
+      if (stage === 0 || stage === 1) {
         return sum
       }
       return sum + score

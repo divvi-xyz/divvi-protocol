@@ -265,8 +265,8 @@ describe('calculateRewards', () => {
   it('should distribute quality user score bonus proportionally', () => {
     const kpiData: KpiRow[] = [
       // Two stage 1 referrers with different quality scores
-      ...createUsers('0xref1', 3000, '5000000'), // 3000 wallets, 1.5B total gas = stage 2
-      ...createUsers('0xref2', 4000, '5000000'), // 4000 wallets, 2B total gas = stage 2
+      ...createUsers('0xref1', 3000, '5000000'), // 3000 wallets, 15B total gas = stage 2
+      ...createUsers('0xref2', 4000, '5000000'), // 4000 wallets, 20B total gas = stage 2
     ]
 
     const qualityUserScores = {
@@ -289,36 +289,36 @@ describe('calculateRewards', () => {
     expect(result).toStrictEqual([
       {
         referrerId: '0xref1',
-        kpi: 1_500_000_000n,
+        kpi: 15_000_000_000n,
         referralCount: 3000,
         uniqueWallets: 3000,
         uniqueWalletsForStageCalculation: 3000,
-        gasUsage: 1_500_000_000n,
+        gasUsage: 15_000_000_000n,
         gasUsageForStageCalculation: 1_500_000_000n,
         stage: 2,
         qualityUserScore: 100,
-        sqrtOnlyReward: '13484', // sqrt proportion of total
-        baseReward: '7416', // 55% of pool distributed by sqrt
+        sqrtOnlyReward: '13923', // sqrt proportion of total
+        baseReward: '7657',
         stageBonus: '3750', // 25% of pool, split equally since both stage 2
         qualityUserScoreBonus: '1999', // 20% of pool, 100/300 proportion (rounded down)
-        rewardAmount: '13166',
+        rewardAmount: '13407',
         isExcluded: false,
       },
       {
         referrerId: '0xref2',
-        kpi: 2_00_000_000n,
+        kpi: 20_000_000_000n,
         referralCount: 4000,
         uniqueWallets: 4000,
         uniqueWalletsForStageCalculation: 4000,
-        gasUsage: 2_00_000_000n,
+        gasUsage: 20_000_000_000n,
         gasUsageForStageCalculation: 2_00_000_000n,
         stage: 2,
         qualityUserScore: 200,
-        sqrtOnlyReward: '16515', // sqrt proportion of total
-        baseReward: '9083', // 55% of pool distributed by sqrt
+        sqrtOnlyReward: '16076', // sqrt proportion of total
+        baseReward: '8842',
         stageBonus: '3750', // 25% of pool, split equally since both stage 2
         qualityUserScoreBonus: '4000', // 20% of pool, 200/300 proportion
-        rewardAmount: '16833',
+        rewardAmount: '16592',
         isExcluded: false,
       },
     ])
