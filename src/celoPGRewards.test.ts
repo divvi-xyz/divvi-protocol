@@ -294,7 +294,7 @@ describe('calculateRewards', () => {
         uniqueWallets: 3000,
         uniqueWalletsForStageCalculation: 3000,
         gasUsage: 15_000_000_000n,
-        gasUsageForStageCalculation: 1_500_000_000n,
+        gasUsageForStageCalculation: 15_000_000_000n,
         stage: 2,
         qualityUserScore: 100,
         sqrtOnlyReward: '13923', // sqrt proportion of total
@@ -311,7 +311,7 @@ describe('calculateRewards', () => {
         uniqueWallets: 4000,
         uniqueWalletsForStageCalculation: 4000,
         gasUsage: 20_000_000_000n,
-        gasUsageForStageCalculation: 2_00_000_000n,
+        gasUsageForStageCalculation: 20_000_000_000n,
         stage: 2,
         qualityUserScore: 200,
         sqrtOnlyReward: '16076', // sqrt proportion of total
