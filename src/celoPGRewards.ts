@@ -23,9 +23,10 @@ function calculateQualityUserScore(
 ) {
   let score = 0
   for (const user of users) {
-    score += userToLevel[user] ?? 0
+    const level = userToLevel[user] ?? 0
+    score += level * level // sum of squares
   }
-  return score / users.length
+  return score
 }
 
 export async function getQualityUserScores(
