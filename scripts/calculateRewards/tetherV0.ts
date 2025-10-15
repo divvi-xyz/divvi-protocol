@@ -9,8 +9,6 @@ import {
 } from '../utils/divviRewardsExcludedReferrers'
 import fs from 'fs'
 import { parse } from 'csv-parse/sync'
-import { NetworkId } from '../types'
-import { getClaimDelegates } from './getClaimDelegates'
 
 const REWARD_POOL_ADDRESS = '0xB575210cdF52B18000aE24Be4981e9ABC7716F98' // on Ethereum mainnet
 
