@@ -313,11 +313,7 @@ export function calculateRewards({
         gasUsage: kpi,
         stage,
         qualityUserScore:
-          stage === 1
-            ? 0
-            : stage === 0
-              ? 0
-              : (qualityUserScores[referrerId] ?? 0),
+          stage === 0 || stage === 1 ? 0 : (qualityUserScores[referrerId] ?? 0),
         sqrtOnlyReward: sqrtOnlyReward.toFixed(0, BigNumber.ROUND_DOWN),
         baseReward: baseReward.toFixed(0, BigNumber.ROUND_DOWN),
         stageBonus: stageBonus.toFixed(0, BigNumber.ROUND_DOWN),
