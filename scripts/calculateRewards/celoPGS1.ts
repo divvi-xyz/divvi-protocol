@@ -141,14 +141,6 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     previousStageData = await Promise.all(previousKpiFiles.map(readKpiFile))
   }
 
-  const rewards = calculateRewards({
-    kpiData,
-    rewards: BigNumber(parseEther(rewardAmount)),
-    excludedReferrers,
-    previousStageData,
-    stageFunction,
-  })
-
   const totalTransactionsPerReferrer: {
     [referrerId: string]: number
   } = {}
@@ -178,10 +170,18 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     resultDirectory,
   )
 
+  const rewards = calculateRewards({
+    kpiData,
+    rewards: BigNumber(parseEther(rewardAmount)),
+    excludedReferrers,
+    previousStageData,
+    stageFunction,
+    qualityUserScores,
+  })
+
   const rewardsWithMetadata = rewards.map((reward) => ({
     ...reward,
     totalTransactions: totalTransactionsPerReferrer[reward.referrerId],
-    qualityUserScore: qualityUserScores[reward.referrerId],
   }))
 
   // Get claim delegates for all referrers
