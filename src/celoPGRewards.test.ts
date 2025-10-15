@@ -53,9 +53,11 @@ describe('calculateRewards', () => {
         gasUsage: 25_000_000_000n, // 25B
         gasUsageForStageCalculation: 25_000_000_000n,
         stage: 0,
+        qualityUserScore: 0,
         sqrtOnlyReward: '0', // Stage 0 gets no rewards at all
         baseReward: '0', // Stage 0 gets no rewards at all
         stageBonus: '0', // Stage 0 gets no bonus
+        qualityUserScoreBonus: '0', // Stage 0 gets no quality bonus
         rewardAmount: '0', // Stage 0 gets no rewards at all
         isExcluded: false,
       },
@@ -68,10 +70,12 @@ describe('calculateRewards', () => {
         gasUsage: 1_500_000_000n, // 1.5B
         gasUsageForStageCalculation: 1_500_000_000n,
         stage: 1,
+        qualityUserScore: 0,
         sqrtOnlyReward: '52492',
-        baseReward: '39369',
+        baseReward: '28870', // 55% of pool (with 25% stage + 20% quality)
         stageBonus: '25000', // Stage 1 gets bonus
-        rewardAmount: '64369',
+        qualityUserScoreBonus: '0', // No quality score provided
+        rewardAmount: '53870',
         isExcluded: false,
       },
       {
@@ -83,10 +87,12 @@ describe('calculateRewards', () => {
         gasUsage: 15_000_000_000n, // 15B
         gasUsageForStageCalculation: 15_000_000_000n,
         stage: 2,
+        qualityUserScore: 0,
         sqrtOnlyReward: '165996',
-        baseReward: '124497',
+        baseReward: '91297', // 55% of pool (with 25% stage + 20% quality)
         stageBonus: '50000', // Stage 2 gets higher bonus
-        rewardAmount: '174497',
+        qualityUserScoreBonus: '0', // No quality score provided
+        rewardAmount: '141297',
         isExcluded: false,
       },
       {
@@ -98,10 +104,12 @@ describe('calculateRewards', () => {
         gasUsage: 60_000_000_000n, // 60B
         gasUsageForStageCalculation: 60_000_000_000n,
         stage: 3,
+        qualityUserScore: 0,
         sqrtOnlyReward: '331992',
-        baseReward: '248994',
+        baseReward: '182595', // 55% of pool (with 25% stage + 20% quality)
         stageBonus: '75000', // Stage 3 gets even higher bonus
-        rewardAmount: '323994',
+        qualityUserScoreBonus: '0', // No quality score provided
+        rewardAmount: '257595',
         isExcluded: false,
       },
       {
@@ -113,10 +121,12 @@ describe('calculateRewards', () => {
         gasUsage: 110_000_000_000n, // 110B
         gasUsageForStageCalculation: 110_000_000_000n,
         stage: 4,
+        qualityUserScore: 0,
         sqrtOnlyReward: '449519',
-        baseReward: '337139',
+        baseReward: '247235', // 55% of pool (with 25% stage + 20% quality)
         stageBonus: '100000', // Stage 4 gets highest bonus
-        rewardAmount: '437139',
+        qualityUserScoreBonus: '0', // No quality score provided
+        rewardAmount: '347235',
         isExcluded: false,
       },
     ])
@@ -152,9 +162,11 @@ describe('calculateRewards', () => {
         gasUsage: 5_000n,
         gasUsageForStageCalculation: 5_000n,
         stage: 0,
+        qualityUserScore: 0,
         sqrtOnlyReward: '0', // Excluded from all calculations
         baseReward: '0', // Excluded
         stageBonus: '0', // Excluded
+        qualityUserScoreBonus: '0', // Excluded
         rewardAmount: '0', // Excluded
         isExcluded: true,
       },
@@ -167,10 +179,12 @@ describe('calculateRewards', () => {
         gasUsage: 750_000_000n,
         gasUsageForStageCalculation: 750_000_000n,
         stage: 1,
+        qualityUserScore: 0,
         sqrtOnlyReward: '30000', // Gets all rewards since it's the only qualified referrer
-        baseReward: '22500', // 75% of pool (25% goes to stage bonus)
+        baseReward: '16500', // 55% of pool (with 25% stage + 20% quality)
         stageBonus: '7500', // 25% of pool (stage 1 gets full stage bonus since only qualified referrer)
-        rewardAmount: '30000', // Total: 22500 + 7500
+        qualityUserScoreBonus: '0', // No quality score provided
+        rewardAmount: '24000', // Total: 16500 + 7500 + 0
         isExcluded: false,
       },
     ])
@@ -207,10 +221,12 @@ describe('calculateRewards', () => {
         gasUsage: 1_000_000_000n,
         gasUsageForStageCalculation: 1_000_000_000n,
         stage: 1,
+        qualityUserScore: 0,
         sqrtOnlyReward: '1000', // Gets all rewards since it's the only referrer
-        baseReward: '750', // 75% of pool (25% goes to stage bonus)
+        baseReward: '550', // 55% of pool (with 25% stage + 20% quality)
         stageBonus: '250', // 25% of pool (gets full stage bonus since only referrer)
-        rewardAmount: '1000', // Total: 750 + 250
+        qualityUserScoreBonus: '0', // No quality score provided
+        rewardAmount: '800', // Total: 550 + 250 + 0
         isExcluded: false,
       },
     ])
@@ -235,12 +251,105 @@ describe('calculateRewards', () => {
         gasUsage: 100n,
         gasUsageForStageCalculation: 100n,
         stage: 0,
+        qualityUserScore: 0,
         sqrtOnlyReward: '0', // Zero rewards = zero for all fields
         baseReward: '0',
         stageBonus: '0',
+        qualityUserScoreBonus: '0',
         rewardAmount: '0',
         isExcluded: false,
       },
     ])
+  })
+
+  it('should distribute quality user score bonus proportionally', () => {
+    const kpiData: KpiRow[] = [
+      // Two stage 1 referrers with different quality scores
+      ...createUsers('0xref1', 100, '10000000'), // 100 wallets, 1B total gas = stage 1
+      ...createUsers('0xref2', 150, '10000000'), // 150 wallets, 1.5B total gas = stage 1
+    ]
+
+    const qualityUserScores = {
+      '0xref1': 100, // Quality score of 100
+      '0xref2': 200, // Quality score of 200 (2x of ref1)
+    }
+
+    const result = calculateRewards({
+      kpiData,
+      rewards: new BigNumber('30000'),
+      excludedReferrers: {},
+      previousStageData: [],
+      stageFunction: calculateStageV0,
+      qualityUserScores,
+    })
+
+    // ref1 has quality score 100, ref2 has quality score 200
+    // Quality bonus pool = 6000 (20% of 30000)
+    // ref1 gets 1999 (100/300 * 6000, rounded down), ref2 gets 4000 (200/300 * 6000)
+    expect(result).toStrictEqual([
+      {
+        referrerId: '0xref1',
+        kpi: 1_000_000_000n,
+        referralCount: 100,
+        uniqueWallets: 100,
+        uniqueWalletsForStageCalculation: 100,
+        gasUsage: 1_000_000_000n,
+        gasUsageForStageCalculation: 1_000_000_000n,
+        stage: 1,
+        qualityUserScore: 100,
+        sqrtOnlyReward: '13484', // sqrt proportion of total
+        baseReward: '7416', // 55% of pool distributed by sqrt
+        stageBonus: '3750', // 25% of pool, split equally since both stage 1
+        qualityUserScoreBonus: '1999', // 20% of pool, 100/300 proportion (rounded down)
+        rewardAmount: '13166',
+        isExcluded: false,
+      },
+      {
+        referrerId: '0xref2',
+        kpi: 1_500_000_000n,
+        referralCount: 150,
+        uniqueWallets: 150,
+        uniqueWalletsForStageCalculation: 150,
+        gasUsage: 1_500_000_000n,
+        gasUsageForStageCalculation: 1_500_000_000n,
+        stage: 1,
+        qualityUserScore: 200,
+        sqrtOnlyReward: '16515', // sqrt proportion of total
+        baseReward: '9083', // 55% of pool distributed by sqrt
+        stageBonus: '3750', // 25% of pool, split equally since both stage 1
+        qualityUserScoreBonus: '4000', // 20% of pool, 200/300 proportion
+        rewardAmount: '16833',
+        isExcluded: false,
+      },
+    ])
+  })
+
+  it('should not give quality bonus to stage 0 referrers', () => {
+    const kpiData: KpiRow[] = [
+      ...createUsers('0xstage0', 50, '100'), // Stage 0 referrer
+      ...createUsers('0xstage1', 100, '10000000'), // Stage 1 referrer
+    ]
+
+    const qualityUserScores = {
+      '0xstage0': 100, // Has quality score but stage 0
+      '0xstage1': 200, // Stage 1 with quality score
+    }
+
+    const result = calculateRewards({
+      kpiData,
+      rewards: new BigNumber('10000'),
+      excludedReferrers: {},
+      previousStageData: [],
+      stageFunction: calculateStageV0,
+      qualityUserScores,
+    })
+
+    // Stage 0 should get no rewards including quality bonus
+    // Stage 1 should get all quality bonus
+    expect(result[0].stage).toBe(0)
+    expect(result[0].qualityUserScoreBonus).toBe('0')
+    expect(result[0].rewardAmount).toBe('0')
+    expect(result[1].stage).toBe(1)
+    expect(result[1].qualityUserScoreBonus).toBe('2000') // Gets full 20% = 2000
   })
 })
