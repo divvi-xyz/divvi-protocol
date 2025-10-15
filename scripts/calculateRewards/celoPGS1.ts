@@ -141,14 +141,6 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     previousStageData = await Promise.all(previousKpiFiles.map(readKpiFile))
   }
 
-  const rewards = calculateRewards({
-    kpiData,
-    rewards: BigNumber(parseEther(rewardAmount)),
-    excludedReferrers,
-    previousStageData,
-    stageFunction,
-  })
-
   const totalTransactionsPerReferrer: {
     [referrerId: string]: number
   } = {}
@@ -177,6 +169,15 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     usersPerReferrer,
     resultDirectory,
   )
+
+  const rewards = calculateRewards({
+    kpiData,
+    rewards: BigNumber(parseEther(rewardAmount)),
+    excludedReferrers,
+    previousStageData,
+    stageFunction,
+    qualityUserScores,
+  })
 
   const rewardsWithMetadata = rewards.map((reward) => ({
     ...reward,

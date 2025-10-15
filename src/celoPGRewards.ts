@@ -1,8 +1,7 @@
-import { KpiRow } from './resultDirectory'
+import { KpiRow , ResultDirectory } from './resultDirectory'
 import { BigNumber } from 'bignumber.js'
 import { getReferrerMetricsFromKpi } from '../scripts/calculateRewards/getReferrerMetricsFromKpi'
 import axios from 'axios'
-import { ResultDirectory } from './resultDirectory'
 
 const PROSPERITY_PASSPORT_URL =
   'https://prosperity-passport-backend-production.up.railway.app/api/accounts'
@@ -186,8 +185,8 @@ export function calculateRewards({
   // Calculate stage for each referrer once
   const referrerStages = Object.entries(stageReferrerKpis).reduce(
     (acc, [referrerId, kpi]) => {
-      let uniqueWallets = stageReferrerReferrals[referrerId]
-      let gasUsage = kpi
+      const uniqueWallets = stageReferrerReferrals[referrerId]
+      const gasUsage = kpi
 
       acc[referrerId] = {
         stage: stageFunction({
