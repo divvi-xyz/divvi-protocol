@@ -17,8 +17,6 @@ import {
 import fs from 'fs'
 import { parse } from 'csv-parse/sync'
 import axios from 'axios'
-import { NetworkId } from '../types'
-import { getClaimDelegates } from './getClaimDelegates'
 
 // TODO: support both CELO and OP reward pools
 const REWARD_POOL_ADDRESS = '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5' // on Celo mainnet
@@ -193,20 +191,12 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     totalTransactions: totalTransactionsPerReferrer[reward.referrerId],
   }))
 
-  // Get claim delegates for all referrers
-  const referrerIds = rewards.map((r) => r.referrerId)
-  const claimDelegates = await getClaimDelegates(
-    referrerIds,
-    NetworkId['celo-mainnet'],
-  )
-
   createAddRewardSafeTransactionJSON({
     filePath: resultDirectory.safeTransactionsFilePath,
     rewardPoolAddress: REWARD_POOL_ADDRESS,
     rewards,
     startTimestamp: new Date(startTimestamp),
     endTimestampExclusive: new Date(endTimestampExclusive),
-    claimDelegates,
     useIdempotency: true,
   })
 
