@@ -182,7 +182,6 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   const rewardsWithMetadata = rewards.map((reward) => ({
     ...reward,
     totalTransactions: totalTransactionsPerReferrer[reward.referrerId],
-    qualityUserScore: qualityUserScores[reward.referrerId],
   }))
 
   // Get claim delegates for all referrers
