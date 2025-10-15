@@ -265,8 +265,8 @@ describe('calculateRewards', () => {
   it('should distribute quality user score bonus proportionally', () => {
     const kpiData: KpiRow[] = [
       // Two stage 1 referrers with different quality scores
-      ...createUsers('0xref1', 100, '10000000'), // 100 wallets, 1B total gas = stage 1
-      ...createUsers('0xref2', 150, '10000000'), // 150 wallets, 1.5B total gas = stage 1
+      ...createUsers('0xref1', 3000, '5000000'), // 3000 wallets, 15B total gas = stage 2
+      ...createUsers('0xref2', 4000, '5000000'), // 4000 wallets, 20B total gas = stage 2
     ]
 
     const qualityUserScores = {
@@ -289,36 +289,36 @@ describe('calculateRewards', () => {
     expect(result).toStrictEqual([
       {
         referrerId: '0xref1',
-        kpi: 1_000_000_000n,
-        referralCount: 100,
-        uniqueWallets: 100,
-        uniqueWalletsForStageCalculation: 100,
-        gasUsage: 1_000_000_000n,
-        gasUsageForStageCalculation: 1_000_000_000n,
-        stage: 1,
+        kpi: 15_000_000_000n,
+        referralCount: 3000,
+        uniqueWallets: 3000,
+        uniqueWalletsForStageCalculation: 3000,
+        gasUsage: 15_000_000_000n,
+        gasUsageForStageCalculation: 15_000_000_000n,
+        stage: 2,
         qualityUserScore: 100,
-        sqrtOnlyReward: '13484', // sqrt proportion of total
-        baseReward: '7416', // 55% of pool distributed by sqrt
-        stageBonus: '3750', // 25% of pool, split equally since both stage 1
+        sqrtOnlyReward: '13923', // sqrt proportion of total
+        baseReward: '7657',
+        stageBonus: '3750', // 25% of pool, split equally since both stage 2
         qualityUserScoreBonus: '1999', // 20% of pool, 100/300 proportion (rounded down)
-        rewardAmount: '13166',
+        rewardAmount: '13407',
         isExcluded: false,
       },
       {
         referrerId: '0xref2',
-        kpi: 1_500_000_000n,
-        referralCount: 150,
-        uniqueWallets: 150,
-        uniqueWalletsForStageCalculation: 150,
-        gasUsage: 1_500_000_000n,
-        gasUsageForStageCalculation: 1_500_000_000n,
-        stage: 1,
+        kpi: 20_000_000_000n,
+        referralCount: 4000,
+        uniqueWallets: 4000,
+        uniqueWalletsForStageCalculation: 4000,
+        gasUsage: 20_000_000_000n,
+        gasUsageForStageCalculation: 20_000_000_000n,
+        stage: 2,
         qualityUserScore: 200,
-        sqrtOnlyReward: '16515', // sqrt proportion of total
-        baseReward: '9083', // 55% of pool distributed by sqrt
-        stageBonus: '3750', // 25% of pool, split equally since both stage 1
+        sqrtOnlyReward: '16076', // sqrt proportion of total
+        baseReward: '8842',
+        stageBonus: '3750', // 25% of pool, split equally since both stage 2
         qualityUserScoreBonus: '4000', // 20% of pool, 200/300 proportion
-        rewardAmount: '16833',
+        rewardAmount: '16592',
         isExcluded: false,
       },
     ])
@@ -327,12 +327,12 @@ describe('calculateRewards', () => {
   it('should not give quality bonus to stage 0 referrers', () => {
     const kpiData: KpiRow[] = [
       ...createUsers('0xstage0', 50, '100'), // Stage 0 referrer
-      ...createUsers('0xstage1', 100, '10000000'), // Stage 1 referrer
+      ...createUsers('0xstage1', 2600, '5000000'), // Stage 2 referrer
     ]
 
     const qualityUserScores = {
       '0xstage0': 100, // Has quality score but stage 0
-      '0xstage1': 200, // Stage 1 with quality score
+      '0xstage1': 200, // Stage 2 with quality score
     }
 
     const result = calculateRewards({
@@ -349,7 +349,7 @@ describe('calculateRewards', () => {
     expect(result[0].stage).toBe(0)
     expect(result[0].qualityUserScoreBonus).toBe('0')
     expect(result[0].rewardAmount).toBe('0')
-    expect(result[1].stage).toBe(1)
+    expect(result[1].stage).toBe(2)
     expect(result[1].qualityUserScoreBonus).toBe('2000') // Gets full 20% = 2000
   })
 })
