@@ -185,8 +185,8 @@ export function calculateRewards({
   // Calculate stage for each referrer once
   const referrerStages = Object.entries(stageReferrerKpis).reduce(
     (acc, [referrerId, kpi]) => {
-      const uniqueWallets = stageReferrerReferrals[referrerId]
-      const gasUsage = kpi
+      let uniqueWallets = stageReferrerReferrals[referrerId]
+      let gasUsage = kpi
 
       acc[referrerId] = {
         stage: stageFunction({
