@@ -468,6 +468,7 @@ const celoPGS1Campaign: Campaign = {
           excludedReferrers: mergedExcludedReferrers,
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV2,
+          qualityUserScoreBonusRatio: 0.2,
         })
       },
     },
