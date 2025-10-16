@@ -75,6 +75,11 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 5000,
     },
+    bsc: {
+      url: 'https://bsc-rpc.publicnode.com',
+      accounts,
+      chainId: 56,
+    },
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY!,
