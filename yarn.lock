@@ -6100,10 +6100,10 @@ googleapis-common@^8.0.0:
     qs "^6.7.0"
     url-template "^2.0.8"
 
-googleapis@^163.0.0:
-  version "163.0.0"
-  resolved "https://registry.yarnpkg.com/googleapis/-/googleapis-163.0.0.tgz#d632e293521a15122bd19fa6d7795799bdb2c9d4"
-  integrity sha512-5c94aCqw5awp2YbWXXlDJT5CnDGr7F/Aw43XHKFb5vQI0CcoZgx9bSImdIAYst2mOIWtnP62+HBBrEw15budNw==
+googleapis@^164.0.0:
+  version "164.0.0"
+  resolved "https://registry.yarnpkg.com/googleapis/-/googleapis-164.0.0.tgz#22945308a3b3cba938f762fd710fb761db2f6a82"
+  integrity sha512-aR2larBEvu6+HVC4Puu87T41/OA3WjVw2tQRYAMKit2kC95daFacIoDF70DeC4p9M/H5eZSalBJV1FOypR808A==
   dependencies:
     google-auth-library "^10.2.0"
     googleapis-common "^8.0.0"
