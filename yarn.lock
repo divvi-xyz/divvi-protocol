@@ -3504,10 +3504,10 @@
   dependencies:
     "@google-cloud/functions-framework" "^4.0.0"
 
-"@valora/logging@^1.3.20":
-  version "1.3.20"
-  resolved "https://registry.npmjs.org/@valora/logging/-/logging-1.3.20.tgz"
-  integrity sha512-2WtA9hC+occi4nFUyDbSli00Tnv3miZCsZL8dl5lEv7iVZ/UkW5iJ7BIldNElqDu/uTOPIDXQoBFDWGSGOostg==
+"@valora/logging@^1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@valora/logging/-/logging-1.4.0.tgz#708fd4b184b0867d8116ab6fcd63897511842da6"
+  integrity sha512-xL9eKxB4T0VIaQePVi00ft7WlaMgePB1WvGPfNTJLuzyH/wZJL9I/cFsL0ATNeNXUFJaQWo874NyQ73ZuygatQ==
   dependencies:
     "@google-cloud/logging" "^11.2.1"
     "@google-cloud/logging-bunyan" "^5.1.0"
