@@ -144,8 +144,10 @@ export function calculateStageV3({
     return 3
   } else if (uniqueWallets >= 100 && gasUsage >= 500_000_000n) {
     return 2
-  } else {
+  } else if (uniqueWallets >= 10 && gasUsage >= 25_000_000n) {
     return 1
+  } else {
+    return 0
   }
 }
 
