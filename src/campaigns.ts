@@ -8,6 +8,7 @@ import {
   calculateStageV0,
   calculateStageV1,
   calculateStageV2,
+  calculateStageV3,
 } from './celoPGRewards'
 import { google } from 'googleapis'
 import { isAddress } from 'viem'
@@ -376,7 +377,6 @@ const celoPGS1Campaign: Campaign = {
         startTimestamp,
         endTimestampExclusive,
       }) => {
-        const index = 3
         const mergedExcludedReferrers = await getMergedExcludedReferrers(
           celoPGS1Campaign.providerAddress,
           excludedReferrersFromCeloPGS1[2],
@@ -388,8 +388,8 @@ const celoPGS1Campaign: Campaign = {
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
           excludedReferrers: mergedExcludedReferrers,
-          previousKpiFiles: celoPGS1PreviousKpiFiles(index),
-          stageFunction: calculateStageV2,
+          previousKpiFiles: [],
+          stageFunction: calculateStageV3,
           qualityUserScoreBonusRatio: 0.2,
         })
       },
@@ -402,7 +402,6 @@ const celoPGS1Campaign: Campaign = {
         startTimestamp,
         endTimestampExclusive,
       }) => {
-        const index = 4
         const mergedExcludedReferrers = await getMergedExcludedReferrers(
           celoPGS1Campaign.providerAddress,
           excludedReferrersFromCeloPGS1[2],
@@ -414,8 +413,8 @@ const celoPGS1Campaign: Campaign = {
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
           excludedReferrers: mergedExcludedReferrers,
-          previousKpiFiles: celoPGS1PreviousKpiFiles(index),
-          stageFunction: calculateStageV2,
+          previousKpiFiles: [],
+          stageFunction: calculateStageV3,
           qualityUserScoreBonusRatio: 0.2,
         })
       },
@@ -428,7 +427,6 @@ const celoPGS1Campaign: Campaign = {
         startTimestamp,
         endTimestampExclusive,
       }) => {
-        const index = 5
         const mergedExcludedReferrers = await getMergedExcludedReferrers(
           celoPGS1Campaign.providerAddress,
           excludedReferrersFromCeloPGS1[2],
@@ -440,8 +438,8 @@ const celoPGS1Campaign: Campaign = {
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
           excludedReferrers: mergedExcludedReferrers,
-          previousKpiFiles: celoPGS1PreviousKpiFiles(index),
-          stageFunction: calculateStageV2,
+          previousKpiFiles: [],
+          stageFunction: calculateStageV3,
           qualityUserScoreBonusRatio: 0.2,
         })
       },
@@ -454,7 +452,6 @@ const celoPGS1Campaign: Campaign = {
         startTimestamp,
         endTimestampExclusive,
       }) => {
-        const index = 6
         const mergedExcludedReferrers = await getMergedExcludedReferrers(
           celoPGS1Campaign.providerAddress,
           excludedReferrersFromCeloPGS1[2],
@@ -466,8 +463,8 @@ const celoPGS1Campaign: Campaign = {
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
           excludedReferrers: mergedExcludedReferrers,
-          previousKpiFiles: celoPGS1PreviousKpiFiles(index),
-          stageFunction: calculateStageV2,
+          previousKpiFiles: [],
+          stageFunction: calculateStageV3,
           qualityUserScoreBonusRatio: 0.2,
         })
       },
@@ -480,7 +477,6 @@ const celoPGS1Campaign: Campaign = {
         startTimestamp,
         endTimestampExclusive,
       }) => {
-        const index = 7
         const mergedExcludedReferrers = await getMergedExcludedReferrers(
           celoPGS1Campaign.providerAddress,
           excludedReferrersFromCeloPGS1[2],
@@ -492,8 +488,8 @@ const celoPGS1Campaign: Campaign = {
           // TODO: reward both CELO and OP
           rewardAmount: '25000',
           excludedReferrers: mergedExcludedReferrers,
-          previousKpiFiles: celoPGS1PreviousKpiFiles(index),
-          stageFunction: calculateStageV2,
+          previousKpiFiles: [],
+          stageFunction: calculateStageV3,
           qualityUserScoreBonusRatio: 0.2,
         })
       },
