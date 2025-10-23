@@ -19,7 +19,8 @@ import { parse } from 'csv-parse/sync'
 import axios from 'axios'
 
 // TODO: support both CELO and OP reward pools
-const REWARD_POOL_ADDRESS = '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5' // on Celo mainnet
+const CELO_REWARD_POOL_ADDRESS = '0xb14e0d244746FE8Ad6dA763B44f43669fab620f5' // on Celo mainnet
+const OP_REWARD_POOL_ADDRESS = '0x93d604680EeB81844082618870E15aF52a95Ee5C' // on OP mainnet
 
 async function readKpiFile(url: string) {
   if (url.startsWith('https://')) {
@@ -81,6 +82,11 @@ function parseArgs() {
       type: 'number',
       default: 0.2,
     })
+    .option('include-op-rewards', {
+      description: 'include rewards for OP reward pool',
+      type: 'boolean',
+      default: false,
+    })
     .strict()
     .parseSync()
 
@@ -116,6 +122,7 @@ function parseArgs() {
     previousKpiFiles: args['previous-kpi-files'],
     stageFunction: stageFunctions[args['stage-function-version']],
     qualityUserScoreBonusRatio: args['quality-user-score-bonus-ratio'],
+    includeOpRewards: args['include-op-rewards'],
   }
 }
 
@@ -128,6 +135,7 @@ export async function main(args: ReturnType<typeof parseArgs>) {
     previousKpiFiles,
     stageFunction,
     qualityUserScoreBonusRatio,
+    includeOpRewards,
   } = args
 
   const kpiData = await resultDirectory.readKpi()
@@ -192,14 +200,26 @@ export async function main(args: ReturnType<typeof parseArgs>) {
   }))
 
   createAddRewardSafeTransactionJSON({
-    filePath: resultDirectory.safeTransactionsFilePath,
-    rewardPoolAddress: REWARD_POOL_ADDRESS,
+    filePath: includeOpRewards
+      ? resultDirectory.safeTransactionsFileWithSuffixPath('celo')
+      : resultDirectory.safeTransactionsFilePath,
+    rewardPoolAddress: CELO_REWARD_POOL_ADDRESS,
     rewards,
     startTimestamp: new Date(startTimestamp),
     endTimestampExclusive: new Date(endTimestampExclusive),
     useIdempotency: true,
   })
 
+  if (includeOpRewards) {
+    createAddRewardSafeTransactionJSON({
+      filePath: resultDirectory.safeTransactionsFileWithSuffixPath('op'),
+      rewardPoolAddress: OP_REWARD_POOL_ADDRESS,
+      rewards,
+      startTimestamp: new Date(startTimestamp),
+      endTimestampExclusive: new Date(endTimestampExclusive),
+      useIdempotency: true,
+    })
+  }
   await resultDirectory.writeRewards(rewardsWithMetadata)
 }
 

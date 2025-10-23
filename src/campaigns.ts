@@ -316,6 +316,7 @@ const celoPGS1Campaign: Campaign = {
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV0,
           qualityUserScoreBonusRatio: 0.0,
+          includeOpRewards: false,
         })
       },
     },
@@ -341,6 +342,7 @@ const celoPGS1Campaign: Campaign = {
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV1,
           qualityUserScoreBonusRatio: 0.0,
+          includeOpRewards: false,
         })
       },
     },
@@ -366,6 +368,7 @@ const celoPGS1Campaign: Campaign = {
           previousKpiFiles: celoPGS1PreviousKpiFiles(index),
           stageFunction: calculateStageV2,
           qualityUserScoreBonusRatio: 0.0,
+          includeOpRewards: false,
         })
       },
     },
@@ -391,6 +394,7 @@ const celoPGS1Campaign: Campaign = {
           previousKpiFiles: [],
           stageFunction: calculateStageV3,
           qualityUserScoreBonusRatio: 0.2,
+          includeOpRewards: false,
         })
       },
     },
@@ -416,6 +420,7 @@ const celoPGS1Campaign: Campaign = {
           previousKpiFiles: [],
           stageFunction: calculateStageV3,
           qualityUserScoreBonusRatio: 0.2,
+          includeOpRewards: true,
         })
       },
     },
@@ -441,6 +446,7 @@ const celoPGS1Campaign: Campaign = {
           previousKpiFiles: [],
           stageFunction: calculateStageV3,
           qualityUserScoreBonusRatio: 0.2,
+          includeOpRewards: true,
         })
       },
     },
@@ -466,6 +472,7 @@ const celoPGS1Campaign: Campaign = {
           previousKpiFiles: [],
           stageFunction: calculateStageV3,
           qualityUserScoreBonusRatio: 0.2,
+          includeOpRewards: true,
         })
       },
     },
@@ -491,6 +498,7 @@ const celoPGS1Campaign: Campaign = {
           previousKpiFiles: [],
           stageFunction: calculateStageV3,
           qualityUserScoreBonusRatio: 0.2,
+          includeOpRewards: true,
         })
       },
     },

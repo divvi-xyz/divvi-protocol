@@ -74,6 +74,10 @@ export class ResultDirectory {
     return path.join(this.resultsDirectory, 'safe-transactions.json')
   }
 
+  safeTransactionsFileWithSuffixPath(suffix: string) {
+    return path.join(this.resultsDirectory, `safe-transactions-${suffix}.json`)
+  }
+
   async _readCsv(filePath: string) {
     return parse((await readFile(`${filePath}.csv`, 'utf-8')).toString(), {
       skip_empty_lines: true,
