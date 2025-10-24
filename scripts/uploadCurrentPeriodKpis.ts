@@ -200,8 +200,22 @@ export async function uploadCurrentPeriodKpis(
       campaignFilePaths.push(
         `${resultDirectory.rewardsFileSuffix}.csv`,
         `${resultDirectory.rewardsFileSuffix}.json`,
-        resultDirectory.safeTransactionsFilePath,
       )
+      if (campaign.protocol === 'celo-pg-s1') {
+        campaignFilePaths.push(
+          resultDirectory.safeTransactionsFileWithSuffixPath('celo'),
+        )
+        if (
+          new Date(currentPeriod.startTimestamp) >=
+          new Date('2025-10-21T00:00:00Z')
+        ) {
+          campaignFilePaths.push(
+            resultDirectory.safeTransactionsFileWithSuffixPath('op'),
+          )
+        }
+      } else {
+        campaignFilePaths.push(resultDirectory.safeTransactionsFilePath)
+      }
     }
 
     if (campaign.protocol === 'celo-pg-s1') {
