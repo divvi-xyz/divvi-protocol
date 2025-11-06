@@ -217,6 +217,9 @@ export async function main(args: ReturnType<typeof parseArgs>) {
       rewards,
       startTimestamp: new Date(startTimestamp),
       endTimestampExclusive: new Date(endTimestampExclusive),
+      // For now empty claim delegates for OP rewards, since the contract deployed requires it
+      // Effect is only the referrer can claim
+      claimDelegates: {},
       useIdempotency: true,
     })
   }
