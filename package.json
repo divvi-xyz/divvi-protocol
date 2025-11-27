@@ -52,7 +52,7 @@
     "graphql": "^16.12.0",
     "graphql-request": "^7.3.4",
     "redis": "^5.10.0",
-    "viem": "^2.40.0",
+    "viem": "^2.40.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {
