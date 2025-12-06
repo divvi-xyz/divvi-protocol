@@ -42,7 +42,7 @@
   "dependencies": {
     "@envio-dev/hypersync-client": "^0.6.7",
     "@github/memoize": "^1.1.5",
-    "@google-cloud/storage": "^7.17.3",
+    "@google-cloud/storage": "^7.18.0",
     "@redis/client": "^5.10.0",
     "@valora/http-handler": "^1.0.0",
     "@valora/logging": "^1.4.0",
