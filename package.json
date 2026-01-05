@@ -46,7 +46,7 @@
     "@redis/client": "^5.10.0",
     "@valora/http-handler": "^1.0.0",
     "@valora/logging": "^1.4.0",
-    "axios": "^1.10.0",
+    "axios": "^1.13.2",
     "dotenv": "^17.2.3",
     "googleapis": "^169.0.0",
     "graphql": "^16.12.0",
