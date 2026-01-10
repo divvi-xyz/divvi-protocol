@@ -1,24 +1,23 @@
-import { Protocol, CalculateKpiFn, CalculateKpiBatchFn } from '../../types'
+import {
+  Protocol,
+  CalculateKpiFn,
+  CalculateKpiBatchFn,
+  NetworkId,
+} from '../../types'
 import { calculateKpi as calculateKpiAerodrome } from './aerodrome'
 import { calculateKpi as calculateKpiBeefy } from './beefy'
 import { calculateKpi as calculateKpiSomm } from './somm'
-import { calculateKpi as calculateKpiCeloPG } from './celo-pg'
-import { calculateKpi as calculateKpiCeloPGS1 } from './celo-pg-s1'
 import { calculateKpi as calculateKpiArbitrum } from './arbitrum'
 import { calculateKpi as calculateKpiVelodrome } from './velodrome'
 import { calculateKpi as calculateKpiFonbnk } from './fonbnk'
 import { calculateKpi as calculateKpiAave } from './aave'
-import { calculateKpi as calculateKpiCeloTransactions } from './celoTransactions'
 import { calculateKpi as calculateKpiRhino } from './rhino'
 import { calculateKpi as calculateKpiScoutGameV0 } from './scoutGameV0'
-import { calculateKpi as calculateKpiLiskV0 } from './liskV0'
 import {
   calculateKpi as calculateKpiTetherV0,
   calculateKpiBatch as calculateKpiBatchTetherV0,
 } from './tetherV0'
-import { calculateKpi as calculateKpiBaseV0 } from './baseV0'
-import { calculateKpi as calculateKpiMantleV0 } from './mantleV0'
-import { calculateKpi as calculateKpiMorph } from './morph'
+import { calculateNetworkKpi } from './networkKpi'
 
 /**
  * Central registry of KPI calculation handlers for all supported protocols.
@@ -48,20 +47,55 @@ export const calculateKpiHandlers: Record<Protocol, CalculateKpiFn> = {
   beefy: calculateKpiBeefy,
   aerodrome: calculateKpiAerodrome,
   somm: calculateKpiSomm,
-  'celo-pg': calculateKpiCeloPG,
-  'celo-pg-s1': calculateKpiCeloPGS1,
+  'celo-pg': (params) =>
+    calculateNetworkKpi({
+      ...params,
+      networkId: NetworkId['celo-mainnet'],
+      kpiType: 'gas',
+    }),
+  'celo-pg-s1': (params) =>
+    calculateNetworkKpi({
+      ...params,
+      networkId: NetworkId['celo-mainnet'],
+      kpiType: 'gas',
+    }),
   arbitrum: calculateKpiArbitrum,
   velodrome: calculateKpiVelodrome,
   fonbnk: calculateKpiFonbnk,
   aave: calculateKpiAave,
-  'celo-transactions': calculateKpiCeloTransactions,
+  'celo-transactions': (params) =>
+    calculateNetworkKpi({
+      ...params,
+      networkId: NetworkId['celo-mainnet'],
+      kpiType: 'tx',
+    }),
   rhino: calculateKpiRhino,
   'scout-game-v0': calculateKpiScoutGameV0,
-  'lisk-v0': calculateKpiLiskV0,
+  'lisk-v0': (params) =>
+    calculateNetworkKpi({
+      ...params,
+      networkId: NetworkId['lisk-mainnet'],
+      kpiType: 'gas',
+    }),
   'tether-v0': calculateKpiTetherV0,
-  'base-v0': calculateKpiBaseV0,
-  'mantle-v0': calculateKpiMantleV0,
-  morph: calculateKpiMorph,
+  'base-v0': (params) =>
+    calculateNetworkKpi({
+      ...params,
+      networkId: NetworkId['base-mainnet'],
+      kpiType: 'gas',
+    }),
+  'mantle-v0': (params) =>
+    calculateNetworkKpi({
+      ...params,
+      networkId: NetworkId['mantle-mainnet'],
+      kpiType: 'gas',
+    }),
+  morph: (params) =>
+    calculateNetworkKpi({
+      ...params,
+      networkId: NetworkId['morph-mainnet'],
+      kpiType: 'tx',
+    }),
 }
 
 export const calculateKpiBatchHandlers: Partial<
